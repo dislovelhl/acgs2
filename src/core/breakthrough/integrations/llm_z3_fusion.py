@@ -296,9 +296,9 @@ Format as JSON with keys: analysis, alternatives, constraints, pitfalls
 
         # Customize based on result
         if z3_result == "unsat":
-            insights["analysis"] = (
-                "Problem appears to be over-constrained or contains contradictions"
-            )
+            insights[
+                "analysis"
+            ] = "Problem appears to be over-constrained or contains contradictions"
             insights["alternatives"].insert(0, "Remove or relax conflicting constraints")
         elif z3_result == "timeout":
             insights["analysis"] = "Problem may be too complex for current solver configuration"

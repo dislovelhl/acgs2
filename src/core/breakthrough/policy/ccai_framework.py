@@ -374,7 +374,6 @@ class CCAIFramework:
         if session.current_phase == DeliberationPhase.PROPOSAL_SUBMISSION:
             session.current_phase = DeliberationPhase.INITIAL_VOTING
 
-        logger.debug(f"Stakeholder {stakeholder_id} voted {vote} on proposal {proposal_id}")
         return True
 
     async def advance_deliberation_phase(self, session_id: str) -> bool:

@@ -32,8 +32,7 @@ export interface PreviewStepProps {
   onConfigUpdate: (updates: Partial<ImportConfig>) => void;
 }
 
-/** Loading state for preview data fetching */
-type LoadingState = "idle" | "loading" | "success" | "error";
+import { INTEGRATION_API_URL, LoadingState } from "../../lib";
 
 /** Preview item structure */
 interface PreviewItem {
@@ -43,10 +42,6 @@ interface PreviewItem {
   assignee?: string;
   createdAt: string;
 }
-
-/** API URL from environment */
-const API_BASE_URL =
-  import.meta.env.VITE_INTEGRATION_API_URL || "http://localhost:8100";
 
 /**
  * Formats a date string for display
@@ -169,14 +164,17 @@ export function PreviewStep({
           break;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/imports/preview`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        `${INTEGRATION_API_URL}/api/imports/preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -380,7 +378,10 @@ export function PreviewStep({
               const isExpanded = expandedRows.has(item.id);
 
               return (
-                <div key={item.id} className="hover:bg-gray-50 transition-colors">
+                <div
+                  key={item.id}
+                  className="hover:bg-gray-50 transition-colors"
+                >
                   {/* Main Row */}
                   <button
                     onClick={() => toggleRowExpansion(item.id)}
@@ -520,10 +521,10 @@ export function PreviewStep({
       <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-sm text-blue-900">
           <strong className="font-semibold">What happens next?</strong> When you
-          click "Next", the import process will begin. All{" "}
-          {totalCount} {getItemTypeLabel(sourceTool).toLowerCase()} will be
-          imported into the system. You'll be able to track progress in
-          real-time and cancel if needed.
+          click "Next", the import process will begin. All {totalCount}{" "}
+          {getItemTypeLabel(sourceTool).toLowerCase()} will be imported into the
+          system. You'll be able to track progress in real-time and cancel if
+          needed.
         </p>
       </div>
     </div>

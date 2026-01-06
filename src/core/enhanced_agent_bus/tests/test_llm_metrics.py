@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.core.enhanced_agent_bus.deliberation_layer.llm_assistant import LLMAssistant
 
 
@@ -15,16 +14,14 @@ async def test_llm_metrics_recording():
     mock_response = MagicMock()
     mock_response.content = '{"decision": "approve", "reasoning": "all good"}'
     mock_response.response_metadata = {
-        "token_usage": {
-            "prompt_tokens": 10,
-            "completion_tokens": 20,
-            "total_tokens": 30
-        }
+        "token_usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30}
     }
     assistant.llm.ainvoke.return_value = mock_response
 
     # Mock MetricsRegistry
-    with patch("enhanced_agent_bus.deliberation_layer.llm_assistant.MetricsRegistry") as MockRegistry:
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.llm_assistant.MetricsRegistry"
+    ) as MockRegistry:
         mock_registry_instance = MockRegistry.return_value
 
         # 2. Execute
@@ -39,7 +36,7 @@ async def test_llm_metrics_recording():
         mock_registry_instance.record_latency.assert_called_with(
             "llm_invocation_latency",
             pytest.approx(result["_metrics"]["latency_ms"]),
-            {"model": "test-model"}
+            {"model": "test-model"},
         )
 
         mock_registry_instance.increment_counter.assert_any_call(
@@ -52,6 +49,7 @@ async def test_llm_metrics_recording():
             "llm_tokens_completion", 20, {"model": "test-model"}
         )
 
+
 @pytest.mark.asyncio
 async def test_llm_metrics_failure_recording():
     # 1. Setup
@@ -60,7 +58,9 @@ async def test_llm_metrics_failure_recording():
     assistant.llm.ainvoke.side_effect = Exception("API error")
 
     # Mock MetricsRegistry
-    with patch("enhanced_agent_bus.deliberation_layer.llm_assistant.MetricsRegistry") as MockRegistry:
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.llm_assistant.MetricsRegistry"
+    ) as MockRegistry:
         mock_registry_instance = MockRegistry.return_value
 
         # 2. Execute

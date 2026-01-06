@@ -10,6 +10,13 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+try:
+    from src.core.shared.types import JSONDict
+except ImportError:
+    from typing import Any, Dict
+
+    JSONDict = Dict[str, Any]
+
 
 class ComplianceFramework(str, Enum):
     """Supported compliance frameworks"""
@@ -208,7 +215,7 @@ class ReportGenerationRequest(ComplianceBaseModel):
         default=True,
         description="Include detailed evidence in the report",
     )
-    custom_sections: dict = Field(
+    custom_sections: JSONDict = Field(
         default_factory=dict,
         description="Custom sections to include in the report",
     )

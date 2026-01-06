@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class EventType(Enum):
     """Types of constitutional events."""
+
     POLICY_CREATED = "policy_created"
     POLICY_EXECUTED = "policy_executed"
     DECISION_MADE = "decision_made"
@@ -40,6 +41,7 @@ class EventType(Enum):
 
 class TemporalConsistency(Enum):
     """Temporal consistency states."""
+
     CONSISTENT = "consistent"
     CAUSALLY_INCONSISTENT = "causally_inconsistent"
     TEMPORALLY_INCONSISTENT = "temporally_inconsistent"
@@ -49,6 +51,7 @@ class TemporalConsistency(Enum):
 @dataclass
 class ConstitutionalEvent:
     """An immutable constitutional event."""
+
     event_id: str
     event_type: EventType
     timestamp: float
@@ -81,6 +84,7 @@ class ConstitutionalEvent:
 @dataclass
 class TemporalState:
     """Snapshot of constitutional state at a point in time."""
+
     timestamp: float
     event_count: int
     active_policies: Set[str]
@@ -102,7 +106,7 @@ class TemporalState:
             "branch_states": self.branch_states,
             "causal_frontier": list(self.causal_frontier),
             "consistency_status": self.consistency_status.value,
-            "last_validation": self.last_validation
+            "last_validation": self.last_validation,
         }
 
 
@@ -142,7 +146,7 @@ class TimeR1Engine:
         event_type: EventType,
         actor: str,
         payload: Dict[str, Any],
-        parent_events: Optional[Set[str]] = None
+        parent_events: Optional[Set[str]] = None,
     ) -> ConstitutionalEvent:
         """
         Record a new constitutional event.
@@ -171,7 +175,7 @@ class TimeR1Engine:
             timestamp=time.time(),
             actor=actor,
             payload=payload,
-            parent_events=parent_events
+            parent_events=parent_events,
         )
 
         # Store event
@@ -190,7 +194,6 @@ class TimeR1Engine:
         # Update current state
         await self._update_current_state(event)
 
-        logger.debug(f"Recorded event {event.event_id} of type {event_type.value}")
         return event
 
     def _update_indexes(self, event: ConstitutionalEvent) -> None:
@@ -219,7 +222,7 @@ class TimeR1Engine:
                 active_policies=set(),
                 pending_decisions=set(),
                 branch_states={},
-                causal_frontier={event.event_id}
+                causal_frontier={event.event_id},
             )
         else:
             # Update existing state
@@ -229,7 +232,7 @@ class TimeR1Engine:
                 active_policies=self.current_state.active_policies.copy(),
                 pending_decisions=self.current_state.pending_decisions.copy(),
                 branch_states=self.current_state.branch_states.copy(),
-                causal_frontier=self.current_state.causal_frontier.copy()
+                causal_frontier=self.current_state.causal_frontier.copy(),
             )
 
             # Update causal frontier
@@ -245,11 +248,7 @@ class TimeR1Engine:
         if len(self.event_log) % 100 == 0:
             self.state_snapshots.append(self.current_state)
 
-    async def _apply_event_to_state(
-        self,
-        state: TemporalState,
-        event: ConstitutionalEvent
-    ) -> None:
+    async def _apply_event_to_state(self, state: TemporalState, event: ConstitutionalEvent) -> None:
         """Apply event effects to constitutional state."""
         if event.event_type == EventType.POLICY_CREATED:
             policy_id = event.payload.get("policy_id")
@@ -275,8 +274,7 @@ class TimeR1Engine:
                 state.branch_states[branch][action] = event.timestamp
 
     async def validate_temporal_consistency(
-        self,
-        event: ConstitutionalEvent
+        self, event: ConstitutionalEvent
     ) -> Tuple[TemporalConsistency, str]:
         """
         Validate temporal consistency of an event.
@@ -299,7 +297,10 @@ class TimeR1Engine:
         for parent_id in event.parent_events:
             parent_event = self.events[parent_id]
             if parent_event.timestamp >= event.timestamp:
-                return TemporalConsistency.TEMPORALLY_INCONSISTENT, f"Parent event {parent_id} is not before child"
+                return (
+                    TemporalConsistency.TEMPORALLY_INCONSISTENT,
+                    f"Parent event {parent_id} is not before child",
+                )
 
         # Check constitutional invariants
         if not await self._validate_constitutional_invariants(event):
@@ -329,10 +330,7 @@ class TimeR1Engine:
 
         return await dfs(event.event_id)
 
-    async def _validate_constitutional_invariants(
-        self,
-        event: ConstitutionalEvent
-    ) -> bool:
+    async def _validate_constitutional_invariants(self, event: ConstitutionalEvent) -> bool:
         """Validate constitutional invariants for the event."""
         # Check that constitutional hash is maintained
         if event.constitutional_hash != CONSTITUTIONAL_HASH:
@@ -353,7 +351,7 @@ class TimeR1Engine:
         actor: Optional[str] = None,
         start_time: Optional[float] = None,
         end_time: Optional[float] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[ConstitutionalEvent]:
         """
         Query events with temporal filters.
@@ -417,7 +415,7 @@ class TimeR1Engine:
                     active_policies=state.active_policies.copy(),
                     pending_decisions=state.pending_decisions.copy(),
                     branch_states=state.branch_states.copy(),
-                    causal_frontier=state.causal_frontier.copy()
+                    causal_frontier=state.causal_frontier.copy(),
                 )
                 await self._apply_event_to_state(new_state, event)
                 state = new_state
@@ -433,7 +431,7 @@ class TimeR1Engine:
             "snapshots": len(self.state_snapshots),
             "causal_graph_size": len(self.causal_graph),
             "current_timestamp": time.time(),
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
     async def validate_full_consistency(self) -> Tuple[bool, List[str]]:

@@ -3,19 +3,16 @@ ACGS-2 Policy Registry Service
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, Union
 
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
-    JSONValue = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]  # type: ignore[misc]
-    JSONDict = Dict[str, JSONValue]  # type: ignore[misc]
+    JSONValue = Union[str, int, float, bool, None, dict[str, Any], list[Any]]  # type: ignore[misc]
+    JSONDict = dict[str, JSONValue]  # type: ignore[misc]
 
-from acgs2_sdk.constants import CONSTITUTIONAL_HASH
 from acgs2_sdk.models import (
     CreatePolicyRequest,
-    PaginatedResponse,
     Policy,
     PolicyStatus,
     UpdatePolicyRequest,
@@ -39,10 +36,10 @@ class PolicyRegistryService:
 
     async def list_policies(
         self,
-        status: Optional[PolicyStatus] = None,
+        status: PolicyStatus | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[Policy]:
+    ) -> list[Policy]:
         """List policies with optional filtering.
 
         Args:
@@ -63,11 +60,11 @@ class PolicyRegistryService:
     async def create_policy(
         self,
         name: str,
-        rules: List[JSONDict],
-        description: Optional[str] = None,
+        rules: list[JSONDict],
+        description: str | None = None,
         format: str = "json",
-        tags: Optional[List[str]] = None,
-        compliance_tags: Optional[List[str]] = None,
+        tags: list[str] | None = None,
+        compliance_tags: list[str] | None = None,
     ) -> Policy:
         """Create a new policy.
 
@@ -97,7 +94,7 @@ class PolicyRegistryService:
                 "content": {"rules": request.rules},
                 "format": format,
                 "description": request.description,
-            }
+            },
         )
 
         return Policy(**data)
@@ -117,12 +114,12 @@ class PolicyRegistryService:
     async def update_policy(
         self,
         policy_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        rules: Optional[List[JSONDict]] = None,
-        status: Optional[PolicyStatus] = None,
-        tags: Optional[List[str]] = None,
-        compliance_tags: Optional[List[str]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        rules: list[JSONDict] | None = None,
+        status: PolicyStatus | None = None,
+        tags: list[str] | None = None,
+        compliance_tags: list[str] | None = None,
     ) -> Policy:
         """Update a policy.
 
@@ -187,8 +184,7 @@ class PolicyRegistryService:
             Verification result
         """
         data = await self._client.post(
-            f"{self._base_path}/policies/{policy_id}/verify",
-            json={"input": input_data}
+            f"{self._base_path}/policies/{policy_id}/verify", json={"input": input_data}
         )
         return data
 
@@ -203,7 +199,7 @@ class PolicyRegistryService:
         """
         return await self._client.get(f"{self._base_path}/policies/{policy_id}/content")
 
-    async def get_policy_versions(self, policy_id: str) -> List[JSONDict]:
+    async def get_policy_versions(self, policy_id: str) -> list[JSONDict]:
         """Get policy version history.
 
         Args:
@@ -217,8 +213,8 @@ class PolicyRegistryService:
     async def create_policy_version(
         self,
         policy_id: str,
-        rules: List[JSONDict],
-        description: Optional[str] = None,
+        rules: list[JSONDict],
+        description: str | None = None,
     ) -> JSONDict:
         """Create a new policy version.
 
@@ -235,7 +231,7 @@ class PolicyRegistryService:
             json={
                 "content": {"rules": rules},
                 "description": description,
-            }
+            },
         )
         return data
 
@@ -263,13 +259,12 @@ class PolicyRegistryService:
             Authentication response with token
         """
         data = await self._client.post(
-            f"{self._base_path}/auth/token",
-            json={"username": username, "password": password}
+            f"{self._base_path}/auth/token", json={"username": username, "password": password}
         )
         return data
 
     # Bundle endpoints
-    async def list_bundles(self) -> List[JSONDict]:
+    async def list_bundles(self) -> list[JSONDict]:
         """List all policy bundles.
 
         Returns:
@@ -280,8 +275,8 @@ class PolicyRegistryService:
     async def create_bundle(
         self,
         name: str,
-        policies: List[str],
-        description: Optional[str] = None,
+        policies: list[str],
+        description: str | None = None,
     ) -> JSONDict:
         """Create a policy bundle.
 
@@ -299,7 +294,7 @@ class PolicyRegistryService:
                 "name": name,
                 "policies": policies,
                 "description": description,
-            }
+            },
         )
         return data
 

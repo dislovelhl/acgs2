@@ -341,18 +341,18 @@ def run_standalone_tests():
     """Run tests standalone without pytest for quick verification."""
     client = TestClient(app)
 
-    print("=" * 70)
-    print("E2E Test: Review Workflow (Submit, Approve, Verify Badge)")
-    print("=" * 70)
+    # print("=" * 70)  # DEBUG_CLEANUP
+    # print("E2E Test: Review Workflow (Submit, Approve, Verify Badge)")  # DEBUG_CLEANUP
+    # print("=" * 70)  # DEBUG_CLEANUP
 
     # Test 1: Health check
-    print("\n[1/12] Checking API health...")
+    # print("\n[1/12] Checking API health...")  # DEBUG_CLEANUP
     resp = client.get("/health/ready")
     assert resp.status_code == 200, f"Health check failed: {resp.text}"
-    print("       API is healthy")
+    # print("       API is healthy")  # DEBUG_CLEANUP
 
     # Test 2: Upload template
-    print("\n[2/12] Uploading test template...")
+    # print("\n[2/12] Uploading test template...")  # DEBUG_CLEANUP
     file_content = json.dumps(TEST_TEMPLATE_CONTENT, indent=2)
     files = {"file": ("review_e2e.json", io.BytesIO(file_content.encode()), "application/json")}
     data = {
@@ -365,33 +365,33 @@ def run_standalone_tests():
     template_id = resp.json()["id"]
     assert resp.json()["status"] == "draft"
     assert resp.json()["is_verified"] is False
-    print(f"       Template {template_id} uploaded (status=draft, is_verified=false)")
+    # print(f"       Template {template_id} uploaded (status=draft, is_verified=false)")  # DEBUG_CLEANUP
 
     # Test 3: Submit for review
-    print("\n[3/12] Submitting template for review...")
+    # print("\n[3/12] Submitting template for review...")  # DEBUG_CLEANUP
     resp = client.post(f"/api/v1/reviews/submit/{template_id}")
     assert resp.status_code == 200, f"Submit failed: {resp.text}"
     assert resp.json()["new_status"] == "pending_review"
-    print("       Template submitted (status=pending_review)")
+    # print("       Template submitted (status=pending_review)")  # DEBUG_CLEANUP
 
     # Test 4: Verify in review queue
-    print("\n[4/12] Verifying template appears in review queue...")
+    # print("\n[4/12] Verifying template appears in review queue...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/reviews/pending")
     assert resp.status_code == 200
     queue_ids = [item["id"] for item in resp.json()["items"]]
     assert template_id in queue_ids, f"Template {template_id} not in queue: {queue_ids}"
-    print(f"       Template found in pending review queue ({len(queue_ids)} items)")
+    # print(f"       Template found in pending review queue ({len(queue_ids)} items)")  # DEBUG_CLEANUP
 
     # Test 5: Verify template status
-    print("\n[5/12] Verifying template status is pending_review...")
+    # print("\n[5/12] Verifying template status is pending_review...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}")
     assert resp.status_code == 200
     assert resp.json()["status"] == "pending_review"
     assert resp.json()["is_verified"] is False
-    print("       Template status verified (is_verified still false)")
+    # print("       Template status verified (is_verified still false)")  # DEBUG_CLEANUP
 
     # Test 6: Approve template
-    print("\n[6/12] Approving template as admin...")
+    # print("\n[6/12] Approving template as admin...")  # DEBUG_CLEANUP
     resp = client.post(
         f"/api/v1/reviews/{template_id}/approve",
         json={"feedback": "E2E test approval"},
@@ -399,18 +399,18 @@ def run_standalone_tests():
     assert resp.status_code == 200, f"Approve failed: {resp.text}"
     assert resp.json()["action"] == "approve"
     assert resp.json()["new_status"] == "published"
-    print("       Template approved (status=published)")
+    # print("       Template approved (status=published)")  # DEBUG_CLEANUP
 
     # Test 7: Verify is_verified=true
-    print("\n[7/12] Verifying is_verified=true in template record...")
+    # print("\n[7/12] Verifying is_verified=true in template record...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}")
     assert resp.status_code == 200
     assert resp.json()["is_verified"] is True, "is_verified should be True after approval"
     assert resp.json()["status"] == "published"
-    print("       VERIFIED: is_verified=true in database record")
+    # print("       VERIFIED: is_verified=true in database record")  # DEBUG_CLEANUP
 
     # Test 8: Verify badge in listing
-    print("\n[8/12] Verifying verified badge displays in listing...")
+    # print("\n[8/12] Verifying verified badge displays in listing...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/templates")
     assert resp.status_code == 200
     template = next(
@@ -419,34 +419,34 @@ def run_standalone_tests():
     )
     assert template is not None
     assert template["is_verified"] is True, "is_verified should be True in listing"
-    print("       VERIFIED: is_verified=true in list response (badge displays)")
+    # print("       VERIFIED: is_verified=true in list response (badge displays)")  # DEBUG_CLEANUP
 
     # Test 9: Verify filter works
-    print("\n[9/12] Verifying filter by is_verified=true...")
+    # print("\n[9/12] Verifying filter by is_verified=true...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/templates?is_verified=true")
     assert resp.status_code == 200
     verified_ids = [item["id"] for item in resp.json()["items"]]
     assert template_id in verified_ids
-    print(f"       Template found in verified filter ({len(verified_ids)} verified templates)")
+    # print(f"       Template found in verified filter ({len(verified_ids)} verified templates)")  # DEBUG_CLEANUP
 
     # Test 10: Verify review history
-    print("\n[10/12] Verifying review history...")
+    # print("\n[10/12] Verifying review history...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/reviews/{template_id}/history")
     assert resp.status_code == 200
     history = resp.json()
     assert len(history) >= 2, f"Expected at least 2 history entries, got {len(history)}"
-    print(f"       Found {len(history)} review history entries")
+    # print(f"       Found {len(history)} review history entries")  # DEBUG_CLEANUP
 
     # Test 11: Template not in pending queue
-    print("\n[11/12] Verifying template removed from pending queue...")
+    # print("\n[11/12] Verifying template removed from pending queue...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/reviews/pending")
     assert resp.status_code == 200
     pending_ids = [item["id"] for item in resp.json()["items"]]
     assert template_id not in pending_ids
-    print("       Template no longer in pending review queue")
+    # print("       Template no longer in pending review queue")  # DEBUG_CLEANUP
 
     # Test 12: Test rejection workflow
-    print("\n[12/12] Testing rejection workflow...")
+    # print("\n[12/12] Testing rejection workflow...")  # DEBUG_CLEANUP
     # Upload another template
     files = {"file": ("reject_e2e.json", io.BytesIO(b'{"test": "reject"}'), "application/json")}
     data = {"name": "Reject Test", "description": "Testing rejection", "category": "audit"}
@@ -465,18 +465,18 @@ def run_standalone_tests():
     # Verify still not verified
     resp = client.get(f"/api/v1/templates/{reject_id}")
     assert resp.json()["is_verified"] is False
-    print("       Rejected template verified (is_verified=false)")
+    # print("       Rejected template verified (is_verified=false)")  # DEBUG_CLEANUP
 
-    print("\n" + "=" * 70)
-    print("ALL E2E REVIEW WORKFLOW TESTS PASSED!")
-    print("=" * 70)
-    print("\nSummary:")
-    print("  - Template upload creates DRAFT with is_verified=false")
-    print("  - Submit changes status to PENDING_REVIEW")
-    print("  - Template appears in review queue")
-    print("  - Approve sets status=PUBLISHED and is_verified=true")
-    print("  - Verified badge displays correctly (is_verified=true in list)")
-    print("  - Rejected templates remain is_verified=false")
+    # print("\n" + "=" * 70)  # DEBUG_CLEANUP
+    # print("ALL E2E REVIEW WORKFLOW TESTS PASSED!")  # DEBUG_CLEANUP
+    # print("=" * 70)  # DEBUG_CLEANUP
+    # print("\nSummary:")  # DEBUG_CLEANUP
+    # print("  - Template upload creates DRAFT with is_verified=false")  # DEBUG_CLEANUP
+    # print("  - Submit changes status to PENDING_REVIEW")  # DEBUG_CLEANUP
+    # print("  - Template appears in review queue")  # DEBUG_CLEANUP
+    # print("  - Approve sets status=PUBLISHED and is_verified=true")  # DEBUG_CLEANUP
+    # print("  - Verified badge displays correctly (is_verified=true in list)")  # DEBUG_CLEANUP
+    # print("  - Rejected templates remain is_verified=false")  # DEBUG_CLEANUP
 
     return True
 
@@ -486,10 +486,10 @@ if __name__ == "__main__":
         success = run_standalone_tests()
         sys.exit(0 if success else 1)
     except AssertionError as e:
-        print(f"\nTEST FAILED: {e}")
+        # print(f"\nTEST FAILED: {e}")  # DEBUG_CLEANUP
         sys.exit(1)
     except Exception as e:
-        print(f"\nERROR: {e}")
+        # print(f"\nERROR: {e}")  # DEBUG_CLEANUP
         import traceback
 
         traceback.print_exc()

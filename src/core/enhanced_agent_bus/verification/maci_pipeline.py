@@ -27,13 +27,15 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 class AgentRole(Enum):
     """MACI Agent Roles for strict separation of concerns."""
-    EXECUTIVE = "executive"      # Proposes decisions
+
+    EXECUTIVE = "executive"  # Proposes decisions
     LEGISLATIVE = "legislative"  # Validates constitutional rules
-    JUDICIAL = "judicial"        # Evaluates compliance
+    JUDICIAL = "judicial"  # Evaluates compliance
 
 
 class GovernancePhase(Enum):
     """Phases of constitutional governance."""
+
     PROPOSAL = "proposal"
     VALIDATION = "validation"
     JUDGMENT = "judgment"
@@ -43,6 +45,7 @@ class GovernancePhase(Enum):
 @dataclass
 class ConstitutionalPrinciple:
     """Represents a constitutional principle with metadata."""
+
     id: str
     text: str
     category: str
@@ -58,6 +61,7 @@ class ConstitutionalPrinciple:
 @dataclass
 class GovernanceDecision:
     """Represents a governance decision with full context."""
+
     id: str
     action: str
     context: Dict[str, Any]
@@ -75,6 +79,7 @@ class GovernanceDecision:
 @dataclass
 class AgentResponse:
     """Response from a MACI agent."""
+
     agent_role: AgentRole
     decision_id: str
     confidence: float
@@ -92,6 +97,7 @@ class AgentResponse:
 @dataclass
 class VerificationResult:
     """Result of constitutional verification."""
+
     decision_id: str
     is_compliant: bool
     confidence: float
@@ -124,35 +130,29 @@ class BaseMACIAgent:
         return decision.constitutional_hash == CONSTITUTIONAL_HASH
 
     async def _analyze_decision(
-        self,
-        decision: GovernanceDecision,
-        context_responses: Optional[List[AgentResponse]] = None
+        self, decision: GovernanceDecision, context_responses: Optional[List[AgentResponse]] = None
     ) -> Dict[str, Any]:
         """Common decision analysis logic."""
         # Validate constitutional hash
         if not self.validate_constitutional_hash(decision):
             return {
-                'confidence': 0.0,
-                'reasoning': 'Invalid constitutional hash',
-                'evidence': ['Constitutional hash mismatch'],
-                'violations': ['Constitution integrity compromised']
+                "confidence": 0.0,
+                "reasoning": "Invalid constitutional hash",
+                "evidence": ["Constitutional hash mismatch"],
+                "violations": ["Constitution integrity compromised"],
             }
 
         # Agent-specific analysis (implemented by subclasses)
         return await self._analyze_decision_specific(decision, context_responses)
 
     async def _analyze_decision_specific(
-        self,
-        decision: GovernanceDecision,
-        context_responses: Optional[List[AgentResponse]] = None
+        self, decision: GovernanceDecision, context_responses: Optional[List[AgentResponse]] = None
     ) -> Dict[str, Any]:
         """Agent-specific decision analysis - implemented by subclasses."""
         raise NotImplementedError
 
     async def respond_to_decision(
-        self,
-        decision: GovernanceDecision,
-        context_responses: Optional[List[AgentResponse]] = None
+        self, decision: GovernanceDecision, context_responses: Optional[List[AgentResponse]] = None
     ) -> AgentResponse:
         """Generate agent response to a governance decision."""
         analysis = await self._analyze_decision(decision, context_responses)
@@ -160,13 +160,15 @@ class BaseMACIAgent:
         response = AgentResponse(
             agent_role=self.role,
             decision_id=decision.id,
-            confidence=analysis.get('confidence', 0.5),
-            reasoning=analysis.get('reasoning', 'Analysis incomplete'),
-            evidence=analysis.get('evidence', [])
+            confidence=analysis.get("confidence", 0.5),
+            reasoning=analysis.get("reasoning", "Analysis incomplete"),
+            evidence=analysis.get("evidence", []),
         )
 
         self.decision_history.append(response)
-        logger.info(f"{self.role.value} agent responded to decision {decision.id} with confidence {response.confidence:.2f}")
+        logger.info(
+            f"{self.role.value} agent responded to decision {decision.id} with confidence {response.confidence:.2f}"
+        )
 
         return response
 
@@ -178,9 +180,7 @@ class ExecutiveAgent(BaseMACIAgent):
         super().__init__(AgentRole.EXECUTIVE, agent_id)
 
     async def _analyze_decision_specific(
-        self,
-        decision: GovernanceDecision,
-        context_responses: Optional[List[AgentResponse]] = None
+        self, decision: GovernanceDecision, context_responses: Optional[List[AgentResponse]] = None
     ) -> Dict[str, Any]:
         """
         Executive analysis: Propose decisions based on operational context.
@@ -195,50 +195,48 @@ class ExecutiveAgent(BaseMACIAgent):
         evidence = []
 
         # Analyze operational impact
-        if 'impact_assessment' in context:
-            impact = context['impact_assessment']
-            if impact.get('severity', 'unknown') == 'critical':
+        if "impact_assessment" in context:
+            impact = context["impact_assessment"]
+            if impact.get("severity", "unknown") == "critical":
                 confidence -= 0.2
                 reasoning_parts.append("High-impact decision requires careful consideration")
                 evidence.append("Critical operational impact detected")
 
         # Check for emergency conditions
-        if context.get('emergency', False):
+        if context.get("emergency", False):
             confidence += 0.1
             reasoning_parts.append("Emergency conditions justify expedited action")
             evidence.append("Emergency flag detected in context")
 
         # Analyze resource requirements
-        if 'resources_required' in context:
-            resources = context['resources_required']
+        if "resources_required" in context:
+            resources = context["resources_required"]
             if len(resources) > 5:
                 confidence -= 0.1
                 reasoning_parts.append("Complex resource requirements increase operational risk")
                 evidence.append(f"High resource count: {len(resources)}")
 
-        reasoning = "Executive assessment: " + "; ".join(reasoning_parts) if reasoning_parts else "Standard operational assessment"
+        reasoning = (
+            "Executive assessment: " + "; ".join(reasoning_parts)
+            if reasoning_parts
+            else "Standard operational assessment"
+        )
 
         return {
-            'confidence': max(0.1, min(0.95, confidence)),
-            'reasoning': reasoning,
-            'evidence': evidence,
-            'violations': []  # Executive doesn't identify violations
+            "confidence": max(0.1, min(0.95, confidence)),
+            "reasoning": reasoning,
+            "evidence": evidence,
+            "violations": [],  # Executive doesn't identify violations
         }
 
     async def propose_decision(
-        self,
-        action: str,
-        context: Dict[str, Any],
-        proposed_by: str = "system"
+        self, action: str, context: Dict[str, Any], proposed_by: str = "system"
     ) -> GovernanceDecision:
         """Propose a new governance decision."""
         decision_id = f"exec-{hashlib.sha256(f'{action}:{str(context)}'.encode()).hexdigest()[:8]}"
 
         decision = GovernanceDecision(
-            id=decision_id,
-            action=action,
-            context=context,
-            proposed_by=proposed_by
+            id=decision_id, action=action, context=context, proposed_by=proposed_by
         )
 
         logger.info(f"Executive agent proposed decision {decision_id}: {action}")
@@ -252,9 +250,7 @@ class LegislativeAgent(BaseMACIAgent):
         super().__init__(AgentRole.LEGISLATIVE, agent_id)
 
     async def _analyze_decision_specific(
-        self,
-        decision: GovernanceDecision,
-        context_responses: Optional[List[AgentResponse]] = None
+        self, decision: GovernanceDecision, context_responses: Optional[List[AgentResponse]] = None
     ) -> Dict[str, Any]:
         """
         Legislative analysis: Extract and validate relevant constitutional principles.
@@ -276,8 +272,8 @@ class LegislativeAgent(BaseMACIAgent):
                 evidence.append(f"Relevant principle: {principle.text[:50]}...")
 
         # Analyze context for constitutional relevance
-        if 'stakeholders' in context:
-            stakeholders = context['stakeholders']
+        if "stakeholders" in context:
+            stakeholders = context["stakeholders"]
             if len(stakeholders) > 10:
                 evidence.append("Broad stakeholder impact suggests constitutional review needed")
 
@@ -292,11 +288,11 @@ class LegislativeAgent(BaseMACIAgent):
         reasoning = f"Legislative analysis identified {len(relevant_principles)} relevant constitutional principles"
 
         return {
-            'confidence': confidence,
-            'reasoning': reasoning,
-            'evidence': evidence,
-            'violations': violations,  # Legislative identifies potential issues but doesn't judge
-            'relevant_principles': [p.id for p in relevant_principles]
+            "confidence": confidence,
+            "reasoning": reasoning,
+            "evidence": evidence,
+            "violations": violations,  # Legislative identifies potential issues but doesn't judge
+            "relevant_principles": [p.id for p in relevant_principles],
         }
 
 
@@ -307,9 +303,7 @@ class JudicialAgent(BaseMACIAgent):
         super().__init__(AgentRole.JUDICIAL, agent_id)
 
     async def _analyze_decision_specific(
-        self,
-        decision: GovernanceDecision,
-        context_responses: Optional[List[AgentResponse]] = None
+        self, decision: GovernanceDecision, context_responses: Optional[List[AgentResponse]] = None
     ) -> Dict[str, Any]:
         """
         Judicial analysis: Render final judgment based on Executive proposal and Legislative rules.
@@ -321,10 +315,10 @@ class JudicialAgent(BaseMACIAgent):
 
         if not context_responses:
             return {
-                'confidence': 0.1,
-                'reasoning': 'Insufficient context for judicial review',
-                'evidence': ['No agent responses provided'],
-                'violations': ['Incomplete review process']
+                "confidence": 0.1,
+                "reasoning": "Insufficient context for judicial review",
+                "evidence": ["No agent responses provided"],
+                "violations": ["Incomplete review process"],
             }
 
         # Analyze responses from other agents
@@ -343,16 +337,18 @@ class JudicialAgent(BaseMACIAgent):
             evidence.append(f"Executive confidence: {executive_response.confidence:.2f}")
 
         if legislative_response:
-            if 'relevant_principles' in legislative_response.reasoning:
-                evidence.append("Legislative analysis identified relevant constitutional principles")
+            if "relevant_principles" in legislative_response.reasoning:
+                evidence.append(
+                    "Legislative analysis identified relevant constitutional principles"
+                )
                 confidence += 0.2
             if legislative_response.confidence > 0.7:
                 confidence += 0.1
 
         # Check for emergency override conditions
-        if decision.context.get('emergency_override', False):
+        if decision.context.get("emergency_override", False):
             evidence.append("Emergency override condition detected")
-            if decision.context.get('emergency_justification'):
+            if decision.context.get("emergency_justification"):
                 confidence += 0.1
             else:
                 violations.append("Emergency override lacks justification")
@@ -363,11 +359,11 @@ class JudicialAgent(BaseMACIAgent):
         reasoning = f"Judicial review: {'COMPLIANT' if is_compliant else 'NON-COMPLIANT'} (confidence: {confidence:.2f})"
 
         return {
-            'confidence': confidence,
-            'reasoning': reasoning,
-            'evidence': evidence,
-            'violations': violations,
-            'is_compliant': is_compliant
+            "confidence": confidence,
+            "reasoning": reasoning,
+            "evidence": evidence,
+            "violations": violations,
+            "is_compliant": is_compliant,
         }
 
 
@@ -401,10 +397,7 @@ class MACIVerificationPipeline:
 
         logger.info(f"MACI Pipeline loaded constitution with {len(principles)} principles")
 
-    async def verify_governance_decision(
-        self,
-        decision: GovernanceDecision
-    ) -> VerificationResult:
+    async def verify_governance_decision(self, decision: GovernanceDecision) -> VerificationResult:
         """
         Execute full MACI verification pipeline.
 
@@ -421,14 +414,12 @@ class MACIVerificationPipeline:
 
         # Phase 2: Legislative constitutional rule extraction
         legislative_response = await self.legislative_agent.respond_to_decision(
-            decision,
-            context_responses=[executive_response]
+            decision, context_responses=[executive_response]
         )
 
         # Phase 3: Judicial final judgment
         judicial_response = await self.judicial_agent.respond_to_decision(
-            decision,
-            context_responses=[executive_response, legislative_response]
+            decision, context_responses=[executive_response, legislative_response]
         )
 
         # Determine overall compliance
@@ -436,7 +427,10 @@ class MACIVerificationPipeline:
         violations = []
 
         # Extract violations from judicial analysis
-        if hasattr(judicial_response, 'reasoning') and 'NON-COMPLIANT' in judicial_response.reasoning:
+        if (
+            hasattr(judicial_response, "reasoning")
+            and "NON-COMPLIANT" in judicial_response.reasoning
+        ):
             violations.append("Judicial agent determined non-compliance")
 
         # Extract recommendations
@@ -454,19 +448,18 @@ class MACIVerificationPipeline:
             recommendations=recommendations,
             executive_response=executive_response,
             legislative_response=legislative_response,
-            judicial_response=judicial_response
+            judicial_response=judicial_response,
         )
 
         self.verification_history.append(result)
 
-        logger.info(f"MACI verification complete for {decision.id}: {'COMPLIANT' if is_compliant else 'NON-COMPLIANT'}")
+        logger.info(
+            f"MACI verification complete for {decision.id}: {'COMPLIANT' if is_compliant else 'NON-COMPLIANT'}"
+        )
         return result
 
     async def propose_and_verify_decision(
-        self,
-        action: str,
-        context: Dict[str, Any],
-        proposed_by: str = "system"
+        self, action: str, context: Dict[str, Any], proposed_by: str = "system"
     ) -> tuple[GovernanceDecision, VerificationResult]:
         """
         Complete workflow: Propose decision and verify compliance.
@@ -494,24 +487,24 @@ class MACIVerificationPipeline:
     def get_pipeline_stats(self) -> Dict[str, Any]:
         """Get statistics about pipeline performance."""
         if not self.verification_history:
-            return {'total_decisions': 0}
+            return {"total_decisions": 0}
 
         total_decisions = len(self.verification_history)
         compliant_decisions = sum(1 for v in self.verification_history if v.is_compliant)
         avg_confidence = sum(v.confidence for v in self.verification_history) / total_decisions
 
         return {
-            'total_decisions': total_decisions,
-            'compliant_decisions': compliant_decisions,
-            'compliance_rate': compliant_decisions / total_decisions,
-            'average_confidence': avg_confidence,
-            'total_violations': sum(len(v.violations) for v in self.verification_history)
+            "total_decisions": total_decisions,
+            "compliant_decisions": compliant_decisions,
+            "compliance_rate": compliant_decisions / total_decisions,
+            "average_confidence": avg_confidence,
+            "total_violations": sum(len(v.violations) for v in self.verification_history),
         }
 
 
 # Convenience functions for external use
 async def create_maci_pipeline_with_constitution(
-    constitutional_principles: List[Dict[str, Any]]
+    constitutional_principles: List[Dict[str, Any]],
 ) -> MACIVerificationPipeline:
     """
     Create and initialize MACI pipeline with constitutional principles.
@@ -526,10 +519,7 @@ async def create_maci_pipeline_with_constitution(
 
     principles = [
         ConstitutionalPrinciple(
-            id=p['id'],
-            text=p['text'],
-            category=p['category'],
-            priority=p['priority']
+            id=p["id"], text=p["text"], category=p["category"], priority=p["priority"]
         )
         for p in constitutional_principles
     ]
@@ -540,15 +530,15 @@ async def create_maci_pipeline_with_constitution(
 
 # Export for use in other modules
 __all__ = [
-    'MACIVerificationPipeline',
-    'ExecutiveAgent',
-    'LegislativeAgent',
-    'JudicialAgent',
-    'GovernanceDecision',
-    'VerificationResult',
-    'ConstitutionalPrinciple',
-    'AgentRole',
-    'GovernancePhase',
-    'create_maci_pipeline_with_constitution',
-    'CONSTITUTIONAL_HASH'
+    "MACIVerificationPipeline",
+    "ExecutiveAgent",
+    "LegislativeAgent",
+    "JudicialAgent",
+    "GovernanceDecision",
+    "VerificationResult",
+    "ConstitutionalPrinciple",
+    "AgentRole",
+    "GovernancePhase",
+    "create_maci_pipeline_with_constitution",
+    "CONSTITUTIONAL_HASH",
 ]

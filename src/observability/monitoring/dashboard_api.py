@@ -99,7 +99,6 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 logger = logging.getLogger(__name__)
 
-
 # ============================================================================
 # Pydantic Models for API responses
 # ============================================================================
@@ -865,7 +864,6 @@ def create_dashboard_app() -> FastAPI:
 
 # Create the app instance
 app = create_dashboard_app() if FASTAPI_AVAILABLE else None
-
 
 # ============================================================================
 # CLI Entry Point

@@ -20,7 +20,6 @@ from ...webhooks.auth import AuthResult, HmacAuthHandler
 
 logger = logging.getLogger(__name__)
 
-
 # ============================================================================
 # Linear Webhook Authentication
 # ============================================================================
@@ -49,8 +48,7 @@ def get_linear_webhook_handler() -> HmacAuthHandler:
 
     if not config.linear_webhook_secret:
         raise RuntimeError(
-            "LINEAR_WEBHOOK_SECRET is not configured. "
-            "Cannot verify Linear webhook signatures."
+            "LINEAR_WEBHOOK_SECRET is not configured. Cannot verify Linear webhook signatures."
         )
 
     # Linear uses HMAC-SHA256 with a simple signature format
@@ -140,7 +138,6 @@ async def verify_linear_webhook_signature(
                 headers={"WWW-Authenticate": "Signature"},
             )
 
-        logger.debug("Linear webhook signature verified successfully")
         return result
 
     except HTTPException:
@@ -241,9 +238,7 @@ def verify_linear_signature_sync(
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        result = loop.run_until_complete(
-            handler.verify_request(headers=headers, body=body)
-        )
+        result = loop.run_until_complete(handler.verify_request(headers=headers, body=body))
 
         return result.authenticated
 

@@ -22,7 +22,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from src.core.shared.logging.audit_logger import (  # noqa: E402, I001
+from src.core.shared.acgs_logging.audit_logger import (  # noqa: E402, I001
     AUDIT_LOGGER_AVAILABLE,
     CONSTITUTIONAL_HASH,
     SENSITIVE_FIELDS,
@@ -442,7 +442,7 @@ class TestInMemoryAuditStore:
             entry = AuditEntry(
                 id=f"entry-{i}",
                 tenant_id="tenant-a",
-                timestamp=f"2024-01-0{i+1}T00:00:00Z",
+                timestamp=f"2024-01-0{i + 1}T00:00:00Z",
                 action=action,
             )
             await store.store(entry)
@@ -462,7 +462,7 @@ class TestInMemoryAuditStore:
             entry = AuditEntry(
                 id=f"entry-{i}",
                 tenant_id="tenant-a",
-                timestamp=f"2024-01-0{i+1}T00:00:00Z",
+                timestamp=f"2024-01-0{i + 1}T00:00:00Z",
                 action="create",
                 resource_type=rtype,
             )
@@ -483,7 +483,7 @@ class TestInMemoryAuditStore:
             entry = AuditEntry(
                 id=f"entry-{i}",
                 tenant_id="tenant-a",
-                timestamp=f"2024-01-0{i+1}T00:00:00Z",
+                timestamp=f"2024-01-0{i + 1}T00:00:00Z",
                 action="read",
                 actor_id=actor,
             )
@@ -504,7 +504,7 @@ class TestInMemoryAuditStore:
             entry = AuditEntry(
                 id=f"entry-{i}",
                 tenant_id="tenant-a",
-                timestamp=f"2024-01-0{i+1}T00:00:00Z",
+                timestamp=f"2024-01-0{i + 1}T00:00:00Z",
                 action="create",
             )
             await store.store(entry)
@@ -567,7 +567,7 @@ class TestInMemoryAuditStore:
             entry = AuditEntry(
                 id=f"entry-{i}",
                 tenant_id="tenant-a",
-                timestamp=f"2024-01-0{i+1}T00:00:00Z",
+                timestamp=f"2024-01-0{i + 1}T00:00:00Z",
                 action="create",
             )
             await store.store(entry)
@@ -622,7 +622,7 @@ class TestInMemoryAuditStore:
             entry = AuditEntry(
                 id=f"entry-{i}",
                 tenant_id="tenant-a",
-                timestamp=f"2024-01-0{i+1}T00:00:00Z",
+                timestamp=f"2024-01-0{i + 1}T00:00:00Z",
                 action="create",
             )
             await store.store(entry)

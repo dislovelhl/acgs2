@@ -183,9 +183,7 @@ class ConflictResolutionManager:
             raise ValueError(f"Unsupported timestamp type: {type(timestamp)}")
 
         except (ValueError, AttributeError) as e:
-            raise ConflictTimestampError(
-                f"Failed to parse timestamp '{timestamp}': {e}"
-            ) from e
+            raise ConflictTimestampError(f"Failed to parse timestamp '{timestamp}': {e}") from e
 
     def _compare_timestamps(
         self,
@@ -329,14 +327,8 @@ class ConflictResolutionManager:
             priority_b = 999
 
         if priority_a <= priority_b:
-            logger.debug(
-                f"Source priority: {source_a} ({priority_a}) > {source_b} ({priority_b})"
-            )
             return update_a
         else:
-            logger.debug(
-                f"Source priority: {source_b} ({priority_b}) > {source_a} ({priority_a})"
-            )
             return update_b
 
     async def _record_conflict(
@@ -397,8 +389,6 @@ class ConflictResolutionManager:
             # Keep only recent conflicts (last 100)
             await redis.ltrim(conflict_key, -100, -1)
 
-            logger.debug(f"Recorded conflict for {issue_id}")
-
         except Exception as e:
             logger.error(f"Failed to record conflict for {issue_id}: {e}")
             # Don't raise - conflict recording is non-critical
@@ -434,8 +424,7 @@ class ConflictResolutionManager:
             # Validate source
             if source not in VALID_SYNC_SOURCES:
                 raise ValueError(
-                    f"Invalid source: {source}. "
-                    f"Must be one of: {', '.join(VALID_SYNC_SOURCES)}"
+                    f"Invalid source: {source}. Must be one of: {', '.join(VALID_SYNC_SOURCES)}"
                 )
 
             # Get current sync state
@@ -443,9 +432,6 @@ class ConflictResolutionManager:
 
             # If no previous state, apply the update
             if sync_state is None:
-                logger.debug(
-                    f"No previous state for {issue_id}, applying update from {source}"
-                )
                 return True
 
             # Parse timestamps
@@ -519,8 +505,7 @@ class ConflictResolutionManager:
             # Validate source
             if source not in VALID_SYNC_SOURCES:
                 raise ValueError(
-                    f"Invalid source: {source}. "
-                    f"Must be one of: {', '.join(VALID_SYNC_SOURCES)}"
+                    f"Invalid source: {source}. Must be one of: {', '.join(VALID_SYNC_SOURCES)}"
                 )
 
             # Parse timestamp
@@ -540,10 +525,6 @@ class ConflictResolutionManager:
                 issue_id=issue_id,
                 sync_source=source,
                 metadata=update_metadata,
-            )
-
-            logger.debug(
-                f"Recorded update for {issue_id} from {source} at {update_timestamp}"
             )
 
         except Exception as e:
@@ -593,9 +574,7 @@ class ConflictResolutionManager:
 
         except Exception as e:
             logger.error(f"Failed to get conflict history for {issue_id}: {e}")
-            raise ConflictResolutionError(
-                f"Failed to get conflict history: {e}"
-            ) from e
+            raise ConflictResolutionError(f"Failed to get conflict history: {e}") from e
 
     async def clear_conflict_history(self, issue_id: str) -> bool:
         """
@@ -628,9 +607,7 @@ class ConflictResolutionManager:
 
         except Exception as e:
             logger.error(f"Failed to clear conflict history for {issue_id}: {e}")
-            raise ConflictResolutionError(
-                f"Failed to clear conflict history: {e}"
-            ) from e
+            raise ConflictResolutionError(f"Failed to clear conflict history: {e}") from e
 
 
 # Singleton instance for easy access

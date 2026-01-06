@@ -10,11 +10,10 @@ from pathlib import Path
 
 import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse, ORJSONResponse
 from pydantic import BaseModel, Field
-from starlette.middleware.sessions import SessionMiddleware
-
 from routes import admin_sso_router, sso_router
 from src.core.shared.config import settings
 from src.core.shared.logging_config import configure_logging, get_logger
@@ -22,6 +21,8 @@ from src.core.shared.metrics import track_request_metrics
 from src.core.shared.otel_config import init_otel
 from src.core.shared.security.auth import UserClaims, get_current_user_optional
 from src.core.shared.security.cors_config import get_cors_config
+from src.core.shared.types import JSONDict
+from starlette.middleware.sessions import SessionMiddleware
 
 # Service name for logging and tracing
 SERVICE_NAME = "api_gateway"
@@ -38,6 +39,33 @@ app = FastAPI(
     version="1.0.0",
     default_response_class=ORJSONResponse,
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Handle non-serializable bodies like FormData
+    body = exc.body
+    if body is not None and not isinstance(body, (dict, list, str, int, float, bool)):
+        if hasattr(body, "items"):
+            try:
+                body = dict(body.items())
+            except Exception:
+                body = str(body)
+        else:
+            body = str(body)
+
+    logger.error(
+        "Validation error",
+        extra={
+            "detail": exc.errors(),
+            "body": body,
+        },
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": body},
+    )
+
 
 # Initialize OTel tracing
 init_otel("api-gateway", app=app, export_to_console=settings.debug)
@@ -89,7 +117,7 @@ class FeedbackRequest(BaseModel):
     description: str = Field(..., description="Detailed feedback description")
     user_agent: str = Field(default="", description="User agent string")
     url: str = Field(default="", description="Current URL when feedback was given")
-    metadata: dict = Field(default_factory=dict, description="Additional metadata")
+    metadata: JSONDict = Field(default_factory=dict, description="Additional metadata")
 
 
 class FeedbackResponse(BaseModel):
@@ -281,7 +309,7 @@ async def proxy_to_agent_bus(request: Request, path: str):
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-async def save_feedback_to_file(feedback_record: dict):
+async def save_feedback_to_file(feedback_record: JSONDict):
     """Save feedback to file asynchronously"""
     try:
         feedback_id = feedback_record["feedback_id"]

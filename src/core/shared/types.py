@@ -18,7 +18,18 @@ When to use 'Any' (sparingly):
 Always prefer Union types, Protocols, or TypedDict over 'Any' when possible.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Protocol, TypeVar, Union, TypedDict, Coroutine
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 # ============================================================================
 # JSON and Data Structure Types
@@ -26,16 +37,15 @@ from typing import Any, Callable, Dict, List, Optional, Protocol, TypeVar, Union
 
 # General JSON types - use these for JSON payloads, API responses, config files
 JSONPrimitive = Union[str, int, float, bool, None]
-JSONValue = Union[JSONPrimitive, "JSONDict", "JSONList"]
-JSONDict = Dict[str, JSONValue]
-JSONList = List[JSONValue]
+JSONDict = Dict[str, Any]
+JSONList = List[Any]
+JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
 
 # More specific JSON structures
-NestedDict = Dict[str, Any]  # For deeply nested structures where full typing is impractical
+NestedDict = JSONDict  # For deeply nested structures
 StringDict = Dict[str, str]  # For simple string-to-string mappings
 MetadataDict = Dict[str, JSONValue]  # For metadata fields
 AttributeDict = Dict[str, JSONValue]  # For attribute collections
-
 
 # ============================================================================
 # Agent and Workflow Types
@@ -47,8 +57,10 @@ AgentContext = Dict[str, JSONValue]  # Agent execution context
 AgentState = Dict[str, JSONValue]  # Agent state data
 AgentMetadata = Dict[str, JSONValue]  # Agent metadata
 
+
 class AgentInfo(TypedDict, total=False):
     """Standardized agent information structure."""
+
     agent_id: str
     agent_type: str
     capabilities: List[str]
@@ -57,7 +69,8 @@ class AgentInfo(TypedDict, total=False):
     registered_at: str
     updated_at: str
     constitutional_hash: str
-    metadata: MessageMetadata
+    metadata: "MessageMetadata"
+
 
 # Workflow data structures
 WorkflowID = str  # Workflow identifier
@@ -71,12 +84,11 @@ ContextData = Dict[str, JSONValue]  # Generic context data
 MemoryData = Dict[str, JSONValue]  # Memory system data
 SessionData = Dict[str, JSONValue]  # Session data
 
-
 # ============================================================================
 # Message and Event Types
 # ============================================================================
 
-# Message bus types
+# Message bus types (defined early for forward references)
 MessageID = str  # Message identifier
 MessagePayload = Dict[str, JSONValue]  # Message payload
 MessageHeaders = Dict[str, str]  # Message headers
@@ -89,9 +101,8 @@ EventContext = Dict[str, JSONValue]  # Event context
 EventMetadata = Dict[str, JSONValue]  # Event metadata
 
 # Kafka/messaging
-KafkaMessage = Any  # Kafka consumer message object
+KafkaMessage = JSONDict  # Kafka consumer message object (typically dict-like)
 TopicName = str  # Kafka topic name
-
 
 # ============================================================================
 # Policy and Governance Types
@@ -112,7 +123,6 @@ ConstitutionalContext = Dict[str, JSONValue]  # Constitutional decision context
 DecisionData = Dict[str, JSONValue]  # Decision data
 VerificationResult = Dict[str, JSONValue]  # Verification result
 
-
 # ============================================================================
 # Configuration and Settings Types
 # ============================================================================
@@ -121,7 +131,6 @@ ConfigDict = Dict[str, JSONValue]  # Configuration dictionaries
 ConfigValue = JSONValue  # Individual configuration value
 EnvVars = Dict[str, str]  # Environment variables
 SecretData = Dict[str, str]  # Secret/credential data
-
 
 # ============================================================================
 # Authentication and Security Types
@@ -138,7 +147,6 @@ TenantID = str  # Tenant identifier
 CorrelationID = str  # Request correlation ID
 SecurityContext = Dict[str, JSONValue]  # Security context
 
-
 # ============================================================================
 # Cache and Storage Types
 # ============================================================================
@@ -147,7 +155,6 @@ CacheKey = str  # Cache key
 CacheValue = JSONValue  # Cached value (prefer more specific types when possible)
 CacheTTL = int  # Cache time-to-live in seconds
 RedisValue = Union[str, bytes, None]  # Redis stored value
-
 
 # ============================================================================
 # Audit and Logging Types
@@ -159,7 +166,6 @@ LogContext = Dict[str, JSONValue]  # Structured logging context
 LogRecord = Dict[str, JSONValue]  # Log record data
 MetricData = Dict[str, Union[int, float]]  # Metric measurements
 
-
 # ============================================================================
 # Temporal and Time-Series Types
 # ============================================================================
@@ -167,7 +173,6 @@ MetricData = Dict[str, Union[int, float]]  # Metric measurements
 Timestamp = float  # Unix timestamp
 TimelineData = Dict[str, JSONValue]  # Timeline/temporal data
 ScheduleData = Dict[str, JSONValue]  # Schedule information
-
 
 # ============================================================================
 # ML and AI Types
@@ -180,7 +185,6 @@ PredictionResult = Dict[str, JSONValue]  # Prediction output
 FeatureVector = Union[List[float], Dict[str, float]]  # Feature data
 TrainingData = Dict[str, JSONValue]  # Training dataset metadata
 
-
 # ============================================================================
 # Error and Exception Types
 # ============================================================================
@@ -188,7 +192,6 @@ TrainingData = Dict[str, JSONValue]  # Training dataset metadata
 ErrorDetails = Dict[str, JSONValue]  # Error details for exceptions
 ErrorContext = Dict[str, JSONValue]  # Additional error context
 ErrorCode = str  # Error code identifier
-
 
 # ============================================================================
 # Validation and Transformation Types
@@ -199,7 +202,6 @@ ValidationErrors = List[Dict[str, str]]  # Validation error list
 TransformFunc = Callable[[JSONValue], JSONValue]  # Generic transformation function
 ValidatorFunc = Callable[[JSONValue], bool]  # Generic validator function
 
-
 # ============================================================================
 # Observability and Telemetry Types
 # ============================================================================
@@ -209,13 +211,14 @@ TraceID = str  # Trace identifier
 TelemetryData = Dict[str, Union[int, float, str]]  # Telemetry metrics
 PerformanceMetrics = Dict[str, float]  # Performance measurements
 
-
 # ============================================================================
 # Protocol Types for Structural Typing
 # ============================================================================
 
+
 class SupportsCache(Protocol):
     """Protocol for objects that support caching."""
+
     def get(self, key: str) -> Optional[CacheValue]:
         """Get value from cache."""
         ...
@@ -227,6 +230,7 @@ class SupportsCache(Protocol):
 
 class SupportsValidation(Protocol):
     """Protocol for objects that support validation."""
+
     def validate(self) -> bool:
         """Validate the object."""
         ...
@@ -234,6 +238,7 @@ class SupportsValidation(Protocol):
 
 class SupportsAuthentication(Protocol):
     """Protocol for objects that support authentication."""
+
     async def authenticate(self) -> bool:
         """Perform authentication."""
         ...
@@ -241,6 +246,7 @@ class SupportsAuthentication(Protocol):
 
 class SupportsSerialization(Protocol):
     """Protocol for objects that support JSON serialization."""
+
     def to_dict(self) -> JSONDict:
         """Convert to dictionary."""
         ...
@@ -253,6 +259,7 @@ class SupportsSerialization(Protocol):
 
 class SupportsLogging(Protocol):
     """Protocol for logger-like objects."""
+
     def info(self, msg: str, **kwargs: JSONValue) -> None:
         """Log info message."""
         ...
@@ -272,6 +279,7 @@ class SupportsLogging(Protocol):
 
 class SupportsMiddleware(Protocol):
     """Protocol for middleware/ASGI applications."""
+
     async def __call__(self, scope: Dict[str, Any], receive: Callable, send: Callable) -> None:
         """Process ASGI request."""
         ...
@@ -281,39 +289,36 @@ class SupportsMiddleware(Protocol):
 # Generic Type Variables
 # ============================================================================
 
-T = TypeVar('T')  # Generic type variable
-T_co = TypeVar('T_co', covariant=True)  # Covariant type variable
-T_contra = TypeVar('T_contra', contravariant=True)  # Contravariant type variable
+T = TypeVar("T")  # Generic type variable
+T_co = TypeVar("T_co", covariant=True)  # Covariant type variable
+T_contra = TypeVar("T_contra", contravariant=True)  # Contravariant type variable
 
 # Specific type variables
-ModelT = TypeVar('ModelT')  # For Pydantic models
-ConfigT = TypeVar('ConfigT')  # For configuration objects
-ResponseT = TypeVar('ResponseT')  # For API responses
-EventT = TypeVar('EventT')  # For event types
-StateT = TypeVar('StateT')  # For state objects
-ContextT = TypeVar('ContextT')  # For context objects
-
+ModelT = TypeVar("ModelT")  # For Pydantic models
+ConfigT = TypeVar("ConfigT")  # For configuration objects
+ResponseT = TypeVar("ResponseT")  # For API responses
+EventT = TypeVar("EventT")  # For event types
+StateT = TypeVar("StateT")  # For state objects
+ContextT = TypeVar("ContextT")  # For context objects
 
 # ============================================================================
 # Pydantic-specific Types
 # ============================================================================
 
 # For Pydantic validator methods
-ValidatorValue = Any  # Input value to validator (use with caution, prefer specific types)
-ValidatorContext = Any  # Pydantic validation context object
-ModelContext = Any  # Pydantic model_post_init __context parameter
-
+ValidatorValue = JSONValue  # Input value to validator
+ValidatorContext = JSONDict  # Pydantic validation context object
+ModelContext = JSONDict  # Pydantic model_post_init __context parameter
 
 # ============================================================================
 # Decorator and Wrapper Types
 # ============================================================================
 
 # For function wrappers and decorators
-ArgsType = tuple[Any, ...]  # *args tuple
-KwargsType = Dict[str, Any]  # **kwargs dict
+ArgsType = tuple[JSONValue, ...]  # *args tuple
+KwargsType = JSONDict  # **kwargs dict
 DecoratorFunc = Callable[[Callable[..., T]], Callable[..., T]]  # Function decorator
-AsyncFunc = Callable[..., Any]  # Async function type
-
+AsyncFunc = Callable[..., Coroutine[Any, Any, Any]]  # Async function type
 
 # ============================================================================
 # Document and Template Types
@@ -322,7 +327,6 @@ AsyncFunc = Callable[..., Any]  # Async function type
 TemplateData = Dict[str, JSONValue]  # Template rendering data
 TemplateContext = Dict[str, JSONValue]  # Template context
 DocumentData = Dict[str, JSONValue]  # Document data
-
 
 # ============================================================================
 # Database and ORM Types

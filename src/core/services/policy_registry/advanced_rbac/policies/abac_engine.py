@@ -10,12 +10,12 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
-# Add acgs2-core/shared to path for type imports
-shared_path = Path(__file__).parent.parent.parent.parent.parent / "shared"
-if str(shared_path) not in sys.path:
-    sys.path.insert(0, str(shared_path))
+# Add acgs2-core to path for shared modules
+core_path = Path(__file__).parent.parent.parent.parent.parent
+if str(core_path) not in sys.path:
+    sys.path.insert(0, str(core_path))
 
-from types import JSONDict, JSONValue
+from shared.types import JSONDict, JSONValue
 
 from ..models.abac_models import (
     ABACPolicy,

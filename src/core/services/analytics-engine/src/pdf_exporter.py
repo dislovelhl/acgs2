@@ -575,12 +575,11 @@ class PDFExporter:
         summary_text = []
         if "mean_predicted_violations" in summary:
             summary_text.append(
-                f"Average predicted daily violations: "
-                f"{summary['mean_predicted_violations']:.1f}"
+                f"Average predicted daily violations: {summary['mean_predicted_violations']:.1f}"
             )
         if "total_predicted_violations" in summary:
             summary_text.append(
-                f"Total predicted violations: " f"{summary['total_predicted_violations']:.0f}"
+                f"Total predicted violations: {summary['total_predicted_violations']:.0f}"
             )
         if "trend_direction" in summary:
             trend = summary["trend_direction"].capitalize()

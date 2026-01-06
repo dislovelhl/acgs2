@@ -21,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import type { ImportConfig, SourceTool } from "./ImportWizard";
+import { INTEGRATION_API_URL } from "../../lib";
 
 /** Props for ProgressStep component */
 export interface ProgressStepProps {
@@ -33,7 +34,12 @@ export interface ProgressStepProps {
 }
 
 /** Import job status from API */
-type JobStatus = "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+type JobStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 /** Progress data structure */
 interface ProgressData {
@@ -47,10 +53,6 @@ interface ProgressData {
   started_at?: string;
   completed_at?: string;
 }
-
-/** API URL from environment */
-const API_BASE_URL =
-  import.meta.env.VITE_INTEGRATION_API_URL || "http://localhost:8100";
 
 /** Polling interval in milliseconds (2 seconds) */
 const POLL_INTERVAL_MS = 2000;
@@ -180,7 +182,7 @@ export function ProgressStep({
           break;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/imports`, {
+      const response = await fetch(`${INTEGRATION_API_URL}/api/imports`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -228,56 +230,59 @@ export function ProgressStep({
   /**
    * Fetches progress status from API
    */
-  const fetchProgress = useCallback(async (currentJobId: string) => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/imports/${currentJobId}`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.detail || `Failed to fetch progress: ${response.status}`
+  const fetchProgress = useCallback(
+    async (currentJobId: string) => {
+      try {
+        const response = await fetch(
+          `${INTEGRATION_API_URL}/api/imports/${currentJobId}`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+            },
+          }
         );
-      }
 
-      const data: ProgressData = await response.json();
-      setProgressData(data);
-
-      // Check if job is complete
-      if (data.status === "completed" && onComplete) {
-        // Stop polling
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.detail || `Failed to fetch progress: ${response.status}`
+          );
         }
-        // Trigger completion callback after a short delay
-        setTimeout(onComplete, 1000);
-      }
 
-      // Check if job failed
-      if (data.status === "failed") {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
+        const data: ProgressData = await response.json();
+        setProgressData(data);
+
+        // Check if job is complete
+        if (data.status === "completed" && onComplete) {
+          // Stop polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          // Trigger completion callback after a short delay
+          setTimeout(onComplete, 1000);
         }
-        setError(data.error_message || "Import job failed");
+
+        // Check if job failed
+        if (data.status === "failed") {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setError(data.error_message || "Import job failed");
+        }
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch progress. Will retry...";
+        console.error("Progress fetch error:", message);
+        // Don't set error state for transient network issues during polling
       }
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to fetch progress. Will retry...";
-      console.error("Progress fetch error:", message);
-      // Don't set error state for transient network issues during polling
-    }
-  }, [onComplete]);
+    },
+    [onComplete]
+  );
 
   /**
    * Start import job on mount if not already started
@@ -370,15 +375,19 @@ export function ProgressStep({
           {isCompleted
             ? "Import Complete"
             : isFailed
-              ? "Import Failed"
-              : "Importing Data"}
+            ? "Import Failed"
+            : "Importing Data"}
         </h2>
         <p className="text-gray-600">
           {isCompleted
-            ? `Successfully imported ${items_processed} items from ${getSourceToolName(sourceTool)}`
+            ? `Successfully imported ${items_processed} items from ${getSourceToolName(
+                sourceTool
+              )}`
             : isFailed
-              ? "The import process encountered an error"
-              : `Importing data from ${getSourceToolName(sourceTool)}. Please wait...`}
+            ? "The import process encountered an error"
+            : `Importing data from ${getSourceToolName(
+                sourceTool
+              )}. Please wait...`}
         </p>
       </div>
 
@@ -404,9 +413,7 @@ export function ProgressStep({
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Progress
-            </span>
+            <span className="text-sm font-medium text-gray-700">Progress</span>
             <span className="text-sm font-semibold text-gray-900">
               {Math.round(progress_percentage)}%
             </span>
@@ -417,8 +424,8 @@ export function ProgressStep({
                 isCompleted
                   ? "bg-green-500"
                   : isFailed
-                    ? "bg-red-500"
-                    : "bg-blue-600"
+                  ? "bg-red-500"
+                  : "bg-blue-600"
               }`}
               style={{ width: `${Math.min(progress_percentage, 100)}%` }}
             />
@@ -533,10 +540,10 @@ export function ProgressStep({
       {isFailed && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-900">
-            <strong className="font-semibold">Import failed.</strong> The
-            import process encountered an error and could not complete. Please
-            review the error message above and try again. Contact support if
-            the issue persists.
+            <strong className="font-semibold">Import failed.</strong> The import
+            process encountered an error and could not complete. Please review
+            the error message above and try again. Contact support if the issue
+            persists.
           </p>
         </div>
       )}

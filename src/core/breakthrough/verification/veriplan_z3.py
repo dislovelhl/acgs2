@@ -28,17 +28,19 @@ logger = logging.getLogger(__name__)
 
 class ConstraintType(Enum):
     """Types of formal constraints."""
-    INVARIANT = "invariant"      # Always true
+
+    INVARIANT = "invariant"  # Always true
     PRECONDITION = "precondition"  # Must be true before
     POSTCONDITION = "postcondition"  # Must be true after
-    TEMPORAL = "temporal"          # LTL formula
-    SAFETY = "safety"              # Something bad never happens
-    LIVENESS = "liveness"          # Something good eventually happens
+    TEMPORAL = "temporal"  # LTL formula
+    SAFETY = "safety"  # Something bad never happens
+    LIVENESS = "liveness"  # Something good eventually happens
 
 
 @dataclass
 class FormalConstraint:
     """A formal constraint in Z3 representation."""
+
     constraint_id: str
     constraint_type: ConstraintType
     expression: str  # Z3 expression string
@@ -50,6 +52,7 @@ class FormalConstraint:
 @dataclass
 class Z3Variable:
     """A Z3 variable declaration."""
+
     name: str
     z3_type: str  # "Int", "Bool", "Real", "BitVec", etc.
     domain: Optional[Tuple[Any, Any]] = None  # Optional (min, max)
@@ -58,6 +61,7 @@ class Z3Variable:
 @dataclass
 class VerificationResult:
     """Result from Z3 verification."""
+
     result_id: str
     sat: bool  # Satisfiable (constraints can be met)
     model: Optional[Dict[str, Any]] = None  # Variable assignments if SAT
@@ -146,19 +150,12 @@ class LTLParser:
             if token in ["G", "F", "X"]:
                 # Unary temporal operator
                 inner, new_pos = parse_expr(tokens, pos + 1)
-                return {
-                    "type": "temporal",
-                    "operator": token,
-                    "operand": inner
-                }, new_pos
+                return {"type": "temporal", "operator": token, "operand": inner}, new_pos
 
             elif token == "!":
                 # Negation
                 inner, new_pos = parse_expr(tokens, pos + 1)
-                return {
-                    "type": "not",
-                    "operand": inner
-                }, new_pos
+                return {"type": "not", "operand": inner}, new_pos
 
             elif token == "(":
                 # Parenthesized expression
@@ -169,10 +166,7 @@ class LTLParser:
 
             else:
                 # Atomic proposition or variable
-                return {
-                    "type": "atom",
-                    "value": token
-                }, pos + 1
+                return {"type": "atom", "value": token}, pos + 1
 
         ast, _ = parse_expr(tokens, 0)
         return ast
@@ -187,11 +181,7 @@ class LTLParser:
         ast = self.parse(formula)
         return self._ast_to_z3(ast, variables)
 
-    def _ast_to_z3(
-        self,
-        ast: Dict[str, Any],
-        variables: Dict[str, Z3Variable]
-    ) -> str:
+    def _ast_to_z3(self, ast: Dict[str, Any], variables: Dict[str, Z3Variable]) -> str:
         """Convert AST to Z3 string."""
         ast_type = ast.get("type", "empty")
 
@@ -263,10 +253,7 @@ class Z3ConstitutionalAdapter:
         logger.info("Initialized Z3ConstitutionalAdapter")
 
     def declare_variable(
-        self,
-        name: str,
-        z3_type: str = "Bool",
-        domain: Optional[Tuple[Any, Any]] = None
+        self, name: str, z3_type: str = "Bool", domain: Optional[Tuple[Any, Any]] = None
     ) -> Z3Variable:
         """
         Declare a Z3 variable.
@@ -287,7 +274,7 @@ class Z3ConstitutionalAdapter:
         self,
         expression: str,
         constraint_type: ConstraintType = ConstraintType.INVARIANT,
-        natural_language: str = ""
+        natural_language: str = "",
     ) -> FormalConstraint:
         """
         Add a constraint to the solver.
@@ -314,11 +301,7 @@ class Z3ConstitutionalAdapter:
         self._constraints.append(constraint)
         return constraint
 
-    def add_ltl_constraint(
-        self,
-        formula: str,
-        natural_language: str = ""
-    ) -> FormalConstraint:
+    def add_ltl_constraint(self, formula: str, natural_language: str = "") -> FormalConstraint:
         """
         Add an LTL constraint.
 
@@ -333,13 +316,10 @@ class Z3ConstitutionalAdapter:
         return self.add_constraint(
             expression=z3_expr,
             constraint_type=ConstraintType.TEMPORAL,
-            natural_language=natural_language or formula
+            natural_language=natural_language or formula,
         )
 
-    async def check_satisfiability(
-        self,
-        include_constitutional: bool = True
-    ) -> VerificationResult:
+    async def check_satisfiability(self, include_constitutional: bool = True) -> VerificationResult:
         """
         Check if constraints are satisfiable.
 
@@ -350,6 +330,7 @@ class Z3ConstitutionalAdapter:
             VerificationResult with SAT/UNSAT and model
         """
         import time
+
         start_time = time.perf_counter()
 
         result_id = f"z3-{uuid.uuid4().hex[:8]}"
@@ -381,8 +362,7 @@ class Z3ConstitutionalAdapter:
         return result
 
     async def _solve(
-        self,
-        constraints: List[FormalConstraint]
+        self, constraints: List[FormalConstraint]
     ) -> Tuple[bool, Optional[Dict[str, Any]], Optional[List[str]]]:
         """
         Solve constraints (simulated Z3).
@@ -401,7 +381,7 @@ class Z3ConstitutionalAdapter:
 
         # Check for contradictions between constraints
         for i, c1 in enumerate(constraints):
-            for c2 in constraints[i+1:]:
+            for c2 in constraints[i + 1 :]:
                 if self._are_contradictory(c1, c2):
                     return False, None, [c1.constraint_id, c2.constraint_id]
 
@@ -423,11 +403,7 @@ class Z3ConstitutionalAdapter:
 
         return True, model, None
 
-    def _are_contradictory(
-        self,
-        c1: FormalConstraint,
-        c2: FormalConstraint
-    ) -> bool:
+    def _are_contradictory(self, c1: FormalConstraint, c2: FormalConstraint) -> bool:
         """Check if two constraints are contradictory."""
         # Simple check for direct contradictions
         e1 = c1.expression.replace(" ", "")
@@ -468,11 +444,7 @@ class VeriPlanFormalVerifier:
     - OPA policy integration
     """
 
-    def __init__(
-        self,
-        opa_url: Optional[str] = None,
-        timeout_ms: float = 5000.0
-    ):
+    def __init__(self, opa_url: Optional[str] = None, timeout_ms: float = 5000.0):
         """
         Initialize VeriPlan verifier.
 
@@ -495,11 +467,7 @@ class VeriPlanFormalVerifier:
 
         logger.info(f"Initialized VeriPlanFormalVerifier opa_url={opa_url}")
 
-    async def verify_policy(
-        self,
-        policy_text: str,
-        context: Dict[str, Any]
-    ) -> VerificationResult:
+    async def verify_policy(self, policy_text: str, context: Dict[str, Any]) -> VerificationResult:
         """
         Verify a policy against formal constraints.
 
@@ -527,10 +495,7 @@ class VeriPlanFormalVerifier:
 
         # Add LTL constraints
         for constraint in ltl_constraints:
-            self._z3_adapter.add_ltl_constraint(
-                constraint["formula"],
-                constraint["description"]
-            )
+            self._z3_adapter.add_ltl_constraint(constraint["formula"], constraint["description"])
 
         # Verify
         result = await self._z3_adapter.check_satisfiability()
@@ -544,10 +509,7 @@ class VeriPlanFormalVerifier:
 
         return result
 
-    async def extract_ltl(
-        self,
-        natural_language: str
-    ) -> List[Dict[str, str]]:
+    async def extract_ltl(self, natural_language: str) -> List[Dict[str, str]]:
         """
         Extract LTL constraints from natural language.
 
@@ -580,17 +542,17 @@ class VeriPlanFormalVerifier:
                 else:
                     formula = template.format(match)
 
-                constraints.append({
-                    "formula": formula,
-                    "description": f"Extracted from: '{natural_language[:50]}...'"
-                })
+                constraints.append(
+                    {
+                        "formula": formula,
+                        "description": f"Extracted from: '{natural_language[:50]}...'",
+                    }
+                )
 
         return constraints
 
     async def check_opa_policy(
-        self,
-        policy_path: str,
-        input_data: Dict[str, Any]
+        self, policy_path: str, input_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Check policy with OPA.
@@ -617,10 +579,7 @@ class VeriPlanFormalVerifier:
         }
 
     async def verify_governance_action(
-        self,
-        action: str,
-        context: Dict[str, Any],
-        policies: List[str]
+        self, action: str, context: Dict[str, Any], policies: List[str]
     ) -> VerificationResult:
         """
         Verify a governance action against all applicable policies.

@@ -20,6 +20,11 @@ from app.core.approval_engine import (
     initialize_approval_engine,
     reset_approval_engine,
 )
+from app.core.policy_loader import (
+    get_policy_loader,
+    initialize_policy_loader,
+    close_policy_loader,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +48,18 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to initialize approval engine: {e}")
         # Continue startup even if notification providers fail
 
+    # Initialize the HITL policy loader
+    try:
+        await initialize_policy_loader()
+        policy_loader = await get_policy_loader()
+        loaded_policies = policy_loader.get_loaded_policies()
+        logger.info(
+            f"HITL policy loader initialized with {len(loaded_policies)} policies: {loaded_policies}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to initialize HITL policy loader: {e}")
+        # Continue startup but log the error
+
     # Log notification provider status
     notification_manager = get_notification_manager()
     if notification_manager.is_initialized:
@@ -58,6 +75,13 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down HITL Approvals Service")
+
+    # Close the HITL policy loader
+    try:
+        await close_policy_loader()
+        logger.info("HITL policy loader shut down")
+    except Exception as e:
+        logger.error(f"Error shutting down HITL policy loader: {e}")
 
     # Reset the approval engine and notification manager
     reset_approval_engine()
@@ -84,13 +108,25 @@ app.include_router(audit_router)
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint with notification provider status."""
+    """Health check endpoint with notification provider and policy loader status."""
     notification_manager = get_notification_manager()
 
     # Get provider health status
     provider_health = {}
     if notification_manager.is_initialized:
         provider_health = await notification_manager.health_check()
+
+    # Get policy loader status
+    policy_loader_status = {"initialized": False, "policies_loaded": 0}
+    try:
+        policy_loader = await get_policy_loader()
+        policy_loader_status = {
+            "initialized": True,
+            "policies_loaded": len(policy_loader.get_loaded_policies()),
+            "policies": policy_loader.get_loaded_policies(),
+        }
+    except Exception as e:
+        logger.warning(f"Policy loader health check failed: {e}")
 
     return {
         "status": "healthy",
@@ -101,6 +137,7 @@ async def health_check():
             "available": notification_manager.available_providers,
             "health": provider_health,
         },
+        "policy_loader": policy_loader_status,
     }
 
 
@@ -112,18 +149,30 @@ async def liveness_check():
 
 @app.get("/health/ready")
 async def readiness_check():
-    """Readiness probe for Kubernetes with notification provider check."""
+    """Readiness probe for Kubernetes with notification provider and policy loader check."""
     notification_manager = get_notification_manager()
 
     # Check if notification manager is ready
     notifications_ready = notification_manager.is_initialized
 
+    # Check if policy loader is ready
+    policy_loader_ready = False
+    try:
+        policy_loader = await get_policy_loader()
+        policy_loader_ready = len(policy_loader.get_loaded_policies()) > 0
+    except Exception:
+        policy_loader_ready = False
+
+    # Overall readiness
+    all_checks_ready = notifications_ready and policy_loader_ready
+
     # Future: Check Redis and Kafka connectivity
     return {
-        "status": "ready" if notifications_ready else "degraded",
+        "status": "ready" if all_checks_ready else "degraded",
         "service": "hitl-approvals",
         "checks": {
             "notifications": notifications_ready,
+            "policy_loader": policy_loader_ready,
         },
     }
 

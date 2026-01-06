@@ -196,16 +196,14 @@ class TestServiceCORSIntegration:
                 pytest.skip(f"Service file not found: {service_path}")
 
             # Check imports shared CORS config
-            assert self._check_uses_shared_cors_config(content), (
-                f"{service_path} should import get_cors_config from "
-                "shared.security.cors_config"
-            )
+            assert self._check_uses_shared_cors_config(
+                content
+            ), f"{service_path} should import get_cors_config from shared.security.cors_config"
 
             # Check uses get_cors_config() with middleware
-            assert self._check_uses_cors_middleware(content), (
-                f"{service_path} should use "
-                "app.add_middleware(CORSMiddleware, **get_cors_config())"
-            )
+            assert self._check_uses_cors_middleware(
+                content
+            ), f"{service_path} should use app.add_middleware(CORSMiddleware, **get_cors_config())"
 
     def test_inline_services_have_production_validation(self):
         """Verify services with inline CORS have proper production validation."""
@@ -217,22 +215,19 @@ class TestServiceCORSIntegration:
             checks = self._check_inline_cors_validation(content)
 
             # All inline services must have environment checking
-            assert checks["has_environment_check"], (
-                f"{service_path} must detect environment "
-                "(e.g., ENVIRONMENT = os.getenv(...))"
-            )
+            assert checks[
+                "has_environment_check"
+            ], f"{service_path} must detect environment (e.g., ENVIRONMENT = os.getenv(...))"
 
             # Must block wildcards in production
-            assert checks["blocks_wildcard_in_production"], (
-                f"{service_path} must validate and block wildcard origins in "
-                "production environment"
-            )
+            assert checks[
+                "blocks_wildcard_in_production"
+            ], f"{service_path} must validate and block wildcard origins in production environment"
 
             # Should require explicit origins in production
-            assert checks["requires_explicit_origins_in_production"], (
-                f"{service_path} should require explicit CORS_ORIGINS in "
-                "production environment"
-            )
+            assert checks[
+                "requires_explicit_origins_in_production"
+            ], f"{service_path} should require explicit CORS_ORIGINS in production environment"
 
     def test_shared_cors_module_blocks_wildcard_in_production(self, monkeypatch):
         """Test that shared CORS module blocks wildcards in production."""
@@ -266,9 +261,7 @@ class TestServiceCORSIntegration:
                     environment=CORSEnvironment.PRODUCTION,
                 )
 
-            assert "Wildcard origins not allowed in production" in str(
-                exc_info.value
-            )
+            assert "Wildcard origins not allowed in production" in str(exc_info.value)
         finally:
             sys.path.remove(str(acgs2_core_path))
 
@@ -333,9 +326,7 @@ class TestServiceCORSIntegration:
             # Find CORS_ORIGINS lines
             for line in env_content.split("\n"):
                 if line.strip().startswith("CORS_ORIGINS="):
-                    assert "*" not in line, (
-                        f".env.dev contains wildcard CORS: {line}"
-                    )
+                    assert "*" not in line, f".env.dev contains wildcard CORS: {line}"
 
         # Check docker-compose.dev.yml
         docker_compose_path = repo_root / "docker-compose.dev.yml"
@@ -374,9 +365,7 @@ class TestServiceCORSIntegration:
                 cors_found = True
 
                 # Should not contain wildcard
-                assert "*" not in line, (
-                    ".env.production should not contain wildcard CORS"
-                )
+                assert "*" not in line, ".env.production should not contain wildcard CORS"
 
                 # Should use HTTPS in production
                 if not line.startswith("#"):  # Not a comment
@@ -384,9 +373,9 @@ class TestServiceCORSIntegration:
                     for origin in origins.split(","):
                         origin = origin.strip()
                         if origin and not origin.startswith("#"):
-                            assert origin.startswith("https://"), (
-                                f".env.production should use HTTPS origins: {origin}"
-                            )
+                            assert origin.startswith(
+                                "https://"
+                            ), f".env.production should use HTTPS origins: {origin}"
 
         assert cors_found, ".env.production should define CORS_ORIGINS"
 
@@ -402,9 +391,7 @@ class TestInlineServiceCORSBehavior:
         monkeypatch.delenv("APP_ENV", raising=False)
         return monkeypatch
 
-    def test_integration_service_blocks_wildcard_in_production(
-        self, mock_environment
-    ):
+    def test_integration_service_blocks_wildcard_in_production(self, mock_environment):
         """Test integration-service blocks wildcard in production."""
         import sys
         from pathlib import Path
@@ -437,9 +424,7 @@ class TestInlineServiceCORSBehavior:
             if "src.main" in sys.modules:
                 del sys.modules["src.main"]
 
-    def test_integration_service_allows_localhost_in_development(
-        self, mock_environment
-    ):
+    def test_integration_service_allows_localhost_in_development(self, mock_environment):
         """Test integration-service allows localhost in development."""
         import sys
 
@@ -495,9 +480,7 @@ class TestConstitutionalCompliance:
         test_file_path = Path(__file__)
         content = test_file_path.read_text()
 
-        assert "cdd01ef066bc6cf2" in content, (
-            "Test file should include constitutional hash"
-        )
+        assert "cdd01ef066bc6cf2" in content, "Test file should include constitutional hash"
 
 
 if __name__ == "__main__":

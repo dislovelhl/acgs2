@@ -89,11 +89,11 @@ sequenceDiagram
     participant A as Agent
     participant IDP as Identity Provider (Policy Registry)
     participant B as Enhanced Agent Bus
-    
+
     A->>IDP: 请求身份令牌 (提供 Agent 凭证)
     IDP->>IDP: 验证凭证 & 检查宪法哈希
     IDP-->>A: 返回 JWT (SVID)
-    
+
     A->>B: 发送消息 (携带 JWT)
     B->>B: 验证 JWT 签名 & 租户隔离
     B->>B: 记录 OTel 遥测数据

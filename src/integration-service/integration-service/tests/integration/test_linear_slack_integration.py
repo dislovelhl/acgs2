@@ -30,7 +30,6 @@ from src.integrations.linear.slack_notifier import (
     SlackRateLimitError,
 )
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -98,9 +97,7 @@ async def mock_dedup_manager(mock_redis_client):
 def mock_slack_client():
     """Create mock Slack AsyncWebClient."""
     client = MagicMock()
-    client.chat_postMessage = AsyncMock(
-        return_value={"ok": True, "ts": "1234567890.123456"}
-    )
+    client.chat_postMessage = AsyncMock(return_value={"ok": True, "ts": "1234567890.123456"})
     return client
 
 
@@ -393,9 +390,7 @@ async def test_slack_not_configured_graceful_degradation(
     unconfigured_slack_config, mock_dedup_manager, sample_linear_issue
 ):
     """Test graceful degradation when Slack is not configured."""
-    notifier = SlackNotifier(
-        config=unconfigured_slack_config, dedup_manager=mock_dedup_manager
-    )
+    notifier = SlackNotifier(config=unconfigured_slack_config, dedup_manager=mock_dedup_manager)
 
     # Should raise SlackNotConfiguredError when trying to send
     with pytest.raises(SlackNotConfiguredError):

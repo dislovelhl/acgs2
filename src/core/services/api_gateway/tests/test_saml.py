@@ -17,7 +17,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 from main import app
 from routes.sso import get_saml_handler
 from src.core.shared.auth.saml_config import (
@@ -33,6 +32,7 @@ from src.core.shared.auth.saml_handler import (
     SAMLUserInfo,
     SAMLValidationError,
 )
+from starlette.requests import Request
 
 # Constitutional hash constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -212,7 +212,7 @@ def mock_saml_handler_dependency(client):
     """Fixture to override the SAML handler dependency with a mock."""
     mock_handler = MockSAMLHandler()
 
-    def override_get_saml_handler(request):
+    def override_get_saml_handler(req: Request):
         return mock_handler
 
     app.dependency_overrides[get_saml_handler] = override_get_saml_handler
@@ -812,7 +812,7 @@ class TestSAMLHandlerMethods:
         )
 
         assert request_id is not None
-        assert request_id in mock_handler._outstanding_requests
+        assert request_id in mock_handler._tracker._requests
 
     def test_verify_and_remove_request_success(self, mock_handler):
         """Test verifying and removing a valid request."""
@@ -821,7 +821,7 @@ class TestSAMLHandlerMethods:
         )
 
         assert mock_handler.verify_and_remove_request(request_id) is True
-        assert request_id not in mock_handler._outstanding_requests
+        assert request_id not in mock_handler._tracker._requests
 
     def test_verify_and_remove_request_unknown(self, mock_handler):
         """Test that unknown request ID returns False."""
@@ -831,7 +831,7 @@ class TestSAMLHandlerMethods:
         """Test clearing expired outstanding requests."""
         # Add a request that's expired
         request_id = "_saml_" + secrets.token_hex(16)
-        mock_handler._outstanding_requests[request_id] = {
+        mock_handler._tracker._requests[request_id] = {
             "idp_name": "okta",
             "relay_state": None,
             "created_at": datetime.now(timezone.utc) - timedelta(hours=1),
@@ -841,7 +841,7 @@ class TestSAMLHandlerMethods:
         cleared = mock_handler.clear_expired_requests()
 
         assert cleared >= 1
-        assert request_id not in mock_handler._outstanding_requests
+        assert request_id not in mock_handler._tracker._requests
 
     def test_get_outstanding_requests(self, mock_handler):
         """Test getting all outstanding requests."""

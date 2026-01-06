@@ -22,7 +22,6 @@ import httpx
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 
 from ..models.import_models import (
-    DuplicateHandling,
     ImportedItem,
     ImportProgress,
     PreviewItem,
@@ -44,12 +43,13 @@ class ServiceNowAuthType(str):
 class ServiceNowImportConfig(BaseModel):
     """Configuration specific to ServiceNow import operations."""
 
-    instance: str = Field(..., description="ServiceNow instance (e.g., 'your-instance.service-now.com')")
+    instance: str = Field(
+        ..., description="ServiceNow instance (e.g., 'your-instance.service-now.com')"
+    )
 
     # Authentication
     auth_type: str = Field(
-        default=ServiceNowAuthType.BASIC,
-        description="Authentication type (basic or oauth)"
+        default=ServiceNowAuthType.BASIC, description="Authentication type (basic or oauth)"
     )
     username: Optional[str] = Field(None, description="Username for basic authentication")
     password: Optional[SecretStr] = Field(None, description="Password for basic authentication")
@@ -59,21 +59,18 @@ class ServiceNowImportConfig(BaseModel):
     # Import configuration
     table: str = Field(
         default="incident",
-        description="ServiceNow table to import from (e.g., 'incident', 'change_request')"
+        description="ServiceNow table to import from (e.g., 'incident', 'change_request')",
     )
 
     # Optional filters
     query_filter: Optional[str] = Field(
-        None,
-        description="Custom sysparm_query filter for advanced filtering"
+        None, description="Custom sysparm_query filter for advanced filtering"
     )
     states: List[str] = Field(
-        default_factory=list,
-        description="Filter by states (e.g., ['1', '2'] for New, In Progress)"
+        default_factory=list, description="Filter by states (e.g., ['1', '2'] for New, In Progress)"
     )
     assignment_groups: List[str] = Field(
-        default_factory=list,
-        description="Filter by assignment groups"
+        default_factory=list, description="Filter by assignment groups"
     )
 
     @field_validator("instance")
@@ -197,10 +194,7 @@ class ServiceNowImportService:
         }
 
         if self.config.auth_type == ServiceNowAuthType.BASIC:
-            credentials = (
-                f"{self.config.username}:"
-                f"{self.config.password.get_secret_value()}"
-            )
+            credentials = f"{self.config.username}:{self.config.password.get_secret_value()}"
             encoded = base64.b64encode(credentials.encode()).decode()
             headers["Authorization"] = f"Basic {encoded}"
         else:
@@ -227,8 +221,6 @@ class ServiceNowImportService:
             if datetime.now(timezone.utc) < self._token_expires_at:
                 return True
 
-        logger.debug("Refreshing OAuth token for ServiceNow")
-
         try:
             client = await self._get_client()
             token_url = f"{self.base_url}{self.OAUTH_TOKEN_PATH}"
@@ -249,8 +241,10 @@ class ServiceNowImportService:
                 # Set expiry with 5 minute buffer
                 from datetime import timedelta
 
-                self._token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in - 300)
-                logger.debug("OAuth token refreshed for ServiceNow")
+                self._token_expires_at = datetime.now(timezone.utc) + timedelta(
+                    seconds=expires_in - 300
+                )
+
                 return True
             else:
                 logger.error(f"Failed to refresh OAuth token: HTTP {response.status_code}")
@@ -276,7 +270,6 @@ class ServiceNowImportService:
         Returns:
             Tuple of (success, error_message)
         """
-        logger.debug(f"Testing ServiceNow connection to {self.config.instance}")
 
         try:
             client = await self._get_client()
@@ -345,8 +338,7 @@ class ServiceNowImportService:
             Exception: If preview fails
         """
         logger.debug(
-            f"Fetching ServiceNow preview for table {self.config.table} "
-            f"(max {max_items} items)"
+            f"Fetching ServiceNow preview for table {self.config.table} (max {max_items} items)"
         )
 
         try:
@@ -361,9 +353,7 @@ class ServiceNowImportService:
             )
 
             # Transform to preview items
-            preview_items = [
-                self._transform_to_preview_item(record) for record in records
-            ]
+            preview_items = [self._transform_to_preview_item(record) for record in records]
 
             # Collect statistics
             item_type_counts: Dict[str, int] = {}
@@ -381,9 +371,7 @@ class ServiceNowImportService:
             # Collect warnings
             warnings = []
             if total > 1000:
-                warnings.append(
-                    f"Large dataset ({total} items) will be processed in batches"
-                )
+                warnings.append(f"Large dataset ({total} items) will be processed in batches")
 
             logger.info(
                 f"ServiceNow preview successful: {len(preview_items)} items "
@@ -497,9 +485,7 @@ class ServiceNowImportService:
                 progress.failed_items += current_batch_size
 
             # Update progress
-            progress.percentage = (
-                (progress.processed_items / total * 100.0) if total > 0 else 100.0
-            )
+            progress.percentage = (progress.processed_items / total * 100.0) if total > 0 else 100.0
 
             # Call progress callback if provided
             if progress_callback:
@@ -559,7 +545,6 @@ class ServiceNowImportService:
         # Join with ^ (AND operator in ServiceNow)
         query = "^".join(query_parts) if query_parts else ""
 
-        logger.debug(f"Built ServiceNow query: {query}")
         return query
 
     async def _fetch_records(
@@ -614,10 +599,6 @@ class ServiceNowImportService:
             data = response.json()
             records = data.get("result", [])
 
-            logger.debug(
-                f"Fetched {len(records)} records (total available: {total})"
-            )
-
             return records, total
 
         elif response.status_code == 401:
@@ -655,17 +636,13 @@ class ServiceNowImportService:
 
         if record.get("sys_created_on"):
             try:
-                created_at = datetime.fromisoformat(
-                    record["sys_created_on"].replace(" ", "T")
-                )
+                created_at = datetime.fromisoformat(record["sys_created_on"].replace(" ", "T"))
             except Exception:
                 pass
 
         if record.get("sys_updated_on"):
             try:
-                updated_at = datetime.fromisoformat(
-                    record["sys_updated_on"].replace(" ", "T")
-                )
+                updated_at = datetime.fromisoformat(record["sys_updated_on"].replace(" ", "T"))
             except Exception:
                 pass
 
@@ -733,7 +710,6 @@ class ServiceNowImportService:
             self._client = None
         self._access_token = None
         self._token_expires_at = None
-        logger.debug("ServiceNow import service closed")
 
 
 async def create_servicenow_import_service(

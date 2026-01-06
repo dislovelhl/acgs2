@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class ProcessingMode(Enum):
     """Processing modes for the hybrid processor."""
+
     FAST = "fast"  # Mamba-only for speed
     PRECISE = "precise"  # Include attention for accuracy
     BALANCED = "balanced"  # Adaptive selection
@@ -38,6 +39,7 @@ class ProcessingMode(Enum):
 @dataclass
 class MambaConfig:
     """Configuration for Mamba-2 layers."""
+
     d_model: int = 512
     d_state: int = 128
     d_conv: int = 4
@@ -52,6 +54,7 @@ class MambaConfig:
 @dataclass
 class AttentionConfig:
     """Configuration for shared attention layer."""
+
     d_model: int = 512
     num_heads: int = 8
     dropout: float = 0.1
@@ -61,6 +64,7 @@ class AttentionConfig:
 @dataclass
 class ProcessingResult:
     """Result from hybrid processing."""
+
     output: JSONValue
     processing_time_ms: float
     mode_used: ProcessingMode
@@ -99,12 +103,8 @@ class MambaLayer:
         # Running state for sequential processing
         self._hidden_state = None
 
-        logger.debug(f"Initialized MambaLayer {layer_idx} with d_model={self.d_model}")
-
     async def forward(
-        self,
-        x: JSONValue,
-        state: Optional[JSONDict] = None
+        self, x: JSONValue, state: Optional[JSONDict] = None
     ) -> Tuple[JSONValue, JSONDict]:
         """
         Forward pass through Mamba layer.
@@ -174,13 +174,11 @@ class SharedAttentionLayer:
         self._W_v = None
         self._W_o = None
 
-        logger.debug(f"Initialized SharedAttentionLayer with {self.num_heads} heads")
-
     async def forward(
         self,
         x: JSONValue,
         mask: Optional[JSONDict] = None,
-        critical_positions: Optional[List[int]] = None
+        critical_positions: Optional[List[int]] = None,
     ) -> JSONValue:
         """
         Forward pass through attention layer.
@@ -214,11 +212,7 @@ class SharedAttentionLayer:
 
         return x
 
-    async def _focused_attention(
-        self,
-        x: JSONValue,
-        critical_positions: List[int]
-    ) -> JSONValue:
+    async def _focused_attention(self, x: JSONValue, critical_positions: List[int]) -> JSONValue:
         """Apply focused attention to critical positions."""
         # Boost attention weights for critical positions
         return x
@@ -241,7 +235,7 @@ class ConstitutionalMambaHybrid:
         self,
         mamba_config: Optional[MambaConfig] = None,
         attention_config: Optional[AttentionConfig] = None,
-        mode: ProcessingMode = ProcessingMode.BALANCED
+        mode: ProcessingMode = ProcessingMode.BALANCED,
     ):
         """
         Initialize the Constitutional Mamba Hybrid processor.
@@ -258,8 +252,7 @@ class ConstitutionalMambaHybrid:
 
         # Initialize Mamba layers (6:1 ratio as per Zamba paper)
         self.mamba_layers: List[MambaLayer] = [
-            MambaLayer(self.mamba_config, i)
-            for i in range(self.mamba_config.num_layers)
+            MambaLayer(self.mamba_config, i) for i in range(self.mamba_config.num_layers)
         ]
 
         # Single shared attention layer
@@ -287,7 +280,7 @@ class ConstitutionalMambaHybrid:
         self,
         x: JSONValue,
         critical_positions: Optional[List[int]] = None,
-        mode: Optional[ProcessingMode] = None
+        mode: Optional[ProcessingMode] = None,
     ) -> ProcessingResult:
         """
         Process input through the hybrid architecture.
@@ -330,16 +323,14 @@ class ConstitutionalMambaHybrid:
             # Interleave attention at strategic points (after layers 2, 4)
             if effective_mode != ProcessingMode.FAST and i in [2, 4]:
                 current = await self.shared_attention.forward(
-                    current,
-                    critical_positions=critical_positions
+                    current, critical_positions=critical_positions
                 )
 
         # Final attention pass for precise mode
         attention_applied = False
         if effective_mode == ProcessingMode.PRECISE:
             current = await self.shared_attention.forward(
-                current,
-                critical_positions=critical_positions
+                current, critical_positions=critical_positions
             )
             attention_applied = True
             self._stats["attention_applied"] += 1
@@ -366,9 +357,7 @@ class ConstitutionalMambaHybrid:
         )
 
     async def _prepare_jrt_context(
-        self,
-        x: JSONValue,
-        critical_positions: Optional[List[int]]
+        self, x: JSONValue, critical_positions: Optional[List[int]]
     ) -> JSONValue:
         """
         JRT-style context preparation.
@@ -385,7 +374,7 @@ class ConstitutionalMambaHybrid:
 
     def _compute_cache_key(self, x: JSONValue) -> str:
         """Compute cache key for input."""
-        content = str(x).encode('utf-8')
+        content = str(x).encode("utf-8")
         return hashlib.sha256(content).hexdigest()[:16]
 
     def _get_context_length(self, x: JSONValue) -> int:
@@ -442,16 +431,10 @@ class MambaHybridFactory:
     def create_high_performance() -> ConstitutionalMambaHybrid:
         """Create high-performance configuration (less accurate)."""
         config = MambaConfig(d_model=256, num_layers=4)
-        return ConstitutionalMambaHybrid(
-            mamba_config=config,
-            mode=ProcessingMode.FAST
-        )
+        return ConstitutionalMambaHybrid(mamba_config=config, mode=ProcessingMode.FAST)
 
     @staticmethod
     def create_high_accuracy() -> ConstitutionalMambaHybrid:
         """Create high-accuracy configuration (slower)."""
         config = MambaConfig(d_model=1024, num_layers=8)
-        return ConstitutionalMambaHybrid(
-            mamba_config=config,
-            mode=ProcessingMode.PRECISE
-        )
+        return ConstitutionalMambaHybrid(mamba_config=config, mode=ProcessingMode.PRECISE)

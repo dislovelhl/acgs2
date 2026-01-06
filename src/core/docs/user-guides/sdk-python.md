@@ -26,10 +26,10 @@ async def main():
     try:
         bus = create_bus(redis_url="redis://localhost:6379")
         await bus.start()
-        
+
         # Register agent
         await bus.register_agent("agent-001", capabilities=["validate"])
-        
+
         # Send message with new validators
         message = {
             "from_agent": "agent-001",
@@ -37,13 +37,13 @@ async def main():
             "content": {"action": "validate"},
             "constitutional_hash": CONSTITUTIONAL_HASH
         }
-        
+
         result = await bus.send_message(message)
         if result["is_valid"]:
             print("Message sent")
         else:
             print(f"Validation errors: {result['errors']}")
-            
+
     except ConstitutionalHashMismatchError as e:
         print(f"Hash mismatch: {e}")
     except AgentBusError as e:

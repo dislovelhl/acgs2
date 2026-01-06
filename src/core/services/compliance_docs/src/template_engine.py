@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from os import getenv
 from pathlib import Path
-from typing import Any, Optional, Dict, List
+from typing import Dict, Optional, Union
 
 from jinja2 import (
     Environment,
@@ -20,11 +20,15 @@ from jinja2 import (
 
 # Internal imports
 try:
-    from src.core.shared.types import JSONValue, TemplateContext, JSONDict
+    from src.core.shared.types import JSONDict, JSONValue, TemplateContext
 except ImportError:
-    JSONValue = Any
-    TemplateContext = Dict[str, Any]
+    from typing import Any, Dict, List, Union
+
+    JSONPrimitive = Union[str, int, float, bool, None]
     JSONDict = Dict[str, Any]
+    JSONList = List[Any]
+    JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
+    TemplateContext = Dict[str, JSONValue]
 
 # Default templates path relative to service directory
 _DEFAULT_TEMPLATES_PATH = Path(__file__).parent / "templates"
@@ -43,7 +47,7 @@ def _get_templates_path() -> Path:
     return _DEFAULT_TEMPLATES_PATH
 
 
-def _format_date(value: datetime, format_str: str = "%Y-%m-%d") -> str:
+def _format_date(value: Union[datetime, str, None], format_str: str = "%Y-%m-%d") -> str:
     """
     Format a datetime object to string.
 
@@ -61,7 +65,9 @@ def _format_date(value: datetime, format_str: str = "%Y-%m-%d") -> str:
     return value.strftime(format_str)
 
 
-def _format_datetime(value: datetime, format_str: str = "%Y-%m-%d %H:%M:%S UTC") -> str:
+def _format_datetime(
+    value: Union[datetime, str, None], format_str: str = "%Y-%m-%d %H:%M:%S UTC"
+) -> str:
     """
     Format a datetime object with time to string.
 
@@ -285,7 +291,9 @@ def render_template(
     render_context.setdefault("generated_at", _now_utc())
     render_context.setdefault("generator_version", "1.0.0")
 
-    return template.render(**render_context)
+    from typing import cast
+
+    return cast(str, template.render(**render_context))
 
 
 def template_exists(template_name: str, framework: Optional[str] = None) -> bool:
@@ -330,7 +338,9 @@ def list_templates(framework: Optional[str] = None) -> list[str]:
         prefix = f"{framework}/"
         return [t for t in all_templates if t.startswith(prefix)]
 
-    return all_templates
+    from typing import cast
+
+    return cast(list[str], all_templates)
 
 
 def clear_template_cache() -> None:

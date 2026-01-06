@@ -15,7 +15,7 @@ Features:
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote
 
@@ -23,7 +23,6 @@ import httpx
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
 from ..models.import_models import (
-    DuplicateHandling,
     ImportedItem,
     ImportProgress,
     PreviewItem,
@@ -42,25 +41,17 @@ class GitLabImportConfig(BaseModel):
     project: str = Field(..., description="Project path (e.g., 'group/project') or ID")
     base_url: str = Field(
         default="https://gitlab.com",
-        description="GitLab instance URL (default: https://gitlab.com)"
+        description="GitLab instance URL (default: https://gitlab.com)",
     )
 
     # Optional filters
-    state: str = Field(
-        default="all",
-        description="Filter by state: 'opened', 'closed', or 'all'"
-    )
+    state: str = Field(default="all", description="Filter by state: 'opened', 'closed', or 'all'")
     labels: List[str] = Field(
-        default_factory=list,
-        description="Filter by labels (e.g., ['bug', 'enhancement'])"
+        default_factory=list, description="Filter by labels (e.g., ['bug', 'enhancement'])"
     )
-    milestone: Optional[str] = Field(
-        None,
-        description="Filter by milestone title"
-    )
+    milestone: Optional[str] = Field(None, description="Filter by milestone title")
     scope: str = Field(
-        default="all",
-        description="Filter by scope: 'created_by_me', 'assigned_to_me', or 'all'"
+        default="all", description="Filter by scope: 'created_by_me', 'assigned_to_me', or 'all'"
     )
 
     @field_validator("project")
@@ -203,7 +194,6 @@ class GitLabImportService:
         Returns:
             Tuple of (success, error_message)
         """
-        logger.debug(f"Testing GitLab connection for project {self.config.project}")
 
         try:
             client = await self._get_client()
@@ -293,8 +283,7 @@ class GitLabImportService:
             Exception: If preview fails
         """
         logger.debug(
-            f"Fetching GitLab preview for project {self.config.project} "
-            f"(max {max_items} items)"
+            f"Fetching GitLab preview for project {self.config.project} (max {max_items} items)"
         )
 
         try:
@@ -309,9 +298,7 @@ class GitLabImportService:
             )
 
             # Transform to preview items
-            preview_items = [
-                self._transform_to_preview_item(issue) for issue in issues
-            ]
+            preview_items = [self._transform_to_preview_item(issue) for issue in issues]
 
             # Collect statistics
             item_type_counts: Dict[str, int] = {}
@@ -329,13 +316,10 @@ class GitLabImportService:
             # Collect warnings
             warnings = []
             if total > 1000:
-                warnings.append(
-                    f"Large dataset ({total} items) will be processed in batches"
-                )
+                warnings.append(f"Large dataset ({total} items) will be processed in batches")
 
             logger.info(
-                f"GitLab preview successful: {len(preview_items)} items "
-                f"({total} total available)"
+                f"GitLab preview successful: {len(preview_items)} items ({total} total available)"
             )
 
             return PreviewResponse(
@@ -450,9 +434,7 @@ class GitLabImportService:
                 progress.failed_items += current_batch_size
 
             # Update progress
-            progress.percentage = (
-                (progress.processed_items / total * 100.0) if total > 0 else 100.0
-            )
+            progress.percentage = (progress.processed_items / total * 100.0) if total > 0 else 100.0
 
             # Call progress callback if provided
             if progress_callback:
@@ -527,7 +509,6 @@ class GitLabImportService:
         params["order_by"] = "created_at"
         params["sort"] = "asc"
 
-        logger.debug(f"Built GitLab query params: {params}")
         return params
 
     async def _fetch_issues(
@@ -570,10 +551,6 @@ class GitLabImportService:
             # GitLab provides total count in X-Total header
             total = int(response.headers.get("X-Total", len(issues)))
 
-            logger.debug(
-                f"Fetched {len(issues)} issues (total: {total})"
-            )
-
             return issues, total
 
         elif response.status_code == 401:
@@ -585,9 +562,7 @@ class GitLabImportService:
                 remaining = response.headers.get("RateLimit-Remaining", "0")
                 if remaining == "0":
                     reset_time = response.headers.get("RateLimit-Reset", "unknown")
-                    raise Exception(
-                        f"GitLab API rate limit exceeded. Resets at: {reset_time}"
-                    )
+                    raise Exception(f"GitLab API rate limit exceeded. Resets at: {reset_time}")
             raise Exception("Access denied - check project permissions and token scopes")
 
         elif response.status_code == 404:
@@ -624,17 +599,13 @@ class GitLabImportService:
 
         if issue.get("created_at"):
             try:
-                created_at = datetime.fromisoformat(
-                    issue["created_at"].replace("Z", "+00:00")
-                )
+                created_at = datetime.fromisoformat(issue["created_at"].replace("Z", "+00:00"))
             except Exception:
                 pass
 
         if issue.get("updated_at"):
             try:
-                updated_at = datetime.fromisoformat(
-                    issue["updated_at"].replace("Z", "+00:00")
-                )
+                updated_at = datetime.fromisoformat(issue["updated_at"].replace("Z", "+00:00"))
             except Exception:
                 pass
 
@@ -667,7 +638,9 @@ class GitLabImportService:
             metadata={
                 "author": issue.get("author", {}).get("username") if issue.get("author") else None,
                 "user_notes_count": issue.get("user_notes_count", 0),
-                "milestone": issue.get("milestone", {}).get("title") if issue.get("milestone") else None,
+                "milestone": issue.get("milestone", {}).get("title")
+                if issue.get("milestone")
+                else None,
                 "web_url": issue.get("web_url"),
                 "confidential": issue.get("confidential", False),
                 "issue_type": issue.get("issue_type"),
@@ -703,7 +676,6 @@ class GitLabImportService:
         if self._client is not None:
             await self._client.aclose()
             self._client = None
-        logger.debug("GitLab import service closed")
 
 
 async def create_gitlab_import_service(

@@ -206,7 +206,6 @@ app.add_middleware(
     allow_headers=["Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
-
 # API Endpoints
 
 
@@ -452,7 +451,6 @@ frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 if os.path.exists(frontend_path):
     app.mount("/playground", StaticFiles(directory=frontend_path, html=True), name="playground")
     logger.info(f"Mounted frontend from {frontend_path}")
-
 
 # Export for uvicorn
 __all__ = ["app"]

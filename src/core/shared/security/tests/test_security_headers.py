@@ -899,9 +899,7 @@ class TestSecurityHeadersEdgeCases:
     def test_very_long_csp_directive_list(self):
         """Test CSP with many sources in a directive."""
         sources = ["'self'"] + [f"https://cdn{i}.example.com" for i in range(50)]
-        config = SecurityHeadersConfig(
-            custom_csp_directives={"script-src": sources}
-        )
+        config = SecurityHeadersConfig(custom_csp_directives={"script-src": sources})
         csp = config.get_csp_header_value()
 
         # Should contain all sources

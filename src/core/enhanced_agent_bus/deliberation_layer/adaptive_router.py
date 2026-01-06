@@ -8,6 +8,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -31,6 +32,7 @@ except (ImportError, ValueError):
         from deliberation_queue import DeliberationStatus, get_deliberation_queue  # type: ignore
         from impact_scorer import calculate_message_impact  # type: ignore
         from intent_classifier import IntentClassifier, IntentType  # type: ignore
+
         try:
             from ..config import BusConfiguration
         except (ImportError, ValueError):
@@ -47,7 +49,6 @@ except (ImportError, ValueError):
                 from config import BusConfiguration  # type: ignore
             except ImportError:
                 BusConfiguration = None
-
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +138,9 @@ class AdaptiveRouter:
             from .impact_scorer import get_impact_scorer
 
             scorer = get_impact_scorer()
-            message.impact_score = await scorer.calculate_impact_score_async(message.content, context)
+            message.impact_score = await scorer.calculate_impact_score_async(
+                message.content, context
+            )
             logger.debug(
                 f"Calculated impact score {message.impact_score:.3f} for message {message.message_id}"
             )
@@ -147,7 +150,6 @@ class AdaptiveRouter:
 
         # Start SDPC Phase 1: Intent Classification (Async)
         intent = await self.intent_classifier.classify_async(str(message.content))
-        logger.debug(f"Message {message.message_id} classified as {intent.value}")
 
         # Intent-driven threshold adjustments
         dynamic_threshold = self.impact_threshold

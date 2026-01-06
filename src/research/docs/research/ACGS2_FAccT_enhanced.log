@@ -536,7 +536,7 @@ LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
 ne 397.
 LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 398.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
-(Font)                  OT1/cmr/m/it --> OT1/LinuxLibertineT-TLF/m/it on input 
+(Font)                  OT1/cmr/m/it --> OT1/LinuxLibertineT-TLF/m/it on input
 line 398.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
 (Font)                  OT1/cmr/bx/it --> OT1/LinuxLibertineT-TLF/m/it on input
@@ -548,10 +548,10 @@ LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
 (Font)                  OT1/cmtt/m/n --> T1/zi4/m/n on input line 399.
 LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 401.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
-(Font)                  OT1/cmr/bx/n --> OT1/LinuxLibertineT-TLF/sb/n on input 
+(Font)                  OT1/cmr/bx/n --> OT1/LinuxLibertineT-TLF/sb/n on input
 line 401.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
-(Font)                  OT1/cmr/bx/n --> OT1/LinuxLibertineT-TLF/sb/n on input 
+(Font)                  OT1/cmr/bx/n --> OT1/LinuxLibertineT-TLF/sb/n on input
 line 401.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
 (Font)                  OT1/LinuxLibertineT-TLF/m/it --> OT1/LinuxLibertineT-TL
@@ -700,7 +700,7 @@ Package: fancyhdr 2022/11/09 v4.1 Extensive control of page headers and footers
 \f@nch@O@orf=\skip75
 )
 Special comment 'acks'
-LaTeX Font Info:    Trying to load font information for T1+LinuxLibertineT-TLF 
+LaTeX Font Info:    Trying to load font information for T1+LinuxLibertineT-TLF
 on input line 3510.
 
 (/usr/share/texlive/texmf-dist/tex/latex/libertine/T1LinuxLibertineT-TLF.fd
@@ -717,7 +717,7 @@ nment
 \c@algorithm=\count312
 )
 (/usr/share/texlive/texmf-dist/tex/latex/algorithmicx/algpseudocode.sty
-Package: algpseudocode 
+Package: algpseudocode
 
 (/usr/share/texlive/texmf-dist/tex/latex/algorithmicx/algorithmicx.sty
 Package: algorithmicx 2005/04/27 v1.2 Algorithmicx
@@ -1281,7 +1281,7 @@ LaTeX Font Info:    ... okay on input line 60.
 LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 60.
 LaTeX Font Info:    ... okay on input line 60.
 LaTeX Font Info:    Checking defaults for U/ntxexa/m/n on input line 60.
-LaTeX Font Info:    Trying to load font information for U+ntxexa on input line 
+LaTeX Font Info:    Trying to load font information for U+ntxexa on input line
 60.
 
 (/usr/share/texlive/texmf-dist/tex/latex/newtx/untxexa.fd
@@ -1337,19 +1337,19 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 60.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-LaTeX Font Info:    Trying to load font information for U+ntxmia on input line 
+LaTeX Font Info:    Trying to load font information for U+ntxmia on input line
 60.
 
 (/usr/share/texlive/texmf-dist/tex/latex/newtx/untxmia.fd
 File: untxmia.fd 2018/04/14 Fontinst v1.933 font definitions for U/ntxmia.
 )
-LaTeX Font Info:    Trying to load font information for U+ntxsym on input line 
+LaTeX Font Info:    Trying to load font information for U+ntxsym on input line
 60.
 
 (/usr/share/texlive/texmf-dist/tex/latex/newtx/untxsym.fd
 File: untxsym.fd 2023/08/16 Fontinst v1.933 font definitions for U/ntxsym.
 )
-LaTeX Font Info:    Trying to load font information for U+ntxsyc on input line 
+LaTeX Font Info:    Trying to load font information for U+ntxsyc on input line
 60.
 
 (/usr/share/texlive/texmf-dist/tex/latex/newtx/untxsyc.fd
@@ -1413,7 +1413,7 @@ e
 * paper: custom
 * layout: <same size as paper>
 * layoutoffset:(h,v)=(0.0pt,0.0pt)
-* modes: includehead includefoot twoside heightrounded 
+* modes: includehead includefoot twoside heightrounded
 * h-part:(L,W,R)=(46.0pt, 395.8225pt, 46.0pt)
 * v-part:(T,H,B)=(58.0pt, 620.7pt, 44.0pt)
 * \paperwidth=487.8225pt
@@ -1506,8 +1506,8 @@ Overfull \hbox (9.78984pt too wide) in paragraph at lines 115--116
  []
 
 ! Undefined control sequence.
-<recently read> \protocoladherence 
-                                   
+<recently read> \protocoladherence
+
 l.117 ...{\protocoladherence{} protocol adherence}
                                                    and \textbf{97.0\% autono...
 The control sequence at the end of the top line
@@ -1547,7 +1547,7 @@ tineT-TLF/m/n/10 (-20) Re-cent work in par-tic-i-pa-tory AI de-sign [[], []] em
  []
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1556,7 +1556,7 @@ Package fancyhdr Warning: \headheight is too small (14.0pt):
 
 [3.3]
 Overfull \hbox (21.89693pt too wide) in paragraph at lines 178--188
- [][] 
+ [][]
  []
 
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/sc' will be
@@ -1575,7 +1575,7 @@ LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/b/it' will be
 (Font)              scaled to size 10.0pt on input line 244.
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1588,7 +1588,7 @@ LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/it' will be
 (Font)              scaled to size 10.0pt on input line 342.
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1635,14 +1635,14 @@ Overfull \hbox (20.46324pt too wide) in paragraph at lines 492--494
 \T1/LinuxLibertineT-TLF/m/n/10 (-20) All con-sti-tu-tional op-er-a-tions are va
 l-i-dated against hash \T1/zi4/m/n/10 cdd01ef066bc6cf2\T1/LinuxLibertineT-TLF/m
 /n/10 (-20) : (de-fined as SHA256($\LMS/ntxsy/m/n/10 C$\T1/LinuxLibertineT-TLF/
-m/n/10 (-20) )[0:16]) 
+m/n/10 (-20) )[0:16])
  []
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1652,11 +1652,11 @@ Package fancyhdr Warning: \headheight is too small (14.0pt):
 [9.9{/usr/share/texlive/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-4.enc}]
 [10.10]
 Overfull \hbox (26.97704pt too wide) in paragraph at lines 572--584
- [][] 
+ [][]
  []
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1669,7 +1669,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 709--709
  []
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1688,13 +1688,13 @@ LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
 
 See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
- ...                                              
-                                                  
+ ...
+
 l.785     \item Inter-rater agreement: κ
                                           = 0.78 for compliance judgments, �...
 
 You may provide a definition with
-\DeclareUnicodeCharacter 
+\DeclareUnicodeCharacter
 
 
 ! LaTeX Error: Unicode character κ (U+03BA)
@@ -1702,12 +1702,12 @@ You may provide a definition with
 
 See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
- ...                                              
-                                                  
+ ...
+
 l.785 ...t: κ = 0.78 for compliance judgments, κ
                                                    = 0.65 for decision quality
 You may provide a definition with
-\DeclareUnicodeCharacter 
+\DeclareUnicodeCharacter
 
 [14.14]
 
@@ -1716,13 +1716,13 @@ You may provide a definition with
 
 See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
- ...                                              
-                                                  
+ ...
+
 l.804     \item Equal weighting assumption (α
                                               =β=γ=δ=0.25) is theoretical...
 
 You may provide a definition with
-\DeclareUnicodeCharacter 
+\DeclareUnicodeCharacter
 
 
 ! LaTeX Error: Unicode character β (U+03B2)
@@ -1730,13 +1730,13 @@ You may provide a definition with
 
 See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
- ...                                              
-                                                  
+ ...
+
 l.804     \item Equal weighting assumption (α=β
                                                  =γ=δ=0.25) is theoretical...
 
 You may provide a definition with
-\DeclareUnicodeCharacter 
+\DeclareUnicodeCharacter
 
 
 ! LaTeX Error: Unicode character γ (U+03B3)
@@ -1744,13 +1744,13 @@ You may provide a definition with
 
 See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
- ...                                              
-                                                  
+ ...
+
 l.804 ...item Equal weighting assumption (α=β=γ
                                                   =δ=0.25) is theoretically...
 
 You may provide a definition with
-\DeclareUnicodeCharacter 
+\DeclareUnicodeCharacter
 
 
 ! LaTeX Error: Unicode character δ (U+03B4)
@@ -1758,16 +1758,16 @@ You may provide a definition with
 
 See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
- ...                                              
-                                                  
+ ...
+
 l.804 ...m Equal weighting assumption (α=β=γ=δ
                                                   =0.25) is theoretically mo...
 
 You may provide a definition with
-\DeclareUnicodeCharacter 
+\DeclareUnicodeCharacter
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1776,7 +1776,7 @@ Package fancyhdr Warning: \headheight is too small (14.0pt):
 
 [15.15] [16.16]
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1792,7 +1792,7 @@ Underfull \vbox (badness 3000) has occurred while \output is active []
 
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1806,16 +1806,16 @@ Package fancyhdr Warning: \headheight is too small (14.0pt):
 
 See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
- ...                                              
-                                                  
+ ...
+
 l.1093 ...tbf{Network:} 100Gbps Ethernet with <5μ
                                                   s latency
 You may provide a definition with
-\DeclareUnicodeCharacter 
+\DeclareUnicodeCharacter
 
 [20.20]
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1826,12 +1826,12 @@ Package fancyhdr Warning: \headheight is too small (14.0pt):
 Overfull \hbox (17.02565pt too wide) in paragraph at lines 1190--1191
 []\T1/LinuxLibertineT-TLF/b/n/10 (-20) Code Avail-abil-ity: \T1/LinuxLibertineT
 -TLF/m/n/10 (-20) Per-for-mance bench-mark-ing suite at []$https : / / github .
- com / acgs2 / benchmarking$[] 
+ com / acgs2 / benchmarking$[]
  []
 
 [22.22]
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1854,7 +1854,7 @@ L3 programming layer <2024-01-22>
  ***********
 Package rerunfilecheck Info: File `ACGS2_FAccT_enhanced.out' has not changed.
 (rerunfilecheck)             Checksum: 4076A47E0640DD3E3F99544668936100;13019.
- ) 
+ )
 Here is how much of TeX's memory you used:
  46356 strings out of 474222
  1013695 string characters out of 5748733

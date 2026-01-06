@@ -25,7 +25,6 @@ try:
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-
 @dataclass
 class Mamba2Config:
     """Configuration for Mamba-2 Hybrid Processor."""
@@ -53,7 +52,6 @@ class Mamba2Config:
 
     # Constitutional compliance
     constitutional_hash: str = CONSTITUTIONAL_HASH
-
 
 class Mamba2SSM(nn.Module):
     """
@@ -143,7 +141,6 @@ class Mamba2SSM(nn.Module):
         output = self.out_proj(y.transpose(1, 2))  # (batch, seq_len, d_model)
 
         return output
-
 
 class SharedAttention(nn.Module):
     """
@@ -239,7 +236,6 @@ class SharedAttention(nn.Module):
         output = self.out_proj(attn_output)
 
         return output
-
 
 class ConstitutionalMambaHybrid(nn.Module):
     """
@@ -393,7 +389,6 @@ class ConstitutionalMambaHybrid(nn.Module):
             }
         }
 
-
 class ConstitutionalContextManager:
     """
     Manages long-term constitutional context using Mamba-2 Hybrid Processor.
@@ -536,17 +531,14 @@ class ConstitutionalContextManager:
             "model_memory_usage": self.model.get_memory_usage(),
         }
 
-
 # Convenience functions
 def create_mamba_hybrid_processor(config: Optional[Mamba2Config] = None) -> ConstitutionalMambaHybrid:
     """Create a Mamba-2 Hybrid Processor instance."""
     return ConstitutionalMambaHybrid(config)
 
-
 def create_constitutional_context_manager(config: Optional[Mamba2Config] = None) -> ConstitutionalContextManager:
     """Create a Constitutional Context Manager instance."""
     return ConstitutionalContextManager(config)
-
 
 __all__ = [
     "CONSTITUTIONAL_HASH",

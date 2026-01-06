@@ -74,9 +74,9 @@ output:
 options:
   # Maximum memory usage (MB)
   max-memory: 4096
-  
+
   # Timeout per file (seconds)
   timeout: 30
-  
+
   # Number of parallel jobs
   jobs: 4

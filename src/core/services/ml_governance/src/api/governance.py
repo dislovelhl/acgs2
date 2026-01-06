@@ -25,14 +25,11 @@ async def predict_governance(request: PredictRequest):
             content=request.content,
             context=request.context,
             user_id=request.user_id,
-            metadata={"use_ab_test": request.use_ab_test}
+            metadata={"use_ab_test": request.use_ab_test},
         )
 
         # Make prediction
-        response = await ml_engine.predict(
-            governance_request,
-            use_ab_test=request.use_ab_test
-        )
+        response = await ml_engine.predict(governance_request, use_ab_test=request.use_ab_test)
 
         # Convert to API response format
         api_response = PredictResponse(
@@ -41,16 +38,15 @@ async def predict_governance(request: PredictRequest):
             reasoning=response.reasoning,
             model_version=response.model_version,
             processing_time_ms=response.processing_time_ms,
-            ab_test_info=response.metadata.get("ab_test") if hasattr(response, 'metadata') else None
+            ab_test_info=response.metadata.get("ab_test")
+            if hasattr(response, "metadata")
+            else None,
         )
 
         return api_response
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Governance prediction failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Governance prediction failed: {str(e)}")
 
 
 @router.get("/status")
@@ -68,19 +64,16 @@ async def get_governance_status():
                     "test_id": ab_test.test_id,
                     "name": ab_test.name,
                     "status": ab_test.status,
-                    "traffic_split": ab_test.traffic_split
+                    "traffic_split": ab_test.traffic_split,
                 }
                 for ab_test in ml_engine.ab_tests.values()
             ],
             "metrics": ml_engine.metrics,
-            "timestamp": "2024-01-01T00:00:00Z"  # Would be dynamic
+            "timestamp": "2024-01-01T00:00:00Z",  # Would be dynamic
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get governance status: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get governance status: {str(e)}")
 
 
 @router.get("/models/active")
@@ -97,13 +90,10 @@ async def get_active_models():
             active_models[model_type.value] = {
                 "version_id": version_id,
                 "status": "active",
-                "last_updated": "2024-01-01T00:00:00Z"  # Would be dynamic
+                "last_updated": "2024-01-01T00:00:00Z",  # Would be dynamic
             }
 
         return {"active_models": active_models}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get active models: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get active models: {str(e)}")

@@ -11,6 +11,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -311,7 +312,6 @@ class DeliberationQueue:
 
                 self.tasks[task_id].status = status
                 self._save_tasks()
-                logger.debug(f"Task {task_id} status updated to {status}")
 
     def get_pending_tasks(self) -> List[DeliberationItem]:
         """Get all tasks awaiting deliberation."""

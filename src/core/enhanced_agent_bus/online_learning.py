@@ -651,7 +651,7 @@ class OnlineLearningPipeline:
             self.learn(x_dict, outcome)
 
             if decision_id:
-                logger.debug(f"Learned from feedback for decision {decision_id}")
+                logger.info(f"Learned from decision {decision_id}")
 
             return LearningResult(
                 success=True,
@@ -830,7 +830,6 @@ class FeedbackKafkaConsumer:
 
         async with self._lock:
             if self._running:
-                logger.debug("FeedbackKafkaConsumer already running")
                 return True
 
             try:

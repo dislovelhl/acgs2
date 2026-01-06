@@ -552,7 +552,6 @@ class TenantOnboardingWizard:
         """Clean up a specific session."""
         if session_id in self._sessions:
             del self._sessions[session_id]
-            logger.debug(f"Cleaned up session: {session_id}")
 
     def get_session_stats(self) -> Dict[str, Any]:
         """Get session statistics."""

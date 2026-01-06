@@ -37,6 +37,15 @@ class ArweaveClient:
         self.arweave = None
         self.wallet = None
 
+        # Security hardening: Enforce secure protocol
+        protocol = config.get("protocol", "https")
+        if protocol != "https":
+            logger.warning(
+                f"Insecure Arweave protocol: {protocol}. HTTPS is required for production."
+            )
+            if not config.get("allow_insecure_protocol", False):
+                raise ValueError(f"Insecure Arweave protocol blocked: {protocol}")
+
         # 模拟初始化（实际实现需要arweave-python-client）
         self._initialize_mock()
 

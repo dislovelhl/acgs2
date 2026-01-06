@@ -5,7 +5,6 @@ from typing import Any
 # Secure credentials management
 logger = logging.getLogger(__name__)
 
-
 """
 ACGS Code Analysis Engine - Service Registry Client
 Integration with ACGS service registry with constitutional compliance.
@@ -17,7 +16,6 @@ import time
 from datetime import datetime, timezone
 
 import httpx
-
 from app.utils.constitutional import (
     CONSTITUTIONAL_HASH,
     ensure_constitutional_compliance,

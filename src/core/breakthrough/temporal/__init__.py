@@ -47,7 +47,6 @@ __all__ = [
     "EventType",
     "TemporalState",
     "TemporalConsistency",
-
     # ABL-Refl Handler
     "ABLReflHandler",
     "CognitiveMode",
@@ -55,7 +54,6 @@ __all__ = [
     "ReflectionTrigger",
     "ReflectionStep",
     "EdgeCasePattern",
-
     # DeepProbLog KB
     "DeepProbLogKB",
     "ProbabilisticFact",

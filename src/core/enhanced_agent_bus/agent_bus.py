@@ -5,55 +5,33 @@ Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
+
 try:
-    from src.core.shared.types import JSONDict, JSONValue, AgentInfo
+    from src.core.shared.types import AgentInfo, JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
     AgentInfo = Dict[str, Any]
 from unittest.mock import AsyncMock, MagicMock
 
-try:
-    from .exceptions import BusNotStartedError, ConstitutionalHashMismatchError
-    from .imports import *
-    from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
-    from .message_processor import MessageProcessor
-    from .metering_manager import create_metering_manager
-    from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
-    from .registry import (
-        DirectMessageRouter,
-        DynamicPolicyValidationStrategy,
-        InMemoryAgentRegistry,
-        OPAValidationStrategy,
-        StaticHashValidationStrategy,
-    )
-    from .security.tenant_validator import TenantValidator
-    from .security_helpers import normalize_tenant_id, validate_tenant_consistency
-    from .utils import get_iso_timestamp, redact_error_message
-    from .validators import ValidationResult
-except (ImportError, ValueError):
-    from interfaces import (  # type: ignore
-        AgentRegistry,
-        MessageRouter,
-        ProcessingStrategy,
-        ValidationStrategy,
-    )
-    from message_processor import MessageProcessor  # type: ignore
-    from metering_manager import create_metering_manager  # type: ignore
-    from models import (  # type: ignore
-        CONSTITUTIONAL_HASH,
-        AgentMessage,
-        MessageStatus,
-    )
-    from registry import (  # type: ignore
-        DirectMessageRouter,
-        InMemoryAgentRegistry,
-        StaticHashValidationStrategy,
-    )
-    from security.tenant_validator import TenantValidator  # type: ignore
-    from security_helpers import normalize_tenant_id, validate_tenant_consistency  # type: ignore
-    from utils import get_iso_timestamp  # type: ignore
-    from validators import ValidationResult  # type: ignore
+# Local module imports - relative imports for cleaner code organization
+from .exceptions import BusNotStartedError, ConstitutionalHashMismatchError
+from .imports import *
+from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
+from .message_processor import MessageProcessor
+from .metering_manager import create_metering_manager
+from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
+from .registry import (
+    DirectMessageRouter,
+    DynamicPolicyValidationStrategy,
+    InMemoryAgentRegistry,
+    OPAValidationStrategy,
+    StaticHashValidationStrategy,
+)
+from .security.tenant_validator import TenantValidator
+from .security_helpers import normalize_tenant_id, validate_tenant_consistency
+from .utils import get_iso_timestamp, redact_error_message
+from .validators import ValidationResult
 
 # MACI imports are now centralized in imports.py (via "from .imports import *")
 # The following are imported: MACI_AVAILABLE, MACIEnforcer, MACIRole, MACIRoleRegistry
@@ -78,7 +56,6 @@ except ImportError:
     get_adaptive_governance = None
     initialize_adaptive_governance = None
     provide_governance_feedback = None
-
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +135,7 @@ class EnhancedAgentBus:
         else:
             # Use composite validation with PQC support
             from .registry import CompositeValidationStrategy
+
             self._validator = CompositeValidationStrategy(enable_pqc=True)
         self._processor = kwargs.get("processor") or MessageProcessor(
             registry=self._registry,

@@ -270,11 +270,10 @@ class TestSignatureVerification:
 class TestFingerprint:
     """Tests for key fingerprint generation."""
 
-    logger.info(self, crypto_service, keypair)
+    def test_fingerprint_generation(self, crypto_service, keypair):
         """Test fingerprint generation."""
         public_key, _ = keypair
-
-    logger.info(public_key)
+        fingerprint = crypto_service.generate_public_key_fingerprint(public_key)
 
         assert isinstance(fingerprint, str)
         # SHA256 hex is 64 characters
@@ -285,9 +284,8 @@ class TestFingerprint:
     def test_fingerprint_deterministic(self, crypto_service, keypair):
         """Test fingerprint is deterministic."""
         public_key, _ = keypair
-
-    logger.info(public_key)
-    logger.info(public_key)
+        fp1 = crypto_service.generate_public_key_fingerprint(public_key)
+        fp2 = crypto_service.generate_public_key_fingerprint(public_key)
 
         assert fp1 == fp2
 
@@ -296,7 +294,7 @@ class TestFingerprint:
         fingerprints = []
         for _ in range(5):
             public_key, _ = crypto_service.generate_keypair()
-    logger.info(public_key))
+            fingerprints.append(crypto_service.generate_public_key_fingerprint(public_key))
 
         assert len(set(fingerprints)) == 5
 
@@ -360,7 +358,7 @@ class TestPolicySignatureCreation:
             public_key_b64=public_key,
         )
 
-    logger.info(public_key)
+        expected_fingerprint = crypto_service.generate_public_key_fingerprint(public_key)
         assert policy_sig.key_fingerprint == expected_fingerprint
 
 

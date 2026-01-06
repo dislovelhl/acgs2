@@ -106,7 +106,6 @@ class ApiKeyAuthHandler(WebhookAuthHandler):
         # Use constant-time comparison to prevent timing attacks
         for valid_key, principal in self._valid_keys.items():
             if secrets.compare_digest(api_key, valid_key):
-                logger.debug(f"API key authenticated for principal: {principal}")
                 return AuthResult.success(
                     auth_type=self.auth_type,
                     principal=principal,

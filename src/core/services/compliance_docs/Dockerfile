@@ -15,4 +15,3 @@ ENV PYTHONPATH=/app
 ENV PORT=8100
 
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8100"]
-

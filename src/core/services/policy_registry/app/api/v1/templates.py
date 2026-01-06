@@ -7,7 +7,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
-from ..services.template_library_service import TemplateLibraryService
+from ...services.template_library_service import TemplateLibraryService
 
 logger = logging.getLogger(__name__)
 

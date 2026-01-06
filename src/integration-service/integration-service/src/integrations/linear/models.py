@@ -25,14 +25,12 @@ from pydantic import (
 
 logger = logging.getLogger(__name__)
 
-
 class WebhookAction(str, Enum):
     """Actions that can trigger Linear webhooks."""
 
     CREATE = "create"
     UPDATE = "update"
     REMOVE = "remove"
-
 
 class LinearWebhookType(str, Enum):
     """Types of Linear webhook events."""
@@ -44,7 +42,6 @@ class LinearWebhookType(str, Enum):
     ISSUE_LABEL = "IssueLabel"
     REACTION = "Reaction"
 
-
 class IssuePriority(int, Enum):
     """Linear issue priority levels."""
 
@@ -54,11 +51,9 @@ class IssuePriority(int, Enum):
     MEDIUM = 3
     LOW = 4
 
-
 # ============================================================================
 # Nested Data Models
 # ============================================================================
-
 
 class LinearUser(BaseModel):
     """Linear user/actor model."""
@@ -75,7 +70,6 @@ class LinearUser(BaseModel):
         str_strip_whitespace=True,
     )
 
-
 class LinearTeam(BaseModel):
     """Linear team model."""
 
@@ -88,7 +82,6 @@ class LinearTeam(BaseModel):
         populate_by_name=True,
         str_strip_whitespace=True,
     )
-
 
 class LinearWorkflowState(BaseModel):
     """Linear workflow state model."""
@@ -103,7 +96,6 @@ class LinearWorkflowState(BaseModel):
         populate_by_name=True,
         str_strip_whitespace=True,
     )
-
 
 class LinearProject(BaseModel):
     """Linear project model."""
@@ -120,7 +112,6 @@ class LinearProject(BaseModel):
         str_strip_whitespace=True,
     )
 
-
 class LinearCycle(BaseModel):
     """Linear cycle model."""
 
@@ -135,7 +126,6 @@ class LinearCycle(BaseModel):
         str_strip_whitespace=True,
     )
 
-
 class LinearLabel(BaseModel):
     """Linear label model."""
 
@@ -149,11 +139,9 @@ class LinearLabel(BaseModel):
         str_strip_whitespace=True,
     )
 
-
 # ============================================================================
 # Issue Models
 # ============================================================================
-
 
 class LinearIssue(BaseModel):
     """
@@ -233,11 +221,9 @@ class LinearIssue(BaseModel):
             return priority_map.get(v.lower(), 0)
         return int(v)
 
-
 # ============================================================================
 # Comment Models
 # ============================================================================
-
 
 class LinearComment(BaseModel):
     """Linear comment model."""
@@ -262,11 +248,9 @@ class LinearComment(BaseModel):
         extra="allow",
     )
 
-
 # ============================================================================
 # Webhook Event Models
 # ============================================================================
-
 
 class WebhookData(BaseModel):
     """Base webhook data model containing the changed entity."""
@@ -280,7 +264,6 @@ class WebhookData(BaseModel):
         str_strip_whitespace=True,
         extra="allow",
     )
-
 
 class IssueWebhookData(WebhookData):
     """Issue-specific webhook data."""
@@ -308,7 +291,6 @@ class IssueWebhookData(WebhookData):
     archived: bool = Field(default=False, description="Archived status")
     trashed: bool = Field(default=False, description="Trashed status")
 
-
 class CommentWebhookData(WebhookData):
     """Comment-specific webhook data."""
 
@@ -316,7 +298,6 @@ class CommentWebhookData(WebhookData):
     user: Optional[LinearUser] = Field(None, description="Comment author")
     issue: Optional[Dict[str, str]] = Field(None, description="Associated issue")
     editedAt: Optional[datetime] = Field(None, description="Last edit timestamp")
-
 
 class LinearWebhookPayload(BaseModel):
     """
@@ -372,20 +353,17 @@ class LinearWebhookPayload(BaseModel):
                     values["data"] = IssueWebhookData.model_validate(data)
                 except Exception as e:
                     # Fallback to base WebhookData if parsing fails
-                    logger.debug(f"Failed to parse IssueWebhookData: {e}")
+
             elif webhook_type == "Comment" or webhook_type == LinearWebhookType.COMMENT:
                 try:
                     values["data"] = CommentWebhookData.model_validate(data)
                 except Exception as e:
-                    logger.debug(f"Failed to parse CommentWebhookData: {e}")
 
         return values
-
 
 # ============================================================================
 # Event-Specific Models (Convenience wrappers)
 # ============================================================================
-
 
 class IssueEvent(BaseModel):
     """
@@ -438,7 +416,6 @@ class IssueEvent(BaseModel):
             updated_from=payload.updatedFrom,
         )
 
-
 class CommentEvent(BaseModel):
     """
     Convenience model for Comment webhook events.
@@ -490,7 +467,6 @@ class CommentEvent(BaseModel):
             updated_from=payload.updatedFrom,
         )
 
-
 class StatusChangeEvent(BaseModel):
     """
     Convenience model for status change events.
@@ -538,7 +514,6 @@ class StatusChangeEvent(BaseModel):
             try:
                 previous_state = LinearWorkflowState.model_validate(previous_state_data)
             except Exception as e:
-                logger.debug(f"Failed to parse previous state: {e}")
 
         return cls(
             webhook_id=event.webhook_id,

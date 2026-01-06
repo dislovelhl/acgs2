@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class TransactionState(Enum):
     """States for saga transaction lifecycle."""
+
     PENDING = "pending"
     RUNNING = "running"
     COMMITTED = "committed"
@@ -41,6 +42,7 @@ class TransactionState(Enum):
 @dataclass
 class SagaCheckpoint:
     """A checkpoint in the saga transaction."""
+
     checkpoint_id: str
     name: str
     state: Dict[str, Any]
@@ -62,6 +64,7 @@ class SagaCheckpoint:
 @dataclass
 class SagaStep:
     """A step in the saga transaction."""
+
     step_id: str
     name: str
     action: Callable[[], Awaitable[Any]]
@@ -77,6 +80,7 @@ class SagaStep:
 @dataclass
 class TransactionResult:
     """Result of a saga transaction."""
+
     transaction_id: str
     state: TransactionState
     checkpoints: List[SagaCheckpoint]
@@ -108,7 +112,7 @@ class SagaConstitutionalTransaction:
         self,
         transaction_id: Optional[str] = None,
         max_retries: int = 3,
-        timeout_seconds: float = 60.0
+        timeout_seconds: float = 60.0,
     ):
         """
         Initialize a Saga transaction.
@@ -135,21 +139,17 @@ class SagaConstitutionalTransaction:
         """Enter transaction context."""
         self._state = TransactionState.RUNNING
         self._start_time = datetime.utcnow()
-        logger.debug(f"Started transaction: {self.transaction_id}")
+
         return self
 
     async def __aexit__(
-        self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[Any]
+        self, exc_type: Optional[type], exc_val: Optional[BaseException], exc_tb: Optional[Any]
     ) -> bool:
         """Exit transaction context with automatic compensation on error."""
         if exc_type is not None:
             # Error occurred - compensate
             logger.warning(
-                f"Transaction {self.transaction_id} failed: {exc_val}. "
-                f"Initiating compensation."
+                f"Transaction {self.transaction_id} failed: {exc_val}. Initiating compensation."
             )
             await self.compensate()
             return False  # Re-raise exception
@@ -163,7 +163,7 @@ class SagaConstitutionalTransaction:
         self,
         name: str,
         state: Dict[str, Any],
-        compensation: Optional[Callable[[], Awaitable[None]]] = None
+        compensation: Optional[Callable[[], Awaitable[None]]] = None,
     ) -> SagaCheckpoint:
         """
         Create a checkpoint in the transaction.
@@ -190,7 +190,6 @@ class SagaConstitutionalTransaction:
         if compensation:
             self._compensation_stack.append(compensation)
 
-        logger.debug(f"Checkpoint created: {name} in transaction {self.transaction_id}")
         return checkpoint
 
     async def step(
@@ -199,7 +198,7 @@ class SagaConstitutionalTransaction:
         action: Callable[[], Awaitable[Any]],
         compensation: Callable[[], Awaitable[None]],
         timeout_seconds: Optional[float] = None,
-        retries: Optional[int] = None
+        retries: Optional[int] = None,
     ) -> Any:
         """
         Execute a saga step with compensation.
@@ -230,18 +229,12 @@ class SagaConstitutionalTransaction:
         for attempt in range(step.retries):
             try:
                 # Execute action with timeout
-                result = await asyncio.wait_for(
-                    action(),
-                    timeout=step.timeout_seconds
-                )
+                result = await asyncio.wait_for(action(), timeout=step.timeout_seconds)
 
                 step.result = result
                 step.executed = True
                 self._compensation_stack.append(compensation)
 
-                logger.debug(
-                    f"Step '{name}' completed in transaction {self.transaction_id}"
-                )
                 return result
 
             except asyncio.TimeoutError:
@@ -254,7 +247,7 @@ class SagaConstitutionalTransaction:
 
             # Exponential backoff
             if attempt < step.retries - 1:
-                await asyncio.sleep(2 ** attempt)
+                await asyncio.sleep(2**attempt)
 
         # All retries exhausted
         step.error = last_error
@@ -281,7 +274,7 @@ class SagaConstitutionalTransaction:
             try:
                 await compensation()
                 compensated_count += 1
-                logger.debug(f"Compensation {compensated_count} completed")
+
             except Exception as e:
                 logger.error(f"Compensation failed: {e}")
                 # Continue with remaining compensations
@@ -333,7 +326,7 @@ class SagaConstitutionalTransaction:
         # Restore state
         target_cp = self._checkpoints[target_idx]
         self._current_state = target_cp.state.copy()
-        self._checkpoints = self._checkpoints[:target_idx + 1]
+        self._checkpoints = self._checkpoints[: target_idx + 1]
 
         logger.info(f"Restored to checkpoint '{name}'")
         return True
@@ -377,9 +370,7 @@ class SagaOrchestrator:
 
     @asynccontextmanager
     async def transaction(
-        self,
-        transaction_id: Optional[str] = None,
-        resources: Optional[List[str]] = None
+        self, transaction_id: Optional[str] = None, resources: Optional[List[str]] = None
     ):
         """
         Create and manage a saga transaction with optional resource locking.
@@ -415,44 +406,27 @@ class SagaOrchestrator:
             if saga.transaction_id in self._active_transactions:
                 del self._active_transactions[saga.transaction_id]
 
-    async def _acquire_locks(
-        self,
-        transaction_id: str,
-        resources: List[str]
-    ) -> None:
+    async def _acquire_locks(self, transaction_id: str, resources: List[str]) -> None:
         """Acquire locks on resources."""
         for resource in resources:
             if resource in self._locks:
                 # Check for deadlock potential
                 holding_tx = self._locks[resource]
                 if holding_tx != transaction_id:
-                    raise RuntimeError(
-                        f"Resource '{resource}' locked by transaction {holding_tx}"
-                    )
+                    raise RuntimeError(f"Resource '{resource}' locked by transaction {holding_tx}")
             self._locks[resource] = transaction_id
 
-        logger.debug(f"Acquired locks for transaction {transaction_id}: {resources}")
-
-    async def _release_locks(
-        self,
-        transaction_id: str,
-        resources: List[str]
-    ) -> None:
+    async def _release_locks(self, transaction_id: str, resources: List[str]) -> None:
         """Release locks on resources."""
         for resource in resources:
             if self._locks.get(resource) == transaction_id:
                 del self._locks[resource]
 
-        logger.debug(f"Released locks for transaction {transaction_id}")
-
     def get_active_transactions(self) -> List[str]:
         """Get list of active transaction IDs."""
         return list(self._active_transactions.keys())
 
-    def get_transaction_history(
-        self,
-        limit: int = 100
-    ) -> List[TransactionResult]:
+    def get_transaction_history(self, limit: int = 100) -> List[TransactionResult]:
         """Get recent transaction history."""
         return self._completed_transactions[-limit:]
 
@@ -460,12 +434,10 @@ class SagaOrchestrator:
         """Get orchestrator statistics."""
         completed = len(self._completed_transactions)
         committed = sum(
-            1 for t in self._completed_transactions
-            if t.state == TransactionState.COMMITTED
+            1 for t in self._completed_transactions if t.state == TransactionState.COMMITTED
         )
         rolled_back = sum(
-            1 for t in self._completed_transactions
-            if t.state == TransactionState.ROLLED_BACK
+            1 for t in self._completed_transactions if t.state == TransactionState.ROLLED_BACK
         )
 
         return {

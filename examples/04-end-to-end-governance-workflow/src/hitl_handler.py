@@ -428,7 +428,9 @@ class HITLHandler:
         return decision
 
     def wait_for_approval(
-        self, request_id: UUID, timeout_seconds: int | None = None  # noqa: ARG002
+        self,
+        request_id: UUID,
+        timeout_seconds: int | None = None,  # noqa: ARG002
     ) -> ReviewerDecision:
         """
         Wait for approval with timeout handling.
@@ -501,9 +503,7 @@ class HITLHandler:
 
         # Check if escalation is configured
         if request.escalation_to:
-            logger.info(
-                f"Escalating request {request.request_id} to {request.escalation_to}"
-            )
+            logger.info(f"Escalating request {request.request_id} to {request.escalation_to}")
             escalation_note = (
                 f"Request timed out after {request.timeout_seconds}s. "
                 f"Escalating to {request.escalation_to} for urgent review."
@@ -521,9 +521,7 @@ class HITLHandler:
             request.status = "escalated"
         else:
             # No escalation configured - deny by default
-            logger.warning(
-                f"No escalation configured for request {request.request_id}, denying"
-            )
+            logger.warning(f"No escalation configured for request {request.request_id}, denying")
             decision = ReviewerDecision(
                 approved=False,
                 reviewer_id="system",

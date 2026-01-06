@@ -92,7 +92,6 @@ class WebhookAuthRegistry:
     def register(self, handler: WebhookAuthHandler) -> None:
         """Register an authentication handler."""
         self._handlers[handler.auth_type] = handler
-        logger.debug(f"Registered auth handler for {handler.auth_type.value}")
 
     def unregister(self, auth_type: WebhookAuthType) -> Optional[WebhookAuthHandler]:
         """Unregister and return an authentication handler."""

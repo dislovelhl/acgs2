@@ -239,7 +239,6 @@ async def github_webhook(
         }
 
     else:
-        logger.debug(f"Unhandled event type: {event_type}")
         return {
             "status": "ignored",
             "event": event_type,

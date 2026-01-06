@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MambaConfig:
     """Configuration for Mamba-2 Hybrid Processor."""
+
     d_model: int = 512
     d_state: int = 128
     d_conv: int = 4
@@ -123,14 +124,18 @@ class MambaSSM(nn.Module):
         dt = torch.clamp(dt, min=self.config.dt_min, max=self.config.dt_max)
         return dt
 
-    def _ssm_forward(self, x: torch.Tensor, dt: torch.Tensor, B: torch.Tensor, C: torch.Tensor) -> torch.Tensor:
+    def _ssm_forward(
+        self, x: torch.Tensor, dt: torch.Tensor, B: torch.Tensor, C: torch.Tensor
+    ) -> torch.Tensor:
         """Forward pass through state space model."""
         # Simplified SSM computation for Mamba-2
         # In practice, this would use the full Mamba-2 SSM implementation
         batch_size, seq_len, d_inner = x.shape
 
         # Initialize state
-        h = torch.zeros(batch_size, self.d_state, d_inner // self.d_state, device=x.device, dtype=x.dtype)
+        h = torch.zeros(
+            batch_size, self.d_state, d_inner // self.d_state, device=x.device, dtype=x.dtype
+        )
 
         outputs = []
         for t in range(seq_len):
@@ -214,7 +219,7 @@ class SharedAttentionLayer(nn.Module):
         attn_weights = torch.matmul(q, k.transpose(-2, -1)) / scale
 
         if mask is not None:
-            attn_weights = attn_weights.masked_fill(mask == 0, float('-inf'))
+            attn_weights = attn_weights.masked_fill(mask == 0, float("-inf"))
 
         attn_weights = F.softmax(attn_weights, dim=-1)
         attn_output = torch.matmul(attn_weights, v)
@@ -245,10 +250,9 @@ class ConstitutionalMambaHybrid(nn.Module):
         self.constitutional_hash = CONSTITUTIONAL_HASH
 
         # Mamba layers for bulk processing
-        self.mamba_layers = nn.ModuleList([
-            MambaSSM(config)
-            for _ in range(config.num_mamba_layers)
-        ])
+        self.mamba_layers = nn.ModuleList(
+            [MambaSSM(config) for _ in range(config.num_mamba_layers)]
+        )
 
         # Single shared attention for critical reasoning
         if config.use_shared_attention:
@@ -261,17 +265,17 @@ class ConstitutionalMambaHybrid(nn.Module):
         self.critical_sections_repeat = config.critical_sections_repeat
 
         # Memory management
-        self.register_buffer('memory_cache', torch.zeros(1, 1, config.d_model))
+        self.register_buffer("memory_cache", torch.zeros(1, 1, config.d_model))
 
         logger.info("Initialized Constitutional Mamba Hybrid Processor")
-        logger.info(f"Config: {config.num_mamba_layers} Mamba layers, "
-                   f"shared attention: {config.use_shared_attention}")
+        logger.info(
+            f"Config: {config.num_mamba_layers} Mamba layers, "
+            f"shared attention: {config.use_shared_attention}"
+        )
         logger.info(f"Max context: {config.max_context_length:,} tokens")
 
     def _prepare_jrt_context(
-        self,
-        x: torch.Tensor,
-        critical_positions: Optional[List[int]] = None
+        self, x: torch.Tensor, critical_positions: Optional[List[int]] = None
     ) -> torch.Tensor:
         """
         JRT (Just Repeat Twice) Context Preparation
@@ -325,7 +329,7 @@ class ConstitutionalMambaHybrid(nn.Module):
         x: torch.Tensor,
         input_ids: Optional[torch.Tensor] = None,
         critical_positions: Optional[List[int]] = None,
-        use_attention: bool = False
+        use_attention: bool = False,
     ) -> torch.Tensor:
         """
         Forward pass through the Constitutional Mamba Hybrid Processor.
@@ -343,9 +347,11 @@ class ConstitutionalMambaHybrid(nn.Module):
 
         # Validate context length
         if seq_len > self.config.max_context_length:
-            logger.warning(f"Sequence length {seq_len:,} exceeds max context {self.config.max_context_length:,}")
+            logger.warning(
+                f"Sequence length {seq_len:,} exceeds max context {self.config.max_context_length:,}"
+            )
             # Truncate if necessary (though Mamba should handle long contexts)
-            x = x[:, :self.config.max_context_length]
+            x = x[:, : self.config.max_context_length]
             seq_len = self.config.max_context_length
 
         # JRT context preparation
@@ -367,18 +373,18 @@ class ConstitutionalMambaHybrid(nn.Module):
 
     def get_memory_usage(self) -> Dict[str, Any]:
         """Get current memory usage statistics."""
-        if hasattr(self, 'memory_cache'):
+        if hasattr(self, "memory_cache"):
             memory_mb = self.memory_cache.numel() * self.memory_cache.element_size() / (1024 * 1024)
         else:
             memory_mb = 0
 
         return {
-            'model_memory_mb': memory_mb,
-            'max_context_tokens': self.config.max_context_length,
-            'num_mamba_layers': self.config.num_mamba_layers,
-            'shared_attention_enabled': self.shared_attention is not None,
-            'jrt_enabled': self.jrt_enabled,
-            'constitutional_hash': self.constitutional_hash
+            "model_memory_mb": memory_mb,
+            "max_context_tokens": self.config.max_context_length,
+            "num_mamba_layers": self.config.num_mamba_layers,
+            "shared_attention_enabled": self.shared_attention is not None,
+            "jrt_enabled": self.jrt_enabled,
+            "constitutional_hash": self.constitutional_hash,
         }
 
     def enable_memory_efficient_mode(self):
@@ -389,7 +395,7 @@ class ConstitutionalMambaHybrid(nn.Module):
 
     def reset_memory_cache(self):
         """Reset the memory cache."""
-        if hasattr(self, 'memory_cache'):
+        if hasattr(self, "memory_cache"):
             self.memory_cache.zero_()
 
 
@@ -412,7 +418,7 @@ class MambaHybridManager:
             self.model = ConstitutionalMambaHybrid(self.config)
 
             # Move to device
-            if self.device.type == 'cuda':
+            if self.device.type == "cuda":
                 self.model = self.model.cuda()
 
             self.model.eval()
@@ -432,7 +438,7 @@ class MambaHybridManager:
         input_tensor: torch.Tensor,
         input_ids: Optional[torch.Tensor] = None,
         critical_positions: Optional[List[int]] = None,
-        use_attention: bool = False
+        use_attention: bool = False,
     ) -> torch.Tensor:
         """
         Process context through the Mamba Hybrid Processor.
@@ -460,7 +466,7 @@ class MambaHybridManager:
                 input_tensor,
                 input_ids=input_ids,
                 critical_positions=critical_positions,
-                use_attention=use_attention
+                use_attention=use_attention,
             )
 
             return output.cpu()
@@ -479,11 +485,11 @@ class MambaHybridManager:
                 "num_mamba_layers": self.config.num_mamba_layers,
                 "shared_attention": self.config.use_shared_attention,
                 "jrt_enabled": self.config.jrt_enabled,
-                "complexity": "O(n)"  # Linear complexity
+                "complexity": "O(n)",  # Linear complexity
             },
             "memory_usage": self.model.get_memory_usage(),
             "device": str(self.device),
-            "dtype": str(self.config.dtype)
+            "dtype": str(self.config.dtype),
         }
 
     def unload_model(self):
@@ -521,20 +527,17 @@ if __name__ == "__main__":
         d_model=512,
         num_mamba_layers=6,
         max_context_length=4_000_000,
-        device="cpu"  # Use CPU for testing
+        device="cpu",  # Use CPU for testing
     )
 
     # Initialize processor
     success = initialize_mamba_processor(config)
     if success:
-        print("✅ Constitutional Mamba Hybrid Processor initialized")
-
         # Get manager and test
         manager = get_mamba_hybrid_processor()
         info = manager.get_model_info()
-        print(f"Model Info: {info}")
 
         # Example processing (would need real embeddings)
-        print("Processor ready for 4M+ token context processing")
+
     else:
-        print("❌ Failed to initialize processor")
+        logger.error("❌ Failed to initialize processor")

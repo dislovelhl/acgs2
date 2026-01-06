@@ -8,7 +8,6 @@ import logging
 import time
 
 import pytest
-
 from src.core.enhanced_agent_bus.core import MessageProcessor
 from src.core.enhanced_agent_bus.models import AgentMessage, MessagePriority
 

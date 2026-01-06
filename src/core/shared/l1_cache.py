@@ -27,7 +27,8 @@ import logging
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, TypeVar
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -90,7 +91,7 @@ class L1Cache:
         maxsize: int = 1024,
         ttl: int = 600,
         serialize: bool = False,
-        on_evict: Optional[Callable[[str, JSONValue], None]] = None,
+        on_evict: Optional[Callable[[str, Any], None]] = None,
     ):
         """
         Initialize L1 cache.
@@ -125,9 +126,7 @@ class L1Cache:
         self._access_window_start: float = time.time()
         self._access_window_seconds: int = 60  # Track access per minute
 
-        logger.debug(f"[{CONSTITUTIONAL_HASH}] L1Cache initialized: maxsize={maxsize}, ttl={ttl}s")
-
-    def get(self, key: str, default: Optional[T] = None) -> Optional[T]:
+    def get(self, key: str, default: Optional[JSONValue] = None) -> Optional[JSONValue]:
         """
         Get a value from the cache.
 
@@ -219,7 +218,6 @@ class L1Cache:
         with self._lock:
             self._cache.clear()
             self._access_counts.clear()
-            logger.debug(f"[{CONSTITUTIONAL_HASH}] L1Cache cleared")
 
     def get_many(self, keys: List[str]) -> JSONDict:
         """

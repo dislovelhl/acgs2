@@ -1,0 +1,654 @@
+openapi: 3.1.0
+info:
+  title: ACGS-2 API Gateway
+  description: |
+    Unified ingress point for all ACGS-2 client requests with authentication,
+    rate limiting, and intelligent routing to backend microservices.
+
+    **Constitutional Hash**: cdd01ef066bc6cf2
+
+    **Key Features**:
+    - JWT authentication and session management
+    - SSO integration (OAuth 2.0, OIDC)
+    - Rate limiting and request throttling
+    - CORS policy enforcement
+    - Request routing to backend services
+    - API versioning and backward compatibility
+
+  version: 1.0.0
+  contact:
+    name: ACGS-2 API Support
+    url: https://acgs2.example.com/support
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.acgs2.example.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Service health and status endpoints
+  - name: Authentication
+    description: User authentication and session management
+  - name: SSO
+    description: Single Sign-On integration
+  - name: Feedback
+    description: User feedback collection
+  - name: Proxy
+    description: Backend service proxying
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API Gateway service
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - service
+                  - environment
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                    example: healthy
+                  service:
+                    type: string
+                    example: api-gateway
+                  environment:
+                    type: string
+                    enum: [development, staging, production]
+                    example: production
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+  /feedback:
+    post:
+      summary: Submit user feedback
+      description: |
+        Submit feedback about the ACGS-2 system. Feedback is collected for
+        product improvement and user experience enhancement.
+      operationId: submitFeedback
+      tags:
+        - Feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+      responses:
+        '200':
+          description: Feedback successfully submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackResponse'
+        '400':
+          description: Invalid feedback request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      summary: User login
+      description: Authenticate user credentials and create session with JWT token
+      operationId: login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePassword123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      summary: User logout
+      description: Invalidate current user session and JWT token
+      operationId: logout
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logout successful
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/user:
+    get:
+      summary: Get current user
+      description: Retrieve information about the currently authenticated user
+      operationId: getCurrentUser
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sso/{provider}/login:
+    get:
+      summary: Initiate SSO login
+      description: |
+        Initiate Single Sign-On authentication flow with specified provider.
+        Redirects to OAuth provider's authorization page.
+      operationId: ssoLogin
+      tags:
+        - SSO
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          description: SSO provider name
+          schema:
+            type: string
+            enum: [github, google, microsoft, okta]
+        - name: redirect_uri
+          in: query
+          required: false
+          description: Post-login redirect URI
+          schema:
+            type: string
+            format: uri
+            example: https://app.example.com/dashboard
+      responses:
+        '302':
+          description: Redirect to OAuth provider
+          headers:
+            Location:
+              description: OAuth provider authorization URL
+              schema:
+                type: string
+                format: uri
+        '400':
+          description: Invalid provider or configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sso/{provider}/callback:
+    get:
+      summary: SSO callback handler
+      description: |
+        OAuth callback endpoint that processes the authorization code and
+        creates authenticated session.
+      operationId: ssoCallback
+      tags:
+        - SSO
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          description: SSO provider name
+          schema:
+            type: string
+            enum: [github, google, microsoft, okta]
+        - name: code
+          in: query
+          required: true
+          description: OAuth authorization code
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: OAuth state parameter for CSRF protection
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to application with session
+          headers:
+            Location:
+              description: Application URL with session cookie
+              schema:
+                type: string
+                format: uri
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+        '400':
+          description: Invalid callback parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: OAuth authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/{service}/{path}:
+    get:
+      summary: Proxy GET request to backend service
+      description: |
+        Proxies GET requests to backend microservices with authentication,
+        rate limiting, and constitutional compliance validation.
+      operationId: proxyGet
+      tags:
+        - Proxy
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: service
+          in: path
+          required: true
+          description: Target backend service
+          schema:
+            type: string
+            enum:
+              - agent-bus
+              - audit
+              - tenant
+              - hitl
+              - compliance
+              - analytics
+              - ml-governance
+              - policy-marketplace
+        - name: path
+          in: path
+          required: true
+          description: Service-specific path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful proxy response
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Backend service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Proxy POST request to backend service
+      description: |
+        Proxies POST requests to backend microservices with authentication,
+        rate limiting, and constitutional compliance validation.
+      operationId: proxyPost
+      tags:
+        - Proxy
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: service
+          in: path
+          required: true
+          description: Target backend service
+          schema:
+            type: string
+            enum:
+              - agent-bus
+              - audit
+              - tenant
+              - hitl
+              - compliance
+              - analytics
+              - ml-governance
+              - policy-marketplace
+        - name: path
+          in: path
+          required: true
+          description: Service-specific path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Successful proxy response
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Backend service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    FeedbackRequest:
+      type: object
+      required:
+        - user_id
+        - category
+        - rating
+        - title
+        - description
+      properties:
+        user_id:
+          type: string
+          description: User identifier
+          example: user123
+        category:
+          type: string
+          description: Feedback category
+          enum: [bug, feature, general, performance, usability]
+          example: feature
+        rating:
+          type: integer
+          description: Rating from 1-5
+          minimum: 1
+          maximum: 5
+          example: 4
+        title:
+          type: string
+          description: Feedback title
+          minLength: 1
+          maxLength: 200
+          example: Great constitutional validation feature
+        description:
+          type: string
+          description: Detailed feedback description
+          minLength: 1
+          maxLength: 5000
+          example: The constitutional compliance validation works excellently...
+        user_agent:
+          type: string
+          description: User agent string
+          example: Mozilla/5.0...
+        url:
+          type: string
+          description: Current URL when feedback was given
+          format: uri
+          example: https://app.example.com/governance
+        metadata:
+          type: object
+          description: Additional metadata
+          additionalProperties: true
+
+    FeedbackResponse:
+      type: object
+      required:
+        - feedback_id
+        - status
+        - timestamp
+        - message
+      properties:
+        feedback_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        status:
+          type: string
+          enum: [submitted, processing, resolved]
+          example: submitted
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-01-04T12:00:00Z'
+        message:
+          type: string
+          example: Thank you for your feedback! We'll review it shortly.
+
+    LoginResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - user
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          enum: [Bearer]
+          example: Bearer
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+          example: 3600
+        refresh_token:
+          type: string
+          description: JWT refresh token (optional)
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      required:
+        - user_id
+        - email
+        - roles
+      properties:
+        user_id:
+          type: string
+          example: user123
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          example: John Doe
+        roles:
+          type: array
+          items:
+            type: string
+          example: [admin, governance-viewer]
+        tenant_id:
+          type: string
+          example: tenant-acme-corp
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: INVALID_REQUEST
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid request parameters
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+        request_id:
+          type: string
+          format: uuid
+          description: Request correlation ID for debugging
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from /auth/login or SSO callback.
+        Include in Authorization header as: Bearer <token>
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ForbiddenError:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: RATE_LIMIT_EXCEEDED
+            message: Too many requests. Please try again later.
+            details:
+              limit: 100
+              window: 60
+              retry_after: 30
+
+    ServiceUnavailableError:
+      description: Backend service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+security:
+  - BearerAuth: []

@@ -27,7 +27,8 @@ import uuid
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Set, Union
+from typing import Any, Callable, Dict, Optional, Set, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -144,9 +145,7 @@ class StructuredJSONFormatter(logging.Formatter):
                 "message": str(record.exc_info[1]) if record.exc_info[1] else "",
             }
             if self.include_stack_trace:
-                log_data["exception"]["traceback"] = traceback.format_exception(
-                    *record.exc_info
-                )
+                log_data["exception"]["traceback"] = traceback.format_exception(*record.exc_info)
 
         # Add source location for debugging
         if record.levelno >= logging.WARNING:
@@ -197,7 +196,7 @@ class TextFormatter(logging.Formatter):
 
     COLORS = {
         "DEBUG": "\033[36m",  # Cyan
-        "INFO": "\033[32m",   # Green
+        "INFO": "\033[32m",  # Green
         "WARNING": "\033[33m",  # Yellow
         "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[35m",  # Magenta
@@ -257,7 +256,7 @@ class StructuredLogger:
         self,
         level: int,
         message: str,
-        exc_info: Any = None,
+        exc_info: Optional[Union[Exception, bool, tuple[Any, Any, Any]]] = None,
         **kwargs: JSONValue,
     ) -> None:
         """Internal log method with extra data handling."""
@@ -291,13 +290,23 @@ class StructuredLogger:
         """Log warning message with extra data."""
         self._log(logging.WARNING, message, **kwargs)
 
-    def error(self, message: str, exc_info: Any = None, **kwargs: JSONValue) -> None:
+    def error(
+        self,
+        message: str,
+        exc_info: Optional[Union[Exception, bool, tuple[Any, Any, Any]]] = None,
+        **kwargs: JSONValue,
+    ) -> None:
         """Log error message with optional exception info."""
         if exc_info is True:
             exc_info = sys.exc_info()
         self._log(logging.ERROR, message, exc_info=exc_info, **kwargs)
 
-    def critical(self, message: str, exc_info: Any = None, **kwargs: JSONValue) -> None:
+    def critical(
+        self,
+        message: str,
+        exc_info: Optional[Union[Exception, bool, tuple[Any, Any, Any]]] = None,
+        **kwargs: JSONValue,
+    ) -> None:
         """Log critical message with optional exception info."""
         if exc_info is True:
             exc_info = sys.exc_info()
@@ -463,13 +472,14 @@ def log_function_call(logger: Optional[StructuredLogger] = None) -> Callable:
         def my_function(arg1, arg2):
             ...
     """
+
     def decorator(func: Callable) -> Callable:
         nonlocal logger
         if logger is None:
             logger = get_logger(func.__module__)
 
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: JSONValue, **kwargs: JSONValue) -> Any:
             logger.debug(
                 f"Entering {func.__name__}",
                 function=func.__name__,
@@ -494,7 +504,7 @@ def log_function_call(logger: Optional[StructuredLogger] = None) -> Callable:
                 raise
 
         @wraps(func)
-        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def async_wrapper(*args: JSONValue, **kwargs: JSONValue) -> Any:
             logger.debug(
                 f"Entering {func.__name__}",
                 function=func.__name__,
@@ -519,6 +529,7 @@ def log_function_call(logger: Optional[StructuredLogger] = None) -> Callable:
                 raise
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return wrapper

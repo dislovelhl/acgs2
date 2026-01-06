@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 from src.core.enhanced_agent_bus.api import app
 
 client = TestClient(app)
+
 
 @pytest.fixture
 def mock_agent_bus():
@@ -19,24 +19,18 @@ def mock_agent_bus():
     with patch("enhanced_agent_bus.api.agent_bus", {"status": "initialized"}):
         yield
 
+
 def test_api_session_header_support(mock_agent_bus):
     """Test X-Session-ID header support."""
     session_id = "test-session-header-123"
-    payload = {
-        "content": "Hello world",
-        "sender": "user-agent",
-        "message_type": "chat"
-    }
+    payload = {"content": "Hello world", "sender": "user-agent", "message_type": "chat"}
 
-    response = client.post(
-        "/messages",
-        json=payload,
-        headers={"X-Session-ID": session_id}
-    )
+    response = client.post("/messages", json=payload, headers={"X-Session-ID": session_id})
 
     assert response.status_code == 200
     data = response.json()
     assert data["details"]["session_id"] == session_id
+
 
 def test_api_session_body_support(mock_agent_bus):
     """Test session_id in request body."""
@@ -45,33 +39,23 @@ def test_api_session_body_support(mock_agent_bus):
         "content": "Hello world",
         "sender": "user-agent",
         "message_type": "chat",
-        "session_id": session_id
+        "session_id": session_id,
     }
 
-    response = client.post(
-        "/messages",
-        json=payload
-    )
+    response = client.post("/messages", json=payload)
 
     assert response.status_code == 200
     data = response.json()
     assert data["details"]["session_id"] == session_id
 
+
 def test_api_session_precedence(mock_agent_bus):
     """Test that body takes precedence over header if both present."""
     header_id = "header-id"
     body_id = "body-id"
-    payload = {
-        "content": "Hello world",
-        "sender": "user-agent",
-        "session_id": body_id
-    }
+    payload = {"content": "Hello world", "sender": "user-agent", "session_id": body_id}
 
-    response = client.post(
-        "/messages",
-        json=payload,
-        headers={"X-Session-ID": header_id}
-    )
+    response = client.post("/messages", json=payload, headers={"X-Session-ID": header_id})
 
     assert response.status_code == 200
     data = response.json()

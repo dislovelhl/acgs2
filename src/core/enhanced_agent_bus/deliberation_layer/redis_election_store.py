@@ -76,7 +76,9 @@ class RedisElectionStore:
         """Get Redis key for an election."""
         return f"{self.election_prefix}{election_id}"
 
-    async def save_election(self, election_id: str, election_data: Dict[str, Any], ttl: int) -> bool:
+    async def save_election(
+        self, election_id: str, election_data: Dict[str, Any], ttl: int
+    ) -> bool:
         """
         Save an election to Redis with TTL.
 
@@ -99,7 +101,7 @@ class RedisElectionStore:
             json_str = json.dumps(serialized_data, default=str)
 
             await self.redis_client.setex(key, ttl, json_str)
-            logger.debug(f"Saved election {election_id} with TTL {ttl}s")
+
             return True
         except (ConnectionError, OSError, TypeError, ValueError) as e:
             logger.error(f"Failed to save election {election_id}: {e}")
@@ -175,7 +177,6 @@ class RedisElectionStore:
             json_str = json.dumps(serialized, default=str)
             await self.redis_client.setex(key, ttl, json_str)
 
-            logger.debug(f"Added vote from {agent_id} to election {election_id}")
             return True
         except (ConnectionError, OSError, TypeError, ValueError) as e:
             logger.error(f"Failed to add vote to election {election_id}: {e}")
@@ -215,7 +216,7 @@ class RedisElectionStore:
         try:
             key = self._get_election_key(election_id)
             deleted = await self.redis_client.delete(key)
-            logger.debug(f"Deleted election {election_id}")
+
             return deleted > 0
         except (ConnectionError, OSError) as e:
             logger.error(f"Failed to delete election {election_id}: {e}")
@@ -251,7 +252,6 @@ class RedisElectionStore:
             json_str = json.dumps(serialized, default=str)
             await self.redis_client.setex(key, ttl, json_str)
 
-            logger.debug(f"Updated election {election_id} status to {status}")
             return True
         except (ConnectionError, OSError, TypeError, ValueError) as e:
             logger.error(f"Failed to update election {election_id} status: {e}")

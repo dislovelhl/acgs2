@@ -1,0 +1,22 @@
+artifact_path: /home/dislove/document/acgs2/mlruns/0/models/m-f73056c23ff24634984f4d3385b63eb9/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.3
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+mlflow_version: 3.8.1
+model_id: m-f73056c23ff24634984f4d3385b63eb9
+model_size_bytes: 649707
+model_uuid: m-f73056c23ff24634984f4d3385b63eb9
+prompts: null
+run_id: 505d7d82ded54281844b63d44d3fe9da
+utc_time_created: '2026-01-05 23:58:58.367554'

@@ -3,7 +3,6 @@ import os
 from unittest.mock import patch
 
 import pytest
-
 from src.core.services.audit_service.core.audit_ledger import (
     AuditLedger,
     AuditLedgerConfig,

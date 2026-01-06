@@ -9,7 +9,7 @@ All cache metrics include tier labels for accurate per-tier tracking.
 import asyncio
 import time
 from functools import wraps
-from typing import Callable
+from typing import Any, Callable, Dict, List, Optional
 
 from prometheus_client import (
     REGISTRY,
@@ -23,7 +23,7 @@ from prometheus_client import (
 # ============================================================================
 
 # Cache for registered metrics to avoid re-registration
-_CACHE_METRICS_CACHE = {}
+_CACHE_METRICS_CACHE: Dict[str, Any] = {}
 
 
 def _find_existing_metric(name: str):
@@ -42,7 +42,9 @@ def _find_existing_metric(name: str):
     return None
 
 
-def _get_or_create_histogram(name: str, description: str, labels: list, buckets: list = None):
+def _get_or_create_histogram(
+    name: str, description: str, labels: List[str], buckets: Optional[List[float]] = None
+):
     """Get existing or create new histogram metric."""
     global _CACHE_METRICS_CACHE
     if name in _CACHE_METRICS_CACHE:
@@ -71,7 +73,7 @@ def _get_or_create_histogram(name: str, description: str, labels: list, buckets:
         raise
 
 
-def _get_or_create_counter(name: str, description: str, labels: list):
+def _get_or_create_counter(name: str, description: str, labels: List[str]):
     """Get existing or create new counter metric."""
     global _CACHE_METRICS_CACHE
     if name in _CACHE_METRICS_CACHE:
@@ -96,7 +98,7 @@ def _get_or_create_counter(name: str, description: str, labels: list):
         raise
 
 
-def _get_or_create_gauge(name: str, description: str, labels: list):
+def _get_or_create_gauge(name: str, description: str, labels: List[str]):
     """Get existing or create new gauge metric."""
     global _CACHE_METRICS_CACHE
     if name in _CACHE_METRICS_CACHE:
@@ -134,7 +136,6 @@ L2_LATENCY_BUCKETS = [0.001, 0.005, 0.01, 0.025, 0.05, 0.1]
 
 # L3 Distributed Cache: 10-1000ms range
 L3_LATENCY_BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1.0]
-
 
 # ============================================================================
 # Cache Hit/Miss Counters with Tier Labels
@@ -266,7 +267,6 @@ CACHE_TIER_HEALTH = _get_or_create_gauge(
     "Health status of cache tier (1=healthy, 0=unhealthy)",
     ["tier"],
 )
-
 
 # ============================================================================
 # Helper Functions for Recording Metrics

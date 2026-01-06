@@ -24,7 +24,6 @@ from .pacar_manager import PACARManager
 
 logger = logging.getLogger(__name__)
 
-
 class PACARVerifier:
     """Orchestrates Red Team and Validator agents for agentic verification."""
 
@@ -34,7 +33,9 @@ class PACARVerifier:
         self.manager = PACARManager(config=self.config)
         logger.info("PACARVerifier initialized for SDPC Phase 2 (Multi-turn enabled)")
 
-    async def verify(self, content: str, original_intent: str, session_id: Optional[str] = None) -> Dict[str, Any]:
+    async def verify(
+        self, content: str, original_intent: str, session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Executes the PACAR (Proactive Agentic Critique and Review) workflow.
         1. Red Team: Adversarial audit to find weaknesses.
@@ -64,13 +65,16 @@ class PACARVerifier:
         try:
             # Stage 1: Red Team Audit
             if session_id:
-                await self.manager.add_message(session_id, MessageRole.USER, content, {"intent": original_intent})
+                await self.manager.add_message(
+                    session_id, MessageRole.USER, content, {"intent": original_intent}
+                )
                 context_state = await self.manager.get_state(session_id)
-                history_dicts = [{"role": m.role.value, "content": m.content} for m in context_state.messages]
+                history_dicts = [
+                    {"role": m.role.value, "content": m.content} for m in context_state.messages
+                ]
 
                 red_team_analysis = await self.assistant.ainvoke_multi_turn(
-                    sys_prompt=red_team_prompt,
-                    messages=history_dicts
+                    sys_prompt=red_team_prompt, messages=history_dicts
                 )
             else:
                 # Single turn fallback
@@ -83,17 +87,18 @@ class PACARVerifier:
                     session_id,
                     MessageRole.ASSISTANT,
                     f"Red Team Critique: {critique}",
-                    {"type": "red_team_critique"}
+                    {"type": "red_team_critique"},
                 )
                 context_state = await self.manager.get_state(session_id)
-                history_dicts = [{"role": m.role.value, "content": m.content} for m in context_state.messages]
+                history_dicts = [
+                    {"role": m.role.value, "content": m.content} for m in context_state.messages
+                ]
 
                 final_analysis = await self.assistant.ainvoke_multi_turn(
-                    sys_prompt=validator_prompt,
-                    messages=history_dicts
+                    sys_prompt=validator_prompt, messages=history_dicts
                 )
             else:
-                final_analysis = red_team_analysis # Simple fallback
+                final_analysis = red_team_analysis  # Simple fallback
 
             # 3. Decision and Metrics
             is_valid = final_analysis.get("recommended_decision", "approve") == "approve"
@@ -117,7 +122,7 @@ class PACARVerifier:
                 "validator_reasoning": final_analysis.get("reasoning", []),
                 "mitigations": final_analysis.get("mitigations", []),
                 "consensus_reached": True,
-                "metrics": metrics
+                "metrics": metrics,
             }
 
             if session_id:
@@ -125,7 +130,7 @@ class PACARVerifier:
                     session_id,
                     MessageRole.ASSISTANT,
                     f"Final Verification Decision: {'Approved' if is_valid else 'Rejected'}. Reason: {result['validator_reasoning']}",
-                    {"type": "verification_result", "is_valid": is_valid}
+                    {"type": "verification_result", "is_valid": is_valid},
                 )
 
             return result
@@ -161,7 +166,7 @@ class PACARVerifier:
         """
         # If no session_id provided, fall back to single-turn verification
         if not session_id:
-            logger.debug("No session_id provided, using single-turn verification")
+
             return await self.verify(content, original_intent)
 
         logger.info(f"Executing PACAR verification with context for session {session_id}")
@@ -192,7 +197,7 @@ class PACARVerifier:
         if self.redis_client:
             conversation_data = await self._get_conversation(session_id)
             if conversation_data:
-                logger.debug(f"Retrieved existing conversation for session {session_id}")
+
             else:
                 logger.info(f"Creating new conversation for session {session_id}")
 

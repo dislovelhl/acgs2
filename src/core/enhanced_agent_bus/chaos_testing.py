@@ -521,7 +521,9 @@ class ChaosEngine:
                 and scenario.chaos_type == ChaosType.ERROR
                 and scenario.is_target_allowed(target)
             ):
-                if random.random() < scenario.error_rate:
+                import secrets
+
+                if secrets.SystemRandom().random() < scenario.error_rate:
                     self._metrics["total_errors_injected"] += 1
                     return scenario.error_type
 

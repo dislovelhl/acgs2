@@ -45,10 +45,14 @@ class VoteEvent(BaseModel):
     election_id: str = Field(..., description="Unique election identifier")
     agent_id: str = Field(..., description="Agent casting the vote")
     decision: VoteDecision = Field(..., description="Vote decision: APPROVE, DENY, or ABSTAIN")
-    weight: float = Field(1.0, ge=0.0, description="Vote weight (default 1.0, compliance officers may have 2.0)")
+    weight: float = Field(
+        1.0, ge=0.0, description="Vote weight (default 1.0, compliance officers may have 2.0)"
+    )
     reasoning: Optional[str] = Field(None, description="Optional reasoning for the vote")
     confidence: float = Field(1.0, ge=0.0, le=1.0, description="Confidence level (0.0 to 1.0)")
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Vote timestamp")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), description="Vote timestamp"
+    )
     signature: Optional[str] = Field(None, description="HMAC-SHA256 signature for vote integrity")
 
     class Config:
@@ -68,10 +72,14 @@ class AuditRecord(BaseModel):
 
     event_type: VoteEventType = Field(..., description="Type of voting event")
     election_id: str = Field(..., description="Election identifier")
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Event timestamp")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), description="Event timestamp"
+    )
     signature: str = Field(..., description="HMAC-SHA256 signature for audit record integrity")
     payload: Dict[str, Any] = Field(..., description="Event-specific payload data")
-    agent_id: Optional[str] = Field(None, description="Agent ID if applicable (e.g., for vote_cast events)")
+    agent_id: Optional[str] = Field(
+        None, description="Agent ID if applicable (e.g., for vote_cast events)"
+    )
 
     class Config:
         json_encoders = {
@@ -90,7 +98,9 @@ class WeightedParticipant(BaseModel):
 
     agent_id: str = Field(..., description="Agent identifier")
     weight: float = Field(1.0, ge=0.0, description="Vote weight (default 1.0)")
-    role: Optional[str] = Field(None, description="Agent role (e.g., 'compliance_officer', 'engineer')")
+    role: Optional[str] = Field(
+        None, description="Agent role (e.g., 'compliance_officer', 'engineer')"
+    )
 
     class Config:
         use_enum_values = True

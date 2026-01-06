@@ -37,15 +37,15 @@ graph TD
     Msg[Agent Message] --> Scorer{Impact Scorer}
     Scorer -->|Score < 0.8| Fast[Fast Path: Rust Router]
     Scorer -->|Score >= 0.8| Delib[Deliberation Path: OPA + Queue]
-    
+
     Fast --> Kafka[Kafka Event Bus]
     Delib -->|Approved| Kafka
-    
+
     subgraph Orchestration
         Kafka --> Orch[Orchestrator]
         Orch --> Workers[Worker Agents]
     end
-    
+
     subgraph Governance
         OPA[Open Policy Agent]
         Audit[Audit Ledger: Blockchain]

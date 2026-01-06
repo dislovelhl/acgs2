@@ -12,6 +12,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -58,7 +59,6 @@ try:
 except ImportError:
     # Fallback for direct execution or testing
     pass  # type: ignore
-
 
 logger = logging.getLogger(__name__)
 
@@ -625,8 +625,6 @@ class OPAGuard:
         # Keep only recent logs (last 10000)
         if len(self._audit_log) > 10000:
             self._audit_log = self._audit_log[-10000:]
-
-        logger.debug(f"Logged decision: {log_entry['log_id']}")
 
     async def check_constitutional_compliance(self, action: JSONDict) -> bool:
         """

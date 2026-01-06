@@ -25,13 +25,13 @@ import logging
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, field_validator
-
 from src.core.shared.config import settings
+from src.core.shared.types import JSONDict
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -47,14 +47,12 @@ security = HTTPBearer(auto_error=False)
 
 # In-memory storage for development (replace with database in production)
 # This mimics database storage until proper database sessions are wired up
-_sso_providers: dict[str, dict[str, Any]] = {}
-_role_mappings: dict[str, dict[str, Any]] = {}
-
+_sso_providers: Dict[str, JSONDict] = {}
+_role_mappings: Dict[str, JSONDict] = {}
 
 # ========================================
 # Request/Response Models
 # ========================================
-
 
 class SSOProviderCreateRequest(BaseModel):
     """Request model for creating an SSO provider with validation."""
@@ -85,9 +83,9 @@ class SSOProviderCreateRequest(BaseModel):
     saml_sign_assertions: bool = Field(True, description="Whether IdP should sign assertions")
 
     # General fields
-    allowed_domains: Optional[list[str]] = Field(None, description="List of allowed email domains")
-    default_roles: Optional[list[str]] = Field(None, description="Default roles for new users")
-    config: Optional[dict[str, Any]] = Field(
+    allowed_domains: Optional[List[str]] = Field(None, description="List of allowed email domains")
+    default_roles: Optional[List[str]] = Field(None, description="Default roles for new users")
+    config: Optional[JSONDict] = Field(
         None, description="Additional provider-specific configuration"
     )
 
@@ -109,7 +107,6 @@ class SSOProviderCreateRequest(BaseModel):
         if v_lower not in ("oidc", "saml"):
             raise ValueError("Type must be 'oidc' or 'saml'")
         return v_lower
-
 
 class SSOProviderUpdateRequest(BaseModel):
     """Request model for updating an SSO provider."""
@@ -145,9 +142,9 @@ class SSOProviderUpdateRequest(BaseModel):
     )
 
     # General fields
-    allowed_domains: Optional[list[str]] = Field(None, description="List of allowed email domains")
-    default_roles: Optional[list[str]] = Field(None, description="Default roles for new users")
-    config: Optional[dict[str, Any]] = Field(
+    allowed_domains: Optional[List[str]] = Field(None, description="List of allowed email domains")
+    default_roles: Optional[List[str]] = Field(None, description="Default roles for new users")
+    config: Optional[JSONDict] = Field(
         None, description="Additional provider-specific configuration"
     )
 
@@ -162,7 +159,6 @@ class SSOProviderUpdateRequest(BaseModel):
                 "Name must contain only alphanumeric characters, spaces, hyphens, and underscores"
             )
         return v.strip()
-
 
 class SSOProviderResponse(BaseModel):
     """Response model for SSO provider data."""
@@ -184,13 +180,12 @@ class SSOProviderResponse(BaseModel):
     saml_sign_assertions: Optional[bool] = Field(None, description="Sign assertions")
 
     # General fields
-    allowed_domains: Optional[list[str]] = Field(None, description="Allowed email domains")
-    default_roles: Optional[list[str]] = Field(None, description="Default roles")
+    allowed_domains: Optional[List[str]] = Field(None, description="Allowed email domains")
+    default_roles: Optional[List[str]] = Field(None, description="Default roles")
 
     # Timestamps
     created_at: str = Field(..., description="Creation timestamp")
     updated_at: str = Field(..., description="Last update timestamp")
-
 
 class RoleMappingCreateRequest(BaseModel):
     """Request model for creating a role mapping."""
@@ -211,7 +206,6 @@ class RoleMappingCreateRequest(BaseModel):
                 "underscores, colons, and periods"
             )
         return v.strip()
-
 
 class RoleMappingUpdateRequest(BaseModel):
     """Request model for updating a role mapping."""
@@ -238,7 +232,6 @@ class RoleMappingUpdateRequest(BaseModel):
             )
         return v.strip()
 
-
 class RoleMappingResponse(BaseModel):
     """Response model for role mapping data."""
 
@@ -251,16 +244,14 @@ class RoleMappingResponse(BaseModel):
     created_at: str = Field(..., description="Creation timestamp")
     updated_at: str = Field(..., description="Last update timestamp")
 
-
 # ========================================
 # Authentication & Authorization
 # ========================================
 
-
 async def get_current_admin(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),  # noqa: B008
-) -> dict[str, Any]:
+) -> JSONDict:
     """Validate admin authentication and authorization.
 
     This function checks for admin authentication via:
@@ -338,7 +329,6 @@ async def get_current_admin(
         except ImportError:
             pass
         except Exception as e:
-            logger.debug(f"JWT validation failed: {e}")
 
     # Check for development mode bypass
     if settings.env == "development" and settings.sso.enabled is False:
@@ -363,16 +353,14 @@ async def get_current_admin(
         detail="Admin authentication required.",
     )
 
-
 # ========================================
 # SSO Provider CRUD Endpoints
 # ========================================
 
-
 @router.post("/providers", response_model=SSOProviderResponse, status_code=201)
 async def create_sso_provider(
     request_data: SSOProviderCreateRequest,
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> SSOProviderResponse:
     """Create a new SSO provider configuration.
 
@@ -488,12 +476,11 @@ async def create_sso_provider(
         updated_at=provider["updated_at"],
     )
 
-
 @router.get("/providers", response_model=list[SSOProviderResponse])
 async def list_sso_providers(
     enabled_only: bool = Query(False, description="Only return enabled providers"),
     provider_type: Optional[str] = Query(None, description="Filter by type (oidc/saml)"),
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> list[SSOProviderResponse]:
     """List all SSO provider configurations.
 
@@ -547,11 +534,10 @@ async def list_sso_providers(
 
     return providers
 
-
 @router.get("/providers/{provider_id}", response_model=SSOProviderResponse)
 async def get_sso_provider(
     provider_id: str,
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> SSOProviderResponse:
     """Get a specific SSO provider configuration.
 
@@ -590,12 +576,11 @@ async def get_sso_provider(
         updated_at=provider["updated_at"],
     )
 
-
 @router.put("/providers/{provider_id}", response_model=SSOProviderResponse)
 async def update_sso_provider(
     provider_id: str,
     request_data: SSOProviderUpdateRequest,
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> SSOProviderResponse:
     """Update an SSO provider configuration.
 
@@ -663,11 +648,10 @@ async def update_sso_provider(
         updated_at=provider["updated_at"],
     )
 
-
 @router.delete("/providers/{provider_id}", status_code=204)
 async def delete_sso_provider(
     provider_id: str,
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> None:
     """Delete an SSO provider configuration.
 
@@ -710,16 +694,14 @@ async def delete_sso_provider(
         },
     )
 
-
 # ========================================
 # Role Mapping CRUD Endpoints
 # ========================================
 
-
 @router.post("/role-mappings", response_model=RoleMappingResponse, status_code=201)
 async def create_role_mapping(
     request_data: RoleMappingCreateRequest,
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> RoleMappingResponse:
     """Create a new IdP group to role mapping.
 
@@ -797,12 +779,11 @@ async def create_role_mapping(
         updated_at=mapping["updated_at"],
     )
 
-
 @router.get("/role-mappings", response_model=list[RoleMappingResponse])
 async def list_role_mappings(
     provider_id: Optional[str] = Query(None, description="Filter by SSO provider ID"),
     acgs_role: Optional[str] = Query(None, description="Filter by ACGS-2 role"),
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> list[RoleMappingResponse]:
     """List all role mappings.
 
@@ -852,11 +833,10 @@ async def list_role_mappings(
 
     return mappings
 
-
 @router.get("/role-mappings/{mapping_id}", response_model=RoleMappingResponse)
 async def get_role_mapping(
     mapping_id: str,
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> RoleMappingResponse:
     """Get a specific role mapping.
 
@@ -888,12 +868,11 @@ async def get_role_mapping(
         updated_at=mapping["updated_at"],
     )
 
-
 @router.put("/role-mappings/{mapping_id}", response_model=RoleMappingResponse)
 async def update_role_mapping(
     mapping_id: str,
     request_data: RoleMappingUpdateRequest,
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> RoleMappingResponse:
     """Update a role mapping.
 
@@ -958,11 +937,10 @@ async def update_role_mapping(
         updated_at=mapping["updated_at"],
     )
 
-
 @router.delete("/role-mappings/{mapping_id}", status_code=204)
 async def delete_role_mapping(
     mapping_id: str,
-    admin: dict[str, Any] = Depends(get_current_admin),
+    admin: JSONDict = Depends(get_current_admin),
 ) -> None:
     """Delete a role mapping.
 

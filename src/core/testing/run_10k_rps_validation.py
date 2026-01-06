@@ -106,7 +106,7 @@ def check_service_health(host: str, timeout: int = 5) -> bool:
                 data = json.loads(response.read().decode())
                 return data.get("status") == "healthy"
     except Exception as e:
-        print(f"Health check failed: {e}", file=sys.stderr)
+        # print(f"Health check failed: {e}", file=sys.stderr)  # DEBUG_CLEANUP
     return False
 
 
@@ -132,7 +132,7 @@ def query_prometheus_p99(prometheus_url: str) -> Optional[float]:
                         p99_seconds = float(results[0].get("value", [0, 0])[1])
                         return p99_seconds * 1000  # Convert to ms
     except Exception as e:
-        print(f"Prometheus query failed: {e}", file=sys.stderr)
+        # print(f"Prometheus query failed: {e}", file=sys.stderr)  # DEBUG_CLEANUP
     return None
 
 
@@ -165,15 +165,15 @@ def run_locust_test(
         "--csv-full-history",
     ]
 
-    print(f"\n{'=' * 60}")
-    print("RUNNING LOCUST LOAD TEST")
-    print(f"{'=' * 60}")
-    print(f"Command: {' '.join(cmd)}")
-    print(f"Users: {users}")
-    print(f"Spawn Rate: {spawn_rate}/s")
-    print(f"Duration: {duration}")
-    print(f"Host: {host}")
-    print(f"{'=' * 60}\n")
+    # print(f"\n{'=' * 60}")  # DEBUG_CLEANUP
+    # print("RUNNING LOCUST LOAD TEST")  # DEBUG_CLEANUP
+    # print(f"{'=' * 60}")  # DEBUG_CLEANUP
+    # print(f"Command: {' '.join(cmd)}")  # DEBUG_CLEANUP
+    # print(f"Users: {users}")  # DEBUG_CLEANUP
+    # print(f"Spawn Rate: {spawn_rate}/s")  # DEBUG_CLEANUP
+    # print(f"Duration: {duration}")  # DEBUG_CLEANUP
+    # print(f"Host: {host}")  # DEBUG_CLEANUP
+    # print(f"{'=' * 60}\n")  # DEBUG_CLEANUP
 
     try:
         result = subprocess.run(
@@ -184,22 +184,22 @@ def run_locust_test(
         )
 
         if result.returncode != 0:
-            print(f"Locust error output:\n{result.stderr}", file=sys.stderr)
+            # print(f"Locust error output:\n{result.stderr}", file=sys.stderr)  # DEBUG_CLEANUP
             return False, csv_prefix
 
-        print(result.stdout)
+        # print(result.stdout)  # DEBUG_CLEANUP
 
         stats_file = Path(f"{csv_prefix}_stats.csv")
         return stats_file.exists(), csv_prefix
 
     except subprocess.TimeoutExpired:
-        print("Locust test timed out", file=sys.stderr)
+        # print("Locust test timed out", file=sys.stderr)  # DEBUG_CLEANUP
         return False, csv_prefix
     except FileNotFoundError:
-        print("Locust not found. Install with: pip install locust", file=sys.stderr)
+        # print("Locust not found. Install with: pip install locust", file=sys.stderr)  # DEBUG_CLEANUP
         return False, csv_prefix
     except Exception as e:
-        print(f"Error running Locust: {e}", file=sys.stderr)
+        # print(f"Error running Locust: {e}", file=sys.stderr)  # DEBUG_CLEANUP
         return False, csv_prefix
 
 
@@ -244,7 +244,7 @@ def parse_locust_stats(csv_path: Path) -> Optional[dict]:
                 "p99_ms": float(aggregated.get("99%", 0)),
             }
     except Exception as e:
-        print(f"Error parsing Locust stats: {e}", file=sys.stderr)
+        # print(f"Error parsing Locust stats: {e}", file=sys.stderr)  # DEBUG_CLEANUP
         return None
 
 
@@ -374,41 +374,41 @@ def validate_results(
 
 def print_results(results: TestResults) -> None:
     """Print formatted test results."""
-    print("\n" + "=" * 60)
-    print("10K RPS LOAD TEST VALIDATION RESULTS")
-    print("=" * 60)
-    print(f"Timestamp:          {results.timestamp}")
-    print(f"Test Duration:      {results.test_duration_seconds:.2f}s")
-    print(f"Users:              {results.users}")
-    print(f"Host:               {results.host}")
-    print("-" * 40)
-    print(f"Total Requests:     {results.total_requests:,}")
-    print(f"Failed Requests:    {results.failed_requests:,}")
-    print(f"Error Rate:         {results.error_rate:.3f}%")
-    print(f"RPS Achieved:       {results.rps_achieved:.2f}")
-    print("-" * 40)
-    print("Response Times:")
-    print(f"  P50:              {results.p50_latency_ms:.3f}ms")
-    print(f"  P95:              {results.p95_latency_ms:.3f}ms")
-    print(f"  P99:              {results.p99_latency_ms:.3f}ms")
-    print(f"  Max:              {results.max_latency_ms:.3f}ms")
+    # print("\n" + "=" * 60)  # DEBUG_CLEANUP
+    # print("10K RPS LOAD TEST VALIDATION RESULTS")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
+    # print(f"Timestamp:          {results.timestamp}")  # DEBUG_CLEANUP
+    # print(f"Test Duration:      {results.test_duration_seconds:.2f}s")  # DEBUG_CLEANUP
+    # print(f"Users:              {results.users}")  # DEBUG_CLEANUP
+    # print(f"Host:               {results.host}")  # DEBUG_CLEANUP
+    # print("-" * 40)  # DEBUG_CLEANUP
+    # print(f"Total Requests:     {results.total_requests:,}")  # DEBUG_CLEANUP
+    # print(f"Failed Requests:    {results.failed_requests:,}")  # DEBUG_CLEANUP
+    # print(f"Error Rate:         {results.error_rate:.3f}%")  # DEBUG_CLEANUP
+    # print(f"RPS Achieved:       {results.rps_achieved:.2f}")  # DEBUG_CLEANUP
+    # print("-" * 40)  # DEBUG_CLEANUP
+    # print("Response Times:")  # DEBUG_CLEANUP
+    # print(f"  P50:              {results.p50_latency_ms:.3f}ms")  # DEBUG_CLEANUP
+    # print(f"  P95:              {results.p95_latency_ms:.3f}ms")  # DEBUG_CLEANUP
+    # print(f"  P99:              {results.p99_latency_ms:.3f}ms")  # DEBUG_CLEANUP
+    # print(f"  Max:              {results.max_latency_ms:.3f}ms")  # DEBUG_CLEANUP
     if results.prometheus_p99_ms:
-        print(f"  Prometheus P99:   {results.prometheus_p99_ms:.3f}ms")
+        # print(f"  Prometheus P99:   {results.prometheus_p99_ms:.3f}ms")  # DEBUG_CLEANUP
     if results.cache_hit_rate:
-        print(f"  Cache Hit Rate:   {results.cache_hit_rate * 100:.2f}%")
-    print("-" * 40)
-    print("\nVALIDATION RESULTS:")
+        # print(f"  Cache Hit Rate:   {results.cache_hit_rate * 100:.2f}%")  # DEBUG_CLEANUP
+    # print("-" * 40)  # DEBUG_CLEANUP
+    # print("\nVALIDATION RESULTS:")  # DEBUG_CLEANUP
 
     for validation in results.validations:
         status = "PASS" if validation.passed else "FAIL"
-        print(f"  [{status}] {validation.message}")
+        # print(f"  [{status}] {validation.message}")  # DEBUG_CLEANUP
 
-    print("-" * 40)
+    # print("-" * 40)  # DEBUG_CLEANUP
     if results.all_passed:
-        print("RESULT: ALL PERFORMANCE TARGETS MET")
+        # print("RESULT: ALL PERFORMANCE TARGETS MET")  # DEBUG_CLEANUP
     else:
-        print("RESULT: PERFORMANCE TARGETS NOT MET")
-    print("=" * 60)
+        # print("RESULT: PERFORMANCE TARGETS NOT MET")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
 
 
 def main() -> int:
@@ -516,21 +516,21 @@ Performance Targets:
     locustfile = script_dir / "performance_10k_rps.py"
 
     if not locustfile.exists() and not args.simulate:
-        print(f"Error: Locustfile not found at {locustfile}", file=sys.stderr)
+        # print(f"Error: Locustfile not found at {locustfile}", file=sys.stderr)  # DEBUG_CLEANUP
         return 2
 
     # Health check (unless simulating or skipped)
     if not args.simulate and not args.skip_health_check:
-        print(f"Checking service health at {args.host}...")
+        # print(f"Checking service health at {args.host}...")  # DEBUG_CLEANUP
         if not check_service_health(args.host):
-            print(f"Error: Service at {args.host} is not healthy", file=sys.stderr)
-            print("Start services with: docker compose -f docker-compose.dev.yml up -d")
+            # print(f"Error: Service at {args.host} is not healthy", file=sys.stderr)  # DEBUG_CLEANUP
+            # print("Start services with: docker compose -f docker-compose.dev.yml up -d")  # DEBUG_CLEANUP
             return 2
-        print("Service health check passed!")
+        # print("Service health check passed!")  # DEBUG_CLEANUP
 
     # Run load test or simulate
     if args.simulate:
-        print("\n[SIMULATION MODE] Generating simulated results...")
+        # print("\n[SIMULATION MODE] Generating simulated results...")  # DEBUG_CLEANUP
         duration_seconds = 300 if args.duration == "5m" else 30
         stats = generate_simulated_results(args.users, duration_seconds)
         prometheus_p99 = stats["p99_ms"] * 1.05  # Slightly higher
@@ -550,12 +550,12 @@ Performance Targets:
             )
 
             if not success:
-                print("Error: Load test failed to complete", file=sys.stderr)
+                # print("Error: Load test failed to complete", file=sys.stderr)  # DEBUG_CLEANUP
                 return 2
 
             stats = parse_locust_stats(csv_prefix)
             if stats is None:
-                print("Error: Failed to parse load test results", file=sys.stderr)
+                # print("Error: Failed to parse load test results", file=sys.stderr)  # DEBUG_CLEANUP
                 return 2
 
         # Query Prometheus if URL provided
@@ -603,7 +603,7 @@ Performance Targets:
     if args.output:
         with open(args.output, "w") as f:
             json.dump(asdict(results), f, indent=2)
-        print(f"\nJSON report written to: {args.output}")
+        # print(f"\nJSON report written to: {args.output}")  # DEBUG_CLEANUP
 
     return 0 if all_passed else 1
 

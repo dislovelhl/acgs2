@@ -14,7 +14,7 @@ Tests cover:
 from datetime import datetime, timezone
 
 import pytest
-from template_engine import (
+from src.core.services.compliance_docs.src.template_engine import (
     _control_id_format,
     _current_year,
     _default_value,

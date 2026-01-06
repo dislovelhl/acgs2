@@ -53,7 +53,6 @@ class OPAService:
         if cache_key in _auth_cache:
             result, expiry = _auth_cache[cache_key]
             if datetime.now(timezone.utc).timestamp() < expiry:
-                logger.debug(f"Authorization cache hit for key {cache_key[:8]}...")
                 return result
             else:
                 # Expired entry

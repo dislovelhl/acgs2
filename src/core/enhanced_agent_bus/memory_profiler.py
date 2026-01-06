@@ -169,7 +169,6 @@ class AsyncMemoryQueue:
             self._queue.put_nowait(snapshot)
             return True
         except asyncio.QueueFull:
-            logger.debug(f"[{CONSTITUTIONAL_HASH}] Memory queue full, dropping snapshot")
             return False
 
     async def _worker(self) -> None:

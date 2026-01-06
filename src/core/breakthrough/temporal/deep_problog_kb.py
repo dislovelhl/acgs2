@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 try:
     # Placeholder for ProbLog imports
     import problog
+
     PROBLOG_AVAILABLE = True
 except ImportError:
     PROBLOG_AVAILABLE = False
@@ -60,6 +61,7 @@ except ImportError:
 
 class KnowledgeType(Enum):
     """Types of knowledge in the knowledge base."""
+
     FACT = "fact"
     RULE = "rule"
     CONSTITUTIONAL_PRINCIPLE = "constitutional_principle"
@@ -70,6 +72,7 @@ class KnowledgeType(Enum):
 
 class CertaintyLevel(Enum):
     """Certainty levels for probabilistic facts."""
+
     CERTAIN = 1.0
     HIGH = 0.9
     MEDIUM = 0.7
@@ -81,6 +84,7 @@ class CertaintyLevel(Enum):
 @dataclass
 class ProbabilisticFact:
     """A fact with associated probability."""
+
     fact_id: str
     predicate: str
     arguments: List[Any]
@@ -133,6 +137,7 @@ class ProbabilisticFact:
 @dataclass
 class ProbabilisticRule:
     """A probabilistic rule in the knowledge base."""
+
     rule_id: str
     head: str  # Rule conclusion
     body: List[str]  # Rule premises
@@ -152,6 +157,7 @@ class ProbabilisticRule:
 @dataclass
 class InferenceResult:
     """Result of a probabilistic inference."""
+
     query: str
     probability: float
     evidence: List[str]
@@ -209,7 +215,7 @@ class DeepProbLogKB:
                 arguments=args,
                 probability=prob,
                 source="constitutional_foundation",
-                knowledge_type=KnowledgeType.CONSTITUTIONAL_PRINCIPLE
+                knowledge_type=KnowledgeType.CONSTITUTIONAL_PRINCIPLE,
             )
             self.facts[fact.fact_id] = fact
 
@@ -230,7 +236,7 @@ class DeepProbLogKB:
                 body=body,
                 probability=prob,
                 variables=set(),  # Would be extracted from rule
-                knowledge_type=KnowledgeType.CONSTITUTIONAL_PRINCIPLE
+                knowledge_type=KnowledgeType.CONSTITUTIONAL_PRINCIPLE,
             )
             self.rules[rule.rule_id] = rule
 
@@ -240,7 +246,7 @@ class DeepProbLogKB:
         arguments: List[Any],
         probability: float,
         knowledge_type: KnowledgeType = KnowledgeType.FACT,
-        source: str = "learned"
+        source: str = "learned",
     ) -> ProbabilisticFact:
         """Add a probabilistic fact to the knowledge base."""
 
@@ -250,7 +256,7 @@ class DeepProbLogKB:
             arguments=arguments,
             probability=min(1.0, max(0.0, probability)),
             source=source,
-            knowledge_type=knowledge_type
+            knowledge_type=knowledge_type,
         )
 
         self.facts[fact.fact_id] = fact
@@ -258,7 +264,6 @@ class DeepProbLogKB:
         # Invalidate relevant cache entries
         await self._invalidate_cache_for_fact(fact)
 
-        logger.debug(f"Added fact: {predicate} with probability {probability}")
         return fact
 
     async def add_rule(
@@ -266,7 +271,7 @@ class DeepProbLogKB:
         head: str,
         body: List[str],
         probability: float,
-        knowledge_type: KnowledgeType = KnowledgeType.RULE
+        knowledge_type: KnowledgeType = KnowledgeType.RULE,
     ) -> ProbabilisticRule:
         """Add a probabilistic rule to the knowledge base."""
 
@@ -276,7 +281,7 @@ class DeepProbLogKB:
             body=body,
             probability=min(1.0, max(0.0, probability)),
             variables=self._extract_variables(head, body),
-            knowledge_type=knowledge_type
+            knowledge_type=knowledge_type,
         )
 
         self.rules[rule.rule_id] = rule
@@ -284,7 +289,6 @@ class DeepProbLogKB:
         # Invalidate cache
         self.inference_cache.clear()
 
-        logger.debug(f"Added rule: {head} :- {', '.join(body)}")
         return rule
 
     def _extract_variables(self, head: str, body: List[str]) -> Set[str]:
@@ -302,10 +306,7 @@ class DeepProbLogKB:
         return variables
 
     async def query_probability(
-        self,
-        query: str,
-        context: Optional[Dict[str, Any]] = None,
-        use_cache: bool = True
+        self, query: str, context: Optional[Dict[str, Any]] = None, use_cache: bool = True
     ) -> InferenceResult:
         """
         Query the probability of a logical statement.
@@ -332,7 +333,9 @@ class DeepProbLogKB:
         if context:
             for predicate, args in context.items():
                 if isinstance(args, list):
-                    temp_fact = await self.add_fact(predicate, args, 0.8, KnowledgeType.INFERENCE, "context")
+                    temp_fact = await self.add_fact(
+                        predicate, args, 0.8, KnowledgeType.INFERENCE, "context"
+                    )
                     temp_fact_ids.append(temp_fact.fact_id)
 
         try:
@@ -344,10 +347,7 @@ class DeepProbLogKB:
                 probability, evidence, contradictions = await self._rule_based_inference(query)
 
             # Calculate confidence interval (simplified)
-            confidence_interval = (
-                max(0.0, probability - 0.1),
-                min(1.0, probability + 0.1)
-            )
+            confidence_interval = (max(0.0, probability - 0.1), min(1.0, probability + 0.1))
 
             result = InferenceResult(
                 query=query,
@@ -355,7 +355,7 @@ class DeepProbLogKB:
                 evidence=evidence,
                 contradictions=contradictions,
                 inference_time_ms=(time.time() - start_time) * 1000,
-                confidence_interval=confidence_interval
+                confidence_interval=confidence_interval,
             )
 
             # Cache result
@@ -406,10 +406,7 @@ class DeepProbLogKB:
         # Simple pattern matching against known facts
         query_predicate = query.split("(")[0] if "(" in query else query
 
-        matching_facts = [
-            fact for fact in self.facts.values()
-            if fact.predicate == query_predicate
-        ]
+        matching_facts = [fact for fact in self.facts.values() if fact.predicate == query_predicate]
 
         if matching_facts:
             # Average probability of matching facts
@@ -418,8 +415,7 @@ class DeepProbLogKB:
         else:
             # Check rules that could derive the query
             applicable_rules = [
-                rule for rule in self.rules.values()
-                if rule.head.split("(")[0] == query_predicate
+                rule for rule in self.rules.values() if rule.head.split("(")[0] == query_predicate
             ]
 
             if applicable_rules:
@@ -445,7 +441,8 @@ class DeepProbLogKB:
 
             # Check if any fact matches the premise
             matching_facts = [
-                fact for fact in self.facts.values()
+                fact
+                for fact in self.facts.values()
                 if fact.predicate == premise_predicate and fact.probability > 0.6
             ]
 
@@ -467,10 +464,7 @@ class DeepProbLogKB:
             del self.inference_cache[key]
 
     async def learn_from_feedback(
-        self,
-        query: str,
-        actual_outcome: bool,
-        confidence: float = 1.0
+        self, query: str, actual_outcome: bool, confidence: float = 1.0
     ) -> None:
         """
         Learn from feedback to update knowledge base probabilities.
@@ -492,11 +486,8 @@ class DeepProbLogKB:
         for fact in relevant_facts:
             fact.update_probability(actual_outcome, confidence)
 
-        logger.debug(f"Updated {len(relevant_facts)} facts based on feedback for query: {query}")
-
     async def get_constitutional_compliance(
-        self,
-        decision: Dict[str, Any]
+        self, decision: Dict[str, Any]
     ) -> Tuple[float, List[str]]:
         """
         Assess constitutional compliance of a decision.
@@ -520,15 +511,18 @@ class DeepProbLogKB:
         """Get knowledge base statistics."""
         fact_counts = {}
         for fact in self.facts.values():
-            fact_counts[fact.knowledge_type.value] = fact_counts.get(fact.knowledge_type.value, 0) + 1
+            fact_counts[fact.knowledge_type.value] = (
+                fact_counts.get(fact.knowledge_type.value, 0) + 1
+            )
 
         rule_counts = {}
         for rule in self.rules.values():
-            rule_counts[rule.knowledge_type.value] = rule_counts.get(rule.knowledge_type.value, 0) + 1
+            rule_counts[rule.knowledge_type.value] = (
+                rule_counts.get(rule.knowledge_type.value, 0) + 1
+            )
 
         avg_fact_probability = (
-            sum(f.probability for f in self.facts.values()) / len(self.facts)
-            if self.facts else 0
+            sum(f.probability for f in self.facts.values()) / len(self.facts) if self.facts else 0
         )
 
         return {
@@ -539,11 +533,14 @@ class DeepProbLogKB:
             "avg_fact_probability": avg_fact_probability,
             "cache_size": len(self.inference_cache),
             "problog_available": PROBLOG_AVAILABLE,
-            "constitutional_foundation_size": len([
-                f for f in self.facts.values()
-                if f.knowledge_type == KnowledgeType.CONSTITUTIONAL_PRINCIPLE
-            ]),
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_foundation_size": len(
+                [
+                    f
+                    for f in self.facts.values()
+                    if f.knowledge_type == KnowledgeType.CONSTITUTIONAL_PRINCIPLE
+                ]
+            ),
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
     async def export_problog_program(self) -> str:

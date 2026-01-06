@@ -2,7 +2,6 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH
 from src.core.enhanced_agent_bus.registry import RedisAgentRegistry
 

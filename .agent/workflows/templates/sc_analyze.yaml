@@ -1,0 +1,26 @@
+# SuperClaude Analyze Workflow Template
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.0.0
+
+name: sc_analyze
+version: "1.0.0"
+description: "Comprehensive code analysis and quality assessment"
+constitutional_hash: cdd01ef066bc6cf2
+
+workflow_type: sequential
+
+config:
+  timeout_seconds: 60
+  fail_fast: true
+
+steps:
+  - id: analyze
+    name: "Perform Analysis"
+    action: analyze_workflow
+    timeout: 55
+    description: "Run code analysis with specified focus and depth"
+
+metadata:
+  author: "ACGS-2 Team"
+  category: "tools"
+  tags: ["analysis", "quality", "security"]

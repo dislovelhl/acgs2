@@ -21,6 +21,7 @@ from models import AgentMessage, MessageType, Priority
 # Now load policy_client with mocked relative imports
 _policy_client_path = os.path.join(_parent_dir, "policy_client.py")
 
+
 # Create a mock settings object
 class MockSecretStr:
     """Mock Pydantic SecretStr."""
@@ -74,6 +75,7 @@ sys.modules["...shared.config"] = mock_config_module
 try:
     # Use importlib to safely load the module
     import importlib.util
+
     spec = importlib.util.spec_from_file_location("policy_client", _policy_client_path)
     _policy_module = importlib.util.module_from_spec(spec)
 

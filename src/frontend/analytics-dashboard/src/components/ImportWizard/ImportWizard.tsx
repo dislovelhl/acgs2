@@ -18,6 +18,10 @@ import {
   Circle,
   X,
 } from "lucide-react";
+import { SourceSelectionStep } from "./SourceSelectionStep";
+import { ConfigurationStep } from "./ConfigurationStep";
+import { PreviewStep } from "./PreviewStep";
+import { ProgressStep } from "./ProgressStep";
 
 /** Available source tools for data import */
 export type SourceTool = "jira" | "servicenow" | "github" | "gitlab";
@@ -265,20 +269,31 @@ export function ImportWizard({
         {/* Step content */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="min-h-[400px]">
-            {/* Placeholder for step components - will be implemented in subsequent subtasks */}
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  {WIZARD_STEPS[currentStep].title}
-                </h2>
-                <p className="text-gray-600">
-                  {WIZARD_STEPS[currentStep].description}
-                </p>
-                <div className="mt-4 text-sm text-gray-500">
-                  Step {currentStep + 1} of {WIZARD_STEPS.length}
-                </div>
-              </div>
-            </div>
+            {currentStep === 0 && (
+              <SourceSelectionStep
+                config={importConfig}
+                onConfigUpdate={updateConfig}
+              />
+            )}
+            {currentStep === 1 && (
+              <ConfigurationStep
+                config={importConfig}
+                onConfigUpdate={updateConfig}
+              />
+            )}
+            {currentStep === 2 && (
+              <PreviewStep
+                config={importConfig}
+                onConfigUpdate={updateConfig}
+              />
+            )}
+            {currentStep === 3 && (
+              <ProgressStep
+                config={importConfig}
+                onConfigUpdate={updateConfig}
+                onComplete={onComplete}
+              />
+            )}
           </div>
         </div>
 

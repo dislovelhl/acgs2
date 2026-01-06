@@ -22,7 +22,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "acgs2-core"))
 
 from src.main import app  # noqa: E402
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -88,12 +87,7 @@ class TestSecurityHeadersPresence:
         """Test API endpoints return security headers."""
         # Test policy check endpoint
         response = client.post(
-            "/api/policy/check",
-            json={
-                "action": "test",
-                "resource": "resource",
-                "context": {}
-            }
+            "/api/policy/check", json={"action": "test", "resource": "resource", "context": {}}
         )
 
         # Verify security headers are present regardless of response status
@@ -185,12 +179,7 @@ class TestSecurityHeadersOnDifferentMethods:
     def test_post_request_has_security_headers(self, client: TestClient):
         """Test POST requests have security headers."""
         response = client.post(
-            "/api/policy/check",
-            json={
-                "action": "test",
-                "resource": "resource",
-                "context": {}
-            }
+            "/api/policy/check", json={"action": "test", "resource": "resource", "context": {}}
         )
 
         # Verify security headers are present
@@ -282,7 +271,7 @@ class TestSecurityHeadersWithCORS:
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "POST",
-            }
+            },
         )
 
         # Security headers should be present even on preflight
@@ -326,7 +315,10 @@ class TestSecurityHeadersEdgeCases:
         # All endpoints should have the same values for most headers
         first_endpoint = list(all_headers.values())[0]
         for endpoint_headers in all_headers.values():
-            assert endpoint_headers["X-Content-Type-Options"] == first_endpoint["X-Content-Type-Options"]
+            assert (
+                endpoint_headers["X-Content-Type-Options"]
+                == first_endpoint["X-Content-Type-Options"]
+            )
             assert endpoint_headers["X-Frame-Options"] == first_endpoint["X-Frame-Options"]
             assert endpoint_headers["X-XSS-Protection"] == first_endpoint["X-XSS-Protection"]
             assert endpoint_headers["Referrer-Policy"] == first_endpoint["Referrer-Policy"]

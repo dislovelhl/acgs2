@@ -99,7 +99,9 @@ class ResponseTemplate:
         else:
             templates = self.templates
 
-        return random.choice(templates) if templates else ""
+        import secrets
+
+        return secrets.choice(templates) if templates else ""
 
 
 class ResponseGenerator(ABC):

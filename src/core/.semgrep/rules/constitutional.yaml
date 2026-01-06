@@ -16,7 +16,7 @@ rules:
     message: |
       Module docstring should include constitutional hash 'cdd01ef066bc6cf2'.
       All ACGS-2 modules require constitutional hash for audit compliance.
-      
+
       Add to module docstring:
         Constitutional Hash: cdd01ef066bc6cf2
     severity: WARNING
@@ -108,10 +108,10 @@ rules:
   - id: acgs-use-constant-not-literal-hash
     message: |
       Use CONSTITUTIONAL_HASH constant instead of hardcoded literal.
-      
+
       Import from models.py:
         from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
-      
+
       Or from validators.py:
         from enhanced_agent_bus.validators import CONSTITUTIONAL_HASH
     severity: WARNING
@@ -146,7 +146,7 @@ rules:
   - id: acgs-bypass-constitutional-validation
     message: |
       Potential bypass of constitutional validation detected.
-      
+
       Do not disable or skip constitutional checks in production code.
       This is a critical security violation.
     severity: ERROR
@@ -177,7 +177,7 @@ rules:
   - id: acgs-conditional-validation-skip
     message: |
       Conditional skipping of constitutional validation detected.
-      
+
       Avoid patterns that conditionally disable validation based on config.
       Constitutional validation must always be enforced.
     severity: ERROR
@@ -214,10 +214,10 @@ rules:
   - id: acgs-unvalidated-policy-update
     message: |
       Policy update without constitutional validation.
-      
+
       All policy changes must be validated against constitutional constraints
       before being applied to prevent governance violations.
-      
+
       Add validation:
         if validate_constitutional_compliance(policy):
             client.update_policy(policy)
@@ -254,7 +254,7 @@ rules:
   - id: acgs-direct-policy-modification
     message: |
       Direct policy modification without governance approval.
-      
+
       Policy changes should go through the PolicyRegistryClient
       with proper signature validation and audit logging.
     severity: WARNING
@@ -288,7 +288,7 @@ rules:
   - id: acgs-database-operation-without-validation
     message: |
       Database operation without constitutional validation context.
-      
+
       All database operations that modify governance data must be
       validated against constitutional constraints.
     severity: WARNING
@@ -332,12 +332,12 @@ rules:
   - id: acgs-deprecated-datetime-utcnow
     message: |
       datetime.utcnow() is deprecated in Python 3.12+.
-      
+
       Use datetime.now(timezone.utc) for timezone-aware timestamps.
-      
+
       Required import:
         from datetime import datetime, timezone
-      
+
       Fix:
         datetime.now(timezone.utc)
     severity: ERROR
@@ -363,7 +363,7 @@ rules:
   - id: acgs-deprecated-utcfromtimestamp
     message: |
       datetime.utcfromtimestamp() is deprecated in Python 3.12+.
-      
+
       Use datetime.fromtimestamp(ts, tz=timezone.utc) instead.
     severity: ERROR
     languages: [python]

@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.core.services.audit_service.core.audit_ledger import (
     AuditLedger,
     AuditLedgerConfig,
@@ -22,7 +21,7 @@ class TestAuditEntry:
         batch_size=3,
         redis_url=None,
         enable_blockchain_anchoring=False,
-        persistence_file=str(storage_path)
+        persistence_file=str(storage_path),
     )
 
     with patch("redis.from_url", side_effect=Exception("Redis disabled for tests")):

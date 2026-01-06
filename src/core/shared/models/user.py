@@ -25,7 +25,6 @@ from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, Enum, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
-
 from src.core.shared.database import Base
 
 

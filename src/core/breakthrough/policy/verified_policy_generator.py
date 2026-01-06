@@ -27,23 +27,23 @@ from .. import CONSTITUTIONAL_HASH, VERIFICATION_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
-
 class PolicyVerificationError(Exception):
     """Raised when policy verification fails after all attempts."""
-    pass
 
+    pass
 
 class PolicyLanguage(Enum):
     """Supported policy languages."""
+
     REGO = "rego"
     DAFNY = "dafny"
     Z3 = "z3"
     NATURAL = "natural"
 
-
 @dataclass
 class VerifiedPolicy:
     """A formally verified policy."""
+
     policy_id: str
     rego_code: str
     dafny_spec: str
@@ -65,25 +65,24 @@ class VerifiedPolicy:
             "constitutional_hash": self.constitutional_hash,
         }
 
-
 @dataclass
 class DafnyAnnotation:
     """A Dafny annotation for a policy."""
+
     preconditions: List[str]
     postconditions: List[str]
     invariants: List[str]
     decreases: Optional[str] = None
 
-
 @dataclass
 class VerificationAttempt:
     """Record of a verification attempt."""
+
     attempt_id: str
     success: bool
     errors: List[str]
     refinements_made: List[str]
     duration_ms: float
-
 
 class LLMProposer:
     """
@@ -93,10 +92,7 @@ class LLMProposer:
     for self-play improvement.
     """
 
-    async def propose_harder(
-        self,
-        verified_corpus: List[VerifiedPolicy]
-    ) -> List[str]:
+    async def propose_harder(self, verified_corpus: List[VerifiedPolicy]) -> List[str]:
         """
         Propose harder policy specifications based on verified corpus.
 
@@ -116,19 +112,19 @@ class LLMProposer:
             )
 
             proposals.append(
-                "A policy combining multiple verified policies with "
-                "conflict resolution"
+                "A policy combining multiple verified policies with conflict resolution"
             )
 
         # Default challenging proposals
-        proposals.extend([
-            "A policy ensuring data integrity across distributed systems",
-            "A policy with temporal constraints on state transitions",
-            "A policy with recursive permission checking",
-        ])
+        proposals.extend(
+            [
+                "A policy ensuring data integrity across distributed systems",
+                "A policy with temporal constraints on state transitions",
+                "A policy with recursive permission checking",
+            ]
+        )
 
         return proposals
-
 
 class LLMSolver:
     """
@@ -137,10 +133,7 @@ class LLMSolver:
     Generates Rego policies from natural language specifications.
     """
 
-    async def generate_rego(
-        self,
-        natural_language: str
-    ) -> str:
+    async def generate_rego(self, natural_language: str) -> str:
         """
         Generate Rego policy from natural language.
 
@@ -153,7 +146,7 @@ class LLMSolver:
         concepts = self._extract_concepts(natural_language)
 
         # Generate Rego skeleton
-        rego_template = f'''
+        rego_template = f"""
 package constitutional.policy_{policy_id}
 
 # Constitutional Hash: {CONSTITUTIONAL_HASH}
@@ -165,7 +158,7 @@ allow {{
     input.constitutional_hash == "{CONSTITUTIONAL_HASH}"
     {self._generate_conditions(concepts)}
 }}
-'''
+"""
 
         return rego_template.strip()
 
@@ -188,7 +181,6 @@ allow {{
 
         return "\n    ".join(conditions) if conditions else "true"
 
-
 class DafnyProAnnotator:
     """
     DafnyPro annotation generator.
@@ -202,11 +194,7 @@ class DafnyProAnnotator:
         self._success_count = 0
         self._attempt_count = 0
 
-    async def annotate(
-        self,
-        rego_policy: str,
-        ltl_spec: Optional[str] = None
-    ) -> str:
+    async def annotate(self, rego_policy: str, ltl_spec: Optional[str] = None) -> str:
         """
         Generate Dafny specification from Rego policy.
 
@@ -220,11 +208,11 @@ class DafnyProAnnotator:
         self._attempt_count += 1
 
         # Extract policy structure
-        package_match = re.search(r'package\s+([\w.]+)', rego_policy)
+        package_match = re.search(r"package\s+([\w.]+)", rego_policy)
         package_name = package_match.group(1) if package_match else "policy"
 
         # Generate Dafny method with annotations
-        dafny_spec = f'''
+        dafny_spec = f"""
 // Constitutional Hash: {CONSTITUTIONAL_HASH}
 // Verified policy specification
 
@@ -258,16 +246,12 @@ module ConstitutionalPolicy {{
             IsAuthorized(a.actor, a.resource)
     }}
 }}
-'''
+"""
 
         self._success_count += 1
         return dafny_spec.strip()
 
-    async def refine(
-        self,
-        dafny_spec: str,
-        errors: List[str]
-    ) -> str:
+    async def refine(self, dafny_spec: str, errors: List[str]) -> str:
         """
         Refine Dafny specification based on verification errors.
 
@@ -280,23 +264,21 @@ module ConstitutionalPolicy {{
             if "precondition" in error.lower():
                 # Strengthen precondition
                 refined = refined.replace(
-                    "requires ValidInput(input)",
-                    "requires ValidInput(input) && input.verified"
+                    "requires ValidInput(input)", "requires ValidInput(input) && input.verified"
                 )
 
             elif "postcondition" in error.lower():
                 # Weaken postcondition or add helper lemma
                 refined = refined.replace(
                     "ensures allowed ==> PolicyConditionsMet(input)",
-                    "ensures allowed ==> PartialPolicyConditionsMet(input)"
+                    "ensures allowed ==> PartialPolicyConditionsMet(input)",
                 )
 
             elif "termination" in error.lower():
                 # Add decreases clause
                 if "decreases" not in refined:
                     refined = refined.replace(
-                        "method EvaluatePolicy",
-                        "method EvaluatePolicy\n    decreases *"
+                        "method EvaluatePolicy", "method EvaluatePolicy\n    decreases *"
                     )
 
         return refined
@@ -306,7 +288,6 @@ module ConstitutionalPolicy {{
         if self._attempt_count == 0:
             return 0.0
         return self._success_count / self._attempt_count
-
 
 class DafnyVerifier:
     """
@@ -352,7 +333,6 @@ class DafnyVerifier:
             },
         }
 
-
 class VerifiedPolicyGenerator:
     """
     PSV-Verus Verified Policy Generator.
@@ -366,9 +346,7 @@ class VerifiedPolicyGenerator:
     """
 
     def __init__(
-        self,
-        max_refinements: int = 5,
-        target_success_rate: float = VERIFICATION_THRESHOLD
+        self, max_refinements: int = 5, target_success_rate: float = VERIFICATION_THRESHOLD
     ):
         """
         Initialize verified policy generator.
@@ -395,15 +373,9 @@ class VerifiedPolicyGenerator:
             "self_play_rounds": 0,
         }
 
-        logger.info(
-            f"Initialized VerifiedPolicyGenerator "
-            f"max_refinements={max_refinements}"
-        )
+        logger.info(f"Initialized VerifiedPolicyGenerator max_refinements={max_refinements}")
 
-    async def generate_verified_policy(
-        self,
-        natural_language: str
-    ) -> VerifiedPolicy:
+    async def generate_verified_policy(self, natural_language: str) -> VerifiedPolicy:
         """
         Generate a formally verified policy from natural language.
 
@@ -529,14 +501,11 @@ class VerifiedPolicyGenerator:
             try:
                 policy = await self.generate_verified_policy(proposal)
                 verified_count += 1
-                logger.debug(f"Self-play verified: {policy.policy_id}")
+
             except PolicyVerificationError:
                 # Skip unverifiable proposals
-                logger.debug(f"Self-play failed for: {proposal[:50]}...")
 
-        logger.info(
-            f"Self-play round complete: {verified_count}/{len(proposals)} verified"
-        )
+        logger.info(f"Self-play round complete: {verified_count}/{len(proposals)} verified")
 
         return verified_count
 
@@ -548,9 +517,9 @@ class VerifiedPolicyGenerator:
                 "avg_attempts": 0,
             }
 
-        avg_attempts = sum(
-            p.verification_attempts for p in self.verified_corpus
-        ) / len(self.verified_corpus)
+        avg_attempts = sum(p.verification_attempts for p in self.verified_corpus) / len(
+            self.verified_corpus
+        )
 
         return {
             "corpus_size": len(self.verified_corpus),
@@ -563,8 +532,7 @@ class VerifiedPolicyGenerator:
         success_rate = 0.0
         if self._stats["verification_attempts"] > 0:
             success_rate = (
-                self._stats["successful_verifications"] /
-                self._stats["verification_attempts"]
+                self._stats["successful_verifications"] / self._stats["verification_attempts"]
             )
 
         return {

@@ -10,6 +10,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from acl_adapters.z3_adapter import (
     CONSTITUTIONAL_HASH,
     Z3Adapter,

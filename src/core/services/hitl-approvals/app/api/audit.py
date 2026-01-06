@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/audit", tags=["audit"])
 
-
 # =============================================================================
 # In-Memory Audit Store (Temporary - will be replaced by AuditLedger in phase-6)
 # =============================================================================
@@ -84,9 +83,7 @@ class AuditStore:
             self._events_by_request[request_id] = []
         self._events_by_request[request_id].append(event)
 
-        logger.info(
-            f"Audit event recorded: {event_type} for request {request_id} " f"by {actor_id}"
-        )
+        logger.info(f"Audit event recorded: {event_type} for request {request_id} by {actor_id}")
 
         return event
 

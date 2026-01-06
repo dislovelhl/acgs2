@@ -50,7 +50,7 @@ def get_storage_service() -> StorageService:
 
 
 @lru_cache()
-def get_oci_registry_client() -> Optional[OCIRegistryClient]:
+def get_oci_registry_client() -> Optional["OCIRegistryClient"]:
     """Get OCI registry client instance."""
     if not OCI_REGISTRY_AVAILABLE:
         return None
@@ -70,6 +70,7 @@ def get_oci_registry_client() -> Optional[OCIRegistryClient]:
 
         if username and password:
             from src.core.enhanced_agent_bus.bundle_registry import BasicAuthProvider
+
             auth_provider = BasicAuthProvider(username, password)
 
         client = OCIRegistryClient(
@@ -89,7 +90,9 @@ async def list_bundles(
     repository: Optional[str] = Query(None, description="OCI repository name"),
     policy_service=Depends(get_policy_service),
     storage_service=Depends(get_storage_service),
-    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin", "agent_operator"])),
+    current_user: Dict[str, Any] = Depends(
+        check_role(["tenant_admin", "system_admin", "agent_operator"])
+    ),
 ):
     """
     List policy bundles (tenant-scoped).
@@ -149,7 +152,7 @@ async def upload_bundle(
             metadata={
                 "author": current_user.get("email", current_user.get("username", "unknown")),
                 "tenant_id": current_user.get("tenant_id", "default"),
-            }
+            },
         )
 
         # Push to OCI registry if requested
@@ -172,7 +175,9 @@ async def upload_bundle(
                             bundle_path=tmp_path,
                             manifest=bundle_manifest,
                         )
-                        logger.info(f"Successfully pushed bundle to OCI registry: {repository}:{tag}")
+                        logger.info(
+                            f"Successfully pushed bundle to OCI registry: {repository}:{tag}"
+                        )
                     finally:
                         if os.path.exists(tmp_path):
                             os.unlink(tmp_path)
@@ -214,7 +219,9 @@ async def get_bundle(
     pull_from_registry: bool = Query(False, description="Pull from OCI registry"),
     policy_service=Depends(get_policy_service),
     storage_service=Depends(get_storage_service),
-    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin", "agent_operator"])),
+    current_user: Dict[str, Any] = Depends(
+        check_role(["tenant_admin", "system_admin", "agent_operator"])
+    ),
 ):
     """
     Get bundle by ID.
@@ -295,7 +302,9 @@ async def get_active_bundle(
     tenant_id: str = Query(...),
     repository: Optional[str] = Query(None, description="OCI repository name"),
     policy_service=Depends(get_policy_service),
-    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin", "agent_operator"])),
+    current_user: Dict[str, Any] = Depends(
+        check_role(["tenant_admin", "system_admin", "agent_operator"])
+    ),
 ):
     """
     Get the currently active bundle for a tenant.

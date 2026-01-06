@@ -21,7 +21,6 @@ import yaml
 logger = logging.getLogger(__name__)
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-
 class OTelCollectorService:
     """
     OpenTelemetry Collector Service for ACGS-2 enterprise observability.
@@ -269,7 +268,7 @@ class OTelCollectorService:
                             logger.warning(f"OTel health check failed: HTTP {resp.status}")
                             self._stats["health_failures"] += 1
                         else:
-                            logger.debug("OTel collector health check passed")
+
                 except Exception as e:
                     logger.warning(f"OTel HTTP health check failed: {e}")
                     self._stats["health_failures"] += 1
@@ -403,7 +402,6 @@ class OTelCollectorService:
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-
 class OTelIntegrationService:
     """
     Integration service that bridges ACGS-2 services with OTel collector.
@@ -475,11 +473,9 @@ class OTelIntegrationService:
 
         return health_status
 
-
 # Global instances
 _otel_service: Optional[OTelCollectorService] = None
 _otel_integration: Optional[OTelIntegrationService] = None
-
 
 async def initialize_otel_services(
     config_path: str = "/app/monitoring/collectors/otel_config.yaml",
@@ -501,7 +497,6 @@ async def initialize_otel_services(
     logger.info("OTel services initialized successfully")
     return _otel_service, _otel_integration
 
-
 async def shutdown_otel_services():
     """Shutdown OTel services."""
     global _otel_service, _otel_integration
@@ -515,16 +510,13 @@ async def shutdown_otel_services():
 
     logger.info("OTel services shutdown complete")
 
-
 def get_otel_service() -> Optional[OTelCollectorService]:
     """Get the global OTel collector service instance."""
     return _otel_service
 
-
 def get_otel_integration() -> Optional[OTelIntegrationService]:
     """Get the global OTel integration service instance."""
     return _otel_integration
-
 
 # Instrumentation helpers
 class TelemetryHelper:
@@ -570,7 +562,6 @@ class TelemetryHelper:
             "constitutional_hash": CONSTITUTIONAL_HASH,
             "context": context or {},
         }
-
 
 __all__ = [
     "CONSTITUTIONAL_HASH",

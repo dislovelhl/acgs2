@@ -46,7 +46,7 @@ pub struct ImpactScorer {
 impl ImpactScorer {
     pub fn new(config: Option<ScoringConfig>, onnx_path: Option<&str>) -> Self {
         let config = config.unwrap_or_default();
-        
+
         let (session, tokenizer) = if let Some(path) = onnx_path {
             let session = ort::session::Session::builder()
                 .unwrap()
@@ -76,7 +76,7 @@ impl ImpactScorer {
 
     pub fn calculate_impact_score(&self, message: &AgentMessage) -> f32 {
         let mut score = 0.0;
-        
+
         // 1. Semantic Score
         let semantic_score = self.calculate_semantic_score(message);
         score += semantic_score * self.config.semantic_weight;
@@ -115,11 +115,11 @@ impl ImpactScorer {
         score += type_factor * self.config.type_weight;
 
         // Normalize
-        let total_weight = self.config.semantic_weight + self.config.permission_weight + 
-                          self.config.volume_weight + self.config.context_weight + 
-                          self.config.drift_weight + self.config.priority_weight + 
+        let total_weight = self.config.semantic_weight + self.config.permission_weight +
+                          self.config.volume_weight + self.config.context_weight +
+                          self.config.drift_weight + self.config.priority_weight +
                           self.config.type_weight;
-        
+
         if total_weight > 0.0 {
             score /= total_weight;
         }
@@ -176,11 +176,11 @@ impl ImpactScorer {
     fn calculate_volume_score(&self, agent_id: &str) -> f32 {
         let now = Utc::now();
         let window = Duration::seconds(60);
-        
+
         let mut rates = self.agent_request_rates.entry(agent_id.to_string()).or_insert(Vec::new());
         rates.push(now);
         rates.retain(|&t| now - t < window);
-        
+
         let count = rates.len();
         if count < 10 { 0.1 }
         else if count < 50 { 0.4 }
@@ -211,7 +211,7 @@ impl ImpactScorer {
 
     fn calculate_drift_score(&self, agent_id: &str, current_impact: f32) -> f32 {
         let mut history = self.agent_impact_history.entry(agent_id.to_string()).or_insert(Vec::new());
-        
+
         if history.is_empty() {
             history.push(current_impact);
             return 0.0;

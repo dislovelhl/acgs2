@@ -29,7 +29,6 @@ class PagerDutyProvider(NotificationProvider):
         """Send notification to PagerDuty"""
         # Only send for high-priority or critical messages
         if message.priority.lower() not in ["high", "critical"]:
-            logger.debug(f"Skipping PagerDuty notification for low priority: {message.priority}")
             return True  # Consider this a success since we intentionally skip
 
         return await self._retry_with_backoff(self._send_pagerduty_alert, message)

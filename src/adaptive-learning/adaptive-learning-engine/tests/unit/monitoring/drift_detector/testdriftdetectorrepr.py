@@ -1,0 +1,124 @@
+"""
+Tests for driftdetectorrepr.
+
+Tests cover:
+- driftdetectorrepr functionality
+- Error handling and edge cases
+- Integration with related components
+"""
+
+"""
+Unit tests for the Adaptive Learning Engine monitoring module.
+
+Tests cover:
+- DriftDetector: Evidently-based drift detection
+- MetricsRegistry: Prometheus metrics collection
+
+Constitutional Hash: cdd01ef066bc6cf2
+"""
+
+import threading
+import time
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+import pytest
+from prometheus_client import CollectorRegistry
+
+from src.monitoring.drift_detector import (
+    DriftAlert,
+    DriftDetector,
+    DriftMetrics,
+    DriftResult,
+    DriftStatus,
+)
+from src.monitoring.metrics import (
+    MetricLabel,
+    MetricsRegistry,
+    MetricsSnapshot,
+    create_metrics_registry,
+    get_metrics_registry,
+)
+
+
+# =============================================================================
+# Test Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def sample_features() -> Dict[str, Any]:
+    """Sample feature dictionary for testing."""
+    return {
+        "feature_a": 1.0,
+        "feature_b": 2.5,
+        "feature_c": 0.3,
+    }
+
+
+@pytest.fixture
+def reference_data() -> List[Dict[str, Any]]:
+    """Sample reference dataset for drift testing."""
+    np.random.seed(42)
+    return [{"f1": np.random.normal(0, 1), "f2": np.random.normal(0, 1)} for _ in range(100)]
+
+
+@pytest.fixture
+def drifted_data() -> List[Dict[str, Any]]:
+    """Sample current data with drift (different distribution)."""
+    np.random.seed(123)
+    return [
+        {"f1": np.random.normal(5, 2), "f2": np.random.normal(-5, 2)}  # Shifted distribution
+        for _ in range(100)
+    ]
+
+
+@pytest.fixture
+def similar_data() -> List[Dict[str, Any]]:
+    """Sample current data similar to reference (no drift)."""
+    np.random.seed(456)
+    return [
+        {"f1": np.random.normal(0.1, 1.1), "f2": np.random.normal(-0.1, 0.9)}  # Similar
+        for _ in range(100)
+    ]
+
+
+@pytest.fixture
+def drift_detector() -> DriftDetector:
+    """Fresh DriftDetector for testing."""
+    return DriftDetector(
+        drift_threshold=0.2,
+        reference_window_size=100,
+        current_window_size=50,
+        min_samples_for_drift=10,
+        check_interval_seconds=60,
+        drift_share_threshold=0.5,
+        enabled=True,
+    )
+
+
+@pytest.fixture
+def metrics_registry() -> MetricsRegistry:
+    """Fresh MetricsRegistry for testing with isolated registry."""
+    registry = CollectorRegistry()
+    return MetricsRegistry(registry=registry, prefix="test_adaptive")
+
+
+# =============================================================================
+# DriftDetector Tests - Initialization
+# =============================================================================
+
+
+class TestDriftDetectorRepr:
+    """Tests for DriftDetector string representation."""
+
+    def test_repr(self, drift_detector):
+        """Test __repr__ returns informative string."""
+        repr_str = repr(drift_detector)
+
+        assert "DriftDetector" in repr_str
+        assert "status=" in repr_str
+        assert "ref_size=" in repr_str
+        assert "cur_size=" in repr_str

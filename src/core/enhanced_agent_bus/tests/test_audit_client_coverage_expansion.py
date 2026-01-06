@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import httpx
 import pytest
+
 from audit_client import (
     CONSTITUTIONAL_HASH,
     AuditBatchResult,

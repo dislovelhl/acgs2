@@ -52,7 +52,7 @@ mod tests {
     fn test_impact_scorer_semantic() {
         let scorer = ImpactScorer::new(None, None);
         let mut msg = AgentMessage::new();
-        
+
         // No hits
         msg.content.insert("text".to_string(), "Hello world".to_string());
         let score0 = scorer.calculate_impact_score(&msg);
@@ -61,7 +61,7 @@ mod tests {
         msg.content.insert("text".to_string(), "This is a security message".to_string());
         let score1 = scorer.calculate_impact_score(&msg);
         assert!(score1 > score0);
-        
+
         // Multiple hits
         msg.content.insert("text".to_string(), "This is a security critical emergency".to_string());
         let score2 = scorer.calculate_impact_score(&msg);
@@ -72,7 +72,7 @@ mod tests {
     fn test_impact_scorer_permission() {
         let scorer = ImpactScorer::new(None, None);
         let mut msg = AgentMessage::new();
-        
+
         msg.content.insert("text".to_string(), "normal message".to_string());
         let score_normal = scorer.calculate_impact_score(&msg);
 
@@ -106,7 +106,7 @@ mod tests {
         let scorer = ImpactScorer::new(None, None);
         let mut msg = AgentMessage::new();
         msg.from_agent = "agent_large".to_string();
-        
+
         // Large amount
         msg.payload.insert("amount".to_string(), "50000.0".to_string());
         let score_large = scorer.calculate_impact_score(&msg);
@@ -158,7 +158,7 @@ mod tests {
     #[test]
     fn test_adaptive_router_threshold_update() {
         let router = AdaptiveRouter::new(0.5);
-        
+
         // High false positive rate -> increase threshold
         router.update_threshold(0.4, 0.0);
         assert!(router.impact_threshold.load(Ordering::Relaxed) > 0.5);
@@ -172,10 +172,10 @@ mod tests {
     async fn test_opa_fallback_fail_closed() {
         let mut opa = OpaClient::new("http://invalid-url".to_string());
         opa = opa.with_fail_closed(true);
-        
+
         let msg = AgentMessage::new();
         let result = opa.validate(&msg).await.unwrap();
-        
+
         assert!(!result.is_valid);
         assert_eq!(result.decision, "DENY");
         assert!(result.errors[0].contains("OPA Failure"));
@@ -185,10 +185,10 @@ mod tests {
     async fn test_opa_fallback_fail_open() {
         let mut opa = OpaClient::new("http://invalid-url".to_string());
         opa = opa.with_fail_closed(false);
-        
+
         let msg = AgentMessage::new();
         let result = opa.validate(&msg).await.unwrap();
-        
+
         assert!(result.is_valid);
         assert_eq!(result.decision, "ALLOW");
         assert!(result.warnings[0].contains("OPA Failure"));
@@ -199,7 +199,7 @@ mod tests {
         let audit = AuditClient::new("http://localhost:8080".to_string());
         let msg = AgentMessage::new();
         let res = ValidationResult::new();
-        
+
         // Should return immediately even if server doesn't exist
         let start = std::time::Instant::now();
         audit.log_decision(&msg, &res).await.unwrap();

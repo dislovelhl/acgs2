@@ -93,8 +93,7 @@ class AuditEvent:
                 line_number=match.line_number,
                 raw_content=content,
             )
-        except Exception as e:
-            logger.debug(f"Failed to parse audit event: {e}")
+        except Exception:
             return None
 
     @staticmethod

@@ -2,8 +2,15 @@
 Document generators for different file formats
 """
 
-from .docx import DOCXGenerator
-from .pdf import PDFGenerator
-from .xlsx import XLSXGenerator
+from .docx_generator import DOCXGenerator, generate_docx_to_buffer
+from .pdf_generator import PDFGenerator, generate_pdf_to_buffer
+from .xlsx_generator import XLSXGenerator, generate_xlsx_to_buffer
 
-__all__ = ["PDFGenerator", "DOCXGenerator", "XLSXGenerator"]
+__all__ = [
+    "PDFGenerator",
+    "DOCXGenerator",
+    "XLSXGenerator",
+    "generate_pdf_to_buffer",
+    "generate_xlsx_to_buffer",
+    "generate_docx_to_buffer",
+]

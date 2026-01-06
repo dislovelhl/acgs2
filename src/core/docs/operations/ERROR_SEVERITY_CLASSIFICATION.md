@@ -847,7 +847,7 @@ Consider cascading failures:
 - **ACGS-6511**: Audit ledger delayed write
   - **Impact**: Service-Degraded (audit delayed)
   - **Scenario**: Audit ledger write delayed, buffered for retry
-  - **Response**: Monitor retry queue, implement audit ledger (TODO)
+  - **Response**: Monitor retry queue, ensure audit ledger persistence is active.
 
 #### Performance Errors (ACGS-7xxx)
 - **ACGS-7201**: Latency warning threshold exceeded

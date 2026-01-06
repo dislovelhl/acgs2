@@ -1,8 +1,8 @@
 # ACGS-2 Deployment Guide (v2.3.0)
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`  
-> **Version**: 2.3.0 (Phase 3.6 Complete)  
-> **Perf Targets**: P99 <5ms, 99.8% tests, 100% cov  
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.3.0 (Phase 3.6 Complete)
+> **Perf Targets**: P99 <5ms, 99.8% tests, 100% cov
 > **Last Updated**: 2025-12-31
 
 ## Docker Compose (Local/Dev)

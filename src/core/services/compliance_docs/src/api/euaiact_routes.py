@@ -7,7 +7,7 @@ FastAPI routes for EU AI Act compliance validation, document generation, and exp
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -55,7 +55,10 @@ class ComplianceValidationResponse(BaseModel):
 class DocumentGenerationRequest(BaseModel):
     """Request model for document generation"""
 
-    document_type: str = Field(..., description="Document type: risk_assessment, human_oversight, compliance_checklist, quarterly_report")
+    document_type: str = Field(
+        ...,
+        description="Document type: risk_assessment, human_oversight, compliance_checklist, quarterly_report",
+    )
     data: Dict[str, Any] = Field(..., description="Document data")
     format: str = Field(default="pdf", description="Output format: pdf, docx, xlsx")
 
@@ -94,10 +97,12 @@ async def validate_compliance(request: ComplianceValidationRequest) -> Complianc
         )
     except Exception as e:
         logger.error(f"Compliance validation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}") from e
 
 
-async def _perform_compliance_validation(request: ComplianceValidationRequest) -> List[EUAIActComplianceFinding]:
+async def _perform_compliance_validation(
+    request: ComplianceValidationRequest,
+) -> List[EUAIActComplianceFinding]:
     """
     Perform compliance validation checks.
 
@@ -152,7 +157,7 @@ async def _perform_compliance_validation(request: ComplianceValidationRequest) -
 async def generate_document(
     document_type: str,
     request: DocumentGenerationRequest,
-    format: str = Query(default="pdf", regex="^(pdf|docx|xlsx)$"),
+    format: str = Query(default="pdf", pattern="^(pdf|docx|xlsx)$"),
 ) -> FileResponse:
     """
     Generate EU AI Act compliance document.
@@ -172,15 +177,22 @@ async def generate_document(
         data["title"] = _get_document_title(document_type)
 
         # Generate document based on format
+        generator: Union[PDFGenerator, DOCXGenerator, XLSXGenerator]
         if format == "pdf":
             generator = PDFGenerator()
-            file_path = generator.generate(data, f"euaiact_{document_type}_{int(datetime.now().timestamp())}")
+            file_path = generator.generate(
+                data, f"euaiact_{document_type}_{int(datetime.now().timestamp())}"
+            )
         elif format == "docx":
             generator = DOCXGenerator()
-            file_path = generator.generate(data, f"euaiact_{document_type}_{int(datetime.now().timestamp())}")
+            file_path = generator.generate(
+                data, f"euaiact_{document_type}_{int(datetime.now().timestamp())}"
+            )
         elif format == "xlsx":
             generator = XLSXGenerator()
-            file_path = generator.generate(data, f"euaiact_{document_type}_{int(datetime.now().timestamp())}")
+            file_path = generator.generate(
+                data, f"euaiact_{document_type}_{int(datetime.now().timestamp())}"
+            )
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported format: {format}")
 
@@ -198,7 +210,7 @@ async def generate_document(
         )
     except Exception as e:
         logger.error(f"Document generation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}") from e
 
 
 def _get_document_title(document_type: str) -> str:
@@ -215,21 +227,23 @@ def _get_document_title(document_type: str) -> str:
 @router.post("/export/checklist")
 async def export_compliance_checklist(
     checklist: EUAIActComplianceChecklist,
-    format: str = Query(default="pdf", regex="^(pdf|docx|xlsx)$"),
+    format: str = Query(default="pdf", pattern="^(pdf|docx|xlsx)$"),
 ) -> FileResponse:
     """Export compliance checklist document."""
     data = checklist.model_dump()
     data["document_type"] = "compliance_checklist"
     data["title"] = "EU AI Act Compliance Checklist"
 
-    request = DocumentGenerationRequest(document_type="compliance_checklist", data=data, format=format)
+    request = DocumentGenerationRequest(
+        document_type="compliance_checklist", data=data, format=format
+    )
     return await generate_document("compliance_checklist", request, format)
 
 
 @router.post("/export/risk-assessment")
 async def export_risk_assessment(
     assessment: EUAIActRiskAssessment,
-    format: str = Query(default="pdf", regex="^(pdf|docx|xlsx)$"),
+    format: str = Query(default="pdf", pattern="^(pdf|docx|xlsx)$"),
 ) -> FileResponse:
     """Export risk assessment document."""
     data = assessment.model_dump()
@@ -243,7 +257,7 @@ async def export_risk_assessment(
 @router.post("/export/human-oversight")
 async def export_human_oversight(
     oversight: EUAIActHumanOversight,
-    format: str = Query(default="pdf", regex="^(pdf|docx|xlsx)$"),
+    format: str = Query(default="pdf", pattern="^(pdf|docx|xlsx)$"),
 ) -> FileResponse:
     """Export human oversight document."""
     data = oversight.model_dump()
@@ -257,7 +271,7 @@ async def export_human_oversight(
 @router.post("/export/quarterly-report")
 async def export_quarterly_report(
     report: EUAIActQuarterlyReport,
-    format: str = Query(default="pdf", regex="^(pdf|docx|xlsx)$"),
+    format: str = Query(default="pdf", pattern="^(pdf|docx|xlsx)$"),
 ) -> FileResponse:
     """Export quarterly compliance report."""
     data = report.model_dump()

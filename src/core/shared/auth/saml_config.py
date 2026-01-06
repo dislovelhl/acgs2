@@ -37,7 +37,8 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Dict, Union, List
+from typing import Any, Dict, Optional
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:

@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from ..types import EventData, JSONDict, ModelContext
+from ..integration_types import EventData, JSONDict, ModelContext
 from .base import EventSeverity, IntegrationEvent
 
 logger = logging.getLogger(__name__)

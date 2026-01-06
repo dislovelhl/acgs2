@@ -95,7 +95,6 @@ class TestHealthAggregatorIntegration:
     async def test_health_degradation_detection(self, aggregator_with_registry, registry):
         """Test detecting health degradation as circuits open."""
         import pybreaker
-
         from src.core.shared.circuit_breaker import get_circuit_breaker
 
         # Create breakers
@@ -171,7 +170,6 @@ class TestHealthAggregatorIntegration:
     async def test_custom_breaker_with_registry(self, aggregator_with_registry, registry):
         """Test mixing custom breakers with registry breakers."""
         import pybreaker
-
         from src.core.shared.circuit_breaker import get_circuit_breaker
 
         # Add registry breakers
@@ -199,7 +197,6 @@ class TestHealthAggregatorIntegration:
     async def test_real_world_monitoring_scenario(self, aggregator_with_registry, registry):
         """Test realistic monitoring scenario with multiple services."""
         import pybreaker
-
         from src.core.shared.circuit_breaker import CircuitBreakerConfig, get_circuit_breaker
 
         # Create services with different configurations

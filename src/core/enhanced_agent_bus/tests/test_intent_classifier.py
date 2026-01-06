@@ -3,12 +3,13 @@ Unit tests for SDPC IntentClassifier.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
-from src.core.enhanced_agent_bus.deliberation_layer.intent_classifier import IntentClassifier, IntentType
+from src.core.enhanced_agent_bus.deliberation_layer.intent_classifier import (
+    IntentClassifier,
+    IntentType,
+)
 
 
 def test_classify_factual():
@@ -213,15 +214,7 @@ async def test_llm_fallback_on_error():
     with patch(
         "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
         new_callable=AsyncMock,
-        return_value={
-            "choices": [
-                {
-                    "message": {
-                        "content": "invalid json"
-                    }
-                }
-            ]
-        },
+        return_value={"choices": [{"message": {"content": "invalid json"}}]},
     ):
         result = await classifier.classify_async_with_metadata("Another query")
 

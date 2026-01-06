@@ -5,11 +5,19 @@ GDPR Article 30 compliance models and data structures
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+try:
+    from src.core.shared.types import JSONDict
+except ImportError:
+    JSONDict = Dict[str, Any]
+
+from enum import Enum
+
+from pydantic import BaseModel, Field, field_validator
 
 
-class GDPRDataCategory(str):
+class GDPRDataCategory(str, Enum):
     """GDPR personal data categories"""
+
     PERSONAL_IDENTIFIERS = "personal_identifiers"
     FINANCIAL_DATA = "financial_data"
     HEALTH_DATA = "health_data"
@@ -19,8 +27,9 @@ class GDPRDataCategory(str):
     SENSITIVE_DATA = "sensitive_data"
 
 
-class GDPRProcessingPurpose(str):
+class GDPRProcessingPurpose(str, Enum):
     """GDPR processing purposes"""
+
     AI_GOVERNANCE = "ai_governance"
     SECURITY_MONITORING = "security_monitoring"
     AUDIT_LOGGING = "audit_logging"
@@ -28,8 +37,9 @@ class GDPRProcessingPurpose(str):
     SYSTEM_MAINTENANCE = "system_maintenance"
 
 
-class GDPRLegalBasis(str):
+class GDPRLegalBasis(str, Enum):
     """GDPR legal bases for processing"""
+
     LEGITIMATE_INTEREST = "legitimate_interest"
     CONTRACT = "contract"
     LEGAL_OBLIGATION = "legal_obligation"
@@ -38,8 +48,9 @@ class GDPRLegalBasis(str):
     VITAL_INTEREST = "vital_interest"
 
 
-class GDPRRecipientCategory(str):
+class GDPRRecipientCategory(str, Enum):
     """Categories of recipients of personal data"""
+
     PROCESSORS = "processors"
     CONTROLLERS = "controllers"
     AUTHORITIES = "authorities"
@@ -53,28 +64,41 @@ class GDPRProcessingActivity(BaseModel):
     name: str = Field(..., description="Name of the processing activity")
     purpose: GDPRProcessingPurpose = Field(..., description="Purpose of processing")
     legal_basis: GDPRLegalBasis = Field(..., description="Legal basis for processing")
-    data_categories: List[GDPRDataCategory] = Field(..., description="Categories of personal data processed")
-    data_subjects: List[str] = Field(..., description="Categories of data subjects (e.g., 'Users', 'Customers')")
-    recipients: Dict[GDPRRecipientCategory, List[str]] = Field(..., description="Recipients of personal data")
+    data_categories: List[GDPRDataCategory] = Field(
+        ..., description="Categories of personal data processed"
+    )
+    data_subjects: List[str] = Field(
+        ..., description="Categories of data subjects (e.g., 'Users', 'Customers')"
+    )
+    recipients: Dict[GDPRRecipientCategory, List[str]] = Field(
+        ..., description="Recipients of personal data"
+    )
     retention_period: str = Field(..., description="Retention period for personal data")
     security_measures: List[str] = Field(..., description="Security measures implemented")
-    transfers: List[Dict[str, Any]] = Field(default_factory=list, description="International data transfers")
+    transfers: List[JSONDict] = Field(
+        default_factory=list, description="International data transfers"
+    )
 
 
 class GDPRArticle30Record(BaseModel):
     """GDPR Article 30 Records of Processing Activities"""
 
     controller_name: str = Field(..., description="Name and contact details of the controller")
-    controller_representative: Optional[str] = Field(None, description="Controller representative (if applicable)")
+    controller_representative: Optional[str] = Field(
+        None, description="Controller representative (if applicable)"
+    )
     dpo_contact: str = Field(..., description="Data Protection Officer contact details")
     record_date: date = Field(..., description="Date this record was created/updated")
-    processing_activities: List[GDPRProcessingActivity] = Field(..., description="List of processing activities")
+    processing_activities: List[GDPRProcessingActivity] = Field(
+        ..., description="List of processing activities"
+    )
     version: str = Field(default="1.0", description="Record version")
 
-    @validator('record_date')
-    def record_date_not_future(cls, v):
+    @field_validator("record_date")
+    @classmethod
+    def record_date_not_future(cls, v: date) -> date:
         if v > date.today():
-            raise ValueError('record_date cannot be in the future')
+            raise ValueError("record_date cannot be in the future")
         return v
 
 
@@ -86,7 +110,9 @@ class GDPRDataProtectionImpactAssessment(BaseModel):
     risk_level: str = Field(..., description="Risk level assessment (High, Medium, Low)")
     risks_identified: List[str] = Field(..., description="Identified risks to rights and freedoms")
     measures_implemented: List[str] = Field(..., description="Measures to address identified risks")
-    residual_risks: List[str] = Field(default_factory=list, description="Residual risks after mitigation")
+    residual_risks: List[str] = Field(
+        default_factory=list, description="Residual risks after mitigation"
+    )
     review_date: Optional[date] = Field(None, description="Date for DPIA review")
 
 
@@ -96,8 +122,14 @@ class GDPRComplianceReport(BaseModel):
     organization_name: str = Field(..., description="Organization name")
     reporting_period: str = Field(..., description="Reporting period")
     records_of_processing: GDPRArticle30Record = Field(..., description="Article 30 records")
-    dpia_summaries: List[GDPRDataProtectionImpactAssessment] = Field(default_factory=list, description="DPIA summaries")
-    data_breaches: List[Dict[str, Any]] = Field(default_factory=list, description="Data breach records")
-    subject_rights_requests: Dict[str, int] = Field(default_factory=dict, description="Subject rights requests by type")
-    compliance_status: Dict[str, Any] = Field(..., description="Overall GDPR compliance status")
-    recommendations: List[str] = Field(default_factory=list, description="Recommendations for improvement")
+    dpia_summaries: List[GDPRDataProtectionImpactAssessment] = Field(
+        default_factory=list, description="DPIA summaries"
+    )
+    data_breaches: List[JSONDict] = Field(default_factory=list, description="Data breach records")
+    subject_rights_requests: Dict[str, int] = Field(
+        default_factory=dict, description="Subject rights requests by type"
+    )
+    compliance_status: JSONDict = Field(..., description="Overall GDPR compliance status")
+    recommendations: List[str] = Field(
+        default_factory=list, description="Recommendations for improvement"
+    )

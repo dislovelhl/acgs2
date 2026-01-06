@@ -546,9 +546,10 @@ class NISTRiskManagementReporter:
         report.calculate_metrics()
 
         # Generate recommendations
-        report.critical_findings, report.improvement_recommendations = (
-            self._generate_recommendations(assessment.controls)
-        )
+        (
+            report.critical_findings,
+            report.improvement_recommendations,
+        ) = self._generate_recommendations(assessment.controls)
 
         return report
 

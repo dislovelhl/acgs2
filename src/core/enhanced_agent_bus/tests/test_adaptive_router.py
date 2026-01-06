@@ -14,7 +14,6 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.core.enhanced_agent_bus.deliberation_layer.adaptive_router import (
     AdaptiveRouter,
     get_adaptive_router,
@@ -196,16 +195,19 @@ class TestRouteMessage:
     @pytest.mark.asyncio
     async def test_route_calculates_missing_impact_score(self, router, message_no_score):
         """Test that missing impact scores are calculated."""
-        with patch(
-            "enhanced_agent_bus.deliberation_layer.impact_scorer.get_impact_scorer"
-        ) as mock_scorer:
-            scorer_instance = MagicMock()
-            scorer_instance.calculate_impact_score = MagicMock(return_value=0.4)
-            mock_scorer.return_value = scorer_instance
+        assert message_no_score.impact_score is None
 
-            assert message_no_score.impact_score is None
+        # Mock the impact scorer to avoid external dependencies
+        with patch(
+            "src.core.enhanced_agent_bus.deliberation_layer.impact_scorer.get_impact_scorer"
+        ) as mock_get_scorer:
+            scorer_instance = MagicMock()
+            scorer_instance.calculate_impact_score_async = AsyncMock(return_value=0.4)
+            mock_get_scorer.return_value = scorer_instance
+
             result = await router.route_message(message_no_score)
 
+            # Verify that impact score was calculated and set
             assert message_no_score.impact_score == 0.4
             assert result["lane"] == "fast"
 
@@ -506,7 +508,9 @@ class TestGetAdaptiveRouter:
             return_value=mock_deliberation_queue,
         ):
             # Reset the singleton using the already imported module
-            from src.core.enhanced_agent_bus.deliberation_layer import adaptive_router as router_module
+            from src.core.enhanced_agent_bus.deliberation_layer import (
+                adaptive_router as router_module,
+            )
 
             router_module._adaptive_router = None
 

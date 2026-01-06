@@ -10,6 +10,7 @@ from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from audit_client import AuditClient
 
 # =============================================================================

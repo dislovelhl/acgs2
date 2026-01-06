@@ -50,16 +50,19 @@ logger = logging.getLogger(__name__)
 # Custom exceptions for audit logger errors
 class AuditLoggerError(Exception):
     """Base exception for audit logger errors"""
+
     pass
 
 
 class AuditDatabaseError(AuditLoggerError):
     """Raised when database operations fail"""
+
     pass
 
 
 class AuditConnectionError(AuditLoggerError):
     """Raised when database connection fails"""
+
     pass
 
 
@@ -164,7 +167,7 @@ class AuditLogger:
                 database=config.database,
                 user=config.user,
                 password=config.password,
-                options="-c statement_timeout=30000"  # 30 second timeout
+                options="-c statement_timeout=30000",  # 30 second timeout
             )
             logger.info(
                 f"Audit logger initialized with connection pool "
@@ -178,8 +181,7 @@ class AuditLogger:
         except psycopg2.Error as e:
             logger.error(f"Failed to initialize audit logger: {e}")
             raise AuditConnectionError(
-                f"Cannot connect to database at {config.host}:{config.port}. "
-                f"Error: {e}"
+                f"Cannot connect to database at {config.host}:{config.port}. " f"Error: {e}"
             ) from e
 
     def health_check(self) -> bool:
@@ -247,48 +249,46 @@ class AuditLogger:
                 # Convert lists and dicts to JSON
                 constitutional_violations_json = (
                     json.dumps(entry.constitutional_violations)
-                    if entry.constitutional_violations else None
+                    if entry.constitutional_violations
+                    else None
                 )
                 hitl_decision_json = (
-                    json.dumps(entry.hitl_decision)
-                    if entry.hitl_decision else None
+                    json.dumps(entry.hitl_decision) if entry.hitl_decision else None
                 )
                 denial_reasons_json = (
-                    json.dumps(entry.denial_reasons)
-                    if entry.denial_reasons else None
+                    json.dumps(entry.denial_reasons) if entry.denial_reasons else None
                 )
                 compliance_tags_json = (
-                    json.dumps(entry.compliance_tags)
-                    if entry.compliance_tags else None
+                    json.dumps(entry.compliance_tags) if entry.compliance_tags else None
                 )
-                metadata_json = (
-                    json.dumps(entry.metadata)
-                    if entry.metadata else None
-                )
+                metadata_json = json.dumps(entry.metadata) if entry.metadata else None
 
                 # Execute insert
-                cur.execute(insert_sql, (
-                    entry.audit_id,
-                    entry.timestamp,
-                    entry.action_type,
-                    entry.environment,
-                    entry.requester_id,
-                    entry.requester_type,
-                    entry.resource,
-                    entry.resource_type,
-                    entry.decision,
-                    entry.risk_score,
-                    entry.risk_category,
-                    entry.constitutional_valid,
-                    constitutional_violations_json,
-                    entry.hitl_required,
-                    hitl_decision_json,
-                    denial_reasons_json,
-                    compliance_tags_json,
-                    entry.retention_days,
-                    entry.log_level,
-                    metadata_json
-                ))
+                cur.execute(
+                    insert_sql,
+                    (
+                        entry.audit_id,
+                        entry.timestamp,
+                        entry.action_type,
+                        entry.environment,
+                        entry.requester_id,
+                        entry.requester_type,
+                        entry.resource,
+                        entry.resource_type,
+                        entry.decision,
+                        entry.risk_score,
+                        entry.risk_category,
+                        entry.constitutional_valid,
+                        constitutional_violations_json,
+                        entry.hitl_required,
+                        hitl_decision_json,
+                        denial_reasons_json,
+                        compliance_tags_json,
+                        entry.retention_days,
+                        entry.log_level,
+                        metadata_json,
+                    ),
+                )
 
                 # Get the returned audit_id
                 result = cur.fetchone()
@@ -324,10 +324,7 @@ class AuditLogger:
         conn = self.pool.getconn()
         try:
             with conn.cursor(cursor_factory=extras.RealDictCursor) as cur:
-                cur.execute(
-                    "SELECT * FROM audit_logs WHERE audit_id = %s",
-                    (audit_id,)
-                )
+                cur.execute("SELECT * FROM audit_logs WHERE audit_id = %s", (audit_id,))
                 row = cur.fetchone()
 
                 if row:
@@ -340,11 +337,7 @@ class AuditLogger:
         finally:
             self.pool.putconn(conn)
 
-    def query_by_requester(
-        self,
-        requester_id: str,
-        limit: int = 100
-    ) -> list[AuditEntry]:
+    def query_by_requester(self, requester_id: str, limit: int = 100) -> list[AuditEntry]:
         """
         Retrieve audit entries for a specific requester.
 
@@ -365,7 +358,7 @@ class AuditLogger:
                     ORDER BY timestamp DESC
                     LIMIT %s
                     """,
-                    (requester_id, limit)
+                    (requester_id, limit),
                 )
                 rows = cur.fetchall()
 
@@ -382,7 +375,7 @@ class AuditLogger:
         decision: str,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> list[AuditEntry]:
         """
         Retrieve audit entries by decision type.
@@ -444,7 +437,7 @@ class AuditLogger:
                     ORDER BY timestamp DESC
                     LIMIT %s
                     """,
-                    (limit,)
+                    (limit,),
                 )
                 rows = cur.fetchall()
 
@@ -457,9 +450,7 @@ class AuditLogger:
             self.pool.putconn(conn)
 
     def get_statistics(
-        self,
-        start_time: datetime | None = None,
-        end_time: datetime | None = None
+        self, start_time: datetime | None = None, end_time: datetime | None = None
     ) -> dict:
         """
         Get audit statistics for compliance reporting and analysis.
@@ -510,15 +501,15 @@ class AuditLogger:
                     FROM audit_logs
                     {time_filter}
                     """,
-                    params
+                    params,
                 )
                 stats = dict(cur.fetchone())
 
                 # Calculate rates
-                total = stats['total_decisions'] or 0
-                stats['allow_rate'] = (stats['allow_count'] / total * 100) if total > 0 else 0
-                stats['deny_rate'] = (stats['deny_count'] / total * 100) if total > 0 else 0
-                stats['hitl_rate'] = (stats['hitl_count'] / total * 100) if total > 0 else 0
+                total = stats["total_decisions"] or 0
+                stats["allow_rate"] = (stats["allow_count"] / total * 100) if total > 0 else 0
+                stats["deny_rate"] = (stats["deny_count"] / total * 100) if total > 0 else 0
+                stats["hitl_rate"] = (stats["hitl_count"] / total * 100) if total > 0 else 0
 
                 # Get top requesters
                 cur.execute(
@@ -530,9 +521,9 @@ class AuditLogger:
                     ORDER BY count DESC
                     LIMIT 10
                     """,
-                    params
+                    params,
                 )
-                stats['top_requesters'] = [dict(row) for row in cur.fetchall()]
+                stats["top_requesters"] = [dict(row) for row in cur.fetchall()]
 
                 # Get top action types
                 cur.execute(
@@ -544,9 +535,9 @@ class AuditLogger:
                     ORDER BY count DESC
                     LIMIT 10
                     """,
-                    params
+                    params,
                 )
-                stats['top_actions'] = [dict(row) for row in cur.fetchall()]
+                stats["top_actions"] = [dict(row) for row in cur.fetchall()]
 
                 return stats
 
@@ -567,20 +558,20 @@ class AuditLogger:
             AuditEntry instance
         """
         # Parse JSON fields
-        if isinstance(row.get('constitutional_violations'), str):
-            row['constitutional_violations'] = json.loads(row['constitutional_violations'])
-        if isinstance(row.get('hitl_decision'), str):
-            row['hitl_decision'] = json.loads(row['hitl_decision'])
-        if isinstance(row.get('denial_reasons'), str):
-            row['denial_reasons'] = json.loads(row['denial_reasons'])
-        if isinstance(row.get('compliance_tags'), str):
-            row['compliance_tags'] = json.loads(row['compliance_tags'])
-        if isinstance(row.get('metadata'), str):
-            row['metadata'] = json.loads(row['metadata'])
+        if isinstance(row.get("constitutional_violations"), str):
+            row["constitutional_violations"] = json.loads(row["constitutional_violations"])
+        if isinstance(row.get("hitl_decision"), str):
+            row["hitl_decision"] = json.loads(row["hitl_decision"])
+        if isinstance(row.get("denial_reasons"), str):
+            row["denial_reasons"] = json.loads(row["denial_reasons"])
+        if isinstance(row.get("compliance_tags"), str):
+            row["compliance_tags"] = json.loads(row["compliance_tags"])
+        if isinstance(row.get("metadata"), str):
+            row["metadata"] = json.loads(row["metadata"])
 
         # Remove database-specific fields
-        row.pop('created_at', None)
-        row.pop('updated_at', None)
+        row.pop("created_at", None)
+        row.pop("updated_at", None)
 
         return AuditEntry(**row)
 

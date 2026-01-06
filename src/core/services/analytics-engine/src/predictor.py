@@ -385,15 +385,15 @@ class ViolationPredictor:
                 "trend_direction": (
                     "increasing"
                     if predictions[-1] > predictions[0]
-                    else "decreasing" if predictions[-1] < predictions[0] else "stable"
+                    else "decreasing"
+                    if predictions[-1] < predictions[0]
+                    else "stable"
                 ),
             }
         else:
             summary = {"status": "success", "note": "no_future_points"}
 
-        logger.info(
-            f"Generated {len(forecast_points)} forecast points " f"for {periods} days ahead"
-        )
+        logger.info(f"Generated {len(forecast_points)} forecast points for {periods} days ahead")
 
         return ViolationForecast(
             forecast_timestamp=now,

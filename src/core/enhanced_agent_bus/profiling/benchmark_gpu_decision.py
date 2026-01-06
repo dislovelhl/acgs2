@@ -189,9 +189,12 @@ class GPUBenchmark:
         logger.info()
 
         # Import scorer
-        ImpactScorer, get_impact_scorer, get_profiling_report, get_gpu_decision_matrix = (
-            self._import_scorer()
-        )
+        (
+            ImpactScorer,
+            get_impact_scorer,
+            get_profiling_report,
+            get_gpu_decision_matrix,
+        ) = self._import_scorer()
 
         if ImpactScorer is None:
             # Run with mock profiling only

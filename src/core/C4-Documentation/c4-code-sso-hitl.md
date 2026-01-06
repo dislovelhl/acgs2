@@ -1525,4 +1525,3 @@ CORS_ORIGINS=https://app.example.com,https://localhost:3000
 - Notification providers fail gracefully (service continues if notifications unavailable)
 - Audit trails are immutable and support compliance requirements
 - All timestamps use UTC timezone (`datetime.now(timezone.utc)` or `datetime.utcnow()`)
-

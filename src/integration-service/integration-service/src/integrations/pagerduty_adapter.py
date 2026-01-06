@@ -121,14 +121,12 @@ from .base import (
 
 logger = logging.getLogger(__name__)
 
-
 class PagerDutyAuthType(str, Enum):
     """PagerDuty authentication types"""
 
     EVENTS_V2 = "events_v2"  # Events API v2 (integration_key)
     REST_API = "rest_api"  # REST API (api_token)
     BOTH = "both"  # Both authentication methods
-
 
 # Default urgency mapping from ACGS-2 severity to PagerDuty urgency
 # PagerDuty has only two urgency levels: high and low
@@ -149,7 +147,6 @@ DEFAULT_SEVERITY_MAP: Dict[EventSeverity, str] = {
     EventSeverity.LOW: "warning",
     EventSeverity.INFO: "info",
 }
-
 
 class PagerDutyCredentials(IntegrationCredentials):
     """
@@ -388,7 +385,6 @@ class PagerDutyCredentials(IntegrationCredentials):
                 )
         return self
 
-
 class PagerDutyAdapter(BaseIntegration):
     """
     PagerDuty incident management integration adapter.
@@ -435,7 +431,7 @@ class PagerDutyAdapter(BaseIntegration):
         )
         result = await adapter.send_event(event)
         if result.success:
-            print(f"Incident created: {result.external_id}")
+            logger.info(f"Incident created: {result.external_id}")
         ```
 
     Example - Full incident lifecycle management:
@@ -490,17 +486,17 @@ class PagerDutyAdapter(BaseIntegration):
         try:
             await adapter.authenticate()
         except AuthenticationError as e:
-            print(f"Authentication failed: {e}")
+            logger.error(f"Authentication failed: {e}")
             return
 
         try:
             result = await adapter.send_event(event)
             if not result.success:
-                print(f"Failed: {result.error_message}")
+                logger.error(f"Failed: {result.error_message}")
         except RateLimitError as e:
-            print(f"Rate limited, retry after {e.retry_after}s")
+            logger.warning(f"Rate limited, retry after {e.retry_after}s")
         except DeliveryError as e:
-            print(f"Delivery failed: {e}")
+            logger.error(f"Delivery failed: {e}")
         ```
 
     Example - Custom configuration:
@@ -587,7 +583,6 @@ class PagerDutyAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating authentication success/failure
         """
-        logger.debug(f"Authenticating with PagerDuty for '{self.name}'")
 
         try:
             client = await self.get_http_client()
@@ -660,7 +655,6 @@ class PagerDutyAdapter(BaseIntegration):
                         error_data = response.json()
                         error_msg = error_data.get("message", error_msg)
                     except Exception as e:
-                        logger.debug(f"Failed to parse error response: {e}")
 
                     logger.error(f"PagerDuty authentication failed: {error_msg}")
                     return IntegrationResult(
@@ -799,7 +793,6 @@ class PagerDutyAdapter(BaseIntegration):
         Returns:
             IntegrationResult with validation status and any issues found
         """
-        logger.debug(f"Validating PagerDuty integration '{self.name}'")
 
         validation_issues: List[str] = []
 
@@ -894,7 +887,6 @@ class PagerDutyAdapter(BaseIntegration):
             DeliveryError: If incident creation fails
             RateLimitError: If rate limited by PagerDuty
         """
-        logger.debug(f"Creating PagerDuty incident for event {event.event_id}")
 
         try:
             client = await self.get_http_client()
@@ -1136,7 +1128,6 @@ class PagerDutyAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating connection status
         """
-        logger.debug(f"Testing PagerDuty connection for '{self.name}'")
 
         try:
             client = await self.get_http_client()
@@ -1199,7 +1190,7 @@ class PagerDutyAdapter(BaseIntegration):
         Requires REST API authentication (api_token).
 
         Args:
-            incident_id: The incident ID (e.g., PXXXXX)
+            incident_id: Unique PagerDuty incident identifier (e.g., 'P12345')
 
         Returns:
             IntegrationResult with incident details or error
@@ -1214,13 +1205,13 @@ class PagerDutyAdapter(BaseIntegration):
 
             if result.success:
                 incident = result.error_details  # Incident data
-                print(f"Incident #{result.external_id}")
-                print(f"Status: {incident.get('status')}")
-                print(f"URL: {result.external_url}")
-                print(f"Title: {incident.get('title')}")
-                print(f"Created: {incident.get('created_at')}")
+                logger.info(f"Incident #{result.external_id}")
+                logger.info(f"Status: {incident.get('status')}")
+                logger.info(f"URL: {result.external_url}")
+                logger.info(f"Title: {incident.get('title')}")
+                logger.info(f"Created: {incident.get('created_at')}")
             else:
-                print(f"Error: {result.error_message}")
+                logger.error(f"Error: {result.error_message}")
             ```
         """
         if not self._authenticated:
@@ -1234,8 +1225,6 @@ class PagerDutyAdapter(BaseIntegration):
                 "REST API authentication required for get_incident",
                 self.name,
             )
-
-        logger.debug(f"Fetching PagerDuty incident {incident_id}")
 
         try:
             client = await self.get_http_client()
@@ -1260,7 +1249,7 @@ class PagerDutyAdapter(BaseIntegration):
                     success=True,
                     integration_name=self.name,
                     operation="get_incident",
-                    external_id=incident_number,
+                    external_id=str(incident_number) if incident_number is not None else None,
                     external_url=html_url,
                     error_details=incident,  # Using error_details to pass incident data
                 )
@@ -1346,7 +1335,7 @@ class PagerDutyAdapter(BaseIntegration):
         Requires REST API authentication (api_token).
 
         Args:
-            incident_id: The incident ID (e.g., PXXXXX)
+            incident_id: Unique PagerDuty incident identifier (e.g., 'P12345')
             status: New incident status (triggered, acknowledged, resolved)
             priority: Priority reference ID
             escalation_policy_id: Escalation policy reference ID
@@ -1396,7 +1385,7 @@ class PagerDutyAdapter(BaseIntegration):
                 assigned_to_user_ids=["USER123"],
             )
             if result.success:
-                print(f"Updated incident #{result.external_id}")
+                logger.info(f"Updated incident #{result.external_id}")
             ```
         """
         if not self._authenticated:
@@ -1410,8 +1399,6 @@ class PagerDutyAdapter(BaseIntegration):
                 "REST API authentication required for update_incident",
                 self.name,
             )
-
-        logger.debug(f"Updating PagerDuty incident {incident_id}")
 
         try:
             client = await self.get_http_client()
@@ -1460,7 +1447,7 @@ class PagerDutyAdapter(BaseIntegration):
                     success=True,
                     integration_name=self.name,
                     operation="update_incident",
-                    external_id=incident_number,
+                    external_id=str(incident_number) if incident_number is not None else None,
                 )
 
             elif response.status_code == 404:
@@ -1570,7 +1557,7 @@ class PagerDutyAdapter(BaseIntegration):
             # Resolve the incident
             resolve_result = await adapter.resolve_incident(dedup_key)
             if resolve_result.success:
-                print(f"Incident {dedup_key} resolved successfully")
+                logger.info(f"Incident {dedup_key} resolved successfully")
             ```
 
         Example - Resolve by constructing dedup_key:
@@ -1593,8 +1580,6 @@ class PagerDutyAdapter(BaseIntegration):
                 "Events API authentication required for resolve_incident",
                 self.name,
             )
-
-        logger.debug(f"Resolving PagerDuty incident with dedup_key {dedup_key}")
 
         try:
             client = await self.get_http_client()
@@ -1711,7 +1696,7 @@ class PagerDutyAdapter(BaseIntegration):
         Requires REST API authentication (api_token).
 
         Args:
-            incident_id: The incident ID (e.g., PXXXXX)
+            incident_id: Unique PagerDuty incident identifier (e.g., 'P12345')
             note: The note text to add
 
         Returns:
@@ -1767,8 +1752,6 @@ class PagerDutyAdapter(BaseIntegration):
                 "REST API authentication required for add_note",
                 self.name,
             )
-
-        logger.debug(f"Adding note to PagerDuty incident {incident_id}")
 
         try:
             client = await self.get_http_client()
@@ -1890,7 +1873,7 @@ class PagerDutyAdapter(BaseIntegration):
         Requires REST API authentication (api_token).
 
         Args:
-            incident_id: The incident ID (e.g., PXXXXX)
+            incident_id: Unique PagerDuty incident identifier (e.g., 'P12345')
             escalation_policy_id: The escalation policy ID to escalate to
 
         Returns:
@@ -1908,7 +1891,7 @@ class PagerDutyAdapter(BaseIntegration):
             )
 
             if result.success:
-                print("Incident escalated to senior engineers")
+                logger.info("Incident escalated to senior engineers")
             ```
 
         Example - Escalate based on severity:

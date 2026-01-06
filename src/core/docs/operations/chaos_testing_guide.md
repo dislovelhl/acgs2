@@ -1,7 +1,7 @@
 # ACGS-2 Chaos Testing Guide (v2.3.0)
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`  
-> **Perf Targets**: P99 <5ms during chaos, full recovery <30s  
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Perf Targets**: P99 <5ms during chaos, full recovery <30s
 > **Last Updated**: 2025-12-31 (Phase 3.6)
 
 ## Overview

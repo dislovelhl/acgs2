@@ -19,7 +19,6 @@ from ...schemas.template import (
 
 router = APIRouter()
 
-
 # ====================
 # Mock Data Store
 # ====================

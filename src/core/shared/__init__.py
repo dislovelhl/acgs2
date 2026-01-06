@@ -17,7 +17,7 @@ Usage:
     from src.core.shared.metrics import track_request_metrics, track_constitutional_validation
     from src.core.shared.circuit_breaker import with_circuit_breaker, get_circuit_breaker
     from src.core.shared.redis_config import get_redis_url
-    from src.core.shared.logging_config import configure_logging, get_logger
+    from src.core.shared.acgs_logging_config import configure_logging, get_logger
     from src.core.shared.middleware import add_correlation_id_middleware
 
 Example:

@@ -330,7 +330,7 @@ def _generate_soc2_report_data(
                 "priority": "medium",
                 "area": "Logging and Monitoring",
                 "recommendation": (
-                    "Enhance log retention to 13 months for compliance " "with audit requirements"
+                    "Enhance log retention to 13 months for compliance with audit requirements"
                 ),
                 "timeline": "Q2 2026",
             },
@@ -487,7 +487,7 @@ def _generate_gdpr_report_data(
                     "third_country_transfers": i % 2 == 0,
                     "retention_period": "3 years after account closure",
                     "security_measures_summary": (
-                        "Encryption, access controls, logging, " "regular security assessments"
+                        "Encryption, access controls, logging, regular security assessments"
                     ),
                     "status": "active",
                 }
@@ -564,7 +564,7 @@ def _generate_euaiact_report_data(
                 "risk_level": ["high_risk", "limited_risk", "minimal_risk"][i % 3],
                 "high_risk_category": (f"Annex III Category {(i % 8) + 1}" if i % 3 == 0 else None),
                 "intended_purpose": (
-                    f"AI system for content moderation and " f"safety guardrails (System {i})"
+                    f"AI system for content moderation and safety guardrails (System {i})"
                 ),
                 "provider_role": "provider",
                 "compliance_status": "compliant" if i % 4 != 0 else "in_progress",
@@ -582,7 +582,7 @@ def _generate_euaiact_report_data(
                 "assessor": "Compliance Team",
                 "key_findings": ("System meets EU AI Act requirements for its risk classification"),
                 "recommendations": (
-                    "Continue monitoring for regulatory updates and " "maintain documentation"
+                    "Continue monitoring for regulatory updates and maintain documentation"
                 ),
             }
             for i in range(1, 4)

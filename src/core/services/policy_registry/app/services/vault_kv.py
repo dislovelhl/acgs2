@@ -11,12 +11,12 @@ import sys
 from pathlib import Path
 from typing import Optional, Protocol
 
-# Add acgs2-core/shared to path for type imports
-shared_path = Path(__file__).parent.parent.parent.parent.parent / "shared"
-if str(shared_path) not in sys.path:
-    sys.path.insert(0, str(shared_path))
+# Add acgs2-core to path for shared modules
+core_path = Path(__file__).parent.parent.parent.parent.parent
+if str(core_path) not in sys.path:
+    sys.path.insert(0, str(core_path))
 
-from types import JSONDict
+from shared.types import JSONDict
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,6 @@ class VaultKVOperations:
             payload = data
 
         await self._http_client.request("POST", api_path, data=payload)
-        logger.debug(f"Stored secret at: {path}")
 
     async def get(
         self,
@@ -122,7 +121,6 @@ class VaultKVOperations:
             api_path = f"/v1/{self._kv_mount}/{path}"
 
         await self._http_client.request("DELETE", api_path)
-        logger.debug(f"Deleted secret at: {path}")
 
     async def list_secrets(self, path: str = "") -> JSONDict:
         """
@@ -178,7 +176,6 @@ class VaultKVOperations:
 
         api_path = f"/v1/{self._kv_mount}/delete/{path}"
         await self._http_client.request("POST", api_path, data={"versions": versions})
-        logger.debug(f"Deleted versions {versions} at: {path}")
 
     async def undelete_versions(
         self,
@@ -197,7 +194,6 @@ class VaultKVOperations:
 
         api_path = f"/v1/{self._kv_mount}/undelete/{path}"
         await self._http_client.request("POST", api_path, data={"versions": versions})
-        logger.debug(f"Undeleted versions {versions} at: {path}")
 
     async def destroy_versions(
         self,

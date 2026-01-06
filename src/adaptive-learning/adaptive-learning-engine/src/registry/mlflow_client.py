@@ -20,8 +20,12 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-logger = logging.getLogger(__name__)
+try:
+    from src.core.shared.security.deserialization import safe_pickle_load
+except ImportError:
+    safe_pickle_load = None
 
+logger = logging.getLogger(__name__)
 
 class ModelStage(Enum):
     """MLflow model lifecycle stages."""
@@ -31,14 +35,12 @@ class ModelStage(Enum):
     PRODUCTION = "Production"
     ARCHIVED = "Archived"
 
-
 class RegistryStatus(Enum):
     """Status of the MLflow registry connection."""
 
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     DEGRADED = "degraded"  # Using local fallback
-
 
 @dataclass
 class ModelVersion:
@@ -55,7 +57,6 @@ class ModelVersion:
     source: Optional[str] = None
     aliases: List[str] = field(default_factory=list)
 
-
 @dataclass
 class RegistrationResult:
     """Result from model registration."""
@@ -66,7 +67,6 @@ class RegistrationResult:
     message: str
     timestamp: float = field(default_factory=time.time)
 
-
 @dataclass
 class RollbackResult:
     """Result from model rollback."""
@@ -76,7 +76,6 @@ class RollbackResult:
     new_version: Optional[str]
     message: str
     timestamp: float = field(default_factory=time.time)
-
 
 @dataclass
 class ModelMetadata:
@@ -91,7 +90,6 @@ class ModelMetadata:
     algorithm: str
     training_timestamp: float
     extra: Dict[str, Any] = field(default_factory=dict)
-
 
 class MLflowRegistry:
     """MLflow model registry client for versioning and rollback.
@@ -414,7 +412,7 @@ class MLflowRegistry:
                 version = result.version
             except Exception as e:
                 # Model might not be registered yet, create it
-                logger.debug(f"Creating new registered model: {e}")
+
                 try:
                     self._mlflow_client.create_registered_model(
                         name=self.model_name,
@@ -691,9 +689,11 @@ class MLflowRegistry:
             model_path = mlflow.artifacts.download_artifacts(artifact_uri=f"{model_uri}/model.pkl")
 
             with open(model_path, "rb") as f:
-                model = pickle.load(f)
+                if safe_pickle_load:
+                    model = safe_pickle_load(f)
+                else:
+                    model = pickle.load(f)
 
-            logger.debug(f"Loaded model from MLflow alias: {alias}")
             return model
 
         except Exception as e:
@@ -716,9 +716,11 @@ class MLflowRegistry:
             model_path = mlflow.artifacts.download_artifacts(artifact_uri=f"{model_uri}/model.pkl")
 
             with open(model_path, "rb") as f:
-                model = pickle.load(f)
+                if safe_pickle_load:
+                    model = safe_pickle_load(f)
+                else:
+                    model = pickle.load(f)
 
-            logger.debug(f"Loaded model from MLflow version: {version}")
             return model
 
         except Exception as e:
@@ -760,9 +762,11 @@ class MLflowRegistry:
                 return None
 
             with open(model_path, "rb") as f:
-                model = pickle.load(f)
+                if safe_pickle_load:
+                    model = safe_pickle_load(f)
+                else:
+                    model = pickle.load(f)
 
-            logger.debug(f"Loaded model from local version: {version}")
             return model
 
         except Exception as e:
@@ -1024,7 +1028,6 @@ class MLflowRegistry:
                             )
                             versions.append(version)
                         except Exception as e:
-                            logger.debug(f"Could not load local version metadata: {e}")
 
             # Sort by version number
             versions.sort(key=lambda v: int(v.version), reverse=True)

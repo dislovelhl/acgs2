@@ -43,17 +43,14 @@ Usage:
 """
 
 import logging
-import secrets
 import tempfile
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional, Dict, Union, List
-try:
-    from src.core.shared.types import JSONDict, JSONValue
-except ImportError:
-    JSONDict = Dict[str, Any]
-    JSONValue = Any
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+
+if TYPE_CHECKING:
+    from saml2.client import Saml2Client
+    from src.core.shared.models.sso_provider import SSOProvider
 from urllib.parse import urlencode
 
 from .saml_config import (
@@ -62,6 +59,16 @@ from .saml_config import (
     SAMLConfigurationError,
     SAMLIdPConfig,
     SAMLSPConfig,
+)
+from .saml_request_tracker import SAMLRequestTracker
+from .saml_types import (
+    NAMEID_FORMAT_EMAILADDRESS,
+    NAMEID_FORMAT_PERSISTENT,
+    SAMLError,
+    SAMLProviderError,
+    SAMLReplayError,
+    SAMLUserInfo,
+    SAMLValidationError,
 )
 
 # Optional PySAML2 imports
@@ -95,179 +102,9 @@ except ImportError:
     HAS_HTTPX = False
     httpx = None  # type: ignore[assignment]
 
-
 logger = logging.getLogger(__name__)
 
-
-class SAMLError(Exception):
-    """Base exception for SAML-related errors."""
-
-    pass
-
-
-class SAMLValidationError(SAMLError):
-    """SAML signature or assertion validation failed."""
-
-    pass
-
-
-class SAMLAuthenticationError(SAMLError):
-    """SAML authentication failed."""
-
-    pass
-
-
-class SAMLProviderError(SAMLError):
-    """Error communicating with SAML IdP."""
-
-    pass
-
-
-class SAMLReplayError(SAMLError):
-    """Replay attack detected - response already processed."""
-
-    pass
-
-
-@dataclass
-class SAMLUserInfo:
-    """User information extracted from SAML assertion.
-
-    Attributes:
-        name_id: SAML NameID (unique user identifier from IdP)
-        name_id_format: Format of the NameID
-        session_index: Session index for logout
-        email: User's email address
-        name: Full name
-        given_name: First name
-        family_name: Last name
-        groups: Group memberships from IdP
-        attributes: All SAML attributes as dict
-        issuer: IdP entity ID that issued the assertion
-        authn_instant: When authentication occurred
-        session_not_on_or_after: When session expires
-    """
-
-    name_id: str
-    name_id_format: str = NAMEID_FORMAT_EMAILADDRESS
-    session_index: Optional[str] = None
-    email: Optional[str] = None
-    name: Optional[str] = None
-    given_name: Optional[str] = None
-    family_name: Optional[str] = None
-    groups: list[str] = field(default_factory=list)
-    attributes: JSONDict = field(default_factory=dict)
-    issuer: Optional[str] = None
-    authn_instant: Optional[datetime] = None
-    session_not_on_or_after: Optional[datetime] = None
-
-    @classmethod
-    def from_response(cls, response: Any) -> "SAMLUserInfo":
-        """Create SAMLUserInfo from PySAML2 AuthnResponse.
-
-        Args:
-            response: PySAML2 AuthnResponse object
-
-        Returns:
-            SAMLUserInfo instance
-        """
-        if not HAS_PYSAML2:
-            raise SAMLError("PySAML2 is required for SAML operations")
-
-        # Extract NameID
-        name_id = response.name_id
-        name_id_value = str(name_id) if name_id else ""
-        name_id_format = getattr(name_id, "format", NAMEID_FORMAT_EMAILADDRESS)
-
-        # Extract session info
-        session_info = response.session_info()
-        session_index = session_info.get("session_index")
-
-        # Extract attributes
-        ava = response.ava  # Attribute Value Assertion
-
-        # Common attribute mappings
-        email = None
-        name = None
-        given_name = None
-        family_name = None
-        groups = []
-
-        # Email attribute names
-        for attr in [
-            "email",
-            "emailAddress",
-            "mail",
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
-        ]:
-            if attr in ava:
-                email = ava[attr][0] if ava[attr] else None
-                break
-
-        # Name attributes
-        for attr in [
-            "name",
-            "displayName",
-            "cn",
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
-        ]:
-            if attr in ava:
-                name = ava[attr][0] if ava[attr] else None
-                break
-
-        # Given name
-        for attr in [
-            "givenName",
-            "firstName",
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname",
-        ]:
-            if attr in ava:
-                given_name = ava[attr][0] if ava[attr] else None
-                break
-
-        # Family name
-        for attr in [
-            "surname",
-            "sn",
-            "lastName",
-            "familyName",
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname",
-        ]:
-            if attr in ava:
-                family_name = ava[attr][0] if ava[attr] else None
-                break
-
-        # Groups
-        for attr in [
-            "groups",
-            "memberOf",
-            "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups",
-        ]:
-            if attr in ava:
-                groups = list(ava[attr]) if ava[attr] else []
-                break
-
-        # Parse timestamps
-        authn_instant = None
-        session_not_on_or_after = None
-
-        # Get issuer
-        issuer = response.issuer() if hasattr(response, "issuer") else None
-
-        return cls(
-            name_id=name_id_value,
-            name_id_format=str(name_id_format) if name_id_format else NAMEID_FORMAT_EMAILADDRESS,
-            session_index=session_index,
-            email=email or name_id_value,  # Fall back to NameID if no email
-            name=name,
-            given_name=given_name,
-            family_name=family_name,
-            groups=groups,
-            attributes=dict(ava),
-            issuer=issuer,
-            authn_instant=authn_instant,
-            session_not_on_or_after=session_not_on_or_after,
-        )
+# Exceptions and SAMLUserInfo moved to saml_types.py
 
 
 class SAMLHandler:
@@ -323,11 +160,11 @@ class SAMLHandler:
                 )
             )
 
-        self._idp_configs: dict[str, SAMLIdPConfig] = {}
-        self._saml_clients: dict[str, Any] = {}  # Cached Saml2Client per IdP
-        self._metadata_cache: dict[str, tuple[str, datetime]] = {}
-        self._outstanding_requests: dict[str, JSONDict] = {}  # In-memory tracking
-        self._http_client: Optional[Any] = None
+        self._idp_configs: Dict[str, SAMLIdPConfig] = {}
+        self._saml_clients: Dict[str, "Saml2Client"] = {}  # Cached Saml2Client per IdP
+        self._metadata_cache: Dict[str, tuple[str, datetime]] = {}
+        self._tracker = SAMLRequestTracker()
+        self._http_client: Optional["httpx.AsyncClient"] = None
 
         logger.info(
             "SAML handler initialized",
@@ -401,7 +238,7 @@ class SAMLHandler:
             },
         )
 
-    def register_idp_from_model(self, provider: Any) -> None:
+    def register_idp_from_model(self, provider: "SSOProvider") -> None:
         """Register an IdP from database model.
 
         Args:
@@ -452,7 +289,7 @@ class SAMLHandler:
         """
         return list(self._idp_configs.keys())
 
-    async def _get_http_client(self) -> Any:
+    async def _get_http_client(self) -> "httpx.AsyncClient":
         """Get or create HTTP client.
 
         Returns:
@@ -607,7 +444,7 @@ class SAMLHandler:
 
         return config
 
-    async def _get_saml_client(self, idp_name: str) -> Any:
+    async def _get_saml_client(self, idp_name: str) -> "Saml2Client":
         """Get or create SAML client for an IdP.
 
         Args:
@@ -622,7 +459,7 @@ class SAMLHandler:
         """
         if not HAS_PYSAML2:
             raise SAMLError(
-                "PySAML2 is required for SAML operations. " "Install with: pip install pysaml2"
+                "PySAML2 is required for SAML operations. Install with: pip install pysaml2"
             )
 
         idp = self.get_idp(idp_name)
@@ -648,12 +485,8 @@ class SAMLHandler:
         return client
 
     def _generate_request_id(self) -> str:
-        """Generate a unique SAML request ID.
-
-        Returns:
-            Unique request ID string
-        """
-        return f"_saml_{secrets.token_hex(16)}"
+        """Generate a unique SAML request ID."""
+        return self._tracker._generate_request_id()
 
     def store_outstanding_request(
         self,
@@ -662,108 +495,25 @@ class SAMLHandler:
         relay_state: Optional[str] = None,
         expiry_minutes: int = 5,
     ) -> str:
-        """Store an outstanding SAML request for replay prevention.
-
-        Args:
-            request_id: Request ID (generated if not provided)
-            idp_name: Name of the IdP
-            relay_state: Relay state for redirect after authentication
-            expiry_minutes: Minutes until request expires
-
-        Returns:
-            The request ID
-        """
-        if request_id is None:
-            request_id = self._generate_request_id()
-
-        now = datetime.now(timezone.utc)
-        self._outstanding_requests[request_id] = {
-            "idp_name": idp_name,
-            "relay_state": relay_state,
-            "created_at": now,
-            "expires_at": now + timedelta(minutes=expiry_minutes),
-        }
-
-        logger.debug(
-            "SAML outstanding request stored",
-            extra={
-                "request_id": request_id[:16] + "...",
-                "idp_name": idp_name,
-                "constitutional_hash": CONSTITUTIONAL_HASH,
-            },
+        """Store an outstanding SAML request for replay prevention."""
+        return self._tracker.store_request(
+            request_id=request_id,
+            idp_name=idp_name,
+            relay_state=relay_state,
+            expiry_minutes=expiry_minutes,
         )
 
-        return request_id
-
     def verify_and_remove_request(self, request_id: str) -> bool:
-        """Verify an outstanding request exists and remove it.
-
-        Args:
-            request_id: Request ID to verify
-
-        Returns:
-            True if request was valid, False otherwise
-        """
-        if request_id not in self._outstanding_requests:
-            return False
-
-        request = self._outstanding_requests.pop(request_id)
-
-        # Check expiration
-        if datetime.now(timezone.utc) > request["expires_at"]:
-            logger.warning(
-                "SAML request expired",
-                extra={
-                    "request_id": request_id[:16] + "...",
-                    "constitutional_hash": CONSTITUTIONAL_HASH,
-                },
-            )
-            return False
-
-        return True
+        """Verify an outstanding request exists and remove it."""
+        return self._tracker.verify_and_remove(request_id)
 
     def get_outstanding_requests(self) -> dict[str, str]:
-        """Get all outstanding requests in PySAML2 format.
-
-        Returns:
-            Dictionary mapping request IDs to creation timestamps
-        """
-        # Clean expired requests
-        now = datetime.now(timezone.utc)
-        expired = [
-            rid for rid, req in self._outstanding_requests.items() if now > req["expires_at"]
-        ]
-        for rid in expired:
-            del self._outstanding_requests[rid]
-
-        return {
-            rid: req["created_at"].isoformat() for rid, req in self._outstanding_requests.items()
-        }
+        """Get all outstanding requests in PySAML2 format."""
+        return self._tracker.get_requests_as_dict()
 
     def clear_expired_requests(self) -> int:
-        """Clear expired outstanding requests.
-
-        Returns:
-            Number of requests cleared
-        """
-        now = datetime.now(timezone.utc)
-        expired = [
-            rid for rid, req in self._outstanding_requests.items() if now > req["expires_at"]
-        ]
-
-        for rid in expired:
-            del self._outstanding_requests[rid]
-
-        if expired:
-            logger.info(
-                "Cleared expired SAML requests",
-                extra={
-                    "count": len(expired),
-                    "constitutional_hash": CONSTITUTIONAL_HASH,
-                },
-            )
-
-        return len(expired)
+        """Clear expired outstanding requests."""
+        return self._tracker.clear_expired()
 
     async def initiate_login(
         self,
@@ -849,43 +599,19 @@ class SAMLHandler:
         request_id: Optional[str] = None,
         idp_name: Optional[str] = None,
     ) -> SAMLUserInfo:
-        """Process SAML response at Assertion Consumer Service.
-
-        Args:
-            saml_response: Base64-encoded SAML response
-            request_id: Original request ID for replay prevention (optional for IdP-initiated)
-            idp_name: IdP name (will auto-detect from response if not provided)
-
-        Returns:
-            SAMLUserInfo with user details
-
-        Raises:
-            SAMLValidationError: If signature validation fails
-            SAMLReplayError: If replay attack detected
-            SAMLAuthenticationError: If authentication failed
-        """
+        """Process SAML response at Assertion Consumer Service."""
         if not HAS_PYSAML2:
             raise SAMLError("PySAML2 is required for SAML operations")
 
-        # Get outstanding requests for validation
-        outstanding = self.get_outstanding_requests()
-
         # Determine which IdP to use
         if not idp_name:
-            # Try to find from outstanding request
-            if request_id and request_id in self._outstanding_requests:
-                idp_name = self._outstanding_requests[request_id].get("idp_name")
-            else:
-                # Use first registered IdP
-                idp_list = self.list_idps()
-                if not idp_list:
-                    raise SAMLConfigurationError("No IdPs registered")
-                idp_name = idp_list[0]
+            idp_name = self._detect_idp_name(request_id)
 
         client = await self._get_saml_client(idp_name)
 
         try:
             # Parse and validate response
+            outstanding = self.get_outstanding_requests()
             response = client.parse_authn_request_response(
                 saml_response,
                 BINDING_HTTP_POST,
@@ -895,20 +621,11 @@ class SAMLHandler:
             if response is None:
                 raise SAMLValidationError("Failed to parse SAML response")
 
-            # Verify this response hasn't been used before (replay prevention)
-            if request_id:
-                if not self.verify_and_remove_request(request_id):
-                    logger.warning(
-                        "SAML replay attack detected or request expired",
-                        extra={
-                            "request_id": request_id[:16] + "...",
-                            "constitutional_hash": CONSTITUTIONAL_HASH,
-                        },
-                    )
-                    raise SAMLReplayError("SAML response replay detected or request expired")
+            # Replay prevention
+            self._handle_replay_prevention(request_id)
 
             # Extract user information
-            user_info = SAMLUserInfo.from_response(response)
+            user_info = SAMLUserInfo.from_response(response, HAS_PYSAML2)
 
             logger.info(
                 "SAML authentication successful",
@@ -923,7 +640,7 @@ class SAMLHandler:
 
             return user_info
 
-        except SAMLReplayError:
+        except (SAMLReplayError, SAMLValidationError):
             raise
         except Exception as e:
             logger.error(
@@ -935,6 +652,31 @@ class SAMLHandler:
                 },
             )
             raise SAMLValidationError(f"SAML response validation failed: {e}") from e
+
+    def _detect_idp_name(self, request_id: Optional[str]) -> str:
+        """Detect IdP name from request ID or configuration."""
+        if request_id:
+            req_info = self._tracker.get_request(request_id)
+            if req_info and req_info.get("idp_name"):
+                return cast(str, req_info["idp_name"])
+
+        idp_list = self.list_idps()
+        if not idp_list:
+            raise SAMLConfigurationError("No IdPs registered")
+        return idp_list[0]
+
+    def _handle_replay_prevention(self, request_id: Optional[str]) -> None:
+        """Handle replay prevention for a request ID."""
+        if request_id:
+            if not self.verify_and_remove_request(request_id):
+                logger.warning(
+                    "SAML replay attack detected or request expired",
+                    extra={
+                        "request_id": request_id[:16] + "...",
+                        "constitutional_hash": CONSTITUTIONAL_HASH,
+                    },
+                )
+                raise SAMLReplayError("SAML response replay detected or request expired")
 
     async def initiate_logout(
         self,

@@ -1,5 +1,4 @@
 import pytest
-
 from src.core.enhanced_agent_bus.core import EnhancedAgentBus
 from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 from src.core.enhanced_agent_bus.registry import DirectMessageRouter, InMemoryAgentRegistry

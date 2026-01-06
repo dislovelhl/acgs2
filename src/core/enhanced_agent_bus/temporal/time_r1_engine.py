@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 class TemporalEventType(Enum):
     """Types of temporal events in constitutional governance."""
+
     CONSTITUTIONAL_AMENDMENT = "constitutional_amendment"
     GOVERNANCE_DECISION = "governance_decision"
     POLICY_ENACTMENT = "policy_enactment"
@@ -47,11 +48,12 @@ class TemporalEventType(Enum):
 
 class CausalRelationship(Enum):
     """Types of causal relationships between events."""
-    CAUSES = "causes"           # Direct causation
-    ENABLES = "enables"          # Creates conditions for
-    PREVENTS = "prevents"        # Blocks occurrence of
-    FOLLOWS = "follows"          # Occurs after (temporal only)
-    CORRELATES = "correlates"    # Statistical correlation
+
+    CAUSES = "causes"  # Direct causation
+    ENABLES = "enables"  # Creates conditions for
+    PREVENTS = "prevents"  # Blocks occurrence of
+    FOLLOWS = "follows"  # Occurs after (temporal only)
+    CORRELATES = "correlates"  # Statistical correlation
     CONSTITUTES = "constitutes"  # Part of larger event
 
 
@@ -62,6 +64,7 @@ class ConstitutionalEvent:
 
     Events are append-only and cannot be modified once created.
     """
+
     event_id: str
     event_type: TemporalEventType
     description: str
@@ -69,7 +72,7 @@ class ConstitutionalEvent:
     actor: str  # Who/what caused this event
     context: Dict[str, Any]
     causal_chain: List[str] = field(default_factory=list)  # IDs of events that caused this
-    effects: List[str] = field(default_factory=list)      # IDs of events this caused (updated later)
+    effects: List[str] = field(default_factory=list)  # IDs of events this caused (updated later)
     metadata: Dict[str, Any] = field(default_factory=dict)
     constitutional_hash: str = CONSTITUTIONAL_HASH
     event_hash: str = ""  # Computed hash for immutability
@@ -140,6 +143,7 @@ class ConstitutionalEvent:
 @dataclass
 class CausalLink:
     """A causal relationship between two events."""
+
     from_event: str
     to_event: str
     relationship_type: CausalRelationship
@@ -181,7 +185,9 @@ class ConstitutionalTimelineEngine:
 
         # Causal graph (computed from event log)
         self.causal_links: List[CausalLink] = []
-        self.causal_graph: Dict[str, Set[str]] = defaultdict(set)  # event_id -> set of caused events
+        self.causal_graph: Dict[str, Set[str]] = defaultdict(
+            set
+        )  # event_id -> set of caused events
 
         # Temporal reasoning model (placeholder for Time-R1)
         self.time_r1_model = None  # Would be loaded Time-R1 model
@@ -293,7 +299,7 @@ class ConstitutionalTimelineEngine:
                 relationship_type=CausalRelationship.CAUSES,
                 confidence=0.9,  # High confidence for explicit causal chains
                 evidence=["explicit_causal_chain"],
-                metadata={"established_by": "timeline_engine"}
+                metadata={"established_by": "timeline_engine"},
             )
             self.causal_links.append(link)
 
@@ -336,7 +342,9 @@ class ConstitutionalTimelineEngine:
         for event in self.event_log:
             for cause_id in event.causal_chain:
                 if not self.get_event(cause_id):
-                    raise RuntimeError(f"Causal chain broken: {event.event_id} references missing {cause_id}")
+                    raise RuntimeError(
+                        f"Causal chain broken: {event.event_id} references missing {cause_id}"
+                    )
 
         # Check temporal ordering
         for link in self.causal_links:
@@ -345,7 +353,9 @@ class ConstitutionalTimelineEngine:
 
             if cause_event and effect_event:
                 if cause_event.timestamp >= effect_event.timestamp:
-                    raise RuntimeError(f"Temporal violation: cause {link.from_event} occurs after effect {link.to_event}")
+                    raise RuntimeError(
+                        f"Temporal violation: cause {link.from_event} occurs after effect {link.to_event}"
+                    )
 
     def _compute_timeline_hash(self) -> str:
         """Compute hash of entire timeline for integrity verification."""
@@ -396,9 +406,7 @@ class ConstitutionalTimelineEngine:
         return [self.get_event(eid) for eid in effect_ids if self.get_event(eid)]
 
     async def predict_future_events(
-        self,
-        current_state: Dict[str, Any],
-        prediction_horizon: int = 10
+        self, current_state: Dict[str, Any], prediction_horizon: int = 10
     ) -> List[Dict[str, Any]]:
         """
         Predict future constitutional events using Time-R1 model.
@@ -417,32 +425,37 @@ class ConstitutionalTimelineEngine:
         recent_events = self.event_log[-50:]  # Last 50 events
 
         # Simple pattern-based prediction (placeholder)
-        governance_decisions = [e for e in recent_events if e.event_type == TemporalEventType.GOVERNANCE_DECISION]
-        validation_failures = [e for e in recent_events if e.event_type == TemporalEventType.VALIDATION_FAILURE]
+        governance_decisions = [
+            e for e in recent_events if e.event_type == TemporalEventType.GOVERNANCE_DECISION
+        ]
+        validation_failures = [
+            e for e in recent_events if e.event_type == TemporalEventType.VALIDATION_FAILURE
+        ]
 
         # Predict based on patterns
         if len(validation_failures) > len(governance_decisions) * 0.3:
-            predictions.append({
-                "event_type": "policy_amendment",
-                "probability": 0.7,
-                "description": "Constitutional amendment likely due to validation failures",
-                "timeframe": "1-2 weeks",
-            })
+            predictions.append(
+                {
+                    "event_type": "policy_amendment",
+                    "probability": 0.7,
+                    "description": "Constitutional amendment likely due to validation failures",
+                    "timeframe": "1-2 weeks",
+                }
+            )
 
         if len(governance_decisions) > 10:
-            predictions.append({
-                "event_type": "audit_review",
-                "probability": 0.6,
-                "description": "Increased governance activity may trigger audit review",
-                "timeframe": "1 week",
-            })
+            predictions.append(
+                {
+                    "event_type": "audit_review",
+                    "probability": 0.6,
+                    "description": "Increased governance activity may trigger audit review",
+                    "timeframe": "1 week",
+                }
+            )
 
         return predictions
 
-    async def handle_disruption(
-        self,
-        disruption: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def handle_disruption(self, disruption: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle system disruptions using temporal reasoning.
 
@@ -457,9 +470,7 @@ class ConstitutionalTimelineEngine:
         precedents = await self.find_relevant_precedents(disruption)
 
         # Generate adaptation plan using temporal reasoning
-        adaptation_plan = await self.generate_adaptation_plan(
-            current_state, disruption, precedents
-        )
+        adaptation_plan = await self.generate_adaptation_plan(current_state, disruption, precedents)
 
         # Record the disruption and adaptation
         await self.add_event(
@@ -472,7 +483,7 @@ class ConstitutionalTimelineEngine:
                 "adaptation_plan": adaptation_plan,
                 "precedents_considered": len(precedents),
                 "generated_at": datetime.now(timezone.utc).isoformat(),
-            }
+            },
         )
 
         return adaptation_plan
@@ -485,23 +496,38 @@ class ConstitutionalTimelineEngine:
         state = {
             "total_events": len(self.event_log),
             "recent_activity": len(recent_events),
-            "governance_decisions": len([e for e in recent_events if e.event_type == TemporalEventType.GOVERNANCE_DECISION]),
-            "validation_failures": len([e for e in recent_events if e.event_type == TemporalEventType.VALIDATION_FAILURE]),
-            "compensations": len([e for e in recent_events if e.event_type == TemporalEventType.COMPENSATION_EXECUTED]),
+            "governance_decisions": len(
+                [e for e in recent_events if e.event_type == TemporalEventType.GOVERNANCE_DECISION]
+            ),
+            "validation_failures": len(
+                [e for e in recent_events if e.event_type == TemporalEventType.VALIDATION_FAILURE]
+            ),
+            "compensations": len(
+                [
+                    e
+                    for e in recent_events
+                    if e.event_type == TemporalEventType.COMPENSATION_EXECUTED
+                ]
+            ),
             "last_event_timestamp": self.event_log[-1].timestamp if self.event_log else None,
             "timeline_integrity": self.last_verified_hash,
         }
 
         return state
 
-    async def find_relevant_precedents(self, disruption: Dict[str, Any]) -> List[ConstitutionalEvent]:
+    async def find_relevant_precedents(
+        self, disruption: Dict[str, Any]
+    ) -> List[ConstitutionalEvent]:
         """Find historical precedents similar to current disruption."""
         disruption_type = disruption.get("type", "")
 
         # Find events of similar type
         similar_events = []
         for event in reversed(self.event_log[-500:]):  # Last 500 events
-            if event.event_type.value in disruption_type or disruption_type in event.description.lower():
+            if (
+                event.event_type.value in disruption_type
+                or disruption_type in event.description.lower()
+            ):
                 similar_events.append(event)
                 if len(similar_events) >= 5:  # Limit to 5 most recent
                     break
@@ -512,7 +538,7 @@ class ConstitutionalTimelineEngine:
         self,
         current_state: Dict[str, Any],
         disruption: Dict[str, Any],
-        precedents: List[ConstitutionalEvent]
+        precedents: List[ConstitutionalEvent],
     ) -> Dict[str, Any]:
         """Generate adaptation plan using temporal reasoning."""
         # Analyze precedents for successful adaptations
@@ -554,7 +580,7 @@ class ConstitutionalTimelineEngine:
                 "temporal_reasoning": True,
                 "disruption_handling": True,
                 "future_prediction": True,
-            }
+            },
         }
 
 
@@ -584,7 +610,7 @@ async def record_governance_decision(
         actor=decision.get("actor", "system"),
         context=decision,
         causal_chain=causal_events or [],
-        metadata={"decision_type": decision.get("type", "general")}
+        metadata={"decision_type": decision.get("type", "general")},
     )
 
 
@@ -599,9 +625,9 @@ if __name__ == "__main__":
 
         # Test timeline status
         status = await engine.get_timeline_status()
-        logger.info("Engine status: %s", status['status'])
-        logger.info("Immutable log: %s", status['capabilities']['immutable_log'])
-        logger.info("Causal validation: %s", status['capabilities']['causal_validation'])
+        logger.info("Engine status: %s", status["status"])
+        logger.info("Immutable log: %s", status["capabilities"]["immutable_log"])
+        logger.info("Causal validation: %s", status["capabilities"]["causal_validation"])
 
         # Test adding events
         event1 = await engine.add_event(
@@ -630,21 +656,21 @@ if __name__ == "__main__":
 
         # Test state computation
         state = await engine.compute_state_from_log()
-        logger.info("Current state: %d total events", state['total_events'])
+        logger.info("Current state: %d total events", state["total_events"])
 
         # Test disruption handling
         disruption = {
             "type": "validation_failure",
             "description": "Multiple validation failures detected",
-            "severity": "high"
+            "severity": "high",
         }
 
         adaptation = await engine.handle_disruption(disruption)
-        logger.info("Disruption handled: %s", adaptation['disruption_type'])
+        logger.info("Disruption handled: %s", adaptation["disruption_type"])
 
         # Test timeline integrity
         integrity_verified = engine.last_verified_hash == engine._compute_timeline_hash()
-        logger.info("Timeline integrity: %s", 'verified' if integrity_verified else 'compromised')
+        logger.info("Timeline integrity: %s", "verified" if integrity_verified else "compromised")
 
         logger.info("Time-R1 Constitutional Timeline Engine test completed!")
 

@@ -243,8 +243,7 @@ class LinearDeduplicationManager:
         """
         if source not in VALID_SYNC_SOURCES:
             raise ValueError(
-                f"Invalid sync source: {source}. "
-                f"Must be one of: {', '.join(VALID_SYNC_SOURCES)}"
+                f"Invalid sync source: {source}. Must be one of: {', '.join(VALID_SYNC_SOURCES)}"
             )
 
         if not self._connected:
@@ -265,8 +264,6 @@ class LinearDeduplicationManager:
                 event_type=event_type,
                 metadata=enriched_metadata,
             )
-
-            logger.debug(f"Marked event {event_id} as processed from {source}")
 
         except Exception as e:
             logger.error(f"Failed to mark event {event_id} as processed: {e}")
@@ -323,8 +320,6 @@ class LinearDeduplicationManager:
 
             # Also record in sync chain for loop detection
             await self._add_to_sync_chain(issue_id, from_source, to_source)
-
-            logger.debug(f"Recorded sync for {issue_id}: {from_source} -> {to_source}")
 
         except Exception as e:
             logger.error(f"Failed to record sync for {issue_id}: {e}")
@@ -427,9 +422,7 @@ class LinearDeduplicationManager:
 
             # Simple loop detection: check if we've seen this exact sync recently
             if new_sync in sync_pairs:
-                logger.warning(
-                    f"Loop detected for {issue_id}: {new_sync} already in chain"
-                )
+                logger.warning(f"Loop detected for {issue_id}: {new_sync} already in chain")
                 return True
 
             # Advanced loop detection: check if we're bouncing back and forth
@@ -439,8 +432,7 @@ class LinearDeduplicationManager:
                 recent_syncs = sync_pairs[-2:]
                 if reverse_sync in recent_syncs:
                     logger.warning(
-                        f"Bounce loop detected for {issue_id}: "
-                        f"{from_source} <-> {to_source}"
+                        f"Bounce loop detected for {issue_id}: {from_source} <-> {to_source}"
                     )
                     return True
 
@@ -550,8 +542,7 @@ class LinearDeduplicationManager:
             chain_cleared = await redis.delete(chain_key)
 
             logger.info(
-                f"Cleared history for {issue_id}: "
-                f"state={state_cleared}, chain={chain_cleared}"
+                f"Cleared history for {issue_id}: state={state_cleared}, chain={chain_cleared}"
             )
 
             return state_cleared or bool(chain_cleared)
@@ -588,9 +579,7 @@ class LinearDeduplicationManager:
 
         # Check for duplicate
         if await self.is_duplicate(event_id):
-            logger.info(
-                f"Skipping duplicate event {event_id} for {issue_id}"
-            )
+            logger.info(f"Skipping duplicate event {event_id} for {issue_id}")
             return False
 
         # Check for sync loop
@@ -602,9 +591,7 @@ class LinearDeduplicationManager:
             return False
 
         # Event should be processed
-        logger.debug(
-            f"Event {event_id} for {issue_id} passed deduplication checks"
-        )
+
         return True
 
 

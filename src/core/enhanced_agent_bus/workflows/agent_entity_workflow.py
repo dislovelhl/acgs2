@@ -373,7 +373,6 @@ class CheckpointAgentActivity(WorkflowActivity):
         Returns:
             Checkpoint data
         """
-        logger.debug(f"[{CONSTITUTIONAL_HASH}] Creating checkpoint for agent {status.agent_id}")
 
         checkpoint = {
             "checkpoint_id": str(uuid.uuid4()),
@@ -428,7 +427,6 @@ initialize_agent_activity = InitializeAgentActivity()
 execute_task_activity = ExecuteTaskActivity()
 checkpoint_agent_activity = CheckpointAgentActivity()
 shutdown_agent_activity = ShutdownAgentActivity()
-
 
 # =============================================================================
 # Agent Entity Workflow
@@ -498,7 +496,7 @@ class AgentEntityWorkflow(WorkflowDefinition[AgentConfig, AgentResult]):
                 initialize_agent_activity,
                 config,
             )
-            logger.debug(f"Agent initialized: {init_result}")
+
             self._state = AgentState.IDLE
             self._last_activity = datetime.now(timezone.utc)
 
@@ -689,7 +687,7 @@ class AgentEntityWorkflow(WorkflowDefinition[AgentConfig, AgentResult]):
         Args:
             task: Task to assign
         """
-        logger.debug(f"[{CONSTITUTIONAL_HASH}] Task {task.task_id} assigned to agent")
+
         await self._task_queue.put(task)
         self._last_activity = datetime.now(timezone.utc)
 
@@ -731,7 +729,6 @@ class AgentEntityWorkflow(WorkflowDefinition[AgentConfig, AgentResult]):
             for key, value in updates.items():
                 if hasattr(self._config, key):
                     setattr(self._config, key, value)
-            logger.debug(f"[{CONSTITUTIONAL_HASH}] Config updated: {updates}")
 
     # =========================================================================
     # Queries

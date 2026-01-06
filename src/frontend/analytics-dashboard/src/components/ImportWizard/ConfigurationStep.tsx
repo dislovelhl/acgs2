@@ -184,18 +184,20 @@ export function ConfigurationStep({
 
     try {
       // Call the backend API to test the connection
-      const apiBaseUrl =
-        import.meta.env.VITE_INTEGRATION_API_URL || "http://localhost:8100";
-      const response = await fetch(`${apiBaseUrl}/api/imports/test-connection`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          source: sourceTool,
-          source_config: credentials,
-        }),
-      });
+      const { INTEGRATION_API_URL } = await import("../../lib");
+      const response = await fetch(
+        `${INTEGRATION_API_URL}/api/imports/test-connection`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            source: sourceTool,
+            source_config: credentials,
+          }),
+        }
+      );
 
       const data = await response.json();
 

@@ -77,6 +77,24 @@ validate:opa-policies:
     - if: '$CI_COMMIT_BRANCH == "develop"'
   allow_failure: false
 
+validate:code-complexity:
+  stage: validate
+  image: python:${PYTHON_VERSION}
+  script:
+    - echo "🔍 Analyzing code complexity..."
+    - python ci/complexity_monitor.py --path . --output complexity-results.json --fail-on-violations
+    - echo "✅ Code complexity check passed"
+  artifacts:
+    paths:
+      - complexity-results.json
+    expire_in: 30 days
+    reports:
+      metrics: complexity-results.json
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
 # =============================================================================
 # SECURITY STAGE - Comprehensive Security Scanning
 # =============================================================================

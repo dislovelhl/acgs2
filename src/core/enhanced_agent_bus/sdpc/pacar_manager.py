@@ -60,13 +60,17 @@ class PACARManager:
             await r.setex(
                 f"pacar:session:{session_id}",
                 3600,  # 1 hour TTL
-                state.model_dump_json()
+                state.model_dump_json(),
             )
         except Exception as e:
             logger.error(f"Failed to save PACAR state to Redis for {session_id}: {e}")
 
     async def add_message(
-        self, session_id: str, role: MessageRole, content: str, metadata: Optional[Dict[str, Any]] = None
+        self,
+        session_id: str,
+        role: MessageRole,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> ConversationState:
         """Adds a message to the conversation history."""
         state = await self.get_state(session_id)

@@ -8,7 +8,8 @@ Follows the Builder pattern for clean configuration management.
 
 import os
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -22,7 +23,6 @@ from litellm.caching import Cache
 # Import types conditionally to avoid circular imports
 if TYPE_CHECKING:
     pass
-
 
 # Import centralized constitutional hash with fallback
 try:

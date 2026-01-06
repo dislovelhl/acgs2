@@ -3,7 +3,6 @@ import logging
 import os
 
 import pytest
-
 from src.core.services.audit_service.blockchain.solana.solana_client import SolanaClient
 
 

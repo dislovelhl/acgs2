@@ -367,7 +367,6 @@ class BlockchainAnchorManager:
 
     async def _worker_loop(self, worker_id: int):
         """Background worker for processing anchor requests."""
-        logger.debug(f"[{CONSTITUTIONAL_HASH}] Anchor worker {worker_id} started")
 
         while self._running:
             try:
@@ -397,8 +396,6 @@ class BlockchainAnchorManager:
                 break
             except Exception as e:
                 logger.error(f"[{CONSTITUTIONAL_HASH}] Worker {worker_id} error: {e}")
-
-        logger.debug(f"[{CONSTITUTIONAL_HASH}] Anchor worker {worker_id} stopped")
 
     async def _execute_anchor(
         self,

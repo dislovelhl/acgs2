@@ -24,17 +24,16 @@ from tenacity import (
 )
 
 # Import exceptions from centralized exceptions module
-from exceptions.auth import AuthenticationError
-from exceptions.delivery import DeliveryError
-from exceptions.integration import (
+from ..exceptions.auth import AuthenticationError
+from ..exceptions.delivery import DeliveryError
+from ..exceptions.integration import (
     IntegrationConnectionError,
     IntegrationError,
     RateLimitError,
 )
-from exceptions.validation import ValidationError
+from ..exceptions.validation import ValidationError
 
 logger = logging.getLogger(__name__)
-
 
 # Public API exports - make exceptions and classes available for import from this module
 __all__ = [
@@ -224,9 +223,7 @@ class BatchIntegrationResult(BaseModel):
     """
 
     integration_name: str = Field(..., description="Name of the integration")
-    operation: str = Field(
-        default="send_events_batch", description="Batch operation performed"
-    )
+    operation: str = Field(default="send_events_batch", description="Batch operation performed")
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Batch operation timestamp",
@@ -245,9 +242,7 @@ class BatchIntegrationResult(BaseModel):
     # Batch-level status
     all_succeeded: bool = Field(..., description="True if all events succeeded")
     all_failed: bool = Field(..., description="True if all events failed")
-    partial_success: bool = Field(
-        ..., description="True if some (but not all) events succeeded"
-    )
+    partial_success: bool = Field(..., description="True if some (but not all) events succeeded")
 
     # Error details (for complete failures)
     error_code: Optional[str] = Field(None, description="Error code if batch completely failed")
@@ -260,9 +255,7 @@ class BatchIntegrationResult(BaseModel):
 
     # Retry info
     retry_count: int = Field(0, description="Number of retry attempts for the batch")
-    should_retry: bool = Field(
-        False, description="Whether the batch operation should be retried"
-    )
+    should_retry: bool = Field(False, description="Whether the batch operation should be retried")
 
     @classmethod
     def from_results(
@@ -587,8 +580,6 @@ class BaseIntegration(abc.ABC):
             logger.error(f"Integration '{self.name}': {error_msg}")
             raise AuthenticationError(error_msg, self.name)
 
-        logger.debug(f"Sending event {event.event_id} to integration '{self.name}'")
-
         try:
             result = await self._send_event_with_retry(event)
 
@@ -769,8 +760,6 @@ class BaseIntegration(abc.ABC):
         if not events:
             return []
 
-        logger.debug(f"Sending batch of {len(events)} events to integration '{self.name}'")
-
         try:
             results = await self._send_events_batch_with_retry(events)
 
@@ -785,9 +774,7 @@ class BaseIntegration(abc.ABC):
                 self._events_sent += successful_count
                 self._batch_events_total += successful_count
                 self._last_success = datetime.now(timezone.utc)
-                logger.info(
-                    f"Batch of {len(events)} events sent successfully to '{self.name}'"
-                )
+                logger.info(f"Batch of {len(events)} events sent successfully to '{self.name}'")
             elif successful_count == 0:
                 # All events failed
                 self._batches_failed += 1

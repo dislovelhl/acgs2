@@ -34,7 +34,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-from src.core.shared.logging_config import (
+from src.core.shared.acgs_logging_config import (
     bind_correlation_id,
     clear_correlation_context,
     configure_logging,

@@ -26,17 +26,17 @@ Your memory system architecture:
    - Dense representations of concepts
    - Similarity-based retrieval
    - Cross-domain associations
-   
+
 2. Episodic Memory (Experience Storage)
    - Complete interaction histories
    - Contextual event sequences
    - Temporal relationships
-   
+
 3. Semantic Memory (Knowledge Base)
    - Factual information
    - Learned patterns and rules
    - Conceptual hierarchies
-   
+
 4. Working Memory (Active Context)
    - Current task focus
    - Recent interactions

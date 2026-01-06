@@ -6,22 +6,14 @@ Shared fixtures and test configuration for SDK tests.
 """
 
 from datetime import UTC, datetime
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 
 from acgs2_sdk.config import ACGS2Config, RetryConfig
-from acgs2_sdk.constants import CONSTITUTIONAL_HASH, GOVERNANCE_ENDPOINT
-from acgs2_sdk.models import (
-    ApprovalDecision,
-    ApprovalRequest,
-    ApprovalStatus,
-    GovernanceDecision,
-)
+from acgs2_sdk.constants import CONSTITUTIONAL_HASH
 from acgs2_sdk.services.governance import GovernanceService
-
 
 # =============================================================================
 # Configuration Fixtures

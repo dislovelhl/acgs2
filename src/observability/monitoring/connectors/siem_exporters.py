@@ -345,7 +345,7 @@ class SplunkHECExporter(SIEMExporter):
             async with self._session.post(url, data=payload, headers=headers) as resp:
                 if resp.status == 200:
                     self._stats["bytes_sent"] += len(payload)
-                    logger.debug(f"Sent {len(events)} events to Splunk")
+
                     return True
                 else:
                     error_text = await resp.text()
@@ -469,7 +469,7 @@ class DatadogExporter(SIEMExporter):
             async with self._session.post(self.logs_url, data=payload, headers=headers) as resp:
                 if resp.status in (200, 202):
                     self._stats["bytes_sent"] += len(payload)
-                    logger.debug(f"Sent {len(events)} events to Datadog")
+
                     return True
                 else:
                     error_text = await resp.text()
@@ -614,7 +614,7 @@ class ElasticsearchExporter(SIEMExporter):
                     result = await resp.json()
                     if not result.get("errors", True):
                         self._stats["bytes_sent"] += len(payload)
-                        logger.debug(f"Sent {len(events)} events to Elasticsearch")
+
                         return True
                     else:
                         logger.error(f"Elasticsearch bulk errors: {result}")

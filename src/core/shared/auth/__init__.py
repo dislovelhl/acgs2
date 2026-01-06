@@ -57,7 +57,7 @@ Usage:
     )
 
     if result.created:
-        print(f"New user created: {result.user['email']}")
+        # print(f"New user created: {result.user['email']}")  # DEBUG_CLEANUP
 
     # --- Role Mapping ---
     # Map IdP groups to ACGS-2 roles

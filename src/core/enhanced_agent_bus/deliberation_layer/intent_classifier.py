@@ -8,8 +8,10 @@ Implements hybrid classification with LLM fallback for ambiguous cases.
 
 import json
 import logging
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -112,9 +114,7 @@ class IntentClassifier:
     """Classifies user intent to determine optimal processing strategies."""
 
     def __init__(
-        self,
-        model_name: str = "distilbert-base-uncased",
-        config: Optional[BusConfiguration] = None
+        self, model_name: str = "distilbert-base-uncased", config: Optional[BusConfiguration] = None
     ):
         self.model_name = model_name
         self.config = config or BusConfiguration()
@@ -314,9 +314,7 @@ Respond with ONLY a JSON object in this exact format:
 
         return intent_map.get(intent_str)
 
-    async def classify_async(
-        self, content: str, context: Optional[JSONDict] = None
-    ) -> IntentType:
+    async def classify_async(self, content: str, context: Optional[JSONDict] = None) -> IntentType:
         """Asynchronous classification with optional context/LLM fallback."""
         # 1. Try heuristic classification first
         intent = self.classify(content)
@@ -339,11 +337,11 @@ Respond with ONLY a JSON object in this exact format:
                     model=self.config.llm_model,
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": content}
+                        {"role": "user", "content": content},
                     ],
                     max_tokens=self.config.llm_max_tokens,
                     temperature=0,
-                    caching=self.config.llm_use_cache
+                    caching=self.config.llm_use_cache,
                 )
 
                 llm_intent = response.choices[0].message.content.strip().lower()
@@ -351,10 +349,14 @@ Respond with ONLY a JSON object in this exact format:
                 # Map LLM response to IntentType
                 for it in IntentType:
                     if it.value == llm_intent:
-                        logger.info(f"LLM classified intent as: {llm_intent} (heuristic was GENERAL)")
+                        logger.info(
+                            f"LLM classified intent as: {llm_intent} (heuristic was GENERAL)"
+                        )
                         return it
 
-                logger.warning(f"LLM returned unknown intent: {llm_intent}, falling back to GENERAL")
+                logger.warning(
+                    f"LLM returned unknown intent: {llm_intent}, falling back to GENERAL"
+                )
 
             except Exception as e:
                 logger.error(f"LLM intent classification failed: {str(e)}")

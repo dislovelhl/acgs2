@@ -77,7 +77,6 @@ class PagerDutyUrgency(str, Enum):
 # Default Mappings
 # ============================================================================
 
-
 # Severity to Jira Priority mapping
 DEFAULT_JIRA_PRIORITY_MAP: Dict[EventSeverity, JiraPriority] = {
     EventSeverity.CRITICAL: JiraPriority.HIGHEST,
@@ -116,7 +115,6 @@ DEFAULT_PAGERDUTY_URGENCY_MAP: Dict[EventSeverity, PagerDutyUrgency] = {
     EventSeverity.LOW: PagerDutyUrgency.LOW,
     EventSeverity.INFO: PagerDutyUrgency.LOW,
 }
-
 
 __all__ = [
     "TicketingProvider",

@@ -73,7 +73,7 @@ def _get_sample_evidence_data(
         "organization_name": os.getenv("TENANT_ID", "ACGS-2 Organization"),
     }
 
-    if framework == ComplianceFramework.SOC2 or framework == "soc2":
+    if framework == ComplianceFramework.SOC2:
         return {
             **base_data,
             "report_type": "SOC 2 Type II",
@@ -94,7 +94,13 @@ def _get_sample_evidence_data(
                 {
                     "evidence_id": f"EV-SOC2-{i:03d}",
                     "control_id": f"CC{(i % 9) + 1}.{(i % 4) + 1}",
-                    "criteria": ["security", "availability", "processing_integrity", "confidentiality", "privacy"][i % 5],
+                    "criteria": [
+                        "security",
+                        "availability",
+                        "processing_integrity",
+                        "confidentiality",
+                        "privacy",
+                    ][i % 5],
                     "title": f"Control Evidence {i}",
                     "description": f"Evidence demonstrating control effectiveness for CC{(i % 9) + 1}.{(i % 4) + 1}",
                     "evidence_type": ["document", "screenshot", "log", "configuration"][i % 4],
@@ -136,7 +142,7 @@ def _get_sample_evidence_data(
             ],
         }
 
-    elif framework == ComplianceFramework.ISO27001 or framework == "iso27001":
+    elif framework == ComplianceFramework.ISO27001:
         return {
             **base_data,
             "isms_scope": "Information Security Management System for AI Guardrails Platform",
@@ -204,7 +210,7 @@ def _get_sample_evidence_data(
             ],
         }
 
-    elif framework == ComplianceFramework.GDPR or framework == "gdpr":
+    elif framework == ComplianceFramework.GDPR:
         return {
             **base_data,
             "entity_role": "controller",
@@ -260,7 +266,7 @@ def _get_sample_evidence_data(
             ],
         }
 
-    elif framework == ComplianceFramework.EU_AI_ACT or framework == "euaiact":
+    else:  # EU_AI_ACT
         return {
             **base_data,
             "organization_role": "provider",
@@ -323,9 +329,6 @@ def _get_sample_evidence_data(
             ],
         }
 
-    # Default fallback
-    return base_data
-
 
 def _validate_date_range(
     start_date: Optional[datetime],
@@ -370,12 +373,12 @@ async def export_evidence(
         alias="format",
         examples=["json", "pdf", "xlsx"],
     ),
-    start_date: Optional[datetime] = Query(
-        default=None,
+    start_date: Optional[datetime] = Query(  # noqa: B008
+        None,
         description="Start date for evidence filtering (ISO 8601 format)",
     ),
-    end_date: Optional[datetime] = Query(
-        default=None,
+    end_date: Optional[datetime] = Query(  # noqa: B008
+        None,
         description="End date for evidence filtering (ISO 8601 format)",
     ),
 ):
@@ -484,10 +487,10 @@ async def export_evidence(
         raise HTTPException(
             status_code=400,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Error exporting evidence: {e}")
         raise HTTPException(
             status_code=500,
             detail="Failed to export evidence. Please try again later.",
-        )
+        ) from e

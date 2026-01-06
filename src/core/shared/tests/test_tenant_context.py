@@ -792,7 +792,7 @@ class TestEdgeCases:
         # Test validation directly since httpx cannot encode unicode headers
         # Unicode characters (like zero-width space) should fail the pattern check
         with pytest.raises(TenantValidationError):
-            validate_tenant_id("tenant\u200B123")
+            validate_tenant_id("tenant\u200b123")
 
         # Also test that non-ASCII characters fail validation
         with pytest.raises(TenantValidationError):

@@ -3,12 +3,13 @@ ACGS-2 Policy Service
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
-    JSONValue = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]  # type: ignore[misc]
-    JSONDict = Dict[str, JSONValue]  # type: ignore[misc]
+    JSONValue = Union[str, int, float, bool, None, dict[str, Any], list[Any]]  # type: ignore[misc]
+    JSONDict = dict[str, JSONValue]  # type: ignore[misc]
 
 from acgs2_sdk.constants import CONSTITUTIONAL_HASH, POLICIES_ENDPOINT
 from acgs2_sdk.models import (

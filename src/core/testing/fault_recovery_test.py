@@ -176,9 +176,7 @@ class FaultRecoveryTester:
                 try:
                     await client.test_end_to_end_workflow()
                     results["requests_during_failure"] += 1
-                except (
-                    Exception
-                ):  # nosec B110 - Intentionally broad exception handling during failure testing
+                except Exception:  # nosec B110 - Intentionally broad exception handling during failure testing
                     pass  # Expected during failure
 
             # Start recovery
@@ -248,9 +246,7 @@ class FaultRecoveryTester:
                     pytest.fail("Request should fail during cascading failure")
                 finally:
                     client._get_mock_response = original_mock
-            except (
-                Exception
-            ):  # nosec B110 - Intentionally broad exception handling in cascading failure test
+            except Exception:  # nosec B110 - Intentionally broad exception handling in cascading failure test
                 pass  # Expected
 
             # Recover in reverse order
@@ -344,9 +340,7 @@ class FaultRecoveryTester:
                 try:
                     result = await client.test_end_to_end_workflow()
                     failed_messages.append(result["message_id"])
-                except (
-                    Exception
-                ):  # nosec B110 - Intentionally broad exception handling during audit failure test
+                except Exception:  # nosec B110 - Intentionally broad exception handling during audit failure test
                     pass  # Expected
 
             # Recover audit service

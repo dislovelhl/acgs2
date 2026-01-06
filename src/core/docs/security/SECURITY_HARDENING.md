@@ -1,7 +1,7 @@
 # ACGS-2 Security Hardening (v2.3.0)
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`  
-> **Version**: 2.3.0  
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.3.0
 > **Last Updated**: 2025-12-31 (Phase 3.6)
 
 ## Vulnerabilities Fixed

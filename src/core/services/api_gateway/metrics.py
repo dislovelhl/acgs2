@@ -10,6 +10,7 @@ import logging
 import time
 from typing import Callable, Optional
 
+from src.core.shared.types import JSONDict
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -39,7 +40,6 @@ except ImportError:
         f"[{CONSTITUTIONAL_HASH}] prometheus_client not available, using no-op implementations"
     )
 
-
 # ============================================================================
 # No-Op Implementations for Graceful Degradation
 # ============================================================================
@@ -68,7 +68,7 @@ class NoOpMetric:
 # Metric Registration Helpers (handle duplicate registration gracefully)
 # ============================================================================
 
-_METRICS_CACHE: dict = {}
+_METRICS_CACHE: JSONDict = {}
 
 
 def _find_existing_metric(name: str):
@@ -256,7 +256,6 @@ PROXY_DURATION = _get_or_create_histogram(
     ["target_service"],
     buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
 )
-
 
 # ============================================================================
 # Metrics Middleware for Automatic HTTP Request Tracking

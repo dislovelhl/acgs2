@@ -162,7 +162,6 @@ class BundleManifest:
 
             # Support ED25519 (standard) and Cosign-compatible formats
             if alg not in ("ed25519", "rsa-pss-sha256", "ecdsa-p256-sha256"):
-                logger.debug(f"Skipping unsupported algorithm: {alg}")
                 continue
 
             try:
@@ -176,7 +175,7 @@ class BundleManifest:
                 else:
                     # For other algorithms, we'd need additional crypto libraries
                     # For now, log and skip (can be extended later)
-                    logger.debug(f"Algorithm {alg} requires additional crypto support")
+
                     continue
 
                 valid_count += 1
@@ -224,7 +223,9 @@ class BundleManifest:
                 valid_count += 1
                 logger.info(f"Valid Cosign signature found for key {sig_entry['keyid']}")
             except (InvalidSignature, ValueError) as e:
-                logger.warning(f"Cosign signature verification failed for key {sig_entry['keyid']}: {e}")
+                logger.warning(
+                    f"Cosign signature verification failed for key {sig_entry['keyid']}: {e}"
+                )
 
         return valid_count > 0
 
@@ -755,7 +756,6 @@ class OCIRegistryClient:
                 # We'll re-use push_bundle logic but with signature media types
                 # For simplicity in this demo, we'll store it as a .sig file locally
                 # and "log" the successful push.
-                logger.debug(f"Signature blob created: {sig_hex[:16]}...")
 
                 # In a real implementation, we'd do:
                 # await self.push_blob(repository, sig_data)

@@ -38,8 +38,8 @@ Usage:
 
 import logging
 import os
-from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Any
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -317,8 +317,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         logger.info(
             f"Security headers middleware initialized for environment: {self.config.environment}"
         )
-        logger.debug(f"HSTS enabled: {self.config.enable_hsts}")
-        logger.debug(f"Frame options: {self.config.frame_options}")
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """

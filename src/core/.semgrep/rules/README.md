@@ -179,7 +179,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
         with:
@@ -226,9 +226,9 @@ repos:
 - id: acgs-category-rule-name
   message: |
     Brief description of the issue.
-    
+
     Explanation of why this is a problem.
-    
+
     Fix: How to resolve the issue
   severity: ERROR  # ERROR, WARNING, INFO
   languages: [python]
@@ -242,7 +242,7 @@ repos:
       - "**/*test*.py"
   metadata:
     category: constitutional-compliance  # or security, acgs-patterns, cryptography
-    cwe: "CWE-XXX: Description"
+    cwe: "CWE-345: Insufficient Verification of Data Authenticity"
     owasp: "AXX:2021 - Description"  # if applicable
     confidence: HIGH  # HIGH, MEDIUM, LOW
     likelihood: HIGH

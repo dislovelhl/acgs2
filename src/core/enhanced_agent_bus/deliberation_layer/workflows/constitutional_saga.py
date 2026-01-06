@@ -31,6 +31,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, Generic, List, Optional, TypeVar, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -275,9 +276,7 @@ class SagaActivities(ABC):
     """
 
     @abstractmethod
-    async def reserve_capacity(
-        self, saga_id: str, resource_type: str, amount: int
-    ) -> JSONDict:
+    async def reserve_capacity(self, saga_id: str, resource_type: str, amount: int) -> JSONDict:
         """Reserve capacity for the operation."""
         pass
 
@@ -311,9 +310,7 @@ class SagaActivities(ABC):
         pass
 
     @abstractmethod
-    async def record_audit_entry(
-        self, saga_id: str, entry_type: str, entry_data: JSONDict
-    ) -> str:
+    async def record_audit_entry(self, saga_id: str, entry_type: str, entry_data: JSONDict) -> str:
         """Record entry to audit trail."""
         pass
 
@@ -323,9 +320,7 @@ class SagaActivities(ABC):
         pass
 
     @abstractmethod
-    async def deliver_to_target(
-        self, saga_id: str, target_id: str, payload: JSONDict
-    ) -> JSONDict:
+    async def deliver_to_target(self, saga_id: str, target_id: str, payload: JSONDict) -> JSONDict:
         """Deliver payload to target."""
         pass
 
@@ -345,9 +340,7 @@ class SagaActivities(ABC):
 class DefaultSagaActivities(SagaActivities):
     """Default implementation of saga activities."""
 
-    async def reserve_capacity(
-        self, saga_id: str, resource_type: str, amount: int
-    ) -> JSONDict:
+    async def reserve_capacity(self, saga_id: str, resource_type: str, amount: int) -> JSONDict:
         reservation_id = str(uuid.uuid4())
         logger.info(
             f"Saga {saga_id}: Reserved {amount} {resource_type} (reservation: {reservation_id})"
@@ -395,9 +388,7 @@ class DefaultSagaActivities(SagaActivities):
         logger.info(f"Saga {saga_id}: Reverted policy decision {decision_id}")
         return True
 
-    async def record_audit_entry(
-        self, saga_id: str, entry_type: str, entry_data: JSONDict
-    ) -> str:
+    async def record_audit_entry(self, saga_id: str, entry_type: str, entry_data: JSONDict) -> str:
         audit_id = str(uuid.uuid4())
         logger.info(f"Saga {saga_id}: Recorded audit entry {audit_id} ({entry_type})")
         return audit_id
@@ -406,9 +397,7 @@ class DefaultSagaActivities(SagaActivities):
         logger.warning(f"Saga {saga_id}: Marked audit {audit_id} as failed - {reason}")
         return True
 
-    async def deliver_to_target(
-        self, saga_id: str, target_id: str, payload: JSONDict
-    ) -> JSONDict:
+    async def deliver_to_target(self, saga_id: str, target_id: str, payload: JSONDict) -> JSONDict:
         delivery_id = str(uuid.uuid4())
         logger.info(f"Saga {saga_id}: Delivered to {target_id} (delivery: {delivery_id})")
         return {

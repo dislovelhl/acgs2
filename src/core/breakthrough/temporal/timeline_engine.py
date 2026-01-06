@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class EventType(Enum):
     """Types of constitutional events."""
+
     DECISION = "decision"
     AMENDMENT = "amendment"
     VALIDATION = "validation"
@@ -48,6 +49,7 @@ class ConstitutionalEvent:
     Once created, events cannot be modified - only new events
     can be appended to the timeline.
     """
+
     event_id: str
     event_type: EventType
     timestamp: datetime
@@ -85,17 +87,20 @@ class ConstitutionalEvent:
 
 class TemporalViolationError(Exception):
     """Raised when temporal constraints are violated."""
+
     pass
 
 
 class CausalViolationError(Exception):
     """Raised when causal chain is invalid."""
+
     pass
 
 
 @dataclass
 class TimelineState:
     """Current state of the constitutional timeline."""
+
     last_event_id: Optional[str]
     last_timestamp: Optional[datetime]
     event_count: int
@@ -106,6 +111,7 @@ class TimelineState:
 @dataclass
 class Disruption:
     """A disruption requiring timeline adaptation."""
+
     disruption_id: str
     description: str
     severity: float  # 0.0-1.0
@@ -125,6 +131,7 @@ class Disruption:
 @dataclass
 class Adaptation:
     """An adaptation response to a disruption."""
+
     adaptation_id: str
     disruption_id: str
     strategy: str
@@ -153,11 +160,7 @@ class ConstitutionalTimelineEngine:
     The engine never rewrites history - it only plans forward.
     """
 
-    def __init__(
-        self,
-        max_events: int = 100000,
-        causal_validation: bool = True
-    ):
+    def __init__(self, max_events: int = 100000, causal_validation: bool = True):
         """
         Initialize the Timeline Engine.
 
@@ -191,10 +194,7 @@ class ConstitutionalTimelineEngine:
             f"max_events={max_events}, causal_validation={causal_validation}"
         )
 
-    async def add_event(
-        self,
-        event: ConstitutionalEvent
-    ) -> str:
+    async def add_event(self, event: ConstitutionalEvent) -> str:
         """
         Add an event to the immutable timeline.
 
@@ -230,9 +230,7 @@ class ConstitutionalTimelineEngine:
                 cause = self.get_event(cause_id)
                 if cause is None:
                     self._stats["causal_violations_prevented"] += 1
-                    raise CausalViolationError(
-                        f"Cause event '{cause_id}' not found in timeline"
-                    )
+                    raise CausalViolationError(f"Cause event '{cause_id}' not found in timeline")
                 if cause.timestamp >= event.timestamp:
                     self._stats["causal_violations_prevented"] += 1
                     raise CausalViolationError(
@@ -242,9 +240,7 @@ class ConstitutionalTimelineEngine:
 
         # Validate constitutional hash
         if event.constitutional_hash != CONSTITUTIONAL_HASH:
-            raise ValueError(
-                f"Invalid constitutional hash: {event.constitutional_hash}"
-            )
+            raise ValueError(f"Invalid constitutional hash: {event.constitutional_hash}")
 
         # Add to immutable log
         self._event_log.append(event)
@@ -260,7 +256,6 @@ class ConstitutionalTimelineEngine:
                     self._active_principles.discard(principle_id)
 
         self._stats["events_added"] += 1
-        logger.debug(f"Added event: {event.event_id} ({event.event_type.value})")
 
         return event.event_id
 
@@ -271,37 +266,22 @@ class ConstitutionalTimelineEngine:
             return self._event_log[idx]
         return None
 
-    def get_events_in_range(
-        self,
-        start: datetime,
-        end: datetime
-    ) -> List[ConstitutionalEvent]:
+    def get_events_in_range(self, start: datetime, end: datetime) -> List[ConstitutionalEvent]:
         """Get events within a time range."""
-        return [
-            e for e in self._event_log
-            if start <= e.timestamp <= end
-        ]
+        return [e for e in self._event_log if start <= e.timestamp <= end]
 
-    def get_events_by_type(
-        self,
-        event_type: EventType
-    ) -> List[ConstitutionalEvent]:
+    def get_events_by_type(self, event_type: EventType) -> List[ConstitutionalEvent]:
         """Get events of a specific type."""
         return [e for e in self._event_log if e.event_type == event_type]
 
-    def get_causal_descendants(
-        self,
-        event_id: str
-    ) -> List[ConstitutionalEvent]:
+    def get_causal_descendants(self, event_id: str) -> List[ConstitutionalEvent]:
         """Get all events caused by a specific event."""
         descendants = []
         for event in self._event_log:
             if event_id in event.causal_chain:
                 descendants.append(event)
                 # Recursively get descendants
-                descendants.extend(
-                    self.get_causal_descendants(event.event_id)
-                )
+                descendants.extend(self.get_causal_descendants(event.event_id))
         return descendants
 
     def compute_state_from_log(self) -> TimelineState:
@@ -320,10 +300,7 @@ class ConstitutionalTimelineEngine:
             pending_adaptations=[a.adaptation_id for a in self._pending_adaptations],
         )
 
-    async def handle_disruption(
-        self,
-        disruption: Disruption
-    ) -> Adaptation:
+    async def handle_disruption(self, disruption: Disruption) -> Adaptation:
         """
         Handle a disruption by creating an adaptation.
 
@@ -352,9 +329,7 @@ class ConstitutionalTimelineEngine:
 
         # Create new forward-looking events
         adaptation_events = await self._create_adaptation_events(
-            disruption,
-            strategy,
-            current_state
+            disruption, strategy, current_state
         )
 
         # Create adaptation record
@@ -381,9 +356,7 @@ class ConstitutionalTimelineEngine:
         return adaptation
 
     async def _determine_strategy(
-        self,
-        disruption: Disruption,
-        affected_events: List[ConstitutionalEvent]
+        self, disruption: Disruption, affected_events: List[ConstitutionalEvent]
     ) -> str:
         """Determine adaptation strategy based on disruption severity."""
         if disruption.severity >= 0.9:
@@ -396,10 +369,7 @@ class ConstitutionalTimelineEngine:
             return "monitoring_enhancement"
 
     async def _create_adaptation_events(
-        self,
-        disruption: Disruption,
-        strategy: str,
-        current_state: TimelineState
+        self, disruption: Disruption, strategy: str, current_state: TimelineState
     ) -> List[ConstitutionalEvent]:
         """Create events for the adaptation response."""
         events = []
@@ -415,7 +385,9 @@ class ConstitutionalTimelineEngine:
                 "severity": disruption.severity,
                 "description": f"Adaptation response: {strategy}",
             },
-            causal_chain=[disruption.disruption_id] if disruption.disruption_id in self._event_index else [],
+            causal_chain=[disruption.disruption_id]
+            if disruption.disruption_id in self._event_index
+            else [],
             actor="timeline_engine",
         )
         events.append(adaptation_event)
@@ -453,37 +425,45 @@ class ConstitutionalTimelineEngine:
         for i, event in enumerate(self._event_log):
             # Check temporal ordering
             if prev_timestamp and event.timestamp < prev_timestamp:
-                issues.append({
-                    "type": "temporal_violation",
-                    "event_id": event.event_id,
-                    "message": f"Event at index {i} violates temporal ordering"
-                })
+                issues.append(
+                    {
+                        "type": "temporal_violation",
+                        "event_id": event.event_id,
+                        "message": f"Event at index {i} violates temporal ordering",
+                    }
+                )
             prev_timestamp = event.timestamp
 
             # Check causal chains
             for cause_id in event.causal_chain:
                 cause = self.get_event(cause_id)
                 if cause is None:
-                    issues.append({
-                        "type": "causal_violation",
-                        "event_id": event.event_id,
-                        "message": f"Cause event {cause_id} not found"
-                    })
+                    issues.append(
+                        {
+                            "type": "causal_violation",
+                            "event_id": event.event_id,
+                            "message": f"Cause event {cause_id} not found",
+                        }
+                    )
                 elif cause.timestamp >= event.timestamp:
-                    issues.append({
-                        "type": "causal_violation",
-                        "event_id": event.event_id,
-                        "message": f"Cause {cause_id} does not precede effect"
-                    })
+                    issues.append(
+                        {
+                            "type": "causal_violation",
+                            "event_id": event.event_id,
+                            "message": f"Cause {cause_id} does not precede effect",
+                        }
+                    )
 
             # Verify event hash
             expected_hash = event._compute_hash()
             if event.event_hash != expected_hash:
-                issues.append({
-                    "type": "hash_mismatch",
-                    "event_id": event.event_id,
-                    "message": "Event hash does not match computed hash"
-                })
+                issues.append(
+                    {
+                        "type": "hash_mismatch",
+                        "event_id": event.event_id,
+                        "message": "Event hash does not match computed hash",
+                    }
+                )
 
         return {
             "valid": len(issues) == 0,
@@ -508,10 +488,7 @@ class TimelineEventFactory:
 
     @staticmethod
     def create_decision(
-        decision: str,
-        actor: str,
-        context: Dict[str, Any],
-        causes: Optional[List[str]] = None
+        decision: str, actor: str, context: Dict[str, Any], causes: Optional[List[str]] = None
     ) -> ConstitutionalEvent:
         """Create a decision event."""
         return ConstitutionalEvent(
@@ -532,7 +509,7 @@ class TimelineEventFactory:
         action: str,  # "add" or "remove"
         actor: str,
         description: str,
-        causes: Optional[List[str]] = None
+        causes: Optional[List[str]] = None,
     ) -> ConstitutionalEvent:
         """Create an amendment event."""
         return ConstitutionalEvent(
@@ -550,10 +527,7 @@ class TimelineEventFactory:
 
     @staticmethod
     def create_violation(
-        violation_type: str,
-        actor: str,
-        details: Dict[str, Any],
-        causes: Optional[List[str]] = None
+        violation_type: str, actor: str, details: Dict[str, Any], causes: Optional[List[str]] = None
     ) -> ConstitutionalEvent:
         """Create a violation event."""
         return ConstitutionalEvent(

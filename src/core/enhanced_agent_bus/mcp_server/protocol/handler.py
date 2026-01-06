@@ -44,6 +44,7 @@ class MCPHandler:
         """Initialize the MCP handler."""
         self.config = config
         self._initialized = False
+        self._registration_locked = False
         self._tools: Dict[str, ToolDefinition] = {}
         self._resources: Dict[str, ResourceDefinition] = {}
         self._prompts: Dict[str, PromptDefinition] = {}
@@ -68,12 +69,25 @@ class MCPHandler:
             "logging/setLevel": self._handle_logging_set_level,
         }
 
+    def lock_registration(self) -> None:
+        """
+        Lock registration of new tools, resources, and prompts.
+
+        This prevents runtime 'interface hijacking' where a malicious
+        component could try to override or add new handlers after
+        the server has started.
+        """
+        self._registration_locked = True
+        logger.info("MCP registration locked")
+
     def register_tool(
         self,
         definition: ToolDefinition,
         handler: HandlerFunc,
     ) -> None:
         """Register an MCP tool with its handler."""
+        if self._registration_locked:
+            raise RuntimeError("Cannot register tool: registration is locked")
         self._tools[definition.name] = definition
         self._tool_handlers[definition.name] = handler
         logger.info(f"Registered MCP tool: {definition.name}")
@@ -84,6 +98,8 @@ class MCPHandler:
         handler: HandlerFunc,
     ) -> None:
         """Register an MCP resource with its handler."""
+        if self._registration_locked:
+            raise RuntimeError("Cannot register resource: registration is locked")
         self._resources[definition.uri] = definition
         self._resource_handlers[definition.uri] = handler
         logger.info(f"Registered MCP resource: {definition.uri}")
@@ -94,6 +110,8 @@ class MCPHandler:
         handler: HandlerFunc,
     ) -> None:
         """Register an MCP prompt with its handler."""
+        if self._registration_locked:
+            raise RuntimeError("Cannot register prompt: registration is locked")
         self._prompts[definition.name] = definition
         self._prompt_handlers[definition.name] = handler
         logger.info(f"Registered MCP prompt: {definition.name}")

@@ -39,7 +39,6 @@ try:
 except ImportError:
     from exceptions import GovernanceError
 
-
 # Global instance
 _adaptive_governance: Optional[AdaptiveGovernanceEngine] = None
 

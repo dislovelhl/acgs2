@@ -1,8 +1,8 @@
 # ACGS-2 Dependency Audit Report (Post Phase 3.6)
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`  
-> **Version**: 2.3.0  
-> **Status**: ✅ All Fixed  
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.3.0
+> **Status**: ✅ All Fixed
 > **Generated**: 2025-12-31
 
 ## Executive Summary

@@ -2,6 +2,14 @@ node_modules/
 __pycache__/
 .venv/
 .claude-flow/
+.auto-claude/
+.curr/
+.kilocode/
+.kilocode-context/
+.roo/
+.serena/
+.swarm/
+.vscode/
 
 # Terraform
 .terraform/
@@ -57,9 +65,6 @@ acgs2-core/enhanced_agent_bus/test_venv/
 **/venv/**/*.so
 **/venv/**/*.pyd
 **/test_venv/**/*.so
-
-# Auto Claude data directory
-.auto-claude/
 
 # Backup and temporary files
 *.backup

@@ -24,7 +24,6 @@ from prometheus_client import (
 # Constitutional Hash for governance validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-
 # ============================================================================
 # Metric Registration Helpers (handle duplicate registration gracefully)
 # ============================================================================

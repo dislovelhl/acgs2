@@ -12,11 +12,10 @@ Comprehensive test coverage for authentication API endpoints including:
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import FastAPI, HTTPException
-from fastapi.testclient import TestClient
-
 from app.api.v1 import auth
 from app.api.v1.auth import check_role, get_current_user
+from fastapi import FastAPI, HTTPException
+from fastapi.testclient import TestClient
 
 # Constitutional hash constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

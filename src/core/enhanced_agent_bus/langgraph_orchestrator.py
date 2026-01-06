@@ -538,7 +538,6 @@ def get_workflow(workflow_id: str) -> Optional[WorkflowDefinition]:
 # Initialize standard workflows
 register_workflow(create_governance_workflow())
 
-
 __all__ = [
     "CONSTITUTIONAL_HASH",
     "NodeState",

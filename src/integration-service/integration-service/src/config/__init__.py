@@ -40,15 +40,23 @@ try:
 
     LinearConfig = config_module.LinearConfig
     SlackConfig = config_module.SlackConfig
+    GitHubConfig = config_module.GitHubConfig
+    GitLabConfig = config_module.GitLabConfig
     get_linear_config = config_module.get_linear_config
     get_slack_config = config_module.get_slack_config
+    get_github_config = config_module.get_github_config
+    get_gitlab_config = config_module.get_gitlab_config
     get_service_config = config_module.get_service_config
 except (ImportError, AttributeError, FileNotFoundError):
     # If import fails, define placeholder classes
     LinearConfig = None
     SlackConfig = None
+    GitHubConfig = None
+    GitLabConfig = None
     get_linear_config = None
     get_slack_config = None
+    get_github_config = None
+    get_gitlab_config = None
     get_service_config = None
 
 __all__ = [
@@ -73,8 +81,12 @@ __all__ = [
     # Linear and Slack configs
     "LinearConfig",
     "SlackConfig",
+    "GitHubConfig",
+    "GitLabConfig",
     "get_linear_config",
     "get_slack_config",
+    "get_github_config",
+    "get_gitlab_config",
     "get_service_config",
     # Validation
     "ConfigValidator",

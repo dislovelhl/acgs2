@@ -274,7 +274,6 @@ class VaultCryptoService:
                 _, private_key = self._local_keys[key_name]
                 content = {"data": base64.b64encode(data).decode("utf-8")}
                 signature = self._local_crypto.sign_policy_content(content, private_key)
-                logger.debug(f"Signed using local fallback: {key_name}")
 
             else:
                 raise RuntimeError(f"Key not found and Vault unavailable: {key_name}")
@@ -337,7 +336,6 @@ class VaultCryptoService:
                 is_valid = self._local_crypto.verify_policy_signature(
                     content, signature, public_key
                 )
-                logger.debug(f"Verified using local fallback: {key_name}")
 
             else:
                 raise RuntimeError(f"Key not found and Vault unavailable: {key_name}")

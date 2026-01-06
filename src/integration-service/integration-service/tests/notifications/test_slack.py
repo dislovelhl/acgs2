@@ -86,18 +86,14 @@ def slack_notifier(mock_slack_config, mock_dedup_manager):
 @pytest.fixture
 def unconfigured_slack_notifier(unconfigured_slack_config, mock_dedup_manager):
     """Create unconfigured SlackNotifier instance."""
-    return SlackNotifier(
-        config=unconfigured_slack_config, dedup_manager=mock_dedup_manager
-    )
+    return SlackNotifier(config=unconfigured_slack_config, dedup_manager=mock_dedup_manager)
 
 
 @pytest.fixture
 def mock_slack_client():
     """Create mock Slack AsyncWebClient."""
     client = MagicMock()
-    client.chat_postMessage = AsyncMock(
-        return_value={"ok": True, "ts": "1234567890.123456"}
-    )
+    client.chat_postMessage = AsyncMock(return_value={"ok": True, "ts": "1234567890.123456"})
     return client
 
 
@@ -125,13 +121,9 @@ def test_slack_notifier_initialization(mock_slack_config, mock_dedup_manager):
     assert notifier._last_send_time == 0.0
 
 
-def test_slack_notifier_initialization_unconfigured(
-    unconfigured_slack_config, mock_dedup_manager
-):
+def test_slack_notifier_initialization_unconfigured(unconfigured_slack_config, mock_dedup_manager):
     """Test SlackNotifier initialization with unconfigured Slack."""
-    notifier = SlackNotifier(
-        config=unconfigured_slack_config, dedup_manager=mock_dedup_manager
-    )
+    notifier = SlackNotifier(config=unconfigured_slack_config, dedup_manager=mock_dedup_manager)
 
     assert notifier._config == unconfigured_slack_config
     assert not notifier._config.is_configured
@@ -140,9 +132,7 @@ def test_slack_notifier_initialization_unconfigured(
 def test_slack_notifier_default_initialization():
     """Test SlackNotifier uses get_slack_config and get_dedup_manager by default."""
     with patch("src.integrations.linear.slack_notifier.get_slack_config") as mock_config:
-        with patch(
-            "src.integrations.linear.slack_notifier.get_dedup_manager"
-        ) as mock_dedup:
+        with patch("src.integrations.linear.slack_notifier.get_dedup_manager") as mock_dedup:
             mock_config.return_value = MagicMock(is_configured=True)
             mock_dedup.return_value = MagicMock()
 
@@ -259,9 +249,7 @@ async def test_send_message_success(slack_notifier, mock_slack_client):
         blocks = [{"type": "section", "text": {"type": "plain_text", "text": "Test"}}]
         text = "Test message"
 
-        response = await slack_notifier._send_message(
-            channel="C123456", blocks=blocks, text=text
-        )
+        response = await slack_notifier._send_message(channel="C123456", blocks=blocks, text=text)
 
         assert response["ok"] is True
         mock_slack_client.chat_postMessage.assert_called_once_with(
@@ -286,9 +274,7 @@ async def test_send_message_authentication_error(slack_notifier, mock_slack_clie
         blocks = [{"type": "section", "text": {"type": "plain_text", "text": "Test"}}]
 
         with pytest.raises(SlackAuthenticationError) as exc_info:
-            await slack_notifier._send_message(
-                channel="C123456", blocks=blocks, text="Test"
-            )
+            await slack_notifier._send_message(channel="C123456", blocks=blocks, text="Test")
 
         assert "authentication failed" in str(exc_info.value).lower()
 
@@ -315,9 +301,7 @@ async def test_send_message_rate_limit_error(slack_notifier, mock_slack_client):
         blocks = [{"type": "section", "text": {"type": "plain_text", "text": "Test"}}]
 
         with pytest.raises(SlackRateLimitError) as exc_info:
-            await slack_notifier._send_message(
-                channel="C123456", blocks=blocks, text="Test"
-            )
+            await slack_notifier._send_message(channel="C123456", blocks=blocks, text="Test")
 
         assert exc_info.value.retry_after == 60
 
@@ -339,9 +323,7 @@ async def test_send_message_channel_not_found_error(slack_notifier, mock_slack_c
         blocks = [{"type": "section", "text": {"type": "plain_text", "text": "Test"}}]
 
         with pytest.raises(SlackChannelNotFoundError) as exc_info:
-            await slack_notifier._send_message(
-                channel="C123456", blocks=blocks, text="Test"
-            )
+            await slack_notifier._send_message(channel="C123456", blocks=blocks, text="Test")
 
         assert "channel not found" in str(exc_info.value).lower()
 
@@ -363,9 +345,7 @@ async def test_send_message_generic_slack_error(slack_notifier, mock_slack_clien
         blocks = [{"type": "section", "text": {"type": "plain_text", "text": "Test"}}]
 
         with pytest.raises(SlackNotifierError) as exc_info:
-            await slack_notifier._send_message(
-                channel="C123456", blocks=blocks, text="Test"
-            )
+            await slack_notifier._send_message(channel="C123456", blocks=blocks, text="Test")
 
         assert "slack api error" in str(exc_info.value).lower()
 
@@ -418,11 +398,7 @@ def test_build_issue_created_blocks_truncates_long_description(slack_notifier):
     )
 
     # Find description block
-    desc_blocks = [
-        b
-        for b in blocks
-        if b["type"] == "section" and "xxx..." in b["text"]["text"]
-    ]
+    desc_blocks = [b for b in blocks if b["type"] == "section" and "xxx..." in b["text"]["text"]]
     assert len(desc_blocks) == 1
     assert len(desc_blocks[0]["text"]["text"]) < len(long_description)
     assert desc_blocks[0]["text"]["text"].endswith("...")
@@ -445,9 +421,7 @@ def test_build_status_changed_blocks(slack_notifier):
     assert "Issue Status Changed" in blocks[0]["text"]["text"]
 
     # Find section with status transition
-    status_block = next(
-        b for b in blocks if b["type"] == "section" and "→" in b["text"]["text"]
-    )
+    status_block = next(b for b in blocks if b["type"] == "section" and "→" in b["text"]["text"])
     assert "In Progress" in status_block["text"]["text"]
     assert "Done" in status_block["text"]["text"]
 
@@ -468,9 +442,7 @@ def test_build_comment_added_blocks(slack_notifier):
     assert "New Comment Added" in blocks[0]["text"]["text"]
 
     # Find section with comment
-    comment_blocks = [
-        b for b in blocks if b["type"] == "section" and "Bob" in str(b)
-    ]
+    comment_blocks = [b for b in blocks if b["type"] == "section" and "Bob" in str(b)]
     assert len(comment_blocks) > 0
     assert "Bob commented" in comment_blocks[0]["text"]["text"]
 
@@ -488,9 +460,7 @@ def test_build_comment_added_blocks_truncates_long_comment(slack_notifier):
     )
 
     # Find comment block
-    comment_blocks = [
-        b for b in blocks if b["type"] == "section" and "yyy..." in str(b)
-    ]
+    comment_blocks = [b for b in blocks if b["type"] == "section" and "yyy..." in str(b)]
     assert len(comment_blocks) == 1
     assert "..." in comment_blocks[0]["text"]["text"]
 
@@ -501,9 +471,7 @@ def test_build_comment_added_blocks_truncates_long_comment(slack_notifier):
 
 
 @pytest.mark.asyncio
-async def test_post_issue_created_success(
-    slack_notifier, mock_slack_client, mock_dedup_manager
-):
+async def test_post_issue_created_success(slack_notifier, mock_slack_client, mock_dedup_manager):
     """Test post_issue_created sends notification successfully."""
     with patch(
         "src.integrations.linear.slack_notifier.AsyncWebClient",
@@ -526,9 +494,7 @@ async def test_post_issue_created_success(
 
 
 @pytest.mark.asyncio
-async def test_post_issue_created_not_configured(
-    unconfigured_slack_notifier, mock_dedup_manager
-):
+async def test_post_issue_created_not_configured(unconfigured_slack_notifier, mock_dedup_manager):
     """Test post_issue_created returns False when Slack not configured."""
     result = await unconfigured_slack_notifier.post_issue_created(
         issue_id="LIN-123",
@@ -558,9 +524,7 @@ async def test_post_issue_created_duplicate_detected(
 
 
 @pytest.mark.asyncio
-async def test_post_issue_created_no_channel(
-    slack_notifier, mock_slack_client, mock_dedup_manager
-):
+async def test_post_issue_created_no_channel(slack_notifier, mock_slack_client, mock_dedup_manager):
     """Test post_issue_created returns False when no channel specified."""
     # Remove default channel
     slack_notifier._config.slack_default_channel = None
@@ -595,9 +559,7 @@ async def test_post_issue_created_uses_default_channel(
 
 
 @pytest.mark.asyncio
-async def test_post_status_changed_success(
-    slack_notifier, mock_slack_client, mock_dedup_manager
-):
+async def test_post_status_changed_success(slack_notifier, mock_slack_client, mock_dedup_manager):
     """Test post_status_changed sends notification successfully."""
     with patch(
         "src.integrations.linear.slack_notifier.AsyncWebClient",
@@ -619,9 +581,7 @@ async def test_post_status_changed_success(
 
 
 @pytest.mark.asyncio
-async def test_post_status_changed_not_configured(
-    unconfigured_slack_notifier, mock_dedup_manager
-):
+async def test_post_status_changed_not_configured(unconfigured_slack_notifier, mock_dedup_manager):
     """Test post_status_changed returns False when Slack not configured."""
     result = await unconfigured_slack_notifier.post_status_changed(
         issue_id="LIN-123",
@@ -635,9 +595,7 @@ async def test_post_status_changed_not_configured(
 
 
 @pytest.mark.asyncio
-async def test_post_comment_added_success(
-    slack_notifier, mock_slack_client, mock_dedup_manager
-):
+async def test_post_comment_added_success(slack_notifier, mock_slack_client, mock_dedup_manager):
     """Test post_comment_added sends notification successfully."""
     with patch(
         "src.integrations.linear.slack_notifier.AsyncWebClient",
@@ -682,9 +640,7 @@ async def test_post_comment_added_deduplication_uses_hash(
 
 
 @pytest.mark.asyncio
-async def test_post_comment_added_not_configured(
-    unconfigured_slack_notifier, mock_dedup_manager
-):
+async def test_post_comment_added_not_configured(unconfigured_slack_notifier, mock_dedup_manager):
     """Test post_comment_added returns False when Slack not configured."""
     result = await unconfigured_slack_notifier.post_comment_added(
         issue_id="LIN-123",

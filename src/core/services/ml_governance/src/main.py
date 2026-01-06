@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from src.core.shared.security.cors_config import get_cors_config
 
 from .api.feedback import router as feedback_router
@@ -30,7 +29,7 @@ structlog.configure(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
+        structlog.processors.JSONRenderer(),
     ],
     context_class=dict,
     logger_factory=structlog.stdlib.LoggerFactory(),
@@ -62,7 +61,7 @@ app = FastAPI(
     title="ACGS-2 ML Governance Service",
     description="Adaptive governance with ML models, feedback loops, and online learning",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware (configured based on environment)
@@ -82,7 +81,7 @@ async def health_check():
         "status": "healthy",
         "service": "ml-governance-service",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "metrics": ml_engine.metrics
+        "metrics": ml_engine.metrics,
     }
 
 
@@ -94,7 +93,7 @@ async def readiness_check():
         "service": "ml-governance-service",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "active_models": list(ml_engine.active_versions.keys()),
-        "ab_tests": len(ml_engine.ab_tests)
+        "ab_tests": len(ml_engine.ab_tests),
     }
 
 
@@ -105,17 +104,13 @@ async def root():
         "service": "ml-governance-service",
         "version": "1.0.0",
         "description": "Adaptive governance with ML models, feedback loops, and online learning",
-        "endpoints": {
-            "health": "/health",
-            "ready": "/ready",
-            "api": "/api/v1/"
-        },
+        "endpoints": {"health": "/health", "ready": "/ready", "api": "/api/v1/"},
         "capabilities": {
             "governance_predictions": "/api/v1/governance/predict",
             "feedback_submission": "/api/v1/feedback/submit",
             "model_management": "/api/v1/models/",
-            "drift_detection": "/api/v1/models/drift"
-        }
+            "drift_detection": "/api/v1/models/drift",
+        },
     }
 
 

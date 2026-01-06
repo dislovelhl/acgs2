@@ -19,8 +19,9 @@ from aiokafka.errors import KafkaConnectionError, KafkaError, OffsetOutOfRangeEr
 from aiokafka.structs import ConsumerRecord
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from ..integration_types import ConfigDict as ConfigDictType
+from ..integration_types import EventData, JSONDict
 from ..integrations.base import EventSeverity, IntegrationEvent
-from ..types import ConfigDict as ConfigDictType, EventData, JSONDict
 
 logger = logging.getLogger(__name__)
 
@@ -101,27 +102,19 @@ class GovernanceEvent(BaseModel):
     # Event details
     title: str = Field(..., description="Event title/summary")
     description: Optional[str] = Field(None, description="Detailed description")
-    details: EventData = Field(
-        default_factory=dict, description="Additional event details"
-    )
+    details: EventData = Field(default_factory=dict, description="Additional event details")
 
     # Metadata
     user_id: Optional[str] = Field(None, description="User who triggered the event")
-    tenant_id: Optional[str] = Field(
-        None, description="Tenant ID for multi-tenant deployments"
-    )
-    correlation_id: Optional[str] = Field(
-        None, description="Correlation ID for tracing"
-    )
+    tenant_id: Optional[str] = Field(None, description="Tenant ID for multi-tenant deployments")
+    correlation_id: Optional[str] = Field(None, description="Correlation ID for tracing")
     tags: List[str] = Field(default_factory=list, description="Event tags")
 
     # Kafka metadata
     kafka_topic: Optional[str] = Field(None, description="Source Kafka topic")
     kafka_partition: Optional[int] = Field(None, description="Kafka partition")
     kafka_offset: Optional[int] = Field(None, description="Kafka offset")
-    kafka_timestamp: Optional[int] = Field(
-        None, description="Kafka message timestamp (ms)"
-    )
+    kafka_timestamp: Optional[int] = Field(None, description="Kafka message timestamp (ms)")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -198,9 +191,7 @@ class EventConsumerMetrics(BaseModel):
     last_event_processed_at: Optional[datetime] = Field(
         None, description="Timestamp of last successfully processed event"
     )
-    last_error_at: Optional[datetime] = Field(
-        None, description="Timestamp of last error"
-    )
+    last_error_at: Optional[datetime] = Field(None, description="Timestamp of last error")
 
     # Lag metrics
     current_lag: int = Field(default=0, description="Current consumer lag")
@@ -236,9 +227,7 @@ class EventConsumerMetrics(BaseModel):
 
         # Update average
         if self.events_processed > 0:
-            self.avg_processing_time_ms = (
-                self.total_processing_time_ms / self.events_processed
-            )
+            self.avg_processing_time_ms = self.total_processing_time_ms / self.events_processed
 
     def record_event_failed(self) -> None:
         """Record that an event failed processing."""
@@ -477,13 +466,9 @@ class EventConsumerConfig(BaseModel):
             tenant_filter = [t.strip() for t in tenant_str.split(",")]
 
         return cls(
-            bootstrap_servers=os.getenv(
-                "KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"
-            ),
+            bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
             topics=topics,
-            group_id=os.getenv(
-                "KAFKA_GROUP_ID", "integration-service-consumer"
-            ),
+            group_id=os.getenv("KAFKA_GROUP_ID", "integration-service-consumer"),
             client_id=os.getenv("KAFKA_CLIENT_ID", "integration-service"),
             auto_offset_reset=os.getenv("KAFKA_AUTO_OFFSET_RESET", "latest"),
             max_poll_records=int(os.getenv("KAFKA_MAX_POLL_RECORDS", "100")),
@@ -593,9 +578,7 @@ class EventConsumer:
             logger.warning("Consumer is already running")
             return
 
-        logger.info(
-            f"Starting Kafka consumer for topics: {self.config.topics}"
-        )
+        logger.info(f"Starting Kafka consumer for topics: {self.config.topics}")
         self._state = EventConsumerState.STARTING
         self._stop_event.clear()
 
@@ -613,9 +596,7 @@ class EventConsumer:
 
             # Get assigned partitions
             assignment = self._consumer.assignment()
-            self._assigned_partitions = {
-                f"{tp.topic}:{tp.partition}" for tp in assignment
-            }
+            self._assigned_partitions = {f"{tp.topic}:{tp.partition}" for tp in assignment}
             logger.info(f"Assigned partitions: {self._assigned_partitions}")
 
             self._state = EventConsumerState.RUNNING
@@ -796,7 +777,7 @@ class EventConsumer:
             # Apply filters
             if not self._should_process_event(event):
                 self._metrics.record_event_skipped()
-                logger.debug(f"Event {event.event_id} filtered out")
+
                 return
 
             # Process through handlers
@@ -945,7 +926,7 @@ class EventConsumer:
 
                 if attempt < self.config.max_retries:
                     delay = self.config.retry_delay_seconds * (
-                        self.config.retry_exponential_base ** attempt
+                        self.config.retry_exponential_base**attempt
                     )
                     logger.warning(
                         f"Handler {handler.__name__} failed (attempt {attempt + 1}/"

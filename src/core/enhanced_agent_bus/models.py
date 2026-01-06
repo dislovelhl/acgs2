@@ -14,7 +14,13 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue, SecurityContext, MetadataDict, PerformanceMetrics
+    from src.core.shared.types import (
+        JSONDict,
+        JSONValue,
+        MetadataDict,
+        PerformanceMetrics,
+        SecurityContext,
+    )
 except ImportError:
     # Fallback for standalone usage
     JSONValue = Any

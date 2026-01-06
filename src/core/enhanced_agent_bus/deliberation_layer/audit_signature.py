@@ -31,9 +31,7 @@ def sign_audit_record(payload: Dict[str, Any], secret_key: str) -> str:
 
         # Create HMAC signature
         signature = hmac.new(
-            secret_key.encode("utf-8"),
-            json_str.encode("utf-8"),
-            hashlib.sha256
+            secret_key.encode("utf-8"), json_str.encode("utf-8"), hashlib.sha256
         ).hexdigest()
 
         return signature

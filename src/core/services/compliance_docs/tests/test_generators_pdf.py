@@ -17,16 +17,16 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
-from generators.pdf_generator import (
-    CompliancePDFGenerator,
+from src.core.services.compliance_docs.src.generators.pdf_generator import (
     CompliancePDFStyles,
+    PDFGenerator,
     PDFTableBuilder,
     _ensure_output_dir,
     _get_output_path,
     generate_pdf,
     generate_pdf_to_buffer,
 )
-from models.base import ComplianceFramework
+from src.core.services.compliance_docs.src.models.base import ComplianceFramework
 
 
 class TestCompliancePDFStyles:
@@ -182,12 +182,12 @@ class TestPDFTableBuilder:
         assert builder._format_status(None) == "N/A"
 
 
-class TestCompliancePDFGenerator:
-    """Tests for CompliancePDFGenerator class."""
+class TestPDFGenerator:
+    """Tests for PDFGenerator class."""
 
     def test_generator_initialization(self):
         """Test PDF generator initialization."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         assert generator is not None
         assert generator.styles is not None
         assert generator.table_builder is not None
@@ -195,40 +195,40 @@ class TestCompliancePDFGenerator:
     def test_generator_initialization_custom_margins(self):
         """Test PDF generator with custom margins."""
         margins = {"left": 1.0, "right": 1.0, "top": 1.0, "bottom": 1.0}
-        generator = CompliancePDFGenerator(margins=margins)
+        generator = PDFGenerator(margins=margins)
         assert generator.margins == margins
 
     def test_reset_story(self):
         """Test resetting the document story."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         generator._story = ["test"]
         generator._reset_story()
         assert generator._story == []
 
     def test_add_section(self):
         """Test adding a section to the document."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         generator._reset_story()
         generator._add_section("Test Section")
         assert len(generator._story) > 0
 
     def test_add_paragraph(self):
         """Test adding a paragraph to the document."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         generator._reset_story()
         generator._add_paragraph("Test paragraph content")
         assert len(generator._story) > 0
 
     def test_add_bullet_list(self):
         """Test adding a bullet list to the document."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         generator._reset_story()
         generator._add_bullet_list(["Item 1", "Item 2", "Item 3"])
         assert len(generator._story) > 0
 
     def test_add_spacer(self):
         """Test adding a spacer to the document."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         generator._reset_story()
         initial_len = len(generator._story)
         generator._add_spacer()
@@ -236,7 +236,7 @@ class TestCompliancePDFGenerator:
 
     def test_add_page_break(self):
         """Test adding a page break to the document."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         generator._reset_story()
         initial_len = len(generator._story)
         generator._add_page_break()
@@ -249,7 +249,7 @@ class TestPDFGeneratorSOC2:
     def test_generate_soc2_report(self, tmp_path, sample_soc2_report_data):
         """Test generating a SOC 2 PDF report."""
         output_path = tmp_path / "soc2_test.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_soc2_report(sample_soc2_report_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -257,7 +257,7 @@ class TestPDFGeneratorSOC2:
 
     def test_generate_soc2_report_default_path(self, sample_soc2_report_data):
         """Test generating SOC 2 report with default output path."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_soc2_report(sample_soc2_report_data)
         assert result.exists()
         assert "soc2_report" in result.name
@@ -277,7 +277,7 @@ class TestPDFGeneratorSOC2:
             },
         }
         output_path = tmp_path / "soc2_sys_desc.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_soc2_report(data, output_path)
         assert result.exists()
 
@@ -295,7 +295,7 @@ class TestPDFGeneratorSOC2:
             ],
         }
         output_path = tmp_path / "soc2_criteria.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_soc2_report(data, output_path)
         assert result.exists()
 
@@ -306,7 +306,7 @@ class TestPDFGeneratorISO27001:
     def test_generate_iso27001_report(self, tmp_path, sample_iso27001_report_data):
         """Test generating an ISO 27001 PDF report."""
         output_path = tmp_path / "iso27001_test.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_iso27001_report(sample_iso27001_report_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -329,7 +329,7 @@ class TestPDFGeneratorISO27001:
             },
         }
         output_path = tmp_path / "iso27001_soa.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_iso27001_report(data, output_path)
         assert result.exists()
 
@@ -343,7 +343,7 @@ class TestPDFGeneratorISO27001:
             ],
         }
         output_path = tmp_path / "iso27001_themes.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_iso27001_report(data, output_path)
         assert result.exists()
 
@@ -354,7 +354,7 @@ class TestPDFGeneratorGDPR:
     def test_generate_gdpr_report(self, tmp_path, sample_gdpr_report_data):
         """Test generating a GDPR PDF report."""
         output_path = tmp_path / "gdpr_test.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_gdpr_report(sample_gdpr_report_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -375,7 +375,7 @@ class TestPDFGeneratorGDPR:
             },
         }
         output_path = tmp_path / "gdpr_controller.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_gdpr_report(data, output_path)
         assert result.exists()
 
@@ -393,7 +393,7 @@ class TestPDFGeneratorGDPR:
             ],
         }
         output_path = tmp_path / "gdpr_flows.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_gdpr_report(data, output_path)
         assert result.exists()
 
@@ -404,7 +404,7 @@ class TestPDFGeneratorEUAIAct:
     def test_generate_euaiact_report(self, tmp_path, sample_euaiact_report_data):
         """Test generating an EU AI Act PDF report."""
         output_path = tmp_path / "euaiact_test.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_euaiact_report(sample_euaiact_report_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -428,7 +428,7 @@ class TestPDFGeneratorEUAIAct:
             ],
         }
         output_path = tmp_path / "euaiact_risk.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_euaiact_report(data, output_path)
         assert result.exists()
 
@@ -447,7 +447,7 @@ class TestPDFGeneratorEUAIAct:
             ],
         }
         output_path = tmp_path / "euaiact_conformity.pdf"
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator.generate_euaiact_report(data, output_path)
         assert result.exists()
 
@@ -620,20 +620,20 @@ class TestDateFormatting:
 
     def test_format_date_with_string(self):
         """Test formatting a date string."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator._format_date("2024-06-15")
         assert result == "2024-06-15"
 
     def test_format_date_with_datetime(self):
         """Test formatting a datetime object."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         dt = datetime(2024, 6, 15, tzinfo=timezone.utc)
         result = generator._format_date(dt)
         assert result == "2024-06-15"
 
     def test_format_date_with_none(self):
         """Test formatting None returns N/A."""
-        generator = CompliancePDFGenerator()
+        generator = PDFGenerator()
         result = generator._format_date(None)
         assert result == "N/A"
 

@@ -17,6 +17,7 @@ Key Design Decisions:
 - All modifications to approval requests generate audit entries
 """
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -166,6 +167,11 @@ class AuditLedger:
         self._unique_requests: set = set()
         self._unique_actors: set = set()
 
+        # Async components
+        self._queue: asyncio.Queue = asyncio.Queue()
+        self._worker_task: Optional[asyncio.Task] = None
+        self._lock = asyncio.Lock()
+
         logger.info(f"AuditLedger initialized (retention_days={retention_days})")
 
     # =========================================================================
@@ -193,21 +199,85 @@ class AuditLedger:
             # Load last entry ID for chain linking
             self._last_entry_id = await self._redis.get(REDIS_AUDIT_LAST_ENTRY)
 
+            # Start background worker
+            await self.start()
+
             logger.info(f"Connected to Redis: {self._sanitize_url(self._redis_url)}")
 
         except ImportError as err:
             logger.warning(f"redis package not installed, using in-memory storage: {err}")
             self._redis = None
+            await self.start()  # Still start worker for in-memory
         except Exception as e:
             logger.warning(f"Failed to connect to Redis, using in-memory storage: {e}")
             self._redis = None
+            await self.start()  # Still start worker for in-memory
 
     async def disconnect(self) -> None:
-        """Close Redis connection."""
+        """Close Redis connection and stop worker."""
+        await self.stop()
         if self._redis:
             await self._redis.close()
             self._redis = None
             logger.info("Disconnected from Redis")
+
+    async def start(self) -> None:
+        """Start the background processing worker."""
+        if self._worker_task is None or self._worker_task.done():
+            self._worker_task = asyncio.create_task(self._processing_worker())
+            logger.info("AuditLedger worker started")
+
+    async def stop(self) -> None:
+        """Stop the background processing worker and flush queue."""
+        if self._worker_task:
+            # Wait for queue to be empty
+            if not self._queue.empty():
+                logger.info(f"Draining {self._queue.qsize()} audit entries before stop")
+                await self._queue.join()
+
+            self._worker_task.cancel()
+            try:
+                await self._worker_task
+            except asyncio.CancelledError:
+                pass
+            self._worker_task = None
+            logger.info("AuditLedger worker stopped")
+
+    async def _processing_worker(self):
+        """Background worker that handles audit entry persistence."""
+        while True:
+            try:
+                # Get entry from queue
+                entry = await self._queue.get()
+
+                try:
+                    # Update last entry ID for chain linking (under lock)
+                    async with self._lock:
+                        entry.parent_entry_id = self._last_entry_id
+                        # Re-calculate checksum with parent ID
+                        entry.checksum = self._calculate_checksum(entry)
+
+                        # Persist the entry
+                        if self._redis:
+                            await self._persist_to_redis(entry)
+                        else:
+                            await self._persist_to_memory(entry)
+
+                        # Update last entry for chain linking
+                        self._last_entry_id = entry.entry_id
+
+                    self._queue.task_done()
+
+                except Exception as e:
+                    logger.error(f"Error persisting audit entry: {e}")
+                    # Put back in queue or handle retry? For audit, we should be careful.
+                    self._queue.task_done()
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in AuditLedger processing worker: {e}")
+                await asyncio.sleep(1)
 
     async def health_check(self) -> Dict[str, Any]:
         """
@@ -261,9 +331,10 @@ class AuditLedger:
         rationale: Optional[str] = None,
     ) -> AuditEntry:
         """
-        Append a new entry to the audit ledger.
+        Append a new entry to the audit ledger (non-blocking).
 
         This is the only way to add entries. No update or delete operations exist.
+        The entry is queued for background persistence.
 
         Args:
             entry_type: Type of audit entry
@@ -278,7 +349,7 @@ class AuditLedger:
             rationale: Reason for the action if provided
 
         Returns:
-            The appended AuditEntry
+            The created AuditEntry (before background persistence)
         """
         # Generate unique entry ID
         entry_id = str(uuid.uuid4())
@@ -300,24 +371,14 @@ class AuditLedger:
             new_state=new_state,
             action_details=action_details or {},
             rationale=rationale,
-            parent_entry_id=self._last_entry_id,
+            parent_entry_id=None,  # Set by background worker
         )
 
-        # Calculate and set checksum for integrity verification
-        entry.checksum = self._calculate_checksum(entry)
-
-        # Persist the entry
-        if self._redis:
-            await self._persist_to_redis(entry)
-        else:
-            await self._persist_to_memory(entry)
-
-        # Update last entry for chain linking
-        self._last_entry_id = entry_id
+        # Queue for background persistence
+        await self._queue.put(entry)
 
         logger.info(
-            f"Audit entry appended: {entry_type.value} "
-            f"by {actor_id} on {target_type}:{target_id}"
+            f"Audit entry queued: {entry_type.value} by {actor_id} on {target_type}:{target_id}"
         )
 
         return entry

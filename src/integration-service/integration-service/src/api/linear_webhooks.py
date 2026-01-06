@@ -40,7 +40,6 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/webhooks", tags=["Linear Webhooks"])
 
-
 # ============================================================================
 # Response Models
 # ============================================================================
@@ -167,15 +166,9 @@ async def send_slack_notification_for_status_change(status_change: StatusChangeE
         notifier = get_slack_notifier()
         async with notifier:
             old_status = (
-                status_change.previous_state.name
-                if status_change.previous_state
-                else "None"
+                status_change.previous_state.name if status_change.previous_state else "None"
             )
-            assignee = (
-                status_change.issue.assignee.name
-                if status_change.issue.assignee
-                else None
-            )
+            assignee = status_change.issue.assignee.name if status_change.issue.assignee else None
             await notifier.post_status_changed(
                 issue_id=status_change.issue.identifier or status_change.issue.id,
                 title=status_change.issue.title,
@@ -203,14 +196,10 @@ async def send_slack_notification_for_comment(comment_event: CommentEvent) -> No
         notifier = get_slack_notifier()
         async with notifier:
             author_name = (
-                comment_event.comment.user.name
-                if comment_event.comment.user
-                else "Unknown"
+                comment_event.comment.user.name if comment_event.comment.user else "Unknown"
             )
             issue = comment_event.comment.issue
-            issue_id = (
-                issue.identifier or issue.id if issue else "unknown"
-            )
+            issue_id = issue.identifier or issue.id if issue else "unknown"
             title = issue.title if issue else "Unknown Issue"
             await notifier.post_comment_added(
                 issue_id=issue_id,
@@ -309,9 +298,7 @@ async def receive_linear_webhook(
 
                 # Send Slack notification for issue creation
                 if issue_event.action == WebhookAction.CREATE:
-                    asyncio.create_task(
-                        send_slack_notification_for_issue_created(issue_event)
-                    )
+                    asyncio.create_task(send_slack_notification_for_issue_created(issue_event))
                     logger.debug(
                         f"Scheduled Slack notification for issue created: "
                         f"{issue_event.issue.identifier}"
@@ -326,13 +313,10 @@ async def receive_linear_webhook(
                         else "None"
                     )
                     logger.info(
-                        f"Status change detected: "
-                        f"{prev_state} -> {status_change.new_state.name}"
+                        f"Status change detected: {prev_state} -> {status_change.new_state.name}"
                     )
                     # Send Slack notification for status change
-                    asyncio.create_task(
-                        send_slack_notification_for_status_change(status_change)
-                    )
+                    asyncio.create_task(send_slack_notification_for_status_change(status_change))
                     logger.debug(
                         f"Scheduled Slack notification for status change: "
                         f"{status_change.issue.identifier}"
@@ -344,25 +328,20 @@ async def receive_linear_webhook(
             try:
                 comment_event = CommentEvent.from_webhook_payload(webhook_payload)
                 user_name = (
-                    comment_event.comment.user.name
-                    if comment_event.comment.user
-                    else "unknown"
+                    comment_event.comment.user.name if comment_event.comment.user else "unknown"
                 )
                 logger.info(f"Comment event: {comment_event.action} - by {user_name}")
 
                 # Send Slack notification for comment created
                 if comment_event.action == WebhookAction.CREATE:
-                    asyncio.create_task(
-                        send_slack_notification_for_comment(comment_event)
-                    )
-                    logger.debug(f"Scheduled Slack notification for comment by {user_name}")
+                    asyncio.create_task(send_slack_notification_for_comment(comment_event))
+
             except Exception as e:
                 logger.warning(f"Failed to parse comment event details: {e}")
 
         # Return success response immediately
         msg = (
-            f"Webhook event queued for processing: "
-            f"{webhook_payload.type} {webhook_payload.action}"
+            f"Webhook event queued for processing: {webhook_payload.type} {webhook_payload.action}"
         )
         return WebhookAcceptedResponse(
             success=True,

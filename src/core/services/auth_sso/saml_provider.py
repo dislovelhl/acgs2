@@ -28,6 +28,7 @@ try:
     from onelogin.saml2.auth import OneLogin_Saml2_Auth
     from onelogin.saml2.settings import OneLogin_Saml2_Settings
     from onelogin.saml2.utils import OneLogin_Saml2_Utils
+
     SAML_AVAILABLE = True
 except ImportError:
     logger.warning(
@@ -355,8 +356,12 @@ class SAMLServiceProvider:
             Location="{self.sp_config.acs_url}"
             index="0"
             isDefault="true"/>
-        {f'''<md:SingleLogoutService
+        {
+            f'''<md:SingleLogoutService
             Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
-            Location="{self.sp_config.sls_url}"/>''' if self.sp_config.sls_url else ""}
+            Location="{self.sp_config.sls_url}"/>'''
+            if self.sp_config.sls_url
+            else ""
+        }
     </md:SPSSODescriptor>
 </md:EntityDescriptor>"""

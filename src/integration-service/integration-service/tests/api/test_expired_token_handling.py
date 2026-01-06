@@ -118,9 +118,7 @@ class TestExpiredTokenVariations:
         expired_response = test_client.get("/api/policy/health", headers=expired_auth_headers)
 
         # Get response for malformed token
-        malformed_response = test_client.get(
-            "/api/policy/health", headers=malformed_auth_headers
-        )
+        malformed_response = test_client.get("/api/policy/health", headers=malformed_auth_headers)
 
         # Both should return 401
         assert expired_response.status_code == 401

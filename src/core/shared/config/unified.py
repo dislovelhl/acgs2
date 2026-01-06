@@ -10,6 +10,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from pydantic import Field, SecretStr, field_validator, model_validator
+from src.core.shared.types import JSONDict
 
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -68,6 +69,7 @@ if HAS_PYDANTIC_SETTINGS:
         jwt_public_key: str = Field(
             "SYSTEM_PUBLIC_KEY_PLACEHOLDER", validation_alias="JWT_PUBLIC_KEY"
         )
+        admin_api_key: Optional[SecretStr] = Field(None, validation_alias="ADMIN_API_KEY")
 
         @field_validator("jwt_secret", "api_key_internal")
         @classmethod
@@ -75,8 +77,16 @@ if HAS_PYDANTIC_SETTINGS:
             """Ensure sensitive keys don't use weak placeholders."""
             if v is not None:
                 secret_val = v.get_secret_value()
-                if secret_val in ["PLACEHOLDER", "CHANGE_ME", "DANGEROUS_DEFAULT"]:
+                if secret_val in ["PLACEHOLDER", "CHANGE_ME", "DANGEROUS_DEFAULT", "dev-secret"]:
                     raise ValueError("Sensitive credential uses a forbidden placeholder value")
+
+                # Check secret strength if it's a JWT secret
+                # Note: We can't easily distinguish which field 'v' is here without 'info',
+                # but applying it to both is safe as both should be strong.
+                if len(secret_val) < 32:
+                    # We check the environment in the model_validator below for the hard stop,
+                    # but we can log a warning here or raise if we want to be very strict.
+                    pass
             return v
 
         @field_validator("cors_origins")
@@ -221,11 +231,19 @@ if HAS_PYDANTIC_SETTINGS:
         audit_topic_pattern: str = Field(
             "acgs.tenant.{tenant_id}.audit.votes", validation_alias="VOTING_AUDIT_TOPIC_PATTERN"
         )
-        redis_election_prefix: str = Field("election:", validation_alias="VOTING_REDIS_ELECTION_PREFIX")
+        redis_election_prefix: str = Field(
+            "election:", validation_alias="VOTING_REDIS_ELECTION_PREFIX"
+        )
         enable_weighted_voting: bool = Field(True, validation_alias="VOTING_ENABLE_WEIGHTED")
-        signature_algorithm: str = Field("HMAC-SHA256", validation_alias="VOTING_SIGNATURE_ALGORITHM")
-        audit_signature_key: Optional[SecretStr] = Field(None, validation_alias="AUDIT_SIGNATURE_KEY")
-        timeout_check_interval_seconds: int = Field(5, validation_alias="VOTING_TIMEOUT_CHECK_INTERVAL")
+        signature_algorithm: str = Field(
+            "HMAC-SHA256", validation_alias="VOTING_SIGNATURE_ALGORITHM"
+        )
+        audit_signature_key: Optional[SecretStr] = Field(
+            None, validation_alias="AUDIT_SIGNATURE_KEY"
+        )
+        timeout_check_interval_seconds: int = Field(
+            5, validation_alias="VOTING_TIMEOUT_CHECK_INTERVAL"
+        )
 
     class SMTPSettings(BaseSettings):
         """SMTP email delivery settings."""
@@ -241,6 +259,46 @@ if HAS_PYDANTIC_SETTINGS:
         timeout: float = Field(30.0, validation_alias="SMTP_TIMEOUT")
         enabled: bool = Field(False, validation_alias="SMTP_ENABLED")
 
+    class SSOSettings(BaseSettings):
+        """SSO and Authentication settings for OIDC and SAML 2.0."""
+
+        enabled: bool = Field(True, validation_alias="SSO_ENABLED")
+        session_lifetime_seconds: int = Field(3600, validation_alias="SSO_SESSION_LIFETIME")
+
+        # OIDC settings
+        oidc_enabled: bool = Field(True, validation_alias="OIDC_ENABLED")
+        oidc_client_id: Optional[str] = Field(None, validation_alias="OIDC_CLIENT_ID")
+        oidc_client_secret: Optional[SecretStr] = Field(None, validation_alias="OIDC_CLIENT_SECRET")
+        oidc_issuer_url: Optional[str] = Field(None, validation_alias="OIDC_ISSUER_URL")
+        oidc_scopes: List[str] = Field(
+            ["openid", "email", "profile"], validation_alias="OIDC_SCOPES"
+        )
+        oidc_use_pkce: bool = Field(True, validation_alias="OIDC_USE_PKCE")
+
+        # SAML settings
+        saml_enabled: bool = Field(True, validation_alias="SAML_ENABLED")
+        saml_entity_id: Optional[str] = Field(None, validation_alias="SAML_ENTITY_ID")
+        saml_sign_requests: bool = Field(True, validation_alias="SAML_SIGN_REQUESTS")
+        saml_want_assertions_signed: bool = Field(
+            True, validation_alias="SAML_WANT_ASSERTIONS_SIGNED"
+        )
+        saml_want_assertions_encrypted: bool = Field(
+            False, validation_alias="SAML_WANT_ASSERTIONS_ENCRYPTED"
+        )
+        saml_sp_certificate: Optional[str] = Field(None, validation_alias="SAML_SP_CERTIFICATE")
+        saml_sp_private_key: Optional[SecretStr] = Field(
+            None, validation_alias="SAML_SP_PRIVATE_KEY"
+        )
+        saml_idp_metadata_url: Optional[str] = Field(None, validation_alias="SAML_IDP_METADATA_URL")
+        saml_idp_sso_url: Optional[str] = Field(None, validation_alias="SAML_IDP_SSO_URL")
+        saml_idp_slo_url: Optional[str] = Field(None, validation_alias="SAML_IDP_SLO_URL")
+        saml_idp_certificate: Optional[str] = Field(None, validation_alias="SAML_IDP_CERTIFICATE")
+
+        # Provisioning
+        auto_provision_users: bool = Field(True, validation_alias="SSO_AUTO_PROVISION")
+        default_role_on_provision: str = Field("viewer", validation_alias="SSO_DEFAULT_ROLE")
+        allowed_domains: Optional[List[str]] = Field(None, validation_alias="SSO_ALLOWED_DOMAINS")
+
     class Settings(BaseSettings):
         """Global Application Settings."""
 
@@ -255,6 +313,8 @@ if HAS_PYDANTIC_SETTINGS:
         ai: AISettings = AISettings()
         blockchain: BlockchainSettings = BlockchainSettings()
         security: SecuritySettings = SecuritySettings()
+        sso: SSOSettings = SSOSettings()
+        smtp: SMTPSettings = SMTPSettings()
         opa: OPASettings = OPASettings()
         audit: AuditSettings = AuditSettings()
         bundle: BundleSettings = BundleSettings()
@@ -284,6 +344,13 @@ if HAS_PYDANTIC_SETTINGS:
             if self.env == "production":
                 if not self.security.jwt_secret:
                     raise ValueError("JWT_SECRET is mandatory in production environment")
+
+                jwt_val = self.security.jwt_secret.get_secret_value()
+                if jwt_val == "dev-secret":
+                    raise ValueError("Insecure JWT_SECRET 'dev-secret' is forbidden in production")
+                if len(jwt_val) < 32:
+                    raise ValueError("JWT_SECRET must be at least 32 characters in production")
+
                 if not self.security.api_key_internal:
                     raise ValueError("API_KEY_INTERNAL is mandatory in production environment")
                 if self.security.jwt_public_key == "SYSTEM_PUBLIC_KEY_PLACEHOLDER":
@@ -379,6 +446,11 @@ else:
         )
         jwt_public_key: str = field(
             default_factory=lambda: os.getenv("JWT_PUBLIC_KEY", "SYSTEM_PUBLIC_KEY_PLACEHOLDER")
+        )
+        admin_api_key: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("ADMIN_API_KEY", "")) if os.getenv("ADMIN_API_KEY") else None
+            )
         )
 
     @dataclass
@@ -564,7 +636,9 @@ else:
             default_factory=lambda: int(os.getenv("VOTING_DEFAULT_TIMEOUT_SECONDS", "30"))
         )
         vote_topic_pattern: str = field(
-            default_factory=lambda: os.getenv("VOTING_VOTE_TOPIC_PATTERN", "acgs.tenant.{tenant_id}.votes")
+            default_factory=lambda: os.getenv(
+                "VOTING_VOTE_TOPIC_PATTERN", "acgs.tenant.{tenant_id}.votes"
+            )
         )
         audit_topic_pattern: str = field(
             default_factory=lambda: os.getenv(
@@ -592,6 +666,116 @@ else:
         )
 
     @dataclass
+    class SMTPSettings:
+        host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", "localhost"))
+        port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))
+        username: Optional[str] = field(default_factory=lambda: os.getenv("SMTP_USERNAME"))
+        password: Optional[SecretStr] = field(
+            default_factory=lambda: SecretStr(os.getenv("SMTP_PASSWORD", ""))
+            if os.getenv("SMTP_PASSWORD")
+            else None
+        )
+        use_tls: bool = field(
+            default_factory=lambda: os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+        )
+        use_ssl: bool = field(
+            default_factory=lambda: os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+        )
+        from_email: str = field(
+            default_factory=lambda: os.getenv("SMTP_FROM_EMAIL", "noreply@acgs2.local")
+        )
+        from_name: str = field(
+            default_factory=lambda: os.getenv("SMTP_FROM_NAME", "ACGS-2 Audit Service")
+        )
+        timeout: float = field(default_factory=lambda: float(os.getenv("SMTP_TIMEOUT", "30.0")))
+        enabled: bool = field(
+            default_factory=lambda: os.getenv("SMTP_ENABLED", "false").lower() == "true"
+        )
+
+    @dataclass
+    class SSOSettings:
+        enabled: bool = field(
+            default_factory=lambda: os.getenv("SSO_ENABLED", "true").lower() == "true"
+        )
+        session_lifetime_seconds: int = field(
+            default_factory=lambda: int(os.getenv("SSO_SESSION_LIFETIME", "3600"))
+        )
+
+        # OIDC
+        oidc_enabled: bool = field(
+            default_factory=lambda: os.getenv("OIDC_ENABLED", "true").lower() == "true"
+        )
+        oidc_client_id: Optional[str] = field(default_factory=lambda: os.getenv("OIDC_CLIENT_ID"))
+        oidc_client_secret: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("OIDC_CLIENT_SECRET", ""))
+                if os.getenv("OIDC_CLIENT_SECRET")
+                else None
+            )
+        )
+        oidc_issuer_url: Optional[str] = field(default_factory=lambda: os.getenv("OIDC_ISSUER_URL"))
+        oidc_scopes: List[str] = field(
+            default_factory=lambda: os.getenv("OIDC_SCOPES", "openid,email,profile").split(",")
+        )
+        oidc_use_pkce: bool = field(
+            default_factory=lambda: os.getenv("OIDC_USE_PKCE", "true").lower() == "true"
+        )
+
+        # SAML
+        saml_enabled: bool = field(
+            default_factory=lambda: os.getenv("SAML_ENABLED", "true").lower() == "true"
+        )
+        saml_entity_id: Optional[str] = field(default_factory=lambda: os.getenv("SAML_ENTITY_ID"))
+        saml_sign_requests: bool = field(
+            default_factory=lambda: os.getenv("SAML_SIGN_REQUESTS", "true").lower() == "true"
+        )
+        saml_want_assertions_signed: bool = field(
+            default_factory=lambda: os.getenv("SAML_WANT_ASSERTIONS_SIGNED", "true").lower()
+            == "true"
+        )
+        saml_want_assertions_encrypted: bool = field(
+            default_factory=lambda: os.getenv("SAML_WANT_ASSERTIONS_ENCRYPTED", "false").lower()
+            == "true"
+        )
+        saml_sp_certificate: Optional[str] = field(
+            default_factory=lambda: os.getenv("SAML_SP_CERTIFICATE")
+        )
+        saml_sp_private_key: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("SAML_SP_PRIVATE_KEY", ""))
+                if os.getenv("SAML_SP_PRIVATE_KEY")
+                else None
+            )
+        )
+        saml_idp_metadata_url: Optional[str] = field(
+            default_factory=lambda: os.getenv("SAML_IDP_METADATA_URL")
+        )
+        saml_idp_sso_url: Optional[str] = field(
+            default_factory=lambda: os.getenv("SAML_IDP_SSO_URL")
+        )
+        saml_idp_slo_url: Optional[str] = field(
+            default_factory=lambda: os.getenv("SAML_IDP_SLO_URL")
+        )
+        saml_idp_certificate: Optional[str] = field(
+            default_factory=lambda: os.getenv("SAML_IDP_CERTIFICATE")
+        )
+
+        # Provisioning
+        auto_provision_users: bool = field(
+            default_factory=lambda: os.getenv("SSO_AUTO_PROVISION", "true").lower() == "true"
+        )
+        default_role_on_provision: str = field(
+            default_factory=lambda: os.getenv("SSO_DEFAULT_ROLE", "viewer")
+        )
+        allowed_domains: Optional[List[str]] = field(
+            default_factory=lambda: (
+                os.getenv("SSO_ALLOWED_DOMAINS").split(",")
+                if os.getenv("SSO_ALLOWED_DOMAINS")
+                else None
+            )
+        )
+
+    @dataclass
     class Settings:
         env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
         debug: bool = field(
@@ -602,6 +786,8 @@ else:
         ai: AISettings = field(default_factory=AISettings)
         blockchain: BlockchainSettings = field(default_factory=BlockchainSettings)
         security: SecuritySettings = field(default_factory=SecuritySettings)
+        sso: SSOSettings = field(default_factory=SSOSettings)
+        smtp: SMTPSettings = field(default_factory=SMTPSettings)
         opa: OPASettings = field(default_factory=OPASettings)
         audit: AuditSettings = field(default_factory=AuditSettings)
         bundle: BundleSettings = field(default_factory=BundleSettings)

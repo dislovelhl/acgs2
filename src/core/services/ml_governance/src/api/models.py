@@ -23,23 +23,22 @@ async def get_model_metrics():
         # Would fetch metrics from MLflow or internal storage
         metrics = []
         for model_type, version_id in ml_engine.active_versions.items():
-            metrics.append(ModelMetrics(
-                version_id=version_id,
-                accuracy=0.85,  # Would be dynamic
-                precision=0.82,
-                recall=0.88,
-                f1_score=0.85,
-                total_predictions=ml_engine.metrics.get("predictions", 0),
-                feedback_count=ml_engine.metrics.get("feedback_received", 0)
-            ))
+            metrics.append(
+                ModelMetrics(
+                    version_id=version_id,
+                    accuracy=0.85,  # Would be dynamic
+                    precision=0.82,
+                    recall=0.88,
+                    f1_score=0.85,
+                    total_predictions=ml_engine.metrics.get("predictions", 0),
+                    feedback_count=ml_engine.metrics.get("feedback_received", 0),
+                )
+            )
 
         return metrics
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get model metrics: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get model metrics: {str(e)}")
 
 
 @router.post("/drift-check", response_model=Optional[DriftDetectionResult])
@@ -60,17 +59,11 @@ async def check_model_drift(model_version: Optional[str] = None):
         return drift_result
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Drift check failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Drift check failed: {str(e)}")
 
 
 @router.get("/drift-history")
-async def get_drift_history(
-    model_version: Optional[str] = None,
-    limit: int = 10
-):
+async def get_drift_history(model_version: Optional[str] = None, limit: int = 10):
     """
     Get drift detection history for a model version
 
@@ -82,14 +75,11 @@ async def get_drift_history(
             "model_version": model_version or "baseline-v1.0",
             "drift_checks": [],
             "total_checks": ml_engine.metrics.get("drift_checks", 0),
-            "last_check": "2024-01-01T00:00:00Z"
+            "last_check": "2024-01-01T00:00:00Z",
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get drift history: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get drift history: {str(e)}")
 
 
 @router.get("/ab-tests")
@@ -102,23 +92,22 @@ async def get_ab_tests():
     try:
         ab_tests = []
         for ab_test in ml_engine.ab_tests.values():
-            ab_tests.append({
-                "test_id": ab_test.test_id,
-                "name": ab_test.name,
-                "champion_version": ab_test.champion_version,
-                "candidate_version": ab_test.candidate_version,
-                "traffic_split": ab_test.traffic_split,
-                "status": ab_test.status,
-                "start_date": ab_test.start_date.isoformat()
-            })
+            ab_tests.append(
+                {
+                    "test_id": ab_test.test_id,
+                    "name": ab_test.name,
+                    "champion_version": ab_test.champion_version,
+                    "candidate_version": ab_test.candidate_version,
+                    "traffic_split": ab_test.traffic_split,
+                    "status": ab_test.status,
+                    "start_date": ab_test.start_date.isoformat(),
+                }
+            )
 
         return {"ab_tests": ab_tests, "total": len(ab_tests)}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get A/B tests: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get A/B tests: {str(e)}")
 
 
 @router.get("/online-learning-status")
@@ -134,17 +123,16 @@ async def get_online_learning_status():
             online_status[learner_name] = {
                 "status": "active",
                 "updates_processed": ml_engine.metrics.get("feedback_received", 0),
-                "last_update": "2024-01-01T00:00:00Z"
+                "last_update": "2024-01-01T00:00:00Z",
             }
 
         return {
             "online_learners": online_status,
             "total_learners": len(online_status),
-            "learning_active": True
+            "learning_active": True,
         }
 
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get online learning status: {str(e)}"
+            status_code=500, detail=f"Failed to get online learning status: {str(e)}"
         )

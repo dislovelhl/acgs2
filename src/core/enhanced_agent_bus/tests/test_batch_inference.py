@@ -42,9 +42,14 @@ class TestONNXAvailableFlag:
 
         try:
             import onnxruntime
-            assert ONNX_AVAILABLE is True, "ONNX_AVAILABLE should be True when onnxruntime is installed"
+
+            assert (
+                ONNX_AVAILABLE is True
+            ), "ONNX_AVAILABLE should be True when onnxruntime is installed"
         except ImportError:
-            assert ONNX_AVAILABLE is False, "ONNX_AVAILABLE should be False when onnxruntime is not installed"
+            assert (
+                ONNX_AVAILABLE is False
+            ), "ONNX_AVAILABLE should be False when onnxruntime is not installed"
 
 
 class TestTokenizationCaching:
@@ -89,17 +94,17 @@ class TestTokenizationCaching:
         from deliberation_layer.impact_scorer import ImpactScorer
 
         # Create scorer with mocked dependencies
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
 
         # Verify cache exists (may be None if LRUCache not available)
-        assert hasattr(scorer, '_tokenization_cache')
+        assert hasattr(scorer, "_tokenization_cache")
 
     def test_tokenize_text_returns_none_without_tokenizer(self):
         """Test that _tokenize_text returns None when tokenizer not available."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
             result = scorer._tokenize_text("test text")
             assert result is None
@@ -108,7 +113,7 @@ class TestTokenizationCaching:
         """Test that _tokenize_batch handles empty list correctly."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
             result = scorer._tokenize_batch([])
             assert result is None
@@ -117,7 +122,7 @@ class TestTokenizationCaching:
         """Test that clear_tokenization_cache works correctly."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
             # Should not raise even if cache is None
             scorer.clear_tokenization_cache()
@@ -179,7 +184,7 @@ class TestONNXSessionLazyLoading:
         """Test that ONNX session is None at initialization (lazy loading)."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=True)
             # Session should be None until first inference
             assert scorer.session is None
@@ -188,7 +193,7 @@ class TestONNXSessionLazyLoading:
         """Test that _onnx_enabled depends on ONNX_AVAILABLE."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=True)
 
             # _onnx_enabled should be False if TRANSFORMERS_AVAILABLE is False
@@ -199,19 +204,16 @@ class TestONNXSessionLazyLoading:
         """Test ONNX model path resolution priority."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             # Test with instance-level path
-            scorer = ImpactScorer(
-                use_onnx=True,
-                onnx_model_path="/custom/path/model.onnx"
-            )
+            scorer = ImpactScorer(use_onnx=True, onnx_model_path="/custom/path/model.onnx")
             assert scorer._onnx_model_path == "/custom/path/model.onnx"
 
     def test_get_onnx_model_path_returns_none_for_missing_file(self):
         """Test that _get_onnx_model_path returns None for non-existent file."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=True, onnx_model_path="/nonexistent/path.onnx")
             # Should return None since file doesn't exist
             path = scorer._get_onnx_model_path()
@@ -221,7 +223,7 @@ class TestONNXSessionLazyLoading:
         """Test that _ensure_onnx_session returns None when ONNX is disabled."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
             session = scorer._ensure_onnx_session()
             assert session is None
@@ -230,8 +232,8 @@ class TestONNXSessionLazyLoading:
         """Test that _ensure_onnx_session returns None when ONNX not available."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.ONNX_AVAILABLE', False):
-            with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.ONNX_AVAILABLE", False):
+            with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
                 scorer = ImpactScorer(use_onnx=True)
                 session = scorer._ensure_onnx_session()
                 assert session is None
@@ -245,7 +247,7 @@ class TestBatchScoreImpact:
         """Create a scorer with mocked dependencies."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
         return scorer
 
@@ -357,19 +359,21 @@ class TestBatchScoreImpact:
         batch_results = scorer.batch_score_impact(messages)
 
         # Sequential scoring
-        sequential_results = [
-            scorer.calculate_impact_score(msg) for msg in messages
-        ]
+        sequential_results = [scorer.calculate_impact_score(msg) for msg in messages]
 
         # Results should be identical
         assert len(batch_results) == len(sequential_results)
-        for batch_score, seq_score in zip(batch_results, sequential_results):
+        for batch_score, seq_score in zip(batch_results, sequential_results, strict=False):
             assert abs(batch_score - seq_score) < 1e-6
 
     def test_batch_large_batch_performance(self, scorer):
         """Test batch inference with a large number of messages."""
         messages = [
-            {"content": f"test message {i} with security alert" if i % 5 == 0 else f"normal message {i}"}
+            {
+                "content": f"test message {i} with security alert"
+                if i % 5 == 0
+                else f"normal message {i}"
+            }
             for i in range(50)
         ]
 
@@ -391,7 +395,7 @@ class TestBatchScoreSequentialFallback:
         """Create a scorer with mocked dependencies."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
         return scorer
 
@@ -431,7 +435,7 @@ class TestAsyncBatchCalculateImpact:
         """Create a scorer with mocked dependencies."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
         return scorer
 
@@ -457,7 +461,7 @@ class TestEdgeCases:
         """Create a scorer with mocked dependencies."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
         return scorer
 
@@ -490,7 +494,9 @@ class TestEdgeCases:
 
     def test_unicode_content(self, scorer):
         """Test scoring of content with unicode characters."""
-        message = {"content": "critical security alert with unicode: \u4e2d\u6587 \u65e5\u672c\u8a9e"}
+        message = {
+            "content": "critical security alert with unicode: \u4e2d\u6587 \u65e5\u672c\u8a9e"
+        }
         score = scorer.calculate_impact_score(message)
 
         assert 0.0 <= score <= 1.0
@@ -537,7 +543,7 @@ class TestComputeCombinedScore:
         """Create a scorer with mocked dependencies."""
         from deliberation_layer.impact_scorer import ImpactScorer
 
-        with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
+        with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
             scorer = ImpactScorer(use_onnx=False)
         return scorer
 

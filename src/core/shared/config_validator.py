@@ -19,6 +19,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+try:
+    from src.core.shared.types import JSONDict
+except ImportError:
+    JSONDict = Dict[str, Any]
+
 # Constitutional compliance constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
@@ -59,7 +64,7 @@ class ValidationResult:
     is_valid: bool
     environment: Environment
     issues: List[ValidationIssue] = field(default_factory=list)
-    config_summary: Dict[str, Any] = field(default_factory=dict)
+    config_summary: JSONDict = field(default_factory=dict)
 
     def add_issue(
         self,

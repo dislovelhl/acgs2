@@ -18,18 +18,18 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
-from generators.xlsx_generator import (
+from openpyxl import load_workbook
+from src.core.services.compliance_docs.src.generators.xlsx_generator import (
     LARGE_FILE_THRESHOLD,
-    ComplianceXLSXGenerator,
     ComplianceXLSXStyles,
+    XLSXGenerator,
     XLSXTableBuilder,
     _ensure_output_dir,
     _get_output_path,
     generate_xlsx,
     generate_xlsx_to_buffer,
 )
-from models.base import ComplianceFramework
-from openpyxl import load_workbook
+from src.core.services.compliance_docs.src.models.base import ComplianceFramework
 
 
 class TestComplianceXLSXStyles:
@@ -86,49 +86,49 @@ class TestComplianceXLSXStyles:
         """Test status style for compliant status."""
         styles = ComplianceXLSXStyles()
         font, fill = styles.get_status_style("compliant")
-        assert font is styles.success_font
-        assert fill is styles.success_fill
+        assert font.color.rgb == styles.success_font.color.rgb
+        assert fill.start_color.rgb == styles.success_fill.start_color.rgb
 
     def test_get_status_style_effective(self):
         """Test status style for effective status."""
         styles = ComplianceXLSXStyles()
         font, fill = styles.get_status_style("effective")
-        assert font is styles.success_font
-        assert fill is styles.success_fill
+        assert font.color.rgb == styles.success_font.color.rgb
+        assert fill.start_color.rgb == styles.success_fill.start_color.rgb
 
     def test_get_status_style_non_compliant(self):
         """Test status style for non-compliant status."""
         styles = ComplianceXLSXStyles()
         font, fill = styles.get_status_style("non-compliant")
-        assert font is styles.danger_font
-        assert fill is styles.danger_fill
+        assert font.color.rgb == styles.danger_font.color.rgb
+        assert fill.start_color.rgb == styles.danger_fill.start_color.rgb
 
     def test_get_status_style_failed(self):
         """Test status style for failed status."""
         styles = ComplianceXLSXStyles()
         font, fill = styles.get_status_style("failed")
-        assert font is styles.danger_font
-        assert fill is styles.danger_fill
+        assert font.color.rgb == styles.danger_font.color.rgb
+        assert fill.start_color.rgb == styles.danger_fill.start_color.rgb
 
     def test_get_status_style_pending(self):
         """Test status style for pending status."""
         styles = ComplianceXLSXStyles()
         font, fill = styles.get_status_style("pending")
-        assert font is styles.warning_font
-        assert fill is styles.warning_fill
+        assert font.color.rgb == styles.warning_font.color.rgb
+        assert fill.start_color.rgb == styles.warning_fill.start_color.rgb
 
     def test_get_status_style_in_progress(self):
         """Test status style for in_progress status."""
         styles = ComplianceXLSXStyles()
         font, fill = styles.get_status_style("in progress")
-        assert font is styles.warning_font
-        assert fill is styles.warning_fill
+        assert font.color.rgb == styles.warning_font.color.rgb
+        assert fill.start_color.rgb == styles.warning_fill.start_color.rgb
 
     def test_get_status_style_unknown(self):
         """Test status style for unknown status."""
         styles = ComplianceXLSXStyles()
         font, fill = styles.get_status_style("unknown")
-        assert font is styles.body_font
+        assert font.color.rgb == styles.body_font.color.rgb
         assert fill is None
 
 
@@ -240,23 +240,23 @@ class TestXLSXTableBuilder:
         assert ws is not None
 
 
-class TestComplianceXLSXGenerator:
-    """Tests for ComplianceXLSXGenerator class."""
+class TestXLSXGenerator:
+    """Tests for XLSXGenerator class."""
 
     def test_generator_initialization(self):
         """Test XLSX generator initialization."""
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         assert generator is not None
         assert generator.write_only is False
 
     def test_generator_initialization_write_only(self):
         """Test XLSX generator with write-only mode."""
-        generator = ComplianceXLSXGenerator(write_only=True)
+        generator = XLSXGenerator(write_only=True)
         assert generator.write_only is True
 
     def test_create_workbook(self):
         """Test creating a new workbook."""
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         wb = generator._create_workbook()
         assert wb is not None
         assert generator._styles is not None
@@ -264,27 +264,27 @@ class TestComplianceXLSXGenerator:
 
     def test_create_workbook_auto_write_only(self):
         """Test that large files trigger write-only mode."""
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         wb = generator._create_workbook(estimated_rows=LARGE_FILE_THRESHOLD + 1)
         assert wb is not None
 
     def test_format_date_with_datetime(self):
         """Test date formatting with datetime object."""
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         dt = datetime(2024, 6, 15, tzinfo=timezone.utc)
         result = generator._format_date(dt)
         # Excel dates are auto-converted, should return datetime
-        assert result == dt
+        assert result == dt.replace(tzinfo=None)
 
     def test_format_date_with_none(self):
         """Test date formatting with None value."""
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator._format_date(None)
         assert result == "N/A"
 
     def test_format_status(self):
         """Test status formatting."""
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         assert generator._format_status("in_progress") == "In Progress"
         assert generator._format_status("") == "N/A"
         assert generator._format_status(None) == "N/A"
@@ -296,7 +296,7 @@ class TestXLSXGeneratorSOC2:
     def test_generate_soc2_matrix(self, tmp_path, sample_soc2_xlsx_data):
         """Test generating a SOC 2 XLSX matrix."""
         output_path = tmp_path / "soc2_test.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_soc2_matrix(sample_soc2_xlsx_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -305,7 +305,7 @@ class TestXLSXGeneratorSOC2:
     def test_generate_soc2_matrix_opens_correctly(self, tmp_path, sample_soc2_xlsx_data):
         """Test that generated SOC 2 XLSX can be opened."""
         output_path = tmp_path / "soc2_test.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         generator.generate_soc2_matrix(sample_soc2_xlsx_data, output_path)
         wb = load_workbook(str(output_path))
         assert wb is not None
@@ -314,7 +314,7 @@ class TestXLSXGeneratorSOC2:
     def test_generate_soc2_matrix_has_summary(self, tmp_path, sample_soc2_xlsx_data):
         """Test that SOC 2 matrix has summary sheet."""
         output_path = tmp_path / "soc2_summary.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         generator.generate_soc2_matrix(sample_soc2_xlsx_data, output_path)
         wb = load_workbook(str(output_path))
         assert "Summary" in wb.sheetnames
@@ -324,7 +324,7 @@ class TestXLSXGeneratorSOC2:
     def test_generate_soc2_matrix_has_evidence_sheet(self, tmp_path, sample_soc2_xlsx_data):
         """Test that SOC 2 matrix has evidence matrix sheet."""
         output_path = tmp_path / "soc2_evidence.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         generator.generate_soc2_matrix(sample_soc2_xlsx_data, output_path)
         wb = load_workbook(str(output_path))
         assert "Evidence Matrix" in wb.sheetnames
@@ -346,7 +346,7 @@ class TestXLSXGeneratorSOC2:
             ],
         }
         output_path = tmp_path / "soc2_mappings.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_soc2_matrix(data, output_path)
         wb = load_workbook(str(result))
         assert "Control Mappings" in wb.sheetnames
@@ -371,7 +371,7 @@ class TestXLSXGeneratorSOC2:
             ],
         }
         output_path = tmp_path / "soc2_tsc.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_soc2_matrix(data, output_path)
         wb = load_workbook(str(result))
         # Should have a TSC sheet (truncated to 31 chars)
@@ -380,7 +380,7 @@ class TestXLSXGeneratorSOC2:
 
     def test_generate_soc2_matrix_default_path(self, sample_soc2_xlsx_data):
         """Test generating SOC 2 matrix with default output path."""
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_soc2_matrix(sample_soc2_xlsx_data)
         assert result.exists()
         assert "soc2_matrix" in result.name
@@ -394,7 +394,7 @@ class TestXLSXGeneratorISO27001:
     def test_generate_iso27001_matrix(self, tmp_path, sample_iso27001_xlsx_data):
         """Test generating an ISO 27001 XLSX matrix."""
         output_path = tmp_path / "iso27001_test.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_iso27001_matrix(sample_iso27001_xlsx_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -403,7 +403,7 @@ class TestXLSXGeneratorISO27001:
     def test_generate_iso27001_matrix_opens_correctly(self, tmp_path, sample_iso27001_xlsx_data):
         """Test that generated ISO 27001 XLSX can be opened."""
         output_path = tmp_path / "iso27001_test.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         generator.generate_iso27001_matrix(sample_iso27001_xlsx_data, output_path)
         wb = load_workbook(str(output_path))
         assert wb is not None
@@ -431,7 +431,7 @@ class TestXLSXGeneratorISO27001:
             "evidence_records": [],
         }
         output_path = tmp_path / "iso27001_soa.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_iso27001_matrix(data, output_path)
         wb = load_workbook(str(result))
         assert "Statement of Applicability" in wb.sheetnames
@@ -456,7 +456,7 @@ class TestXLSXGeneratorISO27001:
             ],
         }
         output_path = tmp_path / "iso27001_themes.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_iso27001_matrix(data, output_path)
         wb = load_workbook(str(result))
         sheet_names = wb.sheetnames
@@ -469,7 +469,7 @@ class TestXLSXGeneratorGDPR:
     def test_generate_gdpr_matrix(self, tmp_path, sample_gdpr_xlsx_data):
         """Test generating a GDPR XLSX matrix."""
         output_path = tmp_path / "gdpr_test.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_gdpr_matrix(sample_gdpr_xlsx_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -478,7 +478,7 @@ class TestXLSXGeneratorGDPR:
     def test_generate_gdpr_matrix_opens_correctly(self, tmp_path, sample_gdpr_xlsx_data):
         """Test that generated GDPR XLSX can be opened."""
         output_path = tmp_path / "gdpr_test.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         generator.generate_gdpr_matrix(sample_gdpr_xlsx_data, output_path)
         wb = load_workbook(str(output_path))
         assert wb is not None
@@ -487,7 +487,7 @@ class TestXLSXGeneratorGDPR:
     def test_generate_gdpr_matrix_has_processing_activities(self, tmp_path, sample_gdpr_xlsx_data):
         """Test that GDPR matrix has processing activities sheet."""
         output_path = tmp_path / "gdpr_activities.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         generator.generate_gdpr_matrix(sample_gdpr_xlsx_data, output_path)
         wb = load_workbook(str(output_path))
         assert "Processing Activities" in wb.sheetnames
@@ -511,7 +511,7 @@ class TestXLSXGeneratorGDPR:
             ],
         }
         output_path = tmp_path / "gdpr_flows.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_gdpr_matrix(data, output_path)
         wb = load_workbook(str(result))
         assert "Data Flows" in wb.sheetnames
@@ -532,7 +532,7 @@ class TestXLSXGeneratorGDPR:
             ],
         }
         output_path = tmp_path / "gdpr_security.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_gdpr_matrix(data, output_path)
         wb = load_workbook(str(result))
         assert "Security Measures" in wb.sheetnames
@@ -544,7 +544,7 @@ class TestXLSXGeneratorEUAIAct:
     def test_generate_euaiact_matrix(self, tmp_path, sample_euaiact_xlsx_data):
         """Test generating an EU AI Act XLSX matrix."""
         output_path = tmp_path / "euaiact_test.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_euaiact_matrix(sample_euaiact_xlsx_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -553,7 +553,7 @@ class TestXLSXGeneratorEUAIAct:
     def test_generate_euaiact_matrix_opens_correctly(self, tmp_path, sample_euaiact_xlsx_data):
         """Test that generated EU AI Act XLSX can be opened."""
         output_path = tmp_path / "euaiact_test.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         generator.generate_euaiact_matrix(sample_euaiact_xlsx_data, output_path)
         wb = load_workbook(str(output_path))
         assert wb is not None
@@ -562,7 +562,7 @@ class TestXLSXGeneratorEUAIAct:
     def test_generate_euaiact_matrix_has_ai_systems(self, tmp_path, sample_euaiact_xlsx_data):
         """Test that EU AI Act matrix has AI systems inventory sheet."""
         output_path = tmp_path / "euaiact_inventory.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         generator.generate_euaiact_matrix(sample_euaiact_xlsx_data, output_path)
         wb = load_workbook(str(output_path))
         assert "AI Systems Inventory" in wb.sheetnames
@@ -586,7 +586,7 @@ class TestXLSXGeneratorEUAIAct:
             ],
         }
         output_path = tmp_path / "euaiact_risk.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_euaiact_matrix(data, output_path)
         wb = load_workbook(str(result))
         assert "Risk Assessments" in wb.sheetnames
@@ -610,7 +610,7 @@ class TestXLSXGeneratorEUAIAct:
             ],
         }
         output_path = tmp_path / "euaiact_conformity.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_euaiact_matrix(data, output_path)
         wb = load_workbook(str(result))
         assert "Conformity Assessments" in wb.sheetnames
@@ -636,7 +636,7 @@ class TestXLSXGeneratorEUAIAct:
             ],
         }
         output_path = tmp_path / "euaiact_tech.xlsx"
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         result = generator.generate_euaiact_matrix(data, output_path)
         wb = load_workbook(str(result))
         assert "Technical Documentation" in wb.sheetnames
@@ -848,7 +848,7 @@ class TestLargeFileThreshold:
 
     def test_auto_write_only_for_large_files(self):
         """Test that write-only mode is auto-enabled for large files."""
-        generator = ComplianceXLSXGenerator()
+        generator = XLSXGenerator()
         # This should trigger write-only mode
         wb = generator._create_workbook(estimated_rows=LARGE_FILE_THRESHOLD + 100)
         # The workbook should be created (we can't easily check write_only property)

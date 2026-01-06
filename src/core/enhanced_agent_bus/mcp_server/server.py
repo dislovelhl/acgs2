@@ -189,6 +189,10 @@ class MCPServer:
         # Connect adapters
         await self.connect_adapters()
 
+        # Lock registration to prevent runtime hijacking (RPC-Racer mitigation)
+        if self._handler:
+            self._handler.lock_registration()
+
         self._running = True
         self._shutdown_event.clear()
 

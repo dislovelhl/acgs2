@@ -29,6 +29,7 @@ try:
     from .validators import ValidationResult
 except (ImportError, ValueError):
     try:
+        from config import settings  # type: ignore
         from exceptions import (  # type: ignore
             OPAConnectionError,
             OPANotInitializedError,
@@ -36,8 +37,6 @@ except (ImportError, ValueError):
         )
         from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
         from validators import ValidationResult  # type: ignore
-
-        from config import settings  # type: ignore
     except ImportError:
         try:
             from src.core.enhanced_agent_bus.config import settings
@@ -50,11 +49,11 @@ except (ImportError, ValueError):
             from src.core.enhanced_agent_bus.validators import ValidationResult
         except ImportError:
             # Fallback for sharing with shared package
+            from src.core.shared.config import settings  # type: ignore
+
             from exceptions import OPANotInitializedError  # type: ignore
             from models import CONSTITUTIONAL_HASH  # type: ignore
             from validators import ValidationResult  # type: ignore
-
-            from src.core.shared.config import settings  # type: ignore
 
 # Import centralized Redis config for caching
 try:
@@ -248,6 +247,11 @@ class OPAClient:
         if self._redis_client:
             try:
                 await self._redis_client.setex(cache_key, self.cache_ttl, json.dumps(result))
+                # Phase 4: Track keys by policy path for smart invalidation
+                policy_path = cache_key.split(":")[1]
+                path_set_key = f"opa:path_keys:{policy_path}"
+                await self._redis_client.sadd(path_set_key, cache_key)
+                await self._redis_client.expire(path_set_key, self.cache_ttl * 2)
                 return
             except Exception as e:
                 logger.warning(f"Redis cache write error: {e}")
@@ -256,6 +260,50 @@ class OPAClient:
             "result": result,
             "timestamp": datetime.now(timezone.utc).timestamp(),
         }
+
+    async def clear_cache(self, policy_path: Optional[str] = None):
+        """
+        Clear the policy evaluation cache.
+
+        Args:
+            policy_path: If provided, only clear cache for this specific policy path.
+                         If None, clear the entire cache.
+        """
+        if not self.enable_cache:
+            return
+
+        logger.info(f"Clearing OPA cache (path={policy_path or 'ALL'})")
+
+        if self._redis_client:
+            try:
+                if policy_path:
+                    # Clear specific policy path
+                    path_set_key = f"opa:path_keys:{policy_path}"
+                    keys = await self._redis_client.smembers(path_set_key)
+                    if keys:
+                        await self._redis_client.delete(*keys)
+                    await self._redis_client.delete(path_set_key)
+                else:
+                    # Clear all OPA keys
+                    pattern = "opa:*"
+                    cursor = 0
+                    while True:
+                        cursor, keys = await self._redis_client.scan(cursor, match=pattern)
+                        if keys:
+                            await self._redis_client.delete(*keys)
+                        if cursor == 0:
+                            break
+            except Exception as e:
+                logger.error(f"Failed to clear Redis cache: {e}")
+
+        if policy_path:
+            # Clear specific path from memory
+            prefix = f"opa:{policy_path}:"
+            keys_to_del = [k for k in self._memory_cache if k.startswith(prefix)]
+            for k in keys_to_del:
+                del self._memory_cache[k]
+        else:
+            self._memory_cache.clear()
 
     async def evaluate_policy(
         self, input_data: Dict[str, Any], policy_path: str = "data.acgs.allow"
@@ -515,6 +563,12 @@ class OPAClient:
                 headers={"Content-Type": "text/plain"},
             )
             response.raise_for_status()
+
+            # Smart Invalidation: Clear cache when policy is updated
+            # Note: policy_id might not match the evaluation policy_path exactly,
+            # so we clear the whole cache to be safe when a specific policy is loaded.
+            await self.clear_cache()
+
             return True
         except Exception as e:
             logger.error(f"Failed to load policy {policy_id}: {e}")
@@ -548,6 +602,9 @@ class OPAClient:
             # 3. Load into OPA (Simulated)
             if self.mode == "http":
                 logger.info(f"Loading bundle from {url} into OPA")
+
+            # Smart Invalidation: Clear cache when new bundle is loaded
+            await self.clear_cache()
 
             # 4. Update LKG
             lkg_path = "runtime/policy_bundles/lkg_bundle.tar.gz"

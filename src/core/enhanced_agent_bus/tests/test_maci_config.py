@@ -10,7 +10,6 @@ import os
 import tempfile
 
 import pytest
-
 from src.core.enhanced_agent_bus.maci_enforcement import (
     CONSTITUTIONAL_HASH,
     MACIAgentRoleConfig,

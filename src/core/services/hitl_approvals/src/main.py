@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from src.core.shared.security.cors_config import get_cors_config
 
 from .api.approvals import router as approvals_router
@@ -26,7 +25,7 @@ structlog.configure(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
+        structlog.processors.JSONRenderer(),
     ],
     context_class=dict,
     logger_factory=structlog.stdlib.LoggerFactory(),
@@ -56,7 +55,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "hitl-approvals-service",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -66,7 +65,7 @@ async def readiness_check():
     return {
         "status": "ready",
         "service": "hitl-approvals-service",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -77,11 +76,7 @@ async def root():
         "service": "hitl-approvals-service",
         "version": "1.0.0",
         "description": "Human-in-the-Loop workflow automation and approval chains",
-        "endpoints": {
-            "health": "/health",
-            "ready": "/ready",
-            "api": "/api/v1/"
-        }
+        "endpoints": {"health": "/health", "ready": "/ready", "api": "/api/v1/"},
     }
 
 

@@ -28,6 +28,7 @@ cli = [
     "uvicorn[standard]>=0.40.0",
     "httpx>=0.25.0",
     "pydantic>=2.12.0",
+    "pyjwt>=2.8.0",  # JWT token handling for authentication
 ]
 
 [tool.ruff]

@@ -8,18 +8,16 @@ from typing import Any, Dict
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-from src.core.shared.audit_client import AuditClient
-from src.core.shared.logging import (
+from src.core.shared.acgs_logging import (
     create_correlation_middleware,
     get_logger,
     init_service_logging,
 )
+from src.core.shared.audit_client import AuditClient
 from src.core.shared.otel_config import init_otel
+from src.core.shared.security.cors_config import get_cors_config
 
 from .services import CacheService, CryptoService, NotificationService, PolicyService
-
-from src.core.shared.security.cors_config import get_cors_config
 
 # Import rate limiting middleware
 try:
@@ -38,7 +36,9 @@ except ImportError:
     from ...shared.config import settings
 
 # Configure logging
-init_service_logging("policy-registry", level=settings.log_level, json_format=(settings.env == "production"))
+init_service_logging(
+    "policy-registry", level=settings.log_level, json_format=(settings.env == "production")
+)
 logger = get_logger(__name__)
 
 # Global service instances

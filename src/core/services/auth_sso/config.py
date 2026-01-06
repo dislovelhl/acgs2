@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SPConfig:
     """Service Provider (ACGS-2) configuration."""
+
     entity_id: str
     acs_url: str  # Assertion Consumer Service URL
     sls_url: Optional[str] = None  # Single Logout Service URL
@@ -57,6 +58,7 @@ class IdPConfig:
 
     Supports both SAML and OIDC configurations.
     """
+
     name: str
     idp_type: IdPType
     protocol: SSOProtocol
@@ -94,8 +96,7 @@ class IdPConfig:
             "default_role": self.default_role,
             "session_expiry_hours": self.session_expiry_hours,
             "role_mappings": [
-                {"idp_group": r.idp_group, "maci_role": r.maci_role}
-                for r in self.role_mappings
+                {"idp_group": r.idp_group, "maci_role": r.maci_role} for r in self.role_mappings
             ],
         }
 
@@ -155,9 +156,7 @@ class IdPConfig:
         )
 
     @classmethod
-    def azure_ad_oidc(
-        cls, tenant_id: str, client_id: str, client_secret: str
-    ) -> "IdPConfig":
+    def azure_ad_oidc(cls, tenant_id: str, client_id: str, client_secret: str) -> "IdPConfig":
         """Create Azure AD OIDC configuration."""
         return cls(
             name="Azure AD OIDC",
@@ -193,6 +192,7 @@ class SSOConfig:
 
     Manages Service Provider settings and multiple IdP configurations.
     """
+
     sp_config: SPConfig
     idp_configs: Dict[str, IdPConfig] = field(default_factory=dict)
     session_secret_key: str = ""
@@ -223,8 +223,7 @@ class SSOConfig:
         config = cls(
             sp_config=sp_config,
             session_secret_key=os.getenv(
-                "SSO_SESSION_SECRET_KEY",
-                "change-this-in-production-to-random-secret"
+                "SSO_SESSION_SECRET_KEY", "change-this-in-production-to-random-secret"
             ),
             session_cookie_name=os.getenv("SSO_SESSION_COOKIE_NAME", "acgs2_sso_session"),
             session_cookie_secure=os.getenv("SSO_COOKIE_SECURE", "true").lower() == "true",

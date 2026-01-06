@@ -49,8 +49,8 @@ from acgs2_sdk.services import (
     GovernanceService,
     HITLApprovalsService,
     MLGovernanceService,
-    PolicyService,
     PolicyRegistryService,
+    PolicyService,
 )
 
 __version__ = "2.0.0"

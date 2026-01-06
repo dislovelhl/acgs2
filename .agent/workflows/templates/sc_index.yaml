@@ -1,0 +1,26 @@
+# SuperClaude Index Workflow Template
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.0.0
+
+name: sc_index
+version: "1.0.0"
+description: "Project documentation generation and maintenance"
+constitutional_hash: cdd01ef066bc6cf2
+
+workflow_type: sequential
+
+config:
+  timeout_seconds: 60
+  fail_fast: true
+
+steps:
+  - id: index
+    name: "Generate Index"
+    action: index_workflow
+    timeout: 55
+    description: "Create project documentation structure"
+
+metadata:
+  author: "ACGS-2 Team"
+  category: "tools"
+  tags: ["documentation", "indexing"]

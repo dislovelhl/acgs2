@@ -5,12 +5,15 @@ This reproduces the original issue and verifies the fix.
 """
 
 import asyncio
-import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'acgs2-core'))
+import sys
 
-from unittest.mock import AsyncMock, MagicMock
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "acgs2-core"))
+
+from unittest.mock import AsyncMock
+
 from src.core.shared.security.rate_limiter import RateLimitMiddleware, RateLimitResult
+
 
 async def test_send_error_fix():
     """Test that _send_error method works correctly with proper ASGI parameters."""
@@ -36,7 +39,7 @@ async def test_send_error_fix():
         reset_at=1234567890,
         retry_after=60,
         scope=None,
-        key="test"
+        key="test",
     )
 
     # This should not raise an exception anymore
@@ -69,6 +72,7 @@ async def test_send_error_fix():
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
         raise
+
 
 if __name__ == "__main__":
     print("Testing rate limiter _send_error fix...")

@@ -302,7 +302,7 @@ class TestCeleryTaskExecution:
         mock_generator = MagicMock()
         # Return a valid PDF-like header for verification
         mock_generator.generate_pdf_report.return_value = (
-            b"%PDF-1.4\n" b"1 0 obj\n" b"<</Type/Catalog>>\n" b"endobj\n" b"%%EOF"
+            b"%PDF-1.4\n1 0 obj\n<</Type/Catalog>>\nendobj\n%%EOF"
         )
         mock_generator.generate_csv_bytes.return_value = (
             b"timestamp,agent_id,decision,risk_score\n"

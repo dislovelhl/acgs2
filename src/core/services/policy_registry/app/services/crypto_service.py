@@ -169,7 +169,9 @@ class CryptoService:
         """
         # Verify fingerprint matches public key
         expected_fingerprint = CryptoService.generate_public_key_fingerprint(signature.public_key)
-        logger.info(f"Validating signature integrity for public key: {signature.public_key[:20]}...")
+        logger.info(
+            f"Validating signature integrity for public key: {signature.public_key[:20]}..."
+        )
         return signature.key_fingerprint == expected_fingerprint
 
     @staticmethod

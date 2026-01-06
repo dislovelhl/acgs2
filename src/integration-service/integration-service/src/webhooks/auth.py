@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
-from exceptions.auth import (
+from ..exceptions.auth import (
     AuthenticationError,
     InvalidApiKeyError,
     InvalidBearerTokenError,
@@ -32,7 +32,6 @@ from exceptions.auth import (
     SignatureTimestampError,
     TokenExpiredError,
 )
-
 from .models import WebhookAuthType
 
 logger = logging.getLogger(__name__)
@@ -49,12 +48,12 @@ class WebhookAuthError(AuthenticationError):
 
     def __init__(self, *args, **kwargs):
         warnings.warn(
-            "WebhookAuthError is deprecated. "
-            "Use AuthenticationError from exceptions.auth instead.",
+            "WebhookAuthError is deprecated. Use AuthenticationError from exceptions.auth instead.",
             DeprecationWarning,
             stacklevel=2,
         )
         super().__init__(*args, **kwargs)
+
 
 # Public API exports - make exceptions available for import from this module
 __all__ = [
@@ -74,7 +73,6 @@ __all__ = [
     "OAuthBearerAuthHandler",
     "WebhookAuthRegistry",
 ]
-
 
 # ============================================================================
 # Authentication Result Models
@@ -334,7 +332,6 @@ class ApiKeyAuthHandler(WebhookAuthHandler):
         # Use constant-time comparison to prevent timing attacks
         for valid_key, principal in self._valid_keys.items():
             if secrets.compare_digest(api_key, valid_key):
-                logger.debug(f"API key authenticated for principal: {principal}")
                 return AuthResult.success(
                     auth_type=self.auth_type,
                     principal=principal,
@@ -586,7 +583,6 @@ class HmacAuthHandler(WebhookAuthHandler):
                 error_message="Signature verification failed",
             )
 
-        logger.debug("HMAC signature verified successfully")
         return AuthResult.success(
             auth_type=self.auth_type,
             principal="hmac_verified",
@@ -942,7 +938,6 @@ class WebhookAuthRegistry:
     def register(self, handler: WebhookAuthHandler) -> None:
         """Register an authentication handler."""
         self._handlers[handler.auth_type] = handler
-        logger.debug(f"Registered auth handler for {handler.auth_type.value}")
 
     def unregister(self, auth_type: WebhookAuthType) -> Optional[WebhookAuthHandler]:
         """Unregister and return an authentication handler."""

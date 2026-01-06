@@ -735,8 +735,6 @@ def main():
     report = profiler.run_full_profile()
 
     # Output report
-    print("\n")
-    print(report)
 
     # Save report to file
     output_dir = SCRIPT_DIR
@@ -746,7 +744,6 @@ def main():
         f.write(report)
 
     logger.info(f"Profile report saved to: {report_path}")
-    print("\nProfile report generated with memory/CPU metrics")
 
     return 0
 

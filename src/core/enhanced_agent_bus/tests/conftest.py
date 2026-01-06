@@ -200,8 +200,14 @@ Priority = _models.Priority
 MessageStatus = _models.MessageStatus
 CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 ValidationResult = _validators.ValidationResult
-MessageProcessor = _core.MessageProcessor
-EnhancedAgentBus = _core.EnhancedAgentBus
+try:
+    MessageProcessor = _core.MessageProcessor
+except AttributeError:
+    import message_processor
+
+    MessageProcessor = message_processor.MessageProcessor
+try:
+from src.core.enhanced_agent_bus.agent_bus import EnhancedAgentBus
 
 
 @pytest.fixture(scope="session")

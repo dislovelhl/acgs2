@@ -252,14 +252,13 @@ class PolicyEnforcer:
         """Register a policy rule."""
         with self._rule_lock:
             self._rules[rule.id] = rule
-        logger.debug(f"Registered rule: {rule.id}")
 
     def unregister_rule(self, rule_id: str) -> bool:
         """Unregister a policy rule."""
         with self._rule_lock:
             if rule_id in self._rules:
                 del self._rules[rule_id]
-                logger.debug(f"Unregistered rule: {rule_id}")
+
                 return True
         return False
 

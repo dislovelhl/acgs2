@@ -11,9 +11,8 @@ Usage:
 
 import argparse
 import json
-import os
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Add project root to path
@@ -34,7 +33,7 @@ def check_rotation_status(warn_days: int = 30, fail_on_expired: bool = False) ->
     Returns:
         Exit code (0 = ok, 1 = warnings, 2 = expired)
     """
-    print(f"🔐 ACGS-2 Secrets Rotation Check")
+    print("🔐 ACGS-2 Secrets Rotation Check")
     print(f"   Constitutional Hash: {CONSTITUTIONAL_HASH}")
     print(f"   Timestamp: {datetime.now(timezone.utc).isoformat()}")
     print()
@@ -63,9 +62,7 @@ def check_rotation_status(warn_days: int = 30, fail_on_expired: bool = False) ->
         for secret in ok:
             days_left = secret["rotation_days"] - secret["age_days"]
             if days_left <= warn_days:
-                warnings.append(
-                    f"   - {secret['name']} expires in {days_left} days"
-                )
+                warnings.append(f"   - {secret['name']} expires in {days_left} days")
 
         if warnings:
             print("⚠️  SECRETS EXPIRING SOON:")
@@ -141,9 +138,7 @@ def check_rotation_status(warn_days: int = 30, fail_on_expired: bool = False) ->
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Check ACGS-2 secrets rotation status"
-    )
+    parser = argparse.ArgumentParser(description="Check ACGS-2 secrets rotation status")
     parser.add_argument(
         "--warn-days",
         type=int,

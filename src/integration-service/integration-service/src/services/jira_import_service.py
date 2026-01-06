@@ -14,14 +14,13 @@ Features:
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
 from ..models.import_models import (
-    DuplicateHandling,
     ImportedItem,
     ImportProgress,
     PreviewItem,
@@ -42,13 +41,9 @@ class JiraImportConfig(BaseModel):
     project_key: str = Field(..., description="JIRA project key to import from")
 
     # Optional filters
-    jql_filter: Optional[str] = Field(
-        None,
-        description="Custom JQL filter for advanced filtering"
-    )
+    jql_filter: Optional[str] = Field(None, description="Custom JQL filter for advanced filtering")
     issue_types: List[str] = Field(
-        default_factory=list,
-        description="Filter by issue types (e.g., ['Bug', 'Task'])"
+        default_factory=list, description="Filter by issue types (e.g., ['Bug', 'Task'])"
     )
 
     @field_validator("base_url")
@@ -130,10 +125,7 @@ class JiraImportService:
         """Get authentication headers for JIRA API requests."""
         import base64
 
-        credentials = (
-            f"{self.config.username}:"
-            f"{self.config.api_token.get_secret_value()}"
-        )
+        credentials = f"{self.config.username}:{self.config.api_token.get_secret_value()}"
         encoded = base64.b64encode(credentials.encode()).decode()
 
         return {
@@ -158,7 +150,6 @@ class JiraImportService:
         Returns:
             Tuple of (success, error_message)
         """
-        logger.debug(f"Testing JIRA connection to {self.config.base_url}")
 
         try:
             client = await self._get_client()
@@ -225,8 +216,7 @@ class JiraImportService:
             Exception: If preview fails
         """
         logger.debug(
-            f"Fetching JIRA preview for project {self.config.project_key} "
-            f"(max {max_items} items)"
+            f"Fetching JIRA preview for project {self.config.project_key} (max {max_items} items)"
         )
 
         try:
@@ -241,9 +231,7 @@ class JiraImportService:
             )
 
             # Transform to preview items
-            preview_items = [
-                self._transform_to_preview_item(issue) for issue in issues
-            ]
+            preview_items = [self._transform_to_preview_item(issue) for issue in issues]
 
             # Collect statistics
             item_type_counts: Dict[str, int] = {}
@@ -261,13 +249,10 @@ class JiraImportService:
             # Collect warnings
             warnings = []
             if total > 1000:
-                warnings.append(
-                    f"Large dataset ({total} items) will be processed in batches"
-                )
+                warnings.append(f"Large dataset ({total} items) will be processed in batches")
 
             logger.info(
-                f"JIRA preview successful: {len(preview_items)} items "
-                f"({total} total available)"
+                f"JIRA preview successful: {len(preview_items)} items ({total} total available)"
             )
 
             return PreviewResponse(
@@ -377,9 +362,7 @@ class JiraImportService:
                 progress.failed_items += current_batch_size
 
             # Update progress
-            progress.percentage = (
-                (progress.processed_items / total * 100.0) if total > 0 else 100.0
-            )
+            progress.percentage = (progress.processed_items / total * 100.0) if total > 0 else 100.0
 
             # Call progress callback if provided
             if progress_callback:
@@ -441,7 +424,7 @@ class JiraImportService:
         jql_parts.append("ORDER BY created ASC")
 
         jql = " AND ".join(jql_parts)
-        logger.debug(f"Built JQL query: {jql}")
+
         return jql
 
     async def _fetch_issues(
@@ -498,10 +481,6 @@ class JiraImportService:
             issues = data.get("issues", [])
             total = data.get("total", 0)
 
-            logger.debug(
-                f"Fetched {len(issues)} issues (total available: {total})"
-            )
-
             return issues, total
 
         elif response.status_code == 401:
@@ -538,17 +517,13 @@ class JiraImportService:
 
         if fields.get("created"):
             try:
-                created_at = datetime.fromisoformat(
-                    fields["created"].replace("Z", "+00:00")
-                )
+                created_at = datetime.fromisoformat(fields["created"].replace("Z", "+00:00"))
             except Exception:
                 pass
 
         if fields.get("updated"):
             try:
-                updated_at = datetime.fromisoformat(
-                    fields["updated"].replace("Z", "+00:00")
-                )
+                updated_at = datetime.fromisoformat(fields["updated"].replace("Z", "+00:00"))
             except Exception:
                 pass
 
@@ -580,10 +555,16 @@ class JiraImportService:
             updated_at=updated_at,
             labels=labels,
             metadata={
-                "priority": fields.get("priority", {}).get("name") if fields.get("priority") else None,
-                "reporter": fields.get("reporter", {}).get("displayName") if fields.get("reporter") else None,
+                "priority": fields.get("priority", {}).get("name")
+                if fields.get("priority")
+                else None,
+                "reporter": fields.get("reporter", {}).get("displayName")
+                if fields.get("reporter")
+                else None,
                 "components": [c.get("name") for c in fields.get("components", [])],
-                "resolution": fields.get("resolution", {}).get("name") if fields.get("resolution") else None,
+                "resolution": fields.get("resolution", {}).get("name")
+                if fields.get("resolution")
+                else None,
             },
         )
 
@@ -618,7 +599,6 @@ class JiraImportService:
         if self._client is not None:
             await self._client.aclose()
             self._client = None
-        logger.debug("JIRA import service closed")
 
 
 async def create_jira_import_service(

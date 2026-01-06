@@ -73,7 +73,6 @@ class APIVerifier:
         """Set up FastAPI TestClient."""
         try:
             from fastapi.testclient import TestClient
-
             from main import app
 
             self.client = TestClient(app)

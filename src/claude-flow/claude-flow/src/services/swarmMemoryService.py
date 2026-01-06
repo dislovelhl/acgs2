@@ -8,7 +8,6 @@ conversations, and learned patterns across sessions.
 COMPATIBILITY: Python 3.11+ compatible
 """
 
-import asyncio
 import json
 import logging
 import time
@@ -28,7 +27,7 @@ class SwarmMemoryService:
             "conversations": f"swarm:{swarm_id}:conversations",
             "tasks": f"swarm:{swarm_id}:tasks",
             "patterns": f"swarm:{swarm_id}:patterns",
-            "metrics": f"swarm:{swarm_id}:metrics"
+            "metrics": f"swarm:{swarm_id}:metrics",
         }
 
     async def store_agent_state(self, agent_id: str, state: Dict[str, Any]) -> bool:
@@ -55,7 +54,9 @@ class SwarmMemoryService:
             logger.error(f"Failed to retrieve agent state {agent_id}: {e}")
             return None
 
-    async def store_conversation(self, conversation_id: str, messages: List[Dict[str, Any]]) -> bool:
+    async def store_conversation(
+        self, conversation_id: str, messages: List[Dict[str, Any]]
+    ) -> bool:
         """Store conversation history persistently."""
         try:
             key = f"{self.namespaces['conversations']}:{conversation_id}"
@@ -63,7 +64,7 @@ class SwarmMemoryService:
                 "conversation_id": conversation_id,
                 "messages": messages,
                 "last_updated": time.time(),
-                "message_count": len(messages)
+                "message_count": len(messages),
             }
             await self.redis.set(key, json.dumps(conversation_data))
 
@@ -133,17 +134,15 @@ class SwarmMemoryService:
             logger.error(f"Failed to retrieve pattern {pattern_id}: {e}")
             return None
 
-    async def store_metric(self, metric_name: str, value: Any, timestamp: Optional[float] = None) -> bool:
+    async def store_metric(
+        self, metric_name: str, value: Any, timestamp: Optional[float] = None
+    ) -> bool:
         """Store metric data persistently."""
         try:
             if timestamp is None:
                 timestamp = time.time()
 
-            metric_data = {
-                "name": metric_name,
-                "value": value,
-                "timestamp": timestamp
-            }
+            metric_data = {"name": metric_name, "value": value, "timestamp": timestamp}
 
             key = f"{self.namespaces['metrics']}:{metric_name}:{int(timestamp)}"
             await self.redis.set(key, json.dumps(metric_data))
@@ -171,7 +170,7 @@ class SwarmMemoryService:
                 "swarm_id": self.swarm_id,
                 "stats": stats,
                 "total_namespaces": len(self.namespaces),
-                "memory_backend": "redis"
+                "memory_backend": "redis",
             }
         except Exception as e:
             logger.error(f"Failed to get memory stats for swarm {self.swarm_id}: {e}")
@@ -212,7 +211,7 @@ class SwarmMemoryService:
                     "swarm_id": self.swarm_id,
                     "created_at": time.time(),
                     "item_count": 1,
-                    "last_updated": time.time()
+                    "last_updated": time.time(),
                 }
 
             await self.redis.set(index_key, json.dumps(index_data))

@@ -91,7 +91,6 @@ class RedisDeliberationQueue:
             # Add to queue hash
             await self.redis_client.hset(self.queue_key, item_id, json.dumps(item_data))
 
-            logger.debug(f"Enqueued deliberation item {item_id}")
             return True
 
         except (ConnectionError, OSError, TypeError) as e:
@@ -267,7 +266,6 @@ class RedisVotingSystem:
             channel = f"acgs:votes:channel:{item_id}"
             await self.redis_client.publish(channel, json.dumps(vote_data))
 
-            logger.debug(f"Vote submitted by {agent_id} for item {item_id}")
             return True
 
         except (ConnectionError, OSError, TypeError) as e:
@@ -402,7 +400,6 @@ class RedisVotingSystem:
 
             # Publish to channel
             await self.redis_client.publish(channel, json.dumps(event_data))
-            logger.debug(f"Vote event published to {channel} by {agent_id}")
 
             # Also submit via traditional method for persistence
             await self.submit_vote(item_id, agent_id, vote, reasoning, confidence)
@@ -479,9 +476,9 @@ class RedisVotingSystem:
 
         try:
             import asyncio
+
             message = await asyncio.wait_for(
-                self._pubsub.get_message(ignore_subscribe_messages=True),
-                timeout=timeout
+                self._pubsub.get_message(ignore_subscribe_messages=True), timeout=timeout
             )
 
             if message and message["type"] == "message":

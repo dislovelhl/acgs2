@@ -136,10 +136,13 @@ def app_with_mocks(mock_storage_service, mock_policy_service):
 class TestListBundles:
     """Tests for GET /bundles endpoint."""
 
-    def test_list_bundles_returns_empty_list(self, mock_storage_service, mock_policy_service):
+    def test_list_bundles_returns_empty_list(
+        self, mock_storage_service, mock_policy_service, mock_user_admin
+    ):
         """Test listing bundles returns empty list by default."""
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -147,17 +150,21 @@ class TestListBundles:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get("/bundles/")
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get("/bundles/")
+            assert response.status_code == 200
+            assert response.json() == []
 
-        assert response.status_code == 200
-        assert response.json() == []
-
-    def test_list_bundles_with_status_filter(self, mock_storage_service, mock_policy_service):
+    def test_list_bundles_with_status_filter(
+        self, mock_storage_service, mock_policy_service, mock_user_admin
+    ):
         """Test listing bundles with status filter."""
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -165,11 +172,12 @@ class TestListBundles:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get("/bundles/?status=active")
-
-        assert response.status_code == 200
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get("/bundles/?status=active")
+            assert response.status_code == 200
 
 
 # =============================================================================
@@ -274,13 +282,14 @@ class TestGetBundle:
     """Tests for GET /bundles/{bundle_id} endpoint."""
 
     def test_get_bundle_success(
-        self, mock_storage_service, mock_policy_service, sample_bundle_content
+        self, mock_storage_service, mock_policy_service, mock_user_admin, sample_bundle_content
     ):
         """Test successful bundle retrieval."""
         import asyncio
 
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         # Store bundle first
         digest = f"sha256:{hashlib.sha256(sample_bundle_content).hexdigest()}"
@@ -294,19 +303,21 @@ class TestGetBundle:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get(f"/bundles/{digest}")
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get(f"/bundles/{digest}")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["id"] == digest
+            assert data["constitutional_hash"] == CONSTITUTIONAL_HASH
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["id"] == digest
-        assert data["constitutional_hash"] == CONSTITUTIONAL_HASH
-
-    def test_get_bundle_not_found(self, mock_storage_service, mock_policy_service):
+    def test_get_bundle_not_found(self, mock_storage_service, mock_policy_service, mock_user_admin):
         """Test 404 when bundle not found."""
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -314,21 +325,23 @@ class TestGetBundle:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get("/bundles/nonexistent-bundle")
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get("/bundles/nonexistent-bundle")
+            assert response.status_code == 404
+            assert "not found" in response.json()["detail"].lower()
 
     def test_get_bundle_returns_correct_size(
-        self, mock_storage_service, mock_policy_service, sample_bundle_content
+        self, mock_storage_service, mock_policy_service, mock_user_admin, sample_bundle_content
     ):
         """Test that returned bundle has correct size."""
         import asyncio
 
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         digest = f"sha256:{hashlib.sha256(sample_bundle_content).hexdigest()}"
         asyncio.get_event_loop().run_until_complete(
@@ -341,12 +354,13 @@ class TestGetBundle:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get(f"/bundles/{digest}")
-
-        assert response.status_code == 200
-        assert response.json()["size"] == len(sample_bundle_content)
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get(f"/bundles/{digest}")
+            assert response.status_code == 200
+            assert response.json()["size"] == len(sample_bundle_content)
 
 
 # =============================================================================
@@ -363,7 +377,7 @@ class TestGetActiveBundle:
     """
 
     def test_get_active_bundle_route_ordering_issue(
-        self, mock_storage_service, mock_policy_service
+        self, mock_storage_service, mock_policy_service, mock_user_admin
     ):
         """Test that /active is currently caught by /{bundle_id} route.
 
@@ -374,6 +388,7 @@ class TestGetActiveBundle:
         """
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -381,15 +396,18 @@ class TestGetActiveBundle:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get("/bundles/active?tenant_id=tenant-abc")
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get("/bundles/active?tenant_id=tenant-abc")
+            # Currently matches /{bundle_id} route, returns 404 "Bundle not found"
+            assert response.status_code == 404
+            assert "not found" in response.json()["detail"].lower()
 
-        # Currently matches /{bundle_id} route, returns 404 "Bundle not found"
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
-
-    def test_get_active_bundle_without_tenant_id(self, mock_storage_service, mock_policy_service):
+    def test_get_active_bundle_without_tenant_id(
+        self, mock_storage_service, mock_policy_service, mock_user_admin
+    ):
         """Test /active without tenant_id.
 
         Due to route ordering, this hits /{bundle_id} route which doesn't
@@ -397,6 +415,7 @@ class TestGetActiveBundle:
         """
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -404,12 +423,13 @@ class TestGetActiveBundle:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get("/bundles/active")
-
-        # Hits /{bundle_id} route, returns 404 for bundle_id="active"
-        assert response.status_code == 404
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get("/bundles/active")
+            # Hits /{bundle_id} route, returns 404 for bundle_id="active"
+            assert response.status_code == 404
 
 
 # =============================================================================
@@ -582,10 +602,13 @@ class TestDigestCalculation:
 class TestBundleAuthorization:
     """Tests for bundle endpoint authorization."""
 
-    def test_list_bundles_no_auth_required(self, mock_storage_service, mock_policy_service):
-        """Test listing bundles doesn't require auth."""
+    def test_list_bundles_requires_auth(
+        self, mock_storage_service, mock_policy_service, mock_user_admin
+    ):
+        """Test listing bundles requires authentication."""
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -593,21 +616,23 @@ class TestBundleAuthorization:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get("/bundles/")
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get("/bundles/")
+            # Should succeed with auth
+            assert response.status_code == 200
 
-        # Should succeed without auth
-        assert response.status_code == 200
-
-    def test_get_bundle_no_auth_required(
-        self, mock_storage_service, mock_policy_service, sample_bundle_content
+    def test_get_bundle_requires_auth(
+        self, mock_storage_service, mock_policy_service, mock_user_admin, sample_bundle_content
     ):
-        """Test getting bundle doesn't require auth."""
+        """Test getting bundle requires authentication."""
         import asyncio
 
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         digest = f"sha256:{hashlib.sha256(sample_bundle_content).hexdigest()}"
         asyncio.get_event_loop().run_until_complete(
@@ -620,12 +645,13 @@ class TestBundleAuthorization:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get(f"/bundles/{digest}")
-
-        # Should succeed without auth
-        assert response.status_code == 200
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get(f"/bundles/{digest}")
+            # Should succeed with auth
+            assert response.status_code == 200
 
     def test_upload_requires_admin_role(
         self, mock_storage_service, mock_policy_service, sample_bundle_content
@@ -697,13 +723,14 @@ class TestConstitutionalCompliance:
         assert bundle.constitutional_hash == CONSTITUTIONAL_HASH
 
     def test_get_bundle_returns_constitutional_hash(
-        self, mock_storage_service, mock_policy_service, sample_bundle_content
+        self, mock_storage_service, mock_policy_service, mock_user_admin, sample_bundle_content
     ):
         """Test get bundle response includes constitutional hash."""
         import asyncio
 
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         digest = f"sha256:{hashlib.sha256(sample_bundle_content).hexdigest()}"
         asyncio.get_event_loop().run_until_complete(
@@ -716,12 +743,13 @@ class TestConstitutionalCompliance:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
-        response = client.get(f"/bundles/{digest}")
-
-        assert response.status_code == 200
-        assert response.json()["constitutional_hash"] == CONSTITUTIONAL_HASH
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get(f"/bundles/{digest}")
+            assert response.status_code == 200
+            assert response.json()["constitutional_hash"] == CONSTITUTIONAL_HASH
 
 
 # =============================================================================
@@ -767,10 +795,13 @@ class TestEdgeCases:
 
         assert len(retrieved) == 1024 * 1024
 
-    def test_special_characters_in_bundle_id(self, mock_storage_service, mock_policy_service):
+    def test_special_characters_in_bundle_id(
+        self, mock_storage_service, mock_policy_service, mock_user_admin
+    ):
         """Test bundle ID with special characters."""
         from app.api.dependencies import get_policy_service
         from app.api.v1 import bundles
+        from app.api.v1.auth import get_current_user
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -778,14 +809,15 @@ class TestEdgeCases:
         bundles.get_storage_service.cache_clear()
         app.dependency_overrides[get_policy_service] = lambda: mock_policy_service
         app.dependency_overrides[bundles.get_storage_service] = lambda: mock_storage_service
+        app.dependency_overrides[get_current_user] = lambda: mock_user_admin
 
         client = TestClient(app)
 
         # URL-encoded special characters
-        response = client.get("/bundles/sha256:abc123def456")
-
-        # Should handle gracefully (404 since bundle doesn't exist)
-        assert response.status_code == 404
+        with patch("app.services.OPAService.check_authorization", return_value=True):
+            response = client.get("/bundles/sha256:abc123def456")
+            # Should handle gracefully (404 since bundle doesn't exist)
+            assert response.status_code == 404
 
     def test_bundle_overwrite(self, mock_storage_service):
         """Test overwriting existing bundle."""

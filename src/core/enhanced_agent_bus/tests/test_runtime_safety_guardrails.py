@@ -120,11 +120,13 @@ class TestAgentEngine:
     async def test_constitutional_validation_failure(self, engine):
         """Test constitutional validation failure."""
         # Mock the constitutional validation to fail
-        engine._validate_constitutional = AsyncMock(return_value={
-            "compliant": False,
-            "confidence": 0.9,
-            "reason": "Violates privacy principles"
-        })
+        engine._validate_constitutional = AsyncMock(
+            return_value={
+                "compliant": False,
+                "confidence": 0.9,
+                "reason": "Violates privacy principles",
+            }
+        )
 
         data = {"action": "access_private_data"}
         context = {"trace_id": "test-trace"}
@@ -161,10 +163,9 @@ class TestToolRunnerSandbox:
     async def test_sandbox_execution_failure(self, sandbox):
         """Test sandbox execution failure."""
         # Mock sandbox execution to fail
-        sandbox._execute_in_sandbox = AsyncMock(return_value={
-            "success": False,
-            "error": "Command not allowed"
-        })
+        sandbox._execute_in_sandbox = AsyncMock(
+            return_value={"success": False, "error": "Command not allowed"}
+        )
 
         data = {"tool": "dangerous_command"}
         context = {"trace_id": "test-trace"}
@@ -243,7 +244,7 @@ class TestAuditLog:
             "allowed": True,
             "violations": [],
             "processing_time_ms": 50.0,
-            "metadata": {"test": "data"}
+            "metadata": {"test": "data"},
         }
 
         result = await audit_log.process(None, context)
@@ -261,26 +262,34 @@ class TestAuditLog:
     async def test_audit_metrics(self, audit_log):
         """Test audit log metrics."""
         # Add some test entries
-        await audit_log.process(None, {
-            "trace_id": "trace1",
-            "action": SafetyAction.ALLOW,
-            "allowed": True,
-            "violations": [],
-            "processing_time_ms": 10.0
-        })
+        await audit_log.process(
+            None,
+            {
+                "trace_id": "trace1",
+                "action": SafetyAction.ALLOW,
+                "allowed": True,
+                "violations": [],
+                "processing_time_ms": 10.0,
+            },
+        )
 
-        await audit_log.process(None, {
-            "trace_id": "trace2",
-            "action": SafetyAction.BLOCK,
-            "allowed": False,
-            "violations": [Violation(
-                layer=GuardrailLayer.INPUT_SANITIZER,
-                violation_type="test",
-                severity=ViolationSeverity.LOW,
-                message="test violation"
-            )],
-            "processing_time_ms": 20.0
-        })
+        await audit_log.process(
+            None,
+            {
+                "trace_id": "trace2",
+                "action": SafetyAction.BLOCK,
+                "allowed": False,
+                "violations": [
+                    Violation(
+                        layer=GuardrailLayer.INPUT_SANITIZER,
+                        violation_type="test",
+                        severity=ViolationSeverity.LOW,
+                        message="test violation",
+                    )
+                ],
+                "processing_time_ms": 20.0,
+            },
+        )
 
         metrics = await audit_log.get_metrics()
 

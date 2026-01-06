@@ -12,9 +12,8 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
-
+from src.core.shared.acgs_logging import get_logger
 from src.core.shared.config import settings
-from src.core.shared.logging import get_logger
 
 logger = get_logger(__name__)
 

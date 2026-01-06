@@ -6,6 +6,7 @@ import time
 from unittest.mock import patch
 
 import pytest
+
 from core import EnhancedAgentBus, MessageProcessor
 from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 

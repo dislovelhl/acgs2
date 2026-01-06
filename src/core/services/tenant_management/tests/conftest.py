@@ -4,8 +4,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-
-from src.core.shared.logging import init_service_logging
+from src.core.shared.acgs_logging import init_service_logging
 
 # Initialize test logging
 init_service_logging("tenant-management-test", level="WARNING", json_format=False)

@@ -258,7 +258,11 @@ class TestMACIRoleDesynchronization:
         """
         try:
             from src.core.enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from src.core.enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
+            from src.core.enhanced_agent_bus.maci_enforcement import (
+                MACIAction,
+                MACIEnforcer,
+                MACIRole,
+            )
 
             enforcer = MACIEnforcer()
 
@@ -281,7 +285,11 @@ class TestMACIRoleDesynchronization:
         """
         try:
             from src.core.enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from src.core.enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
+            from src.core.enhanced_agent_bus.maci_enforcement import (
+                MACIAction,
+                MACIEnforcer,
+                MACIRole,
+            )
 
             enforcer = MACIEnforcer()
 
@@ -303,7 +311,11 @@ class TestMACIRoleDesynchronization:
         """
         try:
             from src.core.enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from src.core.enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
+            from src.core.enhanced_agent_bus.maci_enforcement import (
+                MACIAction,
+                MACIEnforcer,
+                MACIRole,
+            )
 
             enforcer = MACIEnforcer()
 
@@ -339,7 +351,11 @@ class TestMACIRoleDesynchronization:
     async def test_all_roles_can_query(self) -> None:
         """Test that all roles can perform QUERY action."""
         try:
-            from src.core.enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
+            from src.core.enhanced_agent_bus.maci_enforcement import (
+                MACIAction,
+                MACIEnforcer,
+                MACIRole,
+            )
 
             enforcer = MACIEnforcer()
 

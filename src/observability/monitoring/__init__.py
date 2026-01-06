@@ -245,7 +245,6 @@ class PagerDutyAlerting:
     ) -> bool:
         """Send alert to PagerDuty."""
         if not self.enabled:
-            logger.debug("PagerDuty alerting disabled (no integration key)")
             return False
 
         # Map severity to PagerDuty format

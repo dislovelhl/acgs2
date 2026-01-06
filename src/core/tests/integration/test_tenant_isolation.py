@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from fastapi import Depends, FastAPI, HTTPException, Request  # noqa: E402, I001
 from fastapi.testclient import TestClient  # noqa: E402
-from src.core.shared.logging.audit_logger import (  # noqa: E402
+from src.core.shared.acgs_logging.audit_logger import (  # noqa: E402
     CONSTITUTIONAL_HASH,
     AuditAction,
     AuditLogConfig,
@@ -922,7 +922,7 @@ class TestConstitutionalCompliance:
     @pytest.mark.integration
     def test_constitutional_hash_consistent(self):
         """Test constitutional hash is consistent across components."""
-        from src.core.shared.logging.audit_logger import CONSTITUTIONAL_HASH as AUDIT_HASH
+        from src.core.shared.acgs_logging.audit_logger import CONSTITUTIONAL_HASH as AUDIT_HASH
         from src.core.shared.security.tenant_context import CONSTITUTIONAL_HASH as TENANT_HASH
 
         assert AUDIT_HASH == "cdd01ef066bc6cf2"

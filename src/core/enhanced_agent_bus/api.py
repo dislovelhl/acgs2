@@ -24,7 +24,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 try:
-    from src.core.shared.logging import create_correlation_middleware, init_service_logging
+    from src.core.shared.acgs_logging import create_correlation_middleware, init_service_logging
+
     # Initialize structured logging
     logger = init_service_logging("enhanced-agent-bus", level="INFO", json_format=True)
 except ImportError:
@@ -44,7 +45,7 @@ except (ImportError, ValueError):
 limiter = Limiter(key_func=get_remote_address)
 
 # Correlation ID context for request tracing
-correlation_id_var: ContextVar[str] = ContextVar('correlation_id', default='unknown')
+correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="unknown")
 
 # Rate limiting imports (optional - graceful degradation if not available)
 RATE_LIMITING_AVAILABLE = False
@@ -52,6 +53,7 @@ try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
     from slowapi.util import get_remote_address
+
     RATE_LIMITING_AVAILABLE = True
 except ImportError:
     logger.warning("slowapi not available - rate limiting disabled")
@@ -60,6 +62,7 @@ except ImportError:
 CIRCUIT_BREAKER_AVAILABLE = False
 try:
     import pybreaker
+
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:
     logger.warning("pybreaker not available - circuit breaker disabled")
@@ -91,11 +94,9 @@ logger.info(
     f"exempt_paths={tenant_config.exempt_paths})"
 )
 
-
 # =============================================================================
 # Exception Handlers
 # =============================================================================
-
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
@@ -124,7 +125,6 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) 
     logger.warning(f"Rate limit exceeded for agent '{exc.agent_id}': {exc.message}")
     return JSONResponse(status_code=status_code, content=response, headers=headers)
 
-
 @app.exception_handler(MessageTimeoutError)
 async def message_timeout_handler(request: Request, exc: MessageTimeoutError) -> JSONResponse:
     """Handle message timeout errors with 504 status."""
@@ -136,7 +136,6 @@ async def message_timeout_handler(request: Request, exc: MessageTimeoutError) ->
     )
     logger.error(f"Message timeout for '{exc.message_id}': {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
-
 
 @app.exception_handler(BusNotStartedError)
 async def bus_not_started_handler(request: Request, exc: BusNotStartedError) -> JSONResponse:
@@ -150,7 +149,6 @@ async def bus_not_started_handler(request: Request, exc: BusNotStartedError) -> 
     logger.error(f"Bus not started for operation '{exc.operation}': {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
 
-
 @app.exception_handler(OPAConnectionError)
 async def opa_connection_handler(request: Request, exc: OPAConnectionError) -> JSONResponse:
     """Handle OPA connection errors with 503 status."""
@@ -162,7 +160,6 @@ async def opa_connection_handler(request: Request, exc: OPAConnectionError) -> J
     )
     logger.error(f"OPA connection error: {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
-
 
 @app.exception_handler(ConstitutionalError)
 async def constitutional_error_handler(request: Request, exc: ConstitutionalError) -> JSONResponse:
@@ -176,7 +173,6 @@ async def constitutional_error_handler(request: Request, exc: ConstitutionalErro
     logger.warning(f"Constitutional error: {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
 
-
 @app.exception_handler(MACIError)
 async def maci_error_handler(request: Request, exc: MACIError) -> JSONResponse:
     """Handle MACI role separation errors."""
@@ -188,7 +184,6 @@ async def maci_error_handler(request: Request, exc: MACIError) -> JSONResponse:
     )
     logger.warning(f"MACI error: {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
-
 
 @app.exception_handler(PolicyError)
 async def policy_error_handler(request: Request, exc: PolicyError) -> JSONResponse:
@@ -202,7 +197,6 @@ async def policy_error_handler(request: Request, exc: PolicyError) -> JSONRespon
     logger.error(f"Policy error: {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
 
-
 @app.exception_handler(AgentError)
 async def agent_error_handler(request: Request, exc: AgentError) -> JSONResponse:
     """Handle agent-related errors."""
@@ -214,7 +208,6 @@ async def agent_error_handler(request: Request, exc: AgentError) -> JSONResponse
     )
     logger.warning(f"Agent error: {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
-
 
 @app.exception_handler(MessageError)
 async def message_error_handler(request: Request, exc: MessageError) -> JSONResponse:
@@ -228,7 +221,6 @@ async def message_error_handler(request: Request, exc: MessageError) -> JSONResp
     logger.warning(f"Message error: {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
 
-
 @app.exception_handler(BusOperationError)
 async def bus_operation_error_handler(request: Request, exc: BusOperationError) -> JSONResponse:
     """Handle bus operation errors with 503 status."""
@@ -241,7 +233,6 @@ async def bus_operation_error_handler(request: Request, exc: BusOperationError) 
     logger.error(f"Bus operation error: {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
 
-
 @app.exception_handler(AgentBusError)
 async def agent_bus_error_handler(request: Request, exc: AgentBusError) -> JSONResponse:
     """Handle generic AgentBusError (catch-all for bus errors)."""
@@ -253,7 +244,6 @@ async def agent_bus_error_handler(request: Request, exc: AgentBusError) -> JSONR
     )
     logger.error(f"Agent bus error: {exc.message}")
     return JSONResponse(status_code=status_code, content=response)
-
 
 # ===== Rate Limiting Setup =====
 limiter = None
@@ -269,10 +259,9 @@ if CIRCUIT_BREAKER_AVAILABLE:
     message_circuit_breaker = pybreaker.CircuitBreaker(
         fail_max=5,  # Open circuit after 5 failures
         reset_timeout=60,  # Try again after 60 seconds
-        name="message_processing"
+        name="message_processing",
     )
     logger.info("Circuit breaker enabled for message processing")
-
 
 # ===== Correlation ID Middleware =====
 @app.middleware("http")
@@ -284,7 +273,6 @@ async def correlation_id_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Correlation-ID"] = correlation_id
     return response
-
 
 # ===== Global Exception Handler =====
 @app.exception_handler(Exception)
@@ -299,10 +287,9 @@ async def global_exception_handler(request: Request, exc: Exception):
             "error": "internal_server_error",
             "message": "An unexpected error occurred",
             "correlation_id": correlation_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
     )
-
 
 # Global agent bus instance - simplified for development
 agent_bus = None
@@ -323,11 +310,11 @@ MESSAGE_HANDLERS: Dict[MessageTypeEnum, str] = {
     MessageTypeEnum.AUDIT_LOG: "process_audit_log",
 }
 
-
 # ===== Message Type Definitions =====
 
 class MessageTypeEnum(str, Enum):
     """Supported message types in the agent bus (12 types per spec)."""
+
     COMMAND = "command"
     QUERY = "query"
     RESPONSE = "response"
@@ -341,38 +328,40 @@ class MessageTypeEnum(str, Enum):
     TASK_RESPONSE = "task_response"
     AUDIT_LOG = "audit_log"
 
-
 class PriorityEnum(str, Enum):
     """Message priority levels."""
+
     LOW = "low"
     NORMAL = "normal"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
 
-
 class MessageStatusEnum(str, Enum):
     """Message processing status."""
+
     ACCEPTED = "accepted"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
     REJECTED = "rejected"
 
-
 # ===== Request/Response Models =====
 
 class MessageRequest(BaseModel):
     """Request model for sending messages to the agent bus."""
 
-    content: str = Field(..., description="Message content", min_length=1, max_length=1048576)  # 1MB max
+    content: str = Field(
+        ..., description="Message content", min_length=1, max_length=1048576
+    )  # 1MB max
     message_type: MessageTypeEnum = Field(
-        default=MessageTypeEnum.COMMAND,
-        description="Type of message (one of 12 supported types)"
+        default=MessageTypeEnum.COMMAND, description="Type of message (one of 12 supported types)"
     )
     priority: PriorityEnum = Field(default=PriorityEnum.NORMAL, description="Message priority")
     sender: str = Field(..., description="Sender identifier", min_length=1, max_length=255)
-    recipient: Optional[str] = Field(default=None, description="Recipient identifier", max_length=255)
+    recipient: Optional[str] = Field(
+        default=None, description="Recipient identifier", max_length=255
+    )
     tenant_id: Optional[str] = Field(default=None, description="Tenant identifier", max_length=100)
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata")
     session_id: Optional[str] = Field(
@@ -382,11 +371,11 @@ class MessageRequest(BaseModel):
         default=None, description="Idempotency key to prevent duplicate processing"
     )
 
-    @field_validator('content')
+    @field_validator("content")
     @classmethod
     def validate_content_not_empty(cls, v: str) -> str:
         if not v.strip():
-            raise ValueError('Content cannot be empty or whitespace only')
+            raise ValueError("Content cannot be empty or whitespace only")
         return v
 
     model_config = {
@@ -397,11 +386,10 @@ class MessageRequest(BaseModel):
                 "priority": "high",
                 "sender": "agent-orchestrator",
                 "recipient": "governance-engine",
-                "tenant_id": "acgs-dev"
+                "tenant_id": "acgs-dev",
             }
         }
     }
-
 
 class MessageResponse(BaseModel):
     """Response model for message operations."""
@@ -409,7 +397,9 @@ class MessageResponse(BaseModel):
     message_id: str = Field(..., description="Unique message identifier")
     status: MessageStatusEnum = Field(..., description="Current message status")
     timestamp: str = Field(..., description="ISO 8601 timestamp")
-    details: Optional[Dict[str, Any]] = Field(default=None, description="Additional response details")
+    details: Optional[Dict[str, Any]] = Field(
+        default=None, description="Additional response details"
+    )
     correlation_id: Optional[str] = Field(default=None, description="Request correlation ID")
 
     model_config = {
@@ -418,28 +408,27 @@ class MessageResponse(BaseModel):
                 "message_id": "550e8400-e29b-41d4-a716-446655440000",
                 "status": "accepted",
                 "timestamp": "2024-01-15T10:30:00Z",
-                "correlation_id": "req-12345"
+                "correlation_id": "req-12345",
             }
         }
     }
 
-
 class ValidationFinding(BaseModel):
     """A single validation finding."""
+
     severity: str = Field(..., description="Severity: critical, warning, or recommendation")
     code: str = Field(..., description="Finding code for programmatic handling")
     message: str = Field(..., description="Human-readable description")
     field: Optional[str] = Field(default=None, description="Field that caused the finding")
 
-
 class ValidationResponse(BaseModel):
     """Detailed validation response."""
+
     valid: bool = Field(..., description="Whether the request is valid")
     findings: Dict[str, List[ValidationFinding]] = Field(
         default_factory=lambda: {"critical": [], "warnings": [], "recommendations": []},
-        description="Categorized validation findings"
+        description="Categorized validation findings",
     )
-
 
 class HealthResponse(BaseModel):
     """Health check response."""
@@ -448,18 +437,21 @@ class HealthResponse(BaseModel):
     service: str = Field(..., description="Service name")
     version: str = Field(..., description="Service version")
     agent_bus_status: str = Field(..., description="Agent bus component status")
-    rate_limiting_enabled: bool = Field(default=False, description="Whether rate limiting is active")
-    circuit_breaker_enabled: bool = Field(default=False, description="Whether circuit breaker is active")
-
+    rate_limiting_enabled: bool = Field(
+        default=False, description="Whether rate limiting is active"
+    )
+    circuit_breaker_enabled: bool = Field(
+        default=False, description="Whether circuit breaker is active"
+    )
 
 class ErrorResponse(BaseModel):
     """Standard error response format."""
+
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Error message")
     details: Optional[Dict[str, Any]] = Field(default=None, description="Additional error details")
     correlation_id: Optional[str] = Field(default=None, description="Request correlation ID")
     timestamp: str = Field(..., description="Error timestamp")
-
 
 # Startup event
 @app.on_event("startup")
@@ -478,7 +470,6 @@ async def startup_event():
             raise
         agent_bus = {"status": "mock_initialized", "mode": "development"}
         logger.warning("Agent bus failed to initialize, using mock mode for development")
-
 
 async def _warm_caches():
     """
@@ -517,7 +508,6 @@ async def _warm_caches():
         # Don't fail startup if cache warming fails - it's an optimization
         logger.warning(f"Cache warming failed (non-fatal): {e}")
 
-
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -534,10 +524,8 @@ async def shutdown_event():
                 logger.info("Cancelling ongoing cache warming...")
                 warmer.cancel()
     except Exception as e:
-        logger.debug(f"Cache warming cleanup: {e}")
 
     logger.info("Enhanced Agent Bus stopped (dev mode)")
-
 
 # ===== API Endpoints =====
 
@@ -554,7 +542,6 @@ async def health_check():
         rate_limiting_enabled=RATE_LIMITING_AVAILABLE,
         circuit_breaker_enabled=CIRCUIT_BREAKER_AVAILABLE,
     )
-
 
 @app.post("/messages", response_model=MessageResponse)
 @limiter.limit("10/minute")
@@ -579,8 +566,7 @@ async def send_message(
 
     if not agent_bus:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Agent bus not initialized"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Agent bus not initialized"
         )
 
     try:
@@ -592,8 +578,7 @@ async def send_message(
             msg_type = MessageType(message_request.message_type.lower())
         except ValueError:
             raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported message type: {message_request.message_type}"
+                status_code=400, detail=f"Unsupported message type: {message_request.message_type}"
             )
 
         try:
@@ -632,10 +617,7 @@ async def send_message(
             message_id=msg.message_id,
             status="accepted",
             timestamp=datetime.now(timezone.utc).isoformat(),
-            details={
-                "message_type": msg.message_type.value,
-                "session_id": msg.conversation_id
-            },
+            details={"message_type": msg.message_type.value, "session_id": msg.conversation_id},
         )
 
     except HTTPException:
@@ -643,10 +625,8 @@ async def send_message(
     except Exception as e:
         logger.error(f"Error sending message: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Message processing failed"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Message processing failed"
         ) from e
-
 
 # Legacy endpoint for backward compatibility
 @app.post("/messages", response_model=MessageResponse, include_in_schema=False)
@@ -658,7 +638,6 @@ async def send_message_legacy(
 ):
     """Legacy endpoint - redirects to /api/v1/messages."""
     return await send_message(request, message, background_tasks, session_id)
-
 
 @app.get(
     "/messages/{message_id}",
@@ -713,7 +692,6 @@ async def get_message_status(message_id: str):
     except Exception as e:
         logger.error(f"Error getting message status: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
-
 
 @app.get(
     "/stats",
@@ -785,7 +763,6 @@ async def get_stats():
         logger.error(f"Error getting stats: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-
 @app.post(
     "/policies/validate",
     responses={
@@ -846,7 +823,6 @@ async def validate_policy(policy_data: Dict[str, Any]):
     except Exception as e:
         logger.error(f"Error validating policy: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
-
 
 if __name__ == "__main__":
     import uvicorn

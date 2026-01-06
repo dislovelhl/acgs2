@@ -478,8 +478,7 @@ class PSVSelfPlay:
                         "validation": validation_result,
                     }
 
-            except PolicyVerificationError as e:
-                logger.debug(f"Challenge attempt {attempt + 1} failed: {str(e)}")
+            except PolicyVerificationError:
                 continue
 
             except Exception as e:
@@ -495,7 +494,9 @@ class PSVSelfPlay:
             "error": "All solution attempts failed",
         }
 
-    async def _validate_solution(self, policy: VerifiedPolicy, challenge: SelfPlayChallenge) -> JSONDict:
+    async def _validate_solution(
+        self, policy: VerifiedPolicy, challenge: SelfPlayChallenge
+    ) -> JSONDict:
         """Validate a solution against challenge criteria."""
         validation = {"valid": True, "criteria_met": [], "criteria_failed": [], "score": 0.0}
 

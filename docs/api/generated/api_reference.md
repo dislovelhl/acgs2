@@ -28,7 +28,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 ### Classes
 
 - **SearchPlatformSettings**
-  
+
     Configuration settings for Search Platform integration.
 
     Can be loaded from environment var...

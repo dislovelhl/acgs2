@@ -15,9 +15,9 @@ import pytest
 def test_module_imports():
     """Verify that module imports are correctly patched."""
     # Check that flat imports resolve to package imports
-    import models
-
     import src.core.enhanced_agent_bus.models as pkg_models
+
+    import models
 
     # These should be the same module after conftest patching
     assert models.CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"

@@ -5,7 +5,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 Protocol definitions for dependency injection in the deliberation layer.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable, Union
+from typing import Any, Callable, Dict, List, Optional, Protocol, Union, runtime_checkable
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -14,7 +15,7 @@ except ImportError:
 
 try:
     from ..models import AgentMessage
-    from .opa_guard_models import GuardResult, SignatureResult, ReviewResult
+    from .opa_guard_models import GuardResult, ReviewResult, SignatureResult
 except ImportError:
     AgentMessage = Any
     GuardResult = Any

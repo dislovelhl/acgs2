@@ -16,42 +16,42 @@ from typing import List, Tuple
 
 # ANSI color codes for output
 class Colors:
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    BOLD = "\033[1m"
+    END = "\033[0m"
+
 
 def print_header(text: str):
     print(f"\n{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}")
     print(f"{Colors.BOLD}{Colors.BLUE}{text.center(60)}{Colors.END}")
     print(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}")
 
+
 def print_success(text: str):
     print(f"{Colors.GREEN}✅ {text}{Colors.END}")
+
 
 def print_error(text: str):
     print(f"{Colors.RED}❌ {text}{Colors.END}")
 
+
 def print_warning(text: str):
     print(f"{Colors.YELLOW}⚠️  {text}{Colors.END}")
+
 
 def run_command(cmd: List[str], cwd: Path = None) -> Tuple[bool, str]:
     """Run a command and return (success, output)"""
     try:
-        result = subprocess.run(
-            cmd,
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
+        result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=60)
         return result.returncode == 0, result.stdout + result.stderr
     except subprocess.TimeoutExpired:
         return False, "Command timed out"
     except Exception as e:
         return False, str(e)
+
 
 def validate_python_sdk(sdk_path: Path) -> List[str]:
     """Validate Python SDK publishing readiness"""
@@ -65,22 +65,23 @@ def validate_python_sdk(sdk_path: Path) -> List[str]:
 
     try:
         import tomllib
-        with open(pyproject_path, 'rb') as f:
+
+        with open(pyproject_path, "rb") as f:
             config = tomllib.load(f)
 
         # Check required fields
-        project = config.get('project', {})
-        if not project.get('name'):
+        project = config.get("project", {})
+        if not project.get("name"):
             issues.append("Missing project.name in pyproject.toml")
-        if not project.get('version'):
+        if not project.get("version"):
             issues.append("Missing project.version in pyproject.toml")
 
         # Check build system
-        if 'build-system' not in config:
+        if "build-system" not in config:
             issues.append("Missing build-system in pyproject.toml")
 
         # Check if build tools are available
-        success, output = run_command(['pyproject-build', '--help'], sdk_path)
+        success, output = run_command(["pyproject-build", "--help"], sdk_path)
         if not success:
             issues.append(f"Build tools not available: {output[:100]}...")
         else:
@@ -102,12 +103,13 @@ def validate_python_sdk(sdk_path: Path) -> List[str]:
         issues.append("Package structure incorrect - missing __init__.py")
     else:
         # Check that __init__.py has basic exports
-        with open(init_file, 'r') as f:
+        with open(init_file, "r") as f:
             content = f.read()
-        if 'ACGS2Client' not in content:
+        if "ACGS2Client" not in content:
             issues.append("Package __init__.py missing main exports")
 
     return issues
+
 
 def validate_typescript_sdk(sdk_path: Path) -> List[str]:
     """Validate TypeScript SDK publishing readiness"""
@@ -120,21 +122,21 @@ def validate_typescript_sdk(sdk_path: Path) -> List[str]:
         return issues
 
     try:
-        with open(package_path, 'r') as f:
+        with open(package_path, "r") as f:
             package = json.load(f)
 
         # Check required fields
-        required_fields = ['name', 'version', 'main', 'types']
+        required_fields = ["name", "version", "main", "types"]
         for field in required_fields:
             if field not in package:
                 issues.append(f"Missing {field} in package.json")
 
         # Check if name starts with @acgs/
-        if not package.get('name', '').startswith('@acgs/'):
+        if not package.get("name", "").startswith("@acgs/"):
             issues.append("Package name should start with @acgs/")
 
         # Check if build works
-        success, output = run_command(['npm', 'run', 'build'], sdk_path)
+        success, output = run_command(["npm", "run", "build"], sdk_path)
         if not success:
             issues.append(f"Build failed: {output[:100]}...")
 
@@ -153,6 +155,7 @@ def validate_typescript_sdk(sdk_path: Path) -> List[str]:
 
     return issues
 
+
 def validate_go_sdk(sdk_path: Path) -> List[str]:
     """Validate Go SDK publishing readiness"""
     issues = []
@@ -164,12 +167,12 @@ def validate_go_sdk(sdk_path: Path) -> List[str]:
         return issues
 
     # Check if go mod is valid
-    success, output = run_command(['go', 'mod', 'verify'], sdk_path)
+    success, output = run_command(["go", "mod", "verify"], sdk_path)
     if not success:
         issues.append(f"go mod verify failed: {output[:100]}...")
 
     # Check if module can be built
-    success, output = run_command(['go', 'build', '.'], sdk_path)
+    success, output = run_command(["go", "build", "."], sdk_path)
     if not success:
         issues.append(f"Go build failed: {output[:100]}...")
 
@@ -184,6 +187,7 @@ def validate_go_sdk(sdk_path: Path) -> List[str]:
 
     return issues
 
+
 def validate_github_workflows(project_root: Path) -> List[str]:
     """Validate GitHub Actions workflows"""
     issues = []
@@ -196,7 +200,7 @@ def validate_github_workflows(project_root: Path) -> List[str]:
     expected_workflows = [
         "sdk-publish-python.yml",
         "sdk-publish-typescript.yml",
-        "sdk-publish-go.yml"
+        "sdk-publish-go.yml",
     ]
 
     for workflow in expected_workflows:
@@ -206,14 +210,15 @@ def validate_github_workflows(project_root: Path) -> List[str]:
         else:
             # Basic validation - check if it's a valid YAML
             try:
-                with open(workflow_path, 'r') as f:
+                with open(workflow_path, "r") as f:
                     content = f.read()
-                if 'name:' not in content:
+                if "name:" not in content:
                     issues.append(f"Workflow {workflow} missing name field")
             except Exception as e:
                 issues.append(f"Error reading workflow {workflow}: {e}")
 
     return issues
+
 
 def main():
     project_root = Path(__file__).parent.parent
@@ -302,6 +307,7 @@ def main():
         print("  • Go SDK via Go modules")
         print(f"\nNext: Create version tags and push to trigger automated publishing.{Colors.END}")
         return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

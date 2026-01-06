@@ -194,9 +194,9 @@ class ZKPClient:
 
     def _mock_field_element(self) -> str:
         """生成模拟的有限域元素"""
-        import random
+        import secrets
 
-        return hex(random.randint(1, 2**256 - 1))
+        return hex(secrets.randbelow(2**256 - 1) + 1)
 
     def get_proof_stats(self) -> Dict[str, Any]:
         """

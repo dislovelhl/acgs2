@@ -87,6 +87,28 @@
   - [x] Performance trend analysis
   - [x] Alert generation system
 
+### **Phase 7: Security Verification** ✅
+
+- [x] **Code Injection Prevention**
+  - [x] Status: ✅ Verified - No eval() usage in production code
+  - [x] Safe evaluation: AST-based `safe_eval_expr()` implemented
+  - [x] Components: TMS, CRE updated with secure alternatives
+
+- [x] **Secret Management**
+  - [x] JWT secrets: Externalized to `ACGS2_JWT_SECRET` env var
+  - [x] Dev mode guards: Test users only created with `ACGS2_DEV_MODE=true`
+  - [x] Production check: Application fails without proper secrets
+
+- [x] **PII Protection**
+  - [x] Audit redaction: Sensitive fields removed/hashed in audit logs
+  - [x] Components: DMS, UIG implement consistent PII redaction
+  - [x] Traceability: Hash-based tracking for debugging
+
+- [x] **CORS Security**
+  - [x] Environment-aware: Different policies for dev/prod/staging
+  - [x] Origin restrictions: Explicit allowlists in production
+  - [x] Header limits: Restricted to necessary security headers
+
 ---
 
 ## 🎯 Current Deployment Readiness
@@ -133,17 +155,24 @@
 # 1. Fix syntax errors
 find acgs2-core -name "*.py" -exec python -m py_compile {} \;
 
-# 2. Run quality gate
+# 2. Configure security environment variables
+export ACGS2_JWT_SECRET="$(openssl rand -base64 32)"
+export CORS_ALLOWED_ORIGINS="https://your-domain.com,https://admin.your-domain.com"
+
+# 3. Run security verification
+./scripts/security_verification.sh
+
+# 4. Run quality gate
 ./scripts/quality_gate.sh
 
-# 3. Fix remaining bare except clauses
+# 5. Fix remaining bare except clauses
 grep -r "except:" acgs2-core/ --include="*.py" | grep -v "#"
 
-# 4. Convert print statements
+# 6. Convert print statements
 grep -r "print(" acgs2-core/ --include="*.py" | grep -v test
 
-# 5. Final quality check
-./scripts/quality_gate.sh
+# 7. Final security and quality check
+./scripts/security_verification.sh && ./scripts/quality_gate.sh
 ```
 
 ### **Deployment Execution**
@@ -172,13 +201,18 @@ helm install acgs2 ./helm \
 kubectl get pods -n acgs2-system
 curl -f http://acgs2-gateway/health
 
-# 2. Performance baseline
+# 2. Security validation
+./scripts/security_verification.sh
+curl -H "Origin: https://malicious-site.com" http://acgs2-gateway/api/v1/test  # Should be blocked
+curl -X POST http://acgs2-gateway/api/v1/auth/login -d '{"username":"test","password":"test"}'  # Should redact PII
+
+# 3. Performance baseline
 ./scripts/performance_regression_test.sh
 
-# 3. Quality metrics
+# 4. Quality metrics
 python scripts/quality_metrics_monitor.py
 
-# 4. Chaos testing
+# 5. Chaos testing
 python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
 ```
 
@@ -201,14 +235,17 @@ python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
 - **Syntax Errors**: Could cause runtime failures
 - **Bare Except Clauses**: Could hide critical errors
 - **Print Statements**: No structured logging in production
+- **🔴 Missing Security Secrets**: Application will fail without proper JWT/CORS configuration
 
 ### **Medium Risk Items**
 - **Test Coverage**: Some areas may need additional tests
 - **Performance Baseline**: Initial deployment may need tuning
+- **PII Audit Exposure**: Verify redaction is working in production logs
 
 ### **Low Risk Items**
 - **CI/CD Pipeline**: May need GitHub repository configuration
 - **Monitoring Dashboards**: Plotly dependency for visualization
+- **Code Injection**: Verify safe_eval_expr prevents malicious expressions
 
 ---
 
@@ -259,6 +296,9 @@ python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
 
 ### **Deployment Success**
 - [ ] All services healthy (HTTP 200 on health endpoints)
+- [ ] Security verification passes (no eval(), secrets externalized, PII redaction working)
+- [ ] CORS properly configured (blocks unauthorized origins)
+- [ ] JWT authentication working with external secrets
 - [ ] Performance within targets (±10% of baseline)
 - [ ] Quality score > 80
 - [ ] No critical alerts in first 24 hours
@@ -268,6 +308,8 @@ python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
 - [ ] 99.9% uptime target met
 - [ ] MTTR < 15 minutes
 - [ ] Zero security incidents (first month)
+- [ ] PII properly redacted in all audit logs
+- [ ] Code injection prevention verified
 - [ ] Performance regression < 5%
 
 ---

@@ -16,7 +16,7 @@ def test_layer1_context():
 
     processor = ConstitutionalMambaHybrid()
     assert processor.constitutional_hash == CONSTITUTIONAL_HASH
-    print("✅ Layer 1: Context & Memory - PASSED")
+    # print("✅ Layer 1: Context & Memory - PASSED")  # DEBUG_CLEANUP
 
 
 def test_layer2_verification():
@@ -26,7 +26,7 @@ def test_layer2_verification():
     pipeline = MACIVerificationPipeline()
     assert pipeline.constitutional_hash == CONSTITUTIONAL_HASH
     assert MACIRole.EXECUTIVE.value == "executive"
-    print("✅ Layer 2: Verification - PASSED")
+    # print("✅ Layer 2: Verification - PASSED")  # DEBUG_CLEANUP
 
 
 def test_layer3_temporal():
@@ -35,7 +35,7 @@ def test_layer3_temporal():
 
     timeline = ConstitutionalTimelineEngine()
     assert timeline.constitutional_hash == CONSTITUTIONAL_HASH
-    print("✅ Layer 3: Temporal - PASSED")
+    # print("✅ Layer 3: Temporal - PASSED")  # DEBUG_CLEANUP
 
 
 def test_layer3_symbolic():
@@ -44,7 +44,7 @@ def test_layer3_symbolic():
 
     handler = ConstitutionalEdgeCaseHandler()
     assert handler.constitutional_hash == CONSTITUTIONAL_HASH
-    print("✅ Layer 3: Symbolic - PASSED")
+    # print("✅ Layer 3: Symbolic - PASSED")  # DEBUG_CLEANUP
 
 
 def test_layer4_governance():
@@ -53,7 +53,7 @@ def test_layer4_governance():
 
     gov = DemocraticConstitutionalGovernance()
     assert gov.constitutional_hash == CONSTITUTIONAL_HASH
-    print("✅ Layer 4: Governance - PASSED")
+    # print("✅ Layer 4: Governance - PASSED")  # DEBUG_CLEANUP
 
 
 def test_layer4_policy():
@@ -62,7 +62,7 @@ def test_layer4_policy():
 
     gen = VerifiedPolicyGenerator()
     assert gen.max_refinements == 5
-    print("✅ Layer 4: Policy - PASSED")
+    # print("✅ Layer 4: Policy - PASSED")  # DEBUG_CLEANUP
 
 
 def test_integrations():
@@ -81,13 +81,17 @@ def test_integrations():
     _graph = GovernanceGraph()  # noqa: F841
     _guardrails = ConstitutionalGuardrails()  # noqa: F841
 
-    print("✅ Integrations: MCP, Classifiers, LangGraph, Guardrails - PASSED")
+    # print("✅ Integrations: MCP, Classifiers, LangGraph, Guardrails - PASSED")  # DEBUG_CLEANUP
 
 
 async def test_async_operations():
     """Test async operations."""
     from src.core.breakthrough.context import ConstitutionalMambaHybrid
-    from src.core.breakthrough.integrations import ConstitutionalClassifier, GovernanceGraph, GovernanceState
+    from src.core.breakthrough.integrations import (
+        ConstitutionalClassifier,
+        GovernanceGraph,
+        GovernanceState,
+    )
 
     # Test Mamba processing
     processor = ConstitutionalMambaHybrid()
@@ -109,15 +113,15 @@ async def test_async_operations():
     result_state = await graph.invoke(state)
     assert result_state.audit_id is not None
 
-    print("✅ Async Operations - PASSED")
+    # print("✅ Async Operations - PASSED")  # DEBUG_CLEANUP
 
 
 def run_all_tests():
     """Run all tests."""
-    print("\n" + "=" * 70)
-    print("ACGS-2 BREAKTHROUGH ARCHITECTURE - COMPREHENSIVE TEST")
-    print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print("=" * 70 + "\n")
+    # print("\n" + "=" * 70)  # DEBUG_CLEANUP
+    # print("ACGS-2 BREAKTHROUGH ARCHITECTURE - COMPREHENSIVE TEST")  # DEBUG_CLEANUP
+    # print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")  # DEBUG_CLEANUP
+    # print("=" * 70 + "\n")  # DEBUG_CLEANUP
 
     tests = [
         test_layer1_context,
@@ -137,7 +141,7 @@ def run_all_tests():
             test()
             passed += 1
         except Exception as e:
-            print(f"❌ {test.__name__} FAILED: {e}")
+            # print(f"❌ {test.__name__} FAILED: {e}")  # DEBUG_CLEANUP
             failed += 1
 
     # Run async tests
@@ -145,12 +149,12 @@ def run_all_tests():
         asyncio.run(test_async_operations())
         passed += 1
     except Exception as e:
-        print(f"❌ test_async_operations FAILED: {e}")
+        # print(f"❌ test_async_operations FAILED: {e}")  # DEBUG_CLEANUP
         failed += 1
 
-    print("\n" + "=" * 70)
-    print(f"RESULTS: {passed} passed, {failed} failed")
-    print("=" * 70)
+    # print("\n" + "=" * 70)  # DEBUG_CLEANUP
+    # print(f"RESULTS: {passed} passed, {failed} failed")  # DEBUG_CLEANUP
+    # print("=" * 70)  # DEBUG_CLEANUP
 
     return failed == 0
 

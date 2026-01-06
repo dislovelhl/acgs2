@@ -9,7 +9,6 @@ import json
 from unittest.mock import AsyncMock
 
 import pytest
-
 from src.core.enhanced_agent_bus.runtime_security import (
     SecurityEvent,
     SecurityEventType,

@@ -19,7 +19,8 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -33,6 +34,7 @@ except ImportError:
 
 try:
     from .constitutional_classifier import ComplianceResult, get_constitutional_classifier
+    from .runtime_safety_guardrails import RuntimeSafetyGuardrails, RuntimeSafetyGuardrailsConfig
     from .security.tenant_validator import TenantValidator
     from .security_helpers import detect_prompt_injection
     from .validators import validate_constitutional_hash
@@ -40,7 +42,10 @@ except ImportError:
     # Fallback for standalone usage
     detect_prompt_injection = None  # type: ignore
     TenantValidator = None  # type: ignore
+    RuntimeSafetyGuardrails = None  # type: ignore
+    RuntimeSafetyGuardrailsConfig = None  # type: ignore
     from validators import validate_constitutional_hash  # type: ignore
+
     get_constitutional_classifier = None  # type: ignore
     ComplianceResult = None  # type: ignore
 
@@ -153,6 +158,7 @@ class RuntimeSecurityConfig:
     enable_anomaly_detection: bool = True
     enable_input_sanitization: bool = True
     enable_constitutional_classifier: bool = True
+    enable_runtime_guardrails: bool = True
 
     # Thresholds
     rate_limit_qps: int = 100
@@ -300,6 +306,11 @@ class RuntimeSecurityScanner:
             if self.config.enable_constitutional_classifier:
                 result.checks_performed.append("constitutional_classification")
                 await self._check_constitutional_compliance(result, content, tenant_id, agent_id)
+
+            # 9. Runtime Safety Guardrails (OWASP 6-layer protection)
+            if self.config.enable_runtime_guardrails and RuntimeSafetyGuardrails:
+                result.checks_performed.append("runtime_safety_guardrails")
+                await self._check_runtime_guardrails(result, content, context, tenant_id, agent_id)
 
         except Exception as e:
             logger.error(f"Security scan error: {e}")
@@ -552,23 +563,108 @@ class RuntimeSecurityScanner:
         if not classification.compliant:
             event = SecurityEvent(
                 event_type=SecurityEventType.CONSTITUTIONAL_VIOLATION,
-                severity=SecuritySeverity.HIGH if classification.confidence > 0.9 else SecuritySeverity.MEDIUM,
+                severity=SecuritySeverity.HIGH
+                if classification.confidence > 0.9
+                else SecuritySeverity.MEDIUM,
                 message=f"Constitutional violation detected: {classification.reason}",
                 tenant_id=tenant_id,
                 agent_id=agent_id,
                 metadata={
                     "confidence": classification.confidence,
                     "reason": classification.reason,
-                    "classifier_metadata": classification.metadata
+                    "classifier_metadata": classification.metadata,
                 },
             )
 
             # Block if confidence is high or reason is severe
             if classification.confidence > 0.9 or "pattern" in classification.reason:
-                result.add_blocking_event(event, f"Constitutional compliance check failed: {classification.reason}")
+                result.add_blocking_event(
+                    event, f"Constitutional compliance check failed: {classification.reason}"
+                )
             else:
                 result.add_event(event)
-                result.warnings.append(f"Constitutional compliance warning: {classification.reason}")
+                result.warnings.append(
+                    f"Constitutional compliance warning: {classification.reason}"
+                )
+
+    async def _check_runtime_guardrails(
+        self,
+        result: SecurityScanResult,
+        content: Any,
+        context: JSONDict,
+        tenant_id: Optional[str],
+        agent_id: Optional[str],
+    ) -> None:
+        """Check content through comprehensive OWASP-compliant runtime safety guardrails."""
+        if RuntimeSafetyGuardrails is None:
+            result.warnings.append("Runtime safety guardrails not available")
+            return
+
+        try:
+            # Initialize guardrails with default config
+            guardrails_config = RuntimeSafetyGuardrailsConfig()
+            guardrails = RuntimeSafetyGuardrails(guardrails_config)
+
+            # Prepare context for guardrails processing
+            processing_context = {
+                "trace_id": context.get("trace_id", f"security_scan_{id(result)}"),
+                "tenant_id": tenant_id,
+                "agent_id": agent_id,
+                "ip_address": context.get("ip_address"),
+                "user_id": context.get("user_id"),
+                "session_id": context.get("session_id"),
+                "api_key": context.get("api_key"),
+                **context,
+            }
+
+            # Process through all guardrail layers
+            guardrails_result = await guardrails.process_request(content, processing_context)
+
+            # Convert guardrails violations to security events
+            if guardrails_result.get("violations"):
+                for violation in guardrails_result["violations"]:
+                    severity_map = {
+                        "low": SecuritySeverity.LOW,
+                        "medium": SecuritySeverity.MEDIUM,
+                        "high": SecuritySeverity.HIGH,
+                        "critical": SecuritySeverity.CRITICAL,
+                    }
+
+                    event = SecurityEvent(
+                        event_type=SecurityEventType.INPUT_VIOLATION,
+                        severity=severity_map.get(
+                            violation.get("severity", "medium"), SecuritySeverity.MEDIUM
+                        ),
+                        message=violation.get("message", "Guardrail violation detected"),
+                        tenant_id=tenant_id,
+                        agent_id=agent_id,
+                        metadata={
+                            "layer": violation.get("layer"),
+                            "violation_type": violation.get("violation_type"),
+                            "trace_id": violation.get("trace_id"),
+                            "guardrails_result": guardrails_result,
+                        },
+                    )
+
+                    if guardrails_result.get("allowed", True) is False:
+                        result.add_blocking_event(
+                            event, f"Runtime guardrails blocked: {violation.get('message')}"
+                        )
+                    else:
+                        result.add_event(event)
+                        result.warnings.append(f"Guardrails warning: {violation.get('message')}")
+
+            # Log processing metrics
+            processing_time = guardrails_result.get("processing_time_ms", 0)
+            if processing_time > 100:  # Log slow guardrails processing
+                result.warnings.append(f"Guardrails processing slow: {processing_time}ms")
+
+        except Exception as e:
+            logger.error(f"Runtime guardrails check failed: {e}")
+            if self.config.fail_closed:
+                result.blocked = True
+                result.block_reason = f"Guardrails check failed: {str(e)}"
+                result.is_secure = False
 
     def _get_nested_depth(self, obj: Any, current_depth: int = 0) -> int:
         """Calculate nested depth of an object."""

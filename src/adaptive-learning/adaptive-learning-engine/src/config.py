@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Optional
 if TYPE_CHECKING:
     pass
 
-
 # Import centralized constitutional hash with fallback
 try:
     from src.core.shared.constants import CONSTITUTIONAL_HASH

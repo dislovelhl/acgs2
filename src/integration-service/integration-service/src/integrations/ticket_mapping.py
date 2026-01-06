@@ -21,12 +21,11 @@ from typing import Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ..types import ConfigDict as ConfigDictType
-from ..types import JSONDict, JSONValue
+from ..integration_types import ConfigDict as ConfigDictType
+from ..integration_types import JSONDict, JSONValue
 from .base import EventSeverity, IntegrationEvent
 
 logger = logging.getLogger(__name__)
-
 
 # ============================================================================
 # Enums
@@ -98,7 +97,6 @@ class PagerDutyUrgency(str, Enum):
 # Default Mappings
 # ============================================================================
 
-
 # Severity to Jira Priority mapping
 DEFAULT_JIRA_PRIORITY_MAP: Dict[EventSeverity, JiraPriority] = {
     EventSeverity.CRITICAL: JiraPriority.HIGHEST,
@@ -138,7 +136,6 @@ DEFAULT_PAGERDUTY_URGENCY_MAP: Dict[EventSeverity, PagerDutyUrgency] = {
     EventSeverity.INFO: PagerDutyUrgency.LOW,
 }
 
-
 # ============================================================================
 # Pydantic Models
 # ============================================================================
@@ -156,6 +153,9 @@ class FieldValidationRule(BaseModel):
     )
 
     model_config = ConfigDict(frozen=True)
+
+
+FieldValidationRule.model_rebuild()
 
 
 class FieldMapping(BaseModel):
@@ -229,6 +229,9 @@ class FieldMapping(BaseModel):
             if not self.conditions:
                 raise ValueError("conditions are required for CONDITIONAL mapping type")
         return self
+
+
+FieldMapping.model_rebuild()
 
 
 class SeverityMapping(BaseModel):
@@ -456,7 +459,6 @@ class FieldValidator:
 # Field Transformers
 # ============================================================================
 
-
 # Type for transform functions
 TransformFunc = Callable[[IntegrationEvent, Dict[str, JSONValue]], JSONValue]
 
@@ -516,7 +518,7 @@ def severity_to_servicenow_urgency(event: IntegrationEvent, params: Dict[str, JS
 
 
 @FieldTransformers.register("severity_to_pagerduty_urgency")
-def severity_to_pagerduty_urgency(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def severity_to_pagerduty_urgency(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Convert event severity to PagerDuty urgency value."""
     custom_map = params.get("mapping", {})
     if custom_map and event.severity.value in custom_map:
@@ -1191,7 +1193,7 @@ def create_pagerduty_mapping_config(
     source: str = "ACGS-2",
     client: Optional[str] = None,
     client_url: Optional[str] = None,
-    additional_fields: Optional[Dict[str, Any]] = None,
+    additional_fields: Optional[JSONDict] = None,
 ) -> TicketMappingConfig:
     """
     Create a default PagerDuty incident mapping configuration.

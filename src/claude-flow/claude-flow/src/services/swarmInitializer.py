@@ -112,15 +112,15 @@ async def initialize_swarm(
                         "conversations": f"swarm:{swarm_id}:conversations",
                         "tasks": f"swarm:{swarm_id}:tasks",
                         "patterns": f"swarm:{swarm_id}:patterns",
-                        "metrics": f"swarm:{swarm_id}:metrics"
+                        "metrics": f"swarm:{swarm_id}:metrics",
                     },
                     "capabilities": {
                         "agent_state_persistence": True,
                         "conversation_history": True,
                         "task_progress_tracking": True,
                         "pattern_learning": True,
-                        "cross_session_memory": True
-                    }
+                        "cross_session_memory": True,
+                    },
                 }
 
                 # Store memory structure
@@ -128,13 +128,18 @@ async def initialize_swarm(
 
                 # Initialize memory namespaces with empty collections
                 for namespace_name, namespace_key in memory_structure["namespaces"].items():
-                    await redis_client.set(f"{namespace_key}:index", json.dumps({
-                        "namespace": namespace_name,
-                        "swarm_id": swarm_id,
-                        "created_at": time.time(),
-                        "item_count": 0,
-                        "last_updated": time.time()
-                    }))
+                    await redis_client.set(
+                        f"{namespace_key}:index",
+                        json.dumps(
+                            {
+                                "namespace": namespace_name,
+                                "swarm_id": swarm_id,
+                                "created_at": time.time(),
+                                "item_count": 0,
+                                "last_updated": time.time(),
+                            }
+                        ),
+                    )
 
                 swarm_config["memory_backend"] = "redis"
                 swarm_config["memory_key"] = memory_key
@@ -144,18 +149,26 @@ async def initialize_swarm(
 
                 # Initialize memory service for immediate use
                 from swarmMemoryService import SwarmMemoryService
+
                 memory_service = SwarmMemoryService(swarm_id, redis_client)
 
                 # Store initial swarm state in memory
-                await memory_service.store_agent_state("coordinator", {
-                    "agent_id": swarm_config.get("coordinator_agent", f"coordinator-{swarm_id}"),
-                    "status": "active",
-                    "capabilities": ["coordination", "orchestration"],
-                    "last_seen": time.time()
-                })
+                await memory_service.store_agent_state(
+                    "coordinator",
+                    {
+                        "agent_id": swarm_config.get(
+                            "coordinator_agent", f"coordinator-{swarm_id}"
+                        ),
+                        "status": "active",
+                        "capabilities": ["coordination", "orchestration"],
+                        "last_seen": time.time(),
+                    },
+                )
 
                 swarm_config["memory_service_initialized"] = True
-                logger.info(f"Persistent memory fully initialized for swarm {swarm_id} with {len(memory_structure['namespaces'])} namespaces and memory service")
+                logger.info(
+                    f"Persistent memory fully initialized for swarm {swarm_id} with {len(memory_structure['namespaces'])} namespaces and memory service"
+                )
 
             except Exception as e:
                 log_warning(logger, f"Failed to initialize persistent memory: {e}")
@@ -196,9 +209,9 @@ async def initialize_swarm(
 
             except ImportError:
                 log_warning(logger, "GitHub client not available, using mock integration")
-                swarm_config["github_webhook_url"] = (
-                    f"https://api.acgs2.dev/webhooks/github/{swarm_id}"
-                )
+                swarm_config[
+                    "github_webhook_url"
+                ] = f"https://api.acgs2.dev/webhooks/github/{swarm_id}"
                 swarm_config["github_integration_active"] = False
                 swarm_config["github_mock_mode"] = True
 

@@ -5,7 +5,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import re
 from datetime import datetime, timezone
-from typing import Any, TypeVar, Optional
+from typing import Optional, TypeVar
 
 K = TypeVar("K")
 V = TypeVar("V")

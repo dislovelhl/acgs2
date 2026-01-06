@@ -31,12 +31,7 @@ Usage:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Any
-try:
-    from src.core.shared.types import JSONDict, JSONValue
-except ImportError:
-    JSONDict = Dict[str, Any]
-    JSONValue = Any
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +79,8 @@ class MappingResult:
         source: Source of the mappings ("database" or "default").
     """
 
-    roles: list[str]
-    unmapped_groups: list[str] = field(default_factory=list)
+    roles: List[str]
+    unmapped_groups: List[str] = field(default_factory=list)
     source: str = "default"
 
 
@@ -120,7 +115,7 @@ class RoleMapper:
 
         # Simple synchronous mapping (uses defaults)
         roles = mapper.map_groups(["admins", "engineering"], "okta")
-        print(roles)  # ["admin", "developer"]
+        logger.debug(roles)  # ["admin", "developer"]
 
         # Async mapping with database session
         roles = await mapper.map_groups_async(
@@ -297,9 +292,9 @@ class RoleMapper:
                 provider_id="provider-uuid",
                 session=db_session,
             )
-            print(result.roles)  # ["admin", "developer"]
-            print(result.unmapped_groups)  # []
-            print(result.source)  # "database"
+            logger.debug(result.roles)  # ["admin", "developer"]
+            logger.debug(result.unmapped_groups)  # []
+            logger.debug(result.source)  # "database"
         """
         if not groups:
             return MappingResult(roles=[], unmapped_groups=[], source="none")
@@ -392,7 +387,6 @@ class RoleMapper:
         """
         # Import here to avoid circular dependencies
         from sqlalchemy import select
-
         from src.core.shared.models.sso_role_mapping import SSORoleMapping
 
         stmt = (
@@ -518,7 +512,6 @@ class RoleMapper:
             True if mapping was deleted, False if not found.
         """
         from sqlalchemy import select
-
         from src.core.shared.models.sso_role_mapping import SSORoleMapping
 
         stmt = select(SSORoleMapping).where(SSORoleMapping.id == mapping_id)
@@ -544,7 +537,7 @@ class RoleMapper:
         self,
         provider_id: str,
         session: Any,
-    ) -> list[dict]:
+    ) -> List[Dict]:
         """Get all role mappings for a provider.
 
         Args:
@@ -555,7 +548,6 @@ class RoleMapper:
             List of mapping dictionaries.
         """
         from sqlalchemy import select
-
         from src.core.shared.models.sso_role_mapping import SSORoleMapping
 
         stmt = (

@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -45,7 +46,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class IntegrationConfig:
     """Configuration for Agent Bus integration."""
@@ -71,7 +71,6 @@ class IntegrationConfig:
             "message_timeout_seconds": self.message_timeout_seconds,
         }
 
-
 @dataclass
 class GovernanceDecision:
     """Result of governance evaluation."""
@@ -92,7 +91,6 @@ class GovernanceDecision:
             "constitutional_hash": self.constitutional_hash,
             "timestamp": self.timestamp.isoformat(),
         }
-
 
 class AgentBusIntegration:
     """
@@ -316,7 +314,6 @@ class AgentBusIntegration:
             except Exception as e:
                 logger.warning(f"Failed to send audit log: {e}")
         else:
-            logger.debug(f"Audit entry: {audit_entry}")
 
     async def send_message(
         self,
@@ -530,7 +527,6 @@ class AgentBusIntegration:
             except Exception as e:
                 logger.warning(f"Failed to record metering: {e}")
         else:
-            logger.debug(f"Meter event: {meter_event}")
 
     def register_message_handler(
         self,

@@ -71,10 +71,7 @@ class SSOSessionManager:
         elif config and config.session_secret_key:
             self._secret_key = config.session_secret_key
         else:
-            self._secret_key = os.getenv(
-                "SSO_SESSION_SECRET_KEY",
-                secrets.token_urlsafe(32)
-            )
+            self._secret_key = os.getenv("SSO_SESSION_SECRET_KEY", secrets.token_urlsafe(32))
 
         self.default_expiry_hours = default_expiry_hours
 
@@ -128,10 +125,7 @@ class SSOSessionManager:
             },
         )
 
-        logger.info(
-            f"Created SSO session: {session.session_id[:8]}... "
-            f"for user {internal_user_id}"
-        )
+        logger.info(f"Created SSO session: {session.session_id[:8]}... for user {internal_user_id}")
 
         return session
 
@@ -204,7 +198,6 @@ class SSOSessionManager:
             return session
 
         except jwt.ExpiredSignatureError:
-            logger.debug("Session token expired")
             return None
         except jwt.InvalidTokenError as e:
             logger.warning(f"Invalid session token: {e}")
@@ -271,7 +264,6 @@ class SSOSessionManager:
             metadata=session.metadata,
         )
 
-        logger.debug(f"Refreshed session: {session.session_id[:8]}...")
         return refreshed
 
     def get_session_info(self, session: SSOSession) -> Dict[str, Any]:

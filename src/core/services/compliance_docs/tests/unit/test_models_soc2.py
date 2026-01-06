@@ -5,7 +5,7 @@ Unit tests for SOC 2 compliance models
 from datetime import date
 
 import pytest
-from src.models.soc2 import (
+from src.core.services.compliance_docs.src.models.soc2 import (
     SOC2ComplianceReport,
     SOC2ControlMapping,
     SOC2Evidence,
@@ -27,7 +27,7 @@ class TestSOC2Models:
             evidence_sources=["audit_logs", "policy_evaluations"],
             testing_frequency="Quarterly",
             last_tested=date(2024, 12, 31),
-            test_results="Passed"
+            test_results="Passed",
         )
 
         assert control.control_id == "CC1.1"
@@ -43,7 +43,7 @@ class TestSOC2Models:
             criteria=SOC2TrustServiceCriteria.SECURITY,
             period_start=date(2024, 1, 1),
             period_end=date(2024, 12, 31),
-            controls=[]
+            controls=[],
         )
 
         assert evidence.criteria == SOC2TrustServiceCriteria.SECURITY
@@ -57,7 +57,7 @@ class TestSOC2Models:
                 criteria=SOC2TrustServiceCriteria.SECURITY,
                 period_start=date(2024, 12, 31),
                 period_end=date(2024, 1, 1),  # End before start
-                controls=[]
+                controls=[],
             )
 
     def test_soc2_compliance_report_creation(self):
@@ -68,19 +68,19 @@ class TestSOC2Models:
                 "report_period": "January 1, 2024 - December 31, 2024",
                 "auditor_name": "Independent Auditor",
                 "criteria_covered": [SOC2TrustServiceCriteria.SECURITY],
-                "report_date": date(2024, 12, 31)
+                "report_date": date(2024, 12, 31),
             },
             evidence=SOC2Evidence(
                 criteria=SOC2TrustServiceCriteria.SECURITY,
                 period_start=date(2024, 1, 1),
                 period_end=date(2024, 12, 31),
-                controls=[]
+                controls=[],
             ),
             executive_summary="All SOC 2 controls are effectively implemented",
             control_effectiveness={"CC1.1": "Effective"},
-            recommendations=[]
+            recommendations=[],
         )
 
-        assert report.metadata["organization_name"] == "ACGS-2 Platform"
+        assert report.metadata.organization_name == "ACGS-2 Platform"
         assert report.executive_summary == "All SOC 2 controls are effectively implemented"
         assert len(report.control_effectiveness) == 1

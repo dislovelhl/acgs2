@@ -43,9 +43,7 @@ class TemplateListResponse(BaseModel):
     """Response model for template listing."""
 
     framework: str = Field(..., description="Compliance framework")
-    framework_display_name: str = Field(
-        ..., description="Human-readable framework name"
-    )
+    framework_display_name: str = Field(..., description="Human-readable framework name")
     total_templates: int = Field(..., description="Total number of templates")
     templates: list[TemplateInfo] = Field(..., description="List of available templates")
     retrieved_at: str = Field(..., description="Timestamp of the request")
@@ -159,9 +157,7 @@ def _get_template_info(template_path: str, framework: str) -> TemplateInfo:
     return TemplateInfo(
         name=template_name,
         display_name=metadata.get("display_name", base_name),
-        description=metadata.get(
-            "description", f"Compliance template for {framework.upper()}"
-        ),
+        description=metadata.get("description", f"Compliance template for {framework.upper()}"),
         framework=framework,
         supported_formats=metadata.get("supported_formats", ["pdf", "docx"]),
         version=metadata.get("version", "1.0.0"),
@@ -232,7 +228,7 @@ async def list_framework_templates(
         raise HTTPException(
             status_code=500,
             detail="Failed to list templates. Please try again later.",
-        )
+        ) from e
 
 
 @router.get("", response_model=AllTemplatesResponse)
@@ -256,15 +252,12 @@ async def list_all_templates() -> AllTemplatesResponse:
             templates = list_templates(framework=framework)
 
             template_list = [
-                _get_template_info(template_path, framework)
-                for template_path in sorted(templates)
+                _get_template_info(template_path, framework) for template_path in sorted(templates)
             ]
 
             frameworks_data[framework] = TemplateListResponse(
                 framework=framework,
-                framework_display_name=FRAMEWORK_DISPLAY_NAMES.get(
-                    framework, framework.upper()
-                ),
+                framework_display_name=FRAMEWORK_DISPLAY_NAMES.get(framework, framework.upper()),
                 total_templates=len(template_list),
                 templates=template_list,
                 retrieved_at=datetime.now(timezone.utc).isoformat(),
@@ -283,7 +276,7 @@ async def list_all_templates() -> AllTemplatesResponse:
         raise HTTPException(
             status_code=500,
             detail="Failed to list templates. Please try again later.",
-        )
+        ) from e
 
 
 @router.get("/{framework}/{template_name}")

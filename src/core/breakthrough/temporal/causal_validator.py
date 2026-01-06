@@ -40,17 +40,21 @@ class CausalChainValidator:
             cause = self.timeline.get_event(cause_id)
 
             if cause is None:
-                issues.append({
-                    "type": "missing_cause",
-                    "cause_id": cause_id,
-                    "message": f"Cause event {cause_id} not found"
-                })
+                issues.append(
+                    {
+                        "type": "missing_cause",
+                        "cause_id": cause_id,
+                        "message": f"Cause event {cause_id} not found",
+                    }
+                )
             elif cause.timestamp >= event.timestamp:
-                issues.append({
-                    "type": "temporal_violation",
-                    "cause_id": cause_id,
-                    "message": f"Cause at {cause.timestamp} >= effect at {event.timestamp}"
-                })
+                issues.append(
+                    {
+                        "type": "temporal_violation",
+                        "cause_id": cause_id,
+                        "message": f"Cause at {cause.timestamp} >= effect at {event.timestamp}",
+                    }
+                )
 
         return {
             "event_id": event.event_id,

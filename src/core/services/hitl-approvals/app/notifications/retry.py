@@ -200,7 +200,9 @@ def calculate_backoff_delay(
     delay = config.base_delay_seconds * (config.exponential_base ** (attempt - 1))
 
     # Apply jitter (random factor to prevent thundering herd)
-    jitter = delay * config.jitter_factor * random.random()
+    import secrets
+
+    jitter = delay * config.jitter_factor * secrets.SystemRandom().random()
     delay = delay + jitter
 
     # Cap at max delay

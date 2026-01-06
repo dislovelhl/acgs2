@@ -42,7 +42,7 @@ class RedTeamSimulator:
         return "allow"
 
     def run_experiment(self, iterations: int = 1):
-        print(f"Starting Experiment: {self.experiment_id}")
+        # print(f"Starting Experiment: {self.experiment_id}")  # DEBUG_CLEANUP
         for _i in range(iterations):
             for task in self.tasks:
                 start_time = time.time()
@@ -57,7 +57,7 @@ class RedTeamSimulator:
                     task_id=task["id"], task_type=task["type"], action=action, latency_ms=latency_ms
                 )
 
-        print(f"Experiment {self.experiment_id} completed.")
+        # print(f"Experiment {self.experiment_id} completed.")  # DEBUG_CLEANUP
         return self.ledger
 
 
@@ -79,4 +79,4 @@ if __name__ == "__main__":
     with open(export_path, "r") as f:
         logs = json.load(f)
     evaluator = GovernanceEvaluator(logs)
-    print(evaluator.generate_summary())
+    # print(evaluator.generate_summary())  # DEBUG_CLEANUP

@@ -75,4 +75,4 @@ if __name__ == "__main__":
         },  # Miss
     ]
     evaluator = GovernanceEvaluator(sample_logs)
-    print(evaluator.generate_summary())
+    # print(evaluator.generate_summary())  # DEBUG_CLEANUP

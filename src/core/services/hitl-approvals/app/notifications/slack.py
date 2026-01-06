@@ -137,8 +137,7 @@ class SlackProvider(NotificationProvider):
                     {
                         "type": "mrkdwn",
                         "text": (
-                            f"*Request ID:* `{payload.request_id}` | "
-                            f"*Priority:* {priority_text}"
+                            f"*Request ID:* `{payload.request_id}` | *Priority:* {priority_text}"
                         ),
                     }
                 ],
@@ -195,7 +194,7 @@ class SlackProvider(NotificationProvider):
 
             if elapsed < SLACK_RATE_LIMIT_SECONDS:
                 wait_time = SLACK_RATE_LIMIT_SECONDS - elapsed
-                logger.debug(f"Slack rate limit: waiting {wait_time:.2f}s")
+
                 await asyncio.sleep(wait_time)
 
             self._last_send_time = time.monotonic()

@@ -4,7 +4,7 @@ Tests for ML Governance API endpoints
 
 import pytest
 from fastapi.testclient import TestClient
-from src.main import app
+from src.core.services.ml_governance.src.main import app
 
 
 @pytest.fixture
@@ -53,12 +53,8 @@ class TestMLGovernanceAPI:
         """Test successful governance prediction"""
         request_data = {
             "content": "This is a helpful message about Python programming",
-            "context": {
-                "intent_class": "helpful",
-                "intent_confidence": 0.9,
-                "toxicity_score": 0.1
-            },
-            "user_id": "test_user"
+            "context": {"intent_class": "helpful", "intent_confidence": 0.9, "toxicity_score": 0.1},
+            "user_id": "test_user",
         }
 
         response = test_client.post("/api/v1/governance/predict", json=request_data)
@@ -74,9 +70,7 @@ class TestMLGovernanceAPI:
 
     def test_predict_governance_minimal(self, test_client: TestClient):
         """Test governance prediction with minimal data"""
-        request_data = {
-            "content": "Hello world"
-        }
+        request_data = {"content": "Hello world"}
 
         response = test_client.post("/api/v1/governance/predict", json=request_data)
 
@@ -93,7 +87,7 @@ class TestMLGovernanceAPI:
             "request_id": "test-request-123",
             "feedback_type": "correct",
             "rationale": "This was the right decision",
-            "severity": "medium"
+            "severity": "medium",
         }
 
         response = test_client.post("/api/v1/feedback/submit", json=feedback_data)

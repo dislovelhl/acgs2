@@ -439,20 +439,20 @@ def run_standalone_tests():
     """Run tests standalone without pytest for quick verification."""
     client = TestClient(app)
 
-    print("=" * 70)
-    print("E2E Test: Organization-Private Templates Access Control")
-    print("=" * 70)
-    print(f"\nOrg A: {ORG_A_ID}")
-    print(f"Org B: {ORG_B_ID}")
+    # print("=" * 70)  # DEBUG_CLEANUP
+    # print("E2E Test: Organization-Private Templates Access Control")  # DEBUG_CLEANUP
+    # print("=" * 70)  # DEBUG_CLEANUP
+    # print(f"\nOrg A: {ORG_A_ID}")  # DEBUG_CLEANUP
+    # print(f"Org B: {ORG_B_ID}")  # DEBUG_CLEANUP
 
     # Test 1: Health check
-    print("\n[1/10] Checking API health...")
+    # print("\n[1/10] Checking API health...")  # DEBUG_CLEANUP
     resp = client.get("/health/ready")
     assert resp.status_code == 200, f"Health check failed: {resp.text}"
-    print("       API is healthy")
+    # print("       API is healthy")  # DEBUG_CLEANUP
 
     # Test 2: Create private template for Org A
-    print("\n[2/10] Creating private template for Org A...")
+    # print("\n[2/10] Creating private template for Org A...")  # DEBUG_CLEANUP
     file_content = json.dumps(PRIVATE_TEMPLATE_CONTENT, indent=2)
     files = {"file": ("org_a_private.json", io.BytesIO(file_content.encode()), "application/json")}
     data = {
@@ -469,73 +469,73 @@ def run_standalone_tests():
     template_id = resp.json()["id"]
     assert resp.json()["is_public"] is False
     assert resp.json()["organization_id"] == ORG_A_ID
-    print(f"       Private template created with ID: {template_id}")
+    # print(f"       Private template created with ID: {template_id}")  # DEBUG_CLEANUP
 
     # Test 3: Org A user can GET template
-    print("\n[3/10] Verifying Org A user can GET template...")
+    # print("\n[3/10] Verifying Org A user can GET template...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}", headers=get_org_a_headers())
     assert resp.status_code == 200, f"Org A should access template: {resp.text}"
-    print("       PASS: Org A user can access template")
+    # print("       PASS: Org A user can access template")  # DEBUG_CLEANUP
 
     # Test 4: Org A user can see template in list
-    print("\n[4/10] Verifying Org A user sees template in listing...")
+    # print("\n[4/10] Verifying Org A user sees template in listing...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/templates", headers=get_org_a_headers())
     assert resp.status_code == 200
     template_ids = [item["id"] for item in resp.json()["items"]]
     assert template_id in template_ids, f"Template not in list: {template_ids}"
-    print("       PASS: Template visible in Org A user's list")
+    # print("       PASS: Template visible in Org A user's list")  # DEBUG_CLEANUP
 
     # Test 5: Org B user gets 404 on GET
-    print("\n[5/10] Verifying Org B user gets 404 on GET...")
+    # print("\n[5/10] Verifying Org B user gets 404 on GET...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}", headers=get_org_b_headers())
     assert resp.status_code == 404, f"Expected 404, got {resp.status_code}"
     assert resp.json()["detail"] == "Template not found"
-    print("       PASS: Org B user gets 404 (no info disclosure)")
+    # print("       PASS: Org B user gets 404 (no info disclosure)")  # DEBUG_CLEANUP
 
     # Test 6: Org B user cannot see template in list
-    print("\n[6/10] Verifying Org B user cannot see template in listing...")
+    # print("\n[6/10] Verifying Org B user cannot see template in listing...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/templates", headers=get_org_b_headers())
     assert resp.status_code == 200
     template_ids = [item["id"] for item in resp.json()["items"]]
     assert template_id not in template_ids, "Template should NOT be in list"
-    print("       PASS: Template NOT visible in Org B user's list")
+    # print("       PASS: Template NOT visible in Org B user's list")  # DEBUG_CLEANUP
 
     # Test 7: Unauthenticated gets 404 on GET
-    print("\n[7/10] Verifying unauthenticated user gets 404 on GET...")
+    # print("\n[7/10] Verifying unauthenticated user gets 404 on GET...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}", headers=get_no_auth_headers())
     assert resp.status_code == 404, f"Expected 404, got {resp.status_code}"
-    print("       PASS: Unauthenticated user gets 404")
+    # print("       PASS: Unauthenticated user gets 404")  # DEBUG_CLEANUP
 
     # Test 8: Unauthenticated cannot see template in list
-    print("\n[8/10] Verifying unauthenticated user cannot see template in listing...")
+    # print("\n[8/10] Verifying unauthenticated user cannot see template in listing...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/templates", headers=get_no_auth_headers())
     assert resp.status_code == 200
     template_ids = [item["id"] for item in resp.json()["items"]]
     assert template_id not in template_ids
-    print("       PASS: Template NOT visible in unauthenticated list")
+    # print("       PASS: Template NOT visible in unauthenticated list")  # DEBUG_CLEANUP
 
     # Test 9: Org B gets 404 on download
-    print("\n[9/10] Verifying Org B user gets 404 on download...")
+    # print("\n[9/10] Verifying Org B user gets 404 on download...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}/download", headers=get_org_b_headers())
     assert resp.status_code == 404, f"Expected 404, got {resp.status_code}"
-    print("       PASS: Org B user gets 404 on download attempt")
+    # print("       PASS: Org B user gets 404 on download attempt")  # DEBUG_CLEANUP
 
     # Test 10: Admin can access all templates
-    print("\n[10/10] Verifying admin can access private template...")
+    # print("\n[10/10] Verifying admin can access private template...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}", headers=get_admin_headers())
     assert resp.status_code == 200, f"Admin should access template: {resp.text}"
-    print("       PASS: Admin can access private template")
+    # print("       PASS: Admin can access private template")  # DEBUG_CLEANUP
 
-    print("\n" + "=" * 70)
-    print("ALL E2E ORGANIZATION-PRIVATE ACCESS CONTROL TESTS PASSED!")
-    print("=" * 70)
-    print("\nSummary:")
-    print("  - Private template created for Org A")
-    print("  - Org A user: Can GET, list, and download template")
-    print("  - Org B user: Gets 404 on GET, list excludes template, 404 on download")
-    print("  - Unauthenticated: Gets 404 on GET, list excludes template")
-    print("  - Admin: Can access all private templates")
-    print("  - 404 (not 403) returned for unauthorized access (no info disclosure)")
+    # print("\n" + "=" * 70)  # DEBUG_CLEANUP
+    # print("ALL E2E ORGANIZATION-PRIVATE ACCESS CONTROL TESTS PASSED!")  # DEBUG_CLEANUP
+    # print("=" * 70)  # DEBUG_CLEANUP
+    # print("\nSummary:")  # DEBUG_CLEANUP
+    # print("  - Private template created for Org A")  # DEBUG_CLEANUP
+    # print("  - Org A user: Can GET, list, and download template")  # DEBUG_CLEANUP
+    # print("  - Org B user: Gets 404 on GET, list excludes template, 404 on download")  # DEBUG_CLEANUP
+    # print("  - Unauthenticated: Gets 404 on GET, list excludes template")  # DEBUG_CLEANUP
+    # print("  - Admin: Can access all private templates")  # DEBUG_CLEANUP
+    # print("  - 404 (not 403) returned for unauthorized access (no info disclosure)")  # DEBUG_CLEANUP
 
     return True
 
@@ -545,10 +545,10 @@ if __name__ == "__main__":
         success = run_standalone_tests()
         sys.exit(0 if success else 1)
     except AssertionError as e:
-        print(f"\nTEST FAILED: {e}")
+        # print(f"\nTEST FAILED: {e}")  # DEBUG_CLEANUP
         sys.exit(1)
     except Exception as e:
-        print(f"\nERROR: {e}")
+        # print(f"\nERROR: {e}")  # DEBUG_CLEANUP
         import traceback
 
         traceback.print_exc()

@@ -64,6 +64,7 @@ class GitLabSyncError(Exception):
 
 class GitLabAuthenticationError(GitLabSyncError):
     """Raised when GitLab authentication fails."""
+
     pass
 
 
@@ -82,6 +83,7 @@ class GitLabRateLimitError(GitLabSyncError):
 
 class GitLabNotFoundError(GitLabSyncError):
     """Raised when a GitLab resource is not found."""
+
     pass
 
 
@@ -162,7 +164,6 @@ class GitLabSyncManager:
             GitLabAuthenticationError: If GitLab authentication fails
         """
         if self._initialized:
-            logger.debug("GitLab sync manager already initialized")
             return
 
         logger.info("Initializing GitLab sync manager")
@@ -198,6 +199,7 @@ class GitLabSyncManager:
             if self._owns_linear_client:
                 if self.linear_client is None:
                     from .client import LinearClient
+
                     self.linear_client = LinearClient()
                 await self.linear_client.initialize()
 
@@ -268,7 +270,7 @@ class GitLabSyncManager:
 
         try:
             project = self._gitlab_client.projects.get(project_id)
-            logger.debug(f"Retrieved GitLab project: {project_id}")
+
             return project
 
         except GitlabGetError as e:
@@ -330,9 +332,7 @@ class GitLabSyncManager:
         """
         self._ensure_initialized()
 
-        logger.info(
-            f"Syncing Linear issue {linear_issue_id} to GitLab {project_id}"
-        )
+        logger.info(f"Syncing Linear issue {linear_issue_id} to GitLab {project_id}")
 
         try:
             # Get Linear issue
@@ -351,8 +351,7 @@ class GitLabSyncManager:
 
             if not should_process:
                 logger.info(
-                    f"Skipping Linear→GitLab sync for {linear_issue_id} "
-                    "(duplicate or loop)"
+                    f"Skipping Linear→GitLab sync for {linear_issue_id} (duplicate or loop)"
                 )
                 return None
 
@@ -364,9 +363,7 @@ class GitLabSyncManager:
             )
 
             if not should_apply:
-                logger.info(
-                    f"Skipping Linear→GitLab sync for {linear_issue_id} (older update)"
-                )
+                logger.info(f"Skipping Linear→GitLab sync for {linear_issue_id} (older update)")
                 await self._dedup_manager.mark_processed(
                     event_id=event_id,
                     source=SYNC_SOURCE_LINEAR,
@@ -511,20 +508,19 @@ class GitLabSyncManager:
             description = self._build_gitlab_issue_description(linear_issue)
 
             # Extract labels
-            labels = [
-                label["name"]
-                for label in linear_issue.get("labels", {}).get("nodes", [])
-            ]
+            labels = [label["name"] for label in linear_issue.get("labels", {}).get("nodes", [])]
 
             # Add Linear sync label
             labels.append("linear-sync")
 
             # Create issue
-            gitlab_issue = project.issues.create({
-                "title": linear_issue["title"],
-                "description": description,
-                "labels": ",".join(labels) if labels else None,
-            })
+            gitlab_issue = project.issues.create(
+                {
+                    "title": linear_issue["title"],
+                    "description": description,
+                    "labels": ",".join(labels) if labels else None,
+                }
+            )
 
             logger.info(
                 f"Created GitLab issue !{gitlab_issue.iid} from Linear "
@@ -584,8 +580,7 @@ class GitLabSyncManager:
             gitlab_issue.save()
 
             logger.info(
-                f"Updated GitLab issue !{issue_iid} from Linear "
-                f"{linear_issue.get('identifier')}"
+                f"Updated GitLab issue !{issue_iid} from Linear {linear_issue.get('identifier')}"
             )
 
             return gitlab_issue
@@ -676,9 +671,7 @@ class GitLabSyncManager:
         """
         self._ensure_initialized()
 
-        logger.info(
-            f"Syncing GitLab {project_id}!{gitlab_issue_iid} to Linear"
-        )
+        logger.info(f"Syncing GitLab {project_id}!{gitlab_issue_iid} to Linear")
 
         try:
             # Get GitLab project and issue
@@ -686,15 +679,10 @@ class GitLabSyncManager:
             gitlab_issue = project.issues.get(gitlab_issue_iid)
 
             # Generate event ID for deduplication
-            event_id = (
-                f"gitlab-to-linear:{project_id}!{gitlab_issue_iid}:"
-                f"{gitlab_issue.updated_at}"
-            )
+            event_id = f"gitlab-to-linear:{project_id}!{gitlab_issue_iid}:{gitlab_issue.updated_at}"
 
             # Use stable issue ID for deduplication (Linear ID if available, else GitLab ID)
-            dedup_issue_id = (
-                linear_issue_id or f"gitlab:{project_id}!{gitlab_issue_iid}"
-            )
+            dedup_issue_id = linear_issue_id or f"gitlab:{project_id}!{gitlab_issue_iid}"
 
             # Check if we should process this event
             should_process = await self._dedup_manager.should_process_event(
@@ -713,9 +701,7 @@ class GitLabSyncManager:
 
             # Check conflict resolution
             # Parse GitLab updated_at (ISO format string)
-            updated_at = datetime.fromisoformat(
-                gitlab_issue.updated_at.replace('Z', '+00:00')
-            )
+            updated_at = datetime.fromisoformat(gitlab_issue.updated_at.replace("Z", "+00:00"))
 
             should_apply = await self._conflict_manager.should_apply_update(
                 issue_id=dedup_issue_id,
@@ -863,8 +849,7 @@ class GitLabSyncManager:
         """
         # Update Linear issue
         description = (
-            f"{gitlab_issue.description or ''}\n\n---\n"
-            f"🔗 **GitLab:** {gitlab_issue.web_url}"
+            f"{gitlab_issue.description or ''}\n\n---\n🔗 **GitLab:** {gitlab_issue.web_url}"
         )
         linear_issue = await self.linear_client.update_issue(
             issue_id=linear_issue_id,
@@ -873,8 +858,7 @@ class GitLabSyncManager:
         )
 
         logger.info(
-            f"Updated Linear issue {linear_issue.get('identifier')} from GitLab "
-            f"!{gitlab_issue.iid}"
+            f"Updated Linear issue {linear_issue.get('identifier')} from GitLab !{gitlab_issue.iid}"
         )
 
         return linear_issue
@@ -922,8 +906,7 @@ class GitLabSyncManager:
             # Build comment body with attribution
             if gitlab_comment_author:
                 comment_body = (
-                    f"**{gitlab_comment_author}** commented on GitLab:\n\n"
-                    f"{gitlab_comment_body}"
+                    f"**{gitlab_comment_author}** commented on GitLab:\n\n{gitlab_comment_body}"
                 )
             else:
                 comment_body = f"Comment from GitLab:\n\n{gitlab_comment_body}"
@@ -982,8 +965,7 @@ class GitLabSyncManager:
             # Build comment with attribution
             if linear_comment_user:
                 comment_body = (
-                    f"**{linear_comment_user}** commented on Linear:\n\n"
-                    f"{linear_comment_body}"
+                    f"**{linear_comment_user}** commented on Linear:\n\n{linear_comment_body}"
                 )
             else:
                 comment_body = f"Comment from Linear:\n\n{linear_comment_body}"

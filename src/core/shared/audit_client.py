@@ -5,7 +5,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import logging
 from dataclasses import asdict
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -27,7 +28,9 @@ class AuditClient:
         self.service_url = service_url
         self.client = httpx.AsyncClient(timeout=5.0)
 
-    async def report_validation(self, validation_result: Union[JSONDict, Any]) -> Optional[str]:
+    async def report_validation(
+        self, validation_result: Union[JSONDict, JSONValue, Any]
+    ) -> Optional[str]:
         """
         Reports a single validation result to the audit ledger.
         Returns the entry hash if successful.
@@ -44,14 +47,12 @@ class AuditClient:
                 else:
                     data = validation_result
 
-            logger.debug(f"Audit validation prepared for: {data.get('constitutional_hash')}")
-
             # Make actual HTTP request to audit service
             try:
                 response = await self.client.post(
                     f"{self.service_url}/record",
                     json=data,
-                    headers={"Content-Type": "application/json"}
+                    headers={"Content-Type": "application/json"},
                 )
 
                 if response.status_code == 200:
@@ -60,21 +61,27 @@ class AuditClient:
                     logger.info(f"Validation recorded with hash: {entry_hash}")
                     return entry_hash
                 else:
-                    logger.warning(f"Audit service returned error: {response.status_code} - {response.text}")
+                    logger.warning(
+                        f"Audit service returned error: {response.status_code} - {response.text}"
+                    )
                     # Fall back to simulated hash for backwards compatibility
-                    logger.warning("Falling back to simulated validation hash due to audit service error")
+                    logger.warning(
+                        "Falling back to simulated validation hash due to audit service error"
+                    )
                     return f"simulated_{hash(str(data)) % 1000000:06x}"
             except Exception as conn_error:
                 logger.warning(f"Audit service connection failed: {conn_error}")
                 # Fall back to simulated hash when service is unavailable
-                logger.warning("Falling back to simulated validation hash due to connection failure")
+                logger.warning(
+                    "Falling back to simulated validation hash due to connection failure"
+                )
                 return f"simulated_{hash(str(data)) % 1000000:06x}"
 
         except Exception as e:
             logger.error(f"Failed to report validation to audit service: {e}")
             return None
 
-    async def report_decision(self, decision_log: Union[JSONDict, Any]) -> Optional[str]:
+    async def report_decision(self, decision_log: Union[JSONDict, JSONValue, Any]) -> Optional[str]:
         """
         Reports a structured decision log for compliance reporting.
         """
@@ -98,7 +105,7 @@ class AuditClient:
                 response = await self.client.post(
                     f"{self.service_url}/record",
                     json=data,
-                    headers={"Content-Type": "application/json"}
+                    headers={"Content-Type": "application/json"},
                 )
 
                 if response.status_code == 200:
@@ -107,9 +114,13 @@ class AuditClient:
                     logger.info(f"Decision recorded with hash: {entry_hash}")
                     return entry_hash
                 else:
-                    logger.warning(f"Audit service returned error: {response.status_code} - {response.text}")
+                    logger.warning(
+                        f"Audit service returned error: {response.status_code} - {response.text}"
+                    )
                     # Fall back to simulated hash for backwards compatibility
-                    logger.warning("Falling back to simulated decision hash due to audit service error")
+                    logger.warning(
+                        "Falling back to simulated decision hash due to audit service error"
+                    )
                     return f"simulated_{hash(str(data)) % 1000000:06x}"
             except Exception as conn_error:
                 logger.warning(f"Audit service connection failed: {conn_error}")

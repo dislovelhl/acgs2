@@ -42,14 +42,12 @@ __all__ = [
     "ConstitutionalAgent",
     "Branch",
     "DecisionType",
-
     # SagaLLM Transactions
     "SagaLLMOrchestrator",
     "TransactionCoordinator",
     "ConstitutionalOperationFactory",
     "SagaTransaction",
     "TransactionState",
-
     # Z3 SMT Verification
     "ConstitutionalVerifier",
     "Z3PolicyVerifier",

@@ -50,7 +50,7 @@ class TestApprovalAPI:
         assert data["service"] == "hitl-approvals-service"
         assert "api" in data["endpoints"]
 
-    @patch('src.api.approvals.approval_engine')
+    @patch("src.api.approvals.approval_engine")
     def test_create_approval_request_success(self, mock_engine, test_client: TestClient):
         """Test successful approval request creation"""
         mock_engine.create_approval_request = AsyncMock(return_value="test-request-id")
@@ -61,7 +61,7 @@ class TestApprovalAPI:
             "description": "Test approval request",
             "requester_id": "user123",
             "priority": "high",
-            "context": {"test": "data"}
+            "context": {"test": "data"},
         }
 
         response = test_client.post("/api/v1/approvals/", json=request_data)
@@ -71,7 +71,7 @@ class TestApprovalAPI:
         assert data["request_id"] == "test-request-id"
         assert data["status"] == "created"
 
-    @patch('src.api.approvals.approval_engine')
+    @patch("src.api.approvals.approval_engine")
     def test_create_approval_request_failure(self, mock_engine, test_client: TestClient):
         """Test approval request creation failure"""
         mock_engine.create_approval_request = AsyncMock(return_value=None)
@@ -80,7 +80,7 @@ class TestApprovalAPI:
             "chain_id": "invalid-chain",
             "title": "Test Approval",
             "description": "Test approval request",
-            "requester_id": "user123"
+            "requester_id": "user123",
         }
 
         response = test_client.post("/api/v1/approvals/", json=request_data)
@@ -89,7 +89,7 @@ class TestApprovalAPI:
         data = response.json()
         assert "Could not create approval request" in data["detail"]
 
-    @patch('src.api.approvals.approval_engine')
+    @patch("src.api.approvals.approval_engine")
     def test_approve_request_success(self, mock_engine, test_client: TestClient):
         """Test successful approval submission"""
         mock_engine.approve_request = AsyncMock(return_value=True)
@@ -97,7 +97,7 @@ class TestApprovalAPI:
         approval_data = {
             "approver_id": "approver123",
             "decision": "approved",
-            "rationale": "Looks good to me"
+            "rationale": "Looks good to me",
         }
 
         response = test_client.post("/api/v1/approvals/test-request-id/approve", json=approval_data)
@@ -107,15 +107,12 @@ class TestApprovalAPI:
         assert data["request_id"] == "test-request-id"
         assert data["status"] == "decision_recorded"
 
-    @patch('src.api.approvals.approval_engine')
+    @patch("src.api.approvals.approval_engine")
     def test_approve_request_failure(self, mock_engine, test_client: TestClient):
         """Test approval submission failure"""
         mock_engine.approve_request = AsyncMock(return_value=False)
 
-        approval_data = {
-            "approver_id": "approver123",
-            "decision": "approved"
-        }
+        approval_data = {"approver_id": "approver123", "decision": "approved"}
 
         response = test_client.post("/api/v1/approvals/test-request-id/approve", json=approval_data)
 
@@ -123,7 +120,7 @@ class TestApprovalAPI:
         data = response.json()
         assert "Could not submit approval decision" in data["detail"]
 
-    @patch('src.api.approvals.approval_engine')
+    @patch("src.api.approvals.approval_engine")
     def test_get_request_status_success(self, mock_engine, test_client: TestClient):
         """Test successful status retrieval"""
         mock_status = {
@@ -131,7 +128,7 @@ class TestApprovalAPI:
             "chain": {"id": "test-chain", "name": "Test Chain"},
             "current_step": {"name": "Review", "approvers": ["user1"]},
             "time_remaining_minutes": 30,
-            "can_approve": False
+            "can_approve": False,
         }
         mock_engine.get_request_status = AsyncMock(return_value=mock_status)
 
@@ -142,7 +139,7 @@ class TestApprovalAPI:
         assert data["request"]["id"] == "test-request"
         assert data["chain"]["name"] == "Test Chain"
 
-    @patch('src.api.approvals.approval_engine')
+    @patch("src.api.approvals.approval_engine")
     def test_get_request_status_not_found(self, mock_engine, test_client: TestClient):
         """Test status retrieval for non-existent request"""
         mock_engine.get_request_status = AsyncMock(return_value=None)

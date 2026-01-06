@@ -10,7 +10,6 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -27,7 +26,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class PolicyDecision:
     """Represents a policy decision result."""
@@ -36,7 +34,6 @@ class PolicyDecision:
     reason: str
     metadata: Dict[str, Any] = field(default_factory=dict)
     execution_time_ms: float = 0.0
-
 
 @dataclass
 class ComparisonResult:
@@ -49,7 +46,6 @@ class ComparisonResult:
     difference_type: Optional[str] = None  # "allow_deny", "metadata", "performance"
     impact_score: float = 0.0  # 0.0 = no impact, 1.0 = critical difference
     details: Dict[str, Any] = field(default_factory=dict)
-
 
 class ShadowModeExecutor:
     """
@@ -280,9 +276,7 @@ class ShadowModeExecutor:
         )
 
         # Find critical differences
-        critical_differences = [
-            r for r in self.comparison_results if r.impact_score >= 0.8
-        ]
+        critical_differences = [r for r in self.comparison_results if r.impact_score >= 0.8]
 
         report = {
             "summary": {
@@ -315,34 +309,17 @@ class ShadowModeExecutor:
         if report is None:
             report = self.generate_report()
 
-        print("\n" + "=" * 80)
-        print("SHADOW MODE EXECUTION REPORT")
-        print("=" * 80)
-        print(f"\nSummary:")
-        print(f"  Total Tests: {report['summary']['total_tests']}")
-        print(f"  Matches: {report['summary']['matches']}")
-        print(f"  Differences: {report['summary']['differences']}")
-        print(f"  Match Rate: {report['summary']['match_rate_percent']}%")
-        print(f"\nCritical Issues:")
-        print(f"  Allow/Deny Flips: {report['summary']['allow_deny_flips']}")
-        print(f"  Performance Regressions: {report['summary']['performance_regressions']}")
-        print(f"  Average Impact Score: {report['summary']['average_impact_score']}")
-
         if report["critical_differences"]:
-            print(f"\n⚠️  Critical Differences Found:")
+
             for diff in report["critical_differences"]:
-                print(f"  - {diff['test_case']}: {diff['difference_type']} (impact: {diff['impact_score']})")
+                print(
+                    f"  - {diff['test_case']}: {diff['difference_type']} (impact: {diff['impact_score']})"
+                )
         else:
-            print("\n✅ No critical differences found")
-
-        print("\n" + "=" * 80)
-
 
 async def main():
     """Main entry point for CLI."""
-    parser = argparse.ArgumentParser(
-        description="ACGS-2 Shadow Mode Policy Execution Comparator"
-    )
+    parser = argparse.ArgumentParser(description="ACGS-2 Shadow Mode Policy Execution Comparator")
     parser.add_argument(
         "--opa-url-current",
         default="http://localhost:8181",
@@ -446,7 +423,6 @@ async def main():
     # Exit with error code if critical differences found
     if report["summary"]["critical_differences_count"] > 0:
         sys.exit(1)
-
 
 if __name__ == "__main__":
     asyncio.run(main())

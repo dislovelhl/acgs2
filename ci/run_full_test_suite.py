@@ -84,9 +84,9 @@ class FullTestSuiteRunner:
             venv_cmd = [str(venv_python), "-m"] + cmd
 
         env = os.environ.copy()
-        env["PYTHONPATH"] = (
-            f"{self.core_dir}:{self.core_dir}/enhanced_agent_bus:{self.core_dir}/services"
-        )
+        env[
+            "PYTHONPATH"
+        ] = f"{self.core_dir}:{self.core_dir}/enhanced_agent_bus:{self.core_dir}/services"
 
         return subprocess.run(  # nosec B603
             venv_cmd, cwd=cwd or self.core_dir, env=env, capture_output=True, text=True

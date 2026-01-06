@@ -94,9 +94,7 @@ def get_cors_origins() -> list[str]:
         origins_str = cors_env_var
 
     # Parse and validate origins
-    origins = [
-        origin.strip() for origin in origins_str.split(",") if origin.strip()
-    ]
+    origins = [origin.strip() for origin in origins_str.split(",") if origin.strip()]
 
     # Production wildcard validation
     if ENVIRONMENT.lower() in ("production", "prod", "staging", "stage"):
@@ -115,9 +113,7 @@ def get_cors_origins() -> list[str]:
                     "environment. This may pose security risks."
                 )
 
-    logger.info(
-        f"CORS configured for {ENVIRONMENT}: {len(origins)} origins allowed"
-    )
+    logger.info(f"CORS configured for {ENVIRONMENT}: {len(origins)} origins allowed")
     return origins
 
 

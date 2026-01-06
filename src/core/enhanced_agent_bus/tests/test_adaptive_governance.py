@@ -9,7 +9,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 from unittest.mock import AsyncMock
 
 import pytest
-
 from src.core.enhanced_agent_bus.adaptive_governance import (
     AdaptiveGovernanceEngine,
     AdaptiveThresholds,

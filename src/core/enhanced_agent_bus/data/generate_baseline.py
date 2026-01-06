@@ -374,8 +374,8 @@ def main():
             seed=args.seed,
             format=args.format,
         )
-        print(f"Successfully generated baseline dataset: {output_path}")
-        print(f"Samples: {args.samples}, Format: {args.format}")
+        logger.info(f"Successfully generated baseline dataset: {output_path}")
+
     except Exception as e:
         logger.error(f"Failed to generate baseline: {e}")
         raise

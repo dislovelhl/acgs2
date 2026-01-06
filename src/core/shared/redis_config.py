@@ -205,7 +205,7 @@ class RedisConfig:
             try:
                 self._callbacks.remove(callback)
                 logger.info(
-                    f"[{CONSTITUTIONAL_HASH}] Unregistered health callback: " f"{callback.__name__}"
+                    f"[{CONSTITUTIONAL_HASH}] Unregistered health callback: {callback.__name__}"
                 )
                 return True
             except ValueError:
@@ -413,7 +413,7 @@ class RedisConfig:
                 callback(old_state, new_state)
             except Exception as e:
                 logger.error(
-                    f"[{CONSTITUTIONAL_HASH}] Health callback error in " f"{callback.__name__}: {e}"
+                    f"[{CONSTITUTIONAL_HASH}] Health callback error in {callback.__name__}: {e}"
                 )
 
     @property

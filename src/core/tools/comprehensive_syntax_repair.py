@@ -379,7 +379,6 @@ def main():
 
     logging.info("ACGS-2 Comprehensive Syntax Repair Tool")
     logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print()
 
     total_files = 0
     modified_files = 0

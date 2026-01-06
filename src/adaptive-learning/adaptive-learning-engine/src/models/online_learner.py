@@ -82,68 +82,14 @@ import logging
 import threading
 import time
 from collections import deque
-from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Deque, Dict, List, Optional, Tuple
 
 from river import compose, linear_model, metrics, optim, preprocessing
 
 logger = logging.getLogger(__name__)
 
-
-class ModelType(Enum):
-    """Supported online learning model types."""
-
-    LOGISTIC_REGRESSION = "logistic_regression"
-    PERCEPTRON = "perceptron"
-    PA_CLASSIFIER = "pa_classifier"  # Passive-Aggressive
-
-
-class ModelState(Enum):
-    """Current state of the online learner."""
-
-    COLD_START = "cold_start"  # No training samples yet
-    WARMING = "warming"  # Below min_training_samples
-    ACTIVE = "active"  # Trained and ready
-    PAUSED = "paused"  # Learning paused due to safety bounds
-
-
-@dataclass
-class PredictionResult:
-    """Result from a single prediction."""
-
-    prediction: int
-    confidence: float
-    probabilities: Dict[int, float]
-    model_state: ModelState
-    sample_count: int
-    timestamp: float = field(default_factory=time.time)
-
-
-@dataclass
-class TrainingResult:
-    """Result from a single training update."""
-
-    success: bool
-    sample_count: int
-    current_accuracy: float
-    model_state: ModelState
-    message: str
-    timestamp: float = field(default_factory=time.time)
-
-
-@dataclass
-class ModelMetrics:
-    """Current metrics for the online learner."""
-
-    accuracy: float
-    sample_count: int
-    model_state: ModelState
-    recent_accuracy: float  # Rolling window accuracy
-    last_update_time: float
-    predictions_count: int
-    model_type: str
-
+from .online_learner.enums import ModelState, ModelType
+from .online_learner.models import ModelMetrics, PredictionResult, TrainingResult
 
 class OnlineLearner:
     """River-based online learning model for governance decisions.
@@ -214,8 +160,6 @@ class OnlineLearner:
 
         # Monitor performance
         metrics = learner.get_metrics()
-        print(f"Cumulative accuracy: {metrics.accuracy:.3f}")
-        print(f"Rolling accuracy (last 100): {metrics.recent_accuracy:.3f}")
 
     References
     ----------
@@ -917,7 +861,6 @@ class OnlineLearner:
                             # Update rolling accuracy (recent performance for drift detection)
                             self._rolling_accuracy_metric.update(y, y_pred)
                     except Exception as e:
-                        logger.debug(f"Could not update accuracy metrics: {e}")
 
                 # TIME-WEIGHTED LEARNING FOR NON-STATIONARY ENVIRONMENTS
                 # =======================================================
@@ -1179,7 +1122,7 @@ class OnlineLearner:
             # Replay historical data with progressive validation
             for features, label in historical_data:
                 pred, train = learner.predict_and_learn(features, label)
-                print(f"Predicted: {pred.prediction}, Actual: {label}, "
+                logger.debug(f"Predicted: {pred.prediction}, Actual: {label}, "
                       f"Accuracy so far: {train.current_accuracy:.3f}")
         """
         with self._lock:

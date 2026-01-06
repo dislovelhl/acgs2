@@ -19,7 +19,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 from main import app
 from routes.sso import get_oidc_handler
 from src.core.shared.auth.oidc_handler import (

@@ -181,7 +181,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-
 class SafetyStatus(Enum):
     """Current safety status of the learning system.
 
@@ -234,7 +233,6 @@ class SafetyStatus(Enum):
     WARNING = "warning"  # Below threshold but still learning (DEGRADED CIRCUIT)
     PAUSED = "paused"  # Learning paused due to consecutive failures (OPEN CIRCUIT)
     CRITICAL = "critical"  # Circuit breaker tripping, requires manual intervention
-
 
 class CheckResult(Enum):
     """Result of a single safety check.
@@ -310,7 +308,6 @@ class CheckResult(Enum):
     SKIPPED_COLD_START = "skipped_cold_start"
     SKIPPED_INSUFFICIENT_DATA = "skipped_insufficient_data"
 
-
 @dataclass
 class SafetyCheckResult:
     """Result of a safety bounds check."""
@@ -339,7 +336,6 @@ class SafetyCheckResult:
             "metadata": self.metadata,
         }
 
-
 @dataclass
 class SafetyAlert:
     """Alert generated when safety bounds are violated."""
@@ -365,7 +361,6 @@ class SafetyAlert:
             "timestamp": self.timestamp,
             "context": self.context,
         }
-
 
 @dataclass
 class SafetyMetrics:
@@ -396,7 +391,6 @@ class SafetyMetrics:
             "last_check_time": self.last_check_time,
             "last_failure_time": self.last_failure_time,
         }
-
 
 class SafetyBoundsChecker:
     """Safety bounds checker to prevent model degradation.
@@ -1745,7 +1739,7 @@ class SafetyBoundsChecker:
                 if prediction == label:
                     correct += 1
             except Exception as e:
-                logger.debug(f"Validation prediction error: {e}")
+
                 # Count as incorrect
 
         return correct / total if total > 0 else 0.0

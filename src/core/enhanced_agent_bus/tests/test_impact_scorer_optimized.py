@@ -2,14 +2,13 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-
 from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
 
 
 class TestImpactScorerOptimized:
     @pytest.fixture
     def scorer(self):
-        return ImpactScorer(use_onnx=False) # Disable ONNX for unit tests unless mocked
+        return ImpactScorer(use_onnx=False)  # Disable ONNX for unit tests unless mocked
 
     def test_calculate_impact_score_with_override(self, scorer):
         message = {"content": "test content", "from_agent": "agent1"}
@@ -21,7 +20,7 @@ class TestImpactScorerOptimized:
     def test_score_batch_placeholder(self, scorer):
         messages = [
             {"content": "critical security breach", "from_agent": "agent1"},
-            {"content": "normal message", "from_agent": "agent2"}
+            {"content": "normal message", "from_agent": "agent2"},
         ]
         # Since _bert_enabled is likely False in this test environment without models
         scores = scorer.score_batch(messages)
@@ -34,7 +33,9 @@ class TestImpactScorerOptimized:
     @patch("enhanced_agent_bus.deliberation_layer.impact_scorer.AutoModel")
     def test_model_lazy_loading_mock(self, mock_model, mock_tokenizer):
         # Test that model is loaded whenbert_enabled is set correctly
-        with patch("enhanced_agent_bus.deliberation_layer.impact_scorer.ImpactScorer._get_embeddings") as mock_emb:
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.impact_scorer.ImpactScorer._get_embeddings"
+        ) as mock_emb:
             mock_emb.return_value = np.zeros((1, 768))
             scorer = ImpactScorer(use_onnx=False)
             # Manually set bert_enabled for testing
@@ -58,6 +59,7 @@ class TestImpactScorerOptimized:
         class MockMsg:
             def __init__(self, content):
                 self.content = content
+
         msg3 = MockMsg("obj content")
         assert scorer._extract_text_content(msg3) == "obj content"
 

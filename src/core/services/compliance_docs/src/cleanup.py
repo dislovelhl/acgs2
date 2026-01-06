@@ -70,7 +70,6 @@ def cleanup_old_files(
 
     # Create directory if it doesn't exist (nothing to clean up)
     if not dir_path.exists():
-        logger.debug(f"Cleanup directory does not exist: {directory}")
         return result
 
     if not dir_path.is_dir():
@@ -81,11 +80,6 @@ def cleanup_old_files(
 
     current_time = time.time()
     cutoff_time = current_time - max_age_seconds
-
-    logger.debug(
-        f"Running cleanup for files older than {max_age_seconds}s "
-        f"in {directory}"
-    )
 
     try:
         for file_path in dir_path.iterdir():
@@ -148,7 +142,7 @@ def cleanup_specific_file(file_path: str) -> bool:
         path = Path(file_path)
         if path.exists() and path.is_file():
             path.unlink()
-            logger.debug(f"Deleted file: {file_path}")
+
             return True
         return False
     except Exception as e:

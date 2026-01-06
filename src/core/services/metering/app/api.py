@@ -5,14 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 REST API for usage tracking, quota management, and billing estimates.
 """
 
-import os
 from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from src.core.shared.security.cors_config import get_cors_config
 from pydantic import BaseModel
+from src.core.shared.security.cors_config import get_cors_config
 
 from .models import (
     CONSTITUTIONAL_HASH,

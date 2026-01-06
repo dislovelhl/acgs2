@@ -147,7 +147,7 @@ ACGS-1503: SecretNotFoundError - Required secret missing
 - Missing DATABASE_URL environment variable
 - Invalid Redis connection string format
 - Constitutional hash mismatch (cdd01ef066bc6cf2)
-- CORS configuration allowing all origins (TODO in compliance_docs)
+- CORS configuration misconfigured in environment
 - Missing OPA_URL in agent bus configuration
 
 ---

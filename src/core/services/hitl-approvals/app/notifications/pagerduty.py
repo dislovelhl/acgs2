@@ -193,7 +193,7 @@ class PagerDutyProvider(NotificationProvider):
 
             if elapsed < PAGERDUTY_RATE_LIMIT_INTERVAL:
                 wait_time = PAGERDUTY_RATE_LIMIT_INTERVAL - elapsed
-                logger.debug(f"PagerDuty rate limit: waiting {wait_time:.2f}s")
+
                 await asyncio.sleep(wait_time)
 
             self._last_send_time = time.monotonic()

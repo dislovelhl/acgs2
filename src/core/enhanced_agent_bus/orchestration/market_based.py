@@ -250,9 +250,7 @@ class MarketBasedOrchestrator:
             return False
 
         agent = self.registered_agents[agent_id]
-        availability_score = 1.0 - (
-            agent["active_tasks"] / agent["max_concurrent_tasks"]
-        )
+        availability_score = 1.0 - (agent["active_tasks"] / agent["max_concurrent_tasks"])
 
         bid = Bid(
             agent_id=agent_id,
@@ -299,7 +297,9 @@ class MarketBasedOrchestrator:
             while len(auction.bids) < min_bids:
                 elapsed = asyncio.get_event_loop().time() - start_time
                 if elapsed > self.auction_timeout_seconds:
-                    logger.warning(f"Auction {task_id} timeout, closing with {len(auction.bids)} bids")
+                    logger.warning(
+                        f"Auction {task_id} timeout, closing with {len(auction.bids)} bids"
+                    )
                     break
                 await asyncio.sleep(0.5)
 
@@ -340,7 +340,9 @@ class MarketBasedOrchestrator:
             "winning_bid": {
                 "agent_id": auction.winning_bid.agent_id,
                 "bid_amount": auction.winning_bid.bid_amount,
-            } if auction.winning_bid else None,
+            }
+            if auction.winning_bid
+            else None,
         }
 
     def get_market_stats(self) -> Dict[str, Any]:

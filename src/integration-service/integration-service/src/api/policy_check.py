@@ -589,11 +589,7 @@ def generate_recommendations(
         },
         401: {
             "description": "Unauthorized - Invalid or missing authentication token",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Authentication required"}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Authentication required"}}},
         },
         500: {
             "description": "Internal server error during validation",
@@ -734,11 +730,7 @@ async def validate_policies(
         },
         401: {
             "description": "Unauthorized - Invalid or missing authentication token",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Authentication required"}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Authentication required"}}},
         },
     },
 )
@@ -851,18 +843,12 @@ async def list_policies(
         },
         401: {
             "description": "Unauthorized - Invalid or missing authentication token",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Authentication required"}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Authentication required"}}},
         },
         404: {
             "description": "Policy not found",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Policy not found: <policy_id>"}
-                }
+                "application/json": {"example": {"detail": "Policy not found: <policy_id>"}}
             },
         },
     },
@@ -964,11 +950,7 @@ async def get_policy(
         },
         401: {
             "description": "Unauthorized - Invalid or missing authentication token",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Authentication required"}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Authentication required"}}},
         },
     },
 )
@@ -978,8 +960,7 @@ async def policy_health(
     """Check policy validation health status."""
     # Log the health check request with user/tenant context for audit trail
     logger.info(
-        f"Policy health check request: "
-        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+        f"Policy health check request: user={current_user.sub}, tenant={current_user.tenant_id}"
     )
 
     opa_available = await check_opa_health()

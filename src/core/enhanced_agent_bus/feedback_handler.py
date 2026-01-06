@@ -237,7 +237,6 @@ class FeedbackStats:
 
 # Database Schema
 
-
 FEEDBACK_TABLE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS feedback_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -392,7 +391,6 @@ class FeedbackHandler:
         else:
             # Use memory store
             self._memory_store.append(stored_event)
-            logger.debug(f"Stored feedback {feedback_id} in memory")
 
         # Auto-publish to Kafka if enabled
         if self._auto_publish_kafka and self._kafka_publisher:
@@ -823,7 +821,6 @@ class FeedbackKafkaPublisher:
 
         async with self._lock:
             if self._running:
-                logger.debug("FeedbackKafkaPublisher already running")
                 return True
 
             try:

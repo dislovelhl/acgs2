@@ -59,7 +59,7 @@ kind: ConfigMap
 metadata:
   name: grafana-dashboards
 data:
-  acgs2-security-slo.json: | 
+  acgs2-security-slo.json: |
     # paste json content
 ```
 

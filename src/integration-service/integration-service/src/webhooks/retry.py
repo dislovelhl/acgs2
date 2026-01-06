@@ -7,7 +7,6 @@ and utilities for calculating backoff delays for webhook deliveries.
 
 import asyncio
 import logging
-import random
 import warnings
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -22,16 +21,14 @@ from tenacity import (
     wait_exponential,
 )
 
-from exceptions.retry import (
+from ..exceptions.retry import (
     MaxRetriesExceededError,
     NonRetryableError,
     RetryableError,
 )
-
 from .config import WebhookRetryPolicy
 
 logger = logging.getLogger(__name__)
-
 
 # Type variable for generic return types
 T = TypeVar("T")
@@ -106,7 +103,9 @@ class ExponentialBackoff:
 
         # Add jitter to prevent thundering herd
         if self.jitter_factor > 0:
-            jitter = delay * self.jitter_factor * random.random()
+            import secrets
+
+            jitter = delay * self.jitter_factor * secrets.SystemRandom().random()
             delay = delay + jitter
 
         return delay

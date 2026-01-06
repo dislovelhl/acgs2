@@ -267,7 +267,9 @@ def main():
 
     if total_issues > 0 and not (args.fix or args.dry_run):
         logging.info("\n💡 To fix automatically: python3 tools/import_cleanup.py --fix [files...]")
-        logging.info("💡 To see what would change: python3 tools/import_cleanup.py --dry-run [files...]")
+        logging.info(
+            "💡 To see what would change: python3 tools/import_cleanup.py --dry-run [files...]"
+        )
 
     # Exit with error code if issues found and not fixing
     if total_issues > 0 and not args.fix and not args.dry_run:

@@ -31,11 +31,9 @@ except ImportError:
         """Execute command with fallback to subprocess."""
         return subprocess.run(cmd, **kwargs)  # nosec
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 class ProductionMonitoringSetup:
     """Phase 5 Production Monitoring Setup for ACGS Code Analysis Engine"""
@@ -83,7 +81,6 @@ class ProductionMonitoringSetup:
                         prometheus_accessible = True
                         prometheus_response.json()
                 except Exception as e:
-                    logger.debug(f"Prometheus check failed: {e}")
 
                 return {
                     "status": "success",
@@ -120,7 +117,6 @@ class ProductionMonitoringSetup:
                     # Try to create a basic dashboard (would need API key in real scenario)
                     dashboard_created = True
             except Exception as e:
-                logger.debug(f"Grafana dashboard creation failed: {e}")
 
             # Create dashboard configuration
             dashboard_config = {
@@ -292,7 +288,6 @@ class ProductionMonitoringSetup:
                 )
                 # Logic to process logs would go here
             except (subprocess.SubprocessError, asyncio.TimeoutError) as e:
-                logger.debug(f"Log retrieval failed: {e}")
 
             # Create log aggregation configuration
             log_config = {
@@ -426,7 +421,7 @@ Generated: {datetime.now().isoformat()}
                         validation_results["errors"] += 1
 
                 except (requests.RequestException, ValueError, KeyError) as e:
-                    logger.debug(f"Health check failed: {e}")
+
                     validation_results["errors"] += 1
 
                 time.sleep(0.5)
@@ -467,9 +462,9 @@ Generated: {datetime.now().isoformat()}
 
         # Execute monitoring setup tasks
         try:
-            self.monitoring_results["prometheus_metrics_collection"] = (
-                self.verify_prometheus_metrics_collection()
-            )
+            self.monitoring_results[
+                "prometheus_metrics_collection"
+            ] = self.verify_prometheus_metrics_collection()
             self.monitoring_results["grafana_dashboards"] = self.setup_grafana_dashboards()
             self.monitoring_results["alerting_rules"] = self.configure_alerting_rules()
             self.monitoring_results["log_aggregation"] = await self.establish_log_aggregation()
@@ -528,7 +523,6 @@ Generated: {datetime.now().isoformat()}
             "execution_time_seconds": execution_time,
         }
 
-
 async def main() -> None:
     """Main function to run Phase 5 monitoring setup"""
     monitoring_setup = ProductionMonitoringSetup()
@@ -550,7 +544,6 @@ async def main() -> None:
     except Exception as e:
         logger.error(f"Production monitoring setup failed: {e}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     import asyncio

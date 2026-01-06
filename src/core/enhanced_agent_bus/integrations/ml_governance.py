@@ -23,9 +23,8 @@ try:
     from ..exceptions import AgentBusError
 except (ImportError, ValueError):
     try:
-        from exceptions import AgentBusError  # type: ignore
-
         from config import BusConfiguration  # type: ignore
+        from exceptions import AgentBusError  # type: ignore
     except ImportError:
         try:
             from src.core.enhanced_agent_bus.config import BusConfiguration
@@ -42,7 +41,6 @@ except ImportError:
     CONSTITUTIONAL_HASH = os.environ.get("CONSTITUTIONAL_HASH", "cdd01ef066bc6cf2")
 
 logger = logging.getLogger(__name__)
-
 
 # =============================================================================
 # Enums and Status Types

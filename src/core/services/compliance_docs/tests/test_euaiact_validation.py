@@ -6,8 +6,11 @@ Constitutional Hash: cdd01ef066bc6cf2
 from datetime import date
 
 import pytest
-from src.api.euaiact_routes import ComplianceValidationRequest, _perform_compliance_validation
-from src.models.euaiact import (
+from src.core.services.compliance_docs.src.api.euaiact_routes import (
+    ComplianceValidationRequest,
+    _perform_compliance_validation,
+)
+from src.core.services.compliance_docs.src.models.euaiact import (
     ComplianceStatus,
     EUAIActComplianceChecklist,
     EUAIActComplianceFinding,

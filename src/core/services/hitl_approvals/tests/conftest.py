@@ -6,8 +6,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 from unittest.mock import MagicMock
 
 import pytest
-
-from src.core.shared.logging import init_service_logging
+from src.core.shared.acgs_logging import init_service_logging
 
 # Initialize test logging
 init_service_logging("hitl-approvals-test", level="WARNING", json_format=False)

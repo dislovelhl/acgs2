@@ -19,7 +19,7 @@ from pydantic import (
     model_validator,
 )
 
-from ..types import JSONDict, ValidatorValue
+from ..integration_types import JSONDict, ValidatorValue
 
 
 class WebhookState(str, Enum):
@@ -505,9 +505,7 @@ class WebhookDeliveryResult(BaseModel):
     error_message: Optional[str] = Field(
         None, max_length=1000, description="Error message if failed"
     )
-    error_details: JSONDict = Field(
-        default_factory=dict, description="Additional error details"
-    )
+    error_details: JSONDict = Field(default_factory=dict, description="Additional error details")
 
     model_config = ConfigDict(
         populate_by_name=True,

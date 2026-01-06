@@ -11,7 +11,6 @@ import sys
 from .config import MCPConfig, TransportType
 from .server import create_mcp_server
 
-
 def main():
     parser = argparse.ArgumentParser(description="ACGS-2 MCP Server")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
@@ -36,10 +35,10 @@ def main():
     server = create_mcp_server(config=config)
 
     try:
-        print(f"Starting ACGS-2 MCP Server (Transport: {args.transport})", file=sys.stderr)
+        # print(f"Starting ACGS-2 MCP Server (Transport: {args.transport})", file=sys.stderr)  # DEBUG_CLEANUP
         asyncio.run(server.start())
     except KeyboardInterrupt:
-        print("\nShutdown signal received", file=sys.stderr)
+        # print("\nShutdown signal received", file=sys.stderr)  # DEBUG_CLEANUP
     finally:
         # Stop is handled inside start()'s finally block or similar,
         # but we ensure it's called if we were managing the loop ourselves.

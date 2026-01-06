@@ -9,7 +9,6 @@ from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.enhanced_agent_bus.models import (
     CONSTITUTIONAL_HASH,
     AgentMessage,

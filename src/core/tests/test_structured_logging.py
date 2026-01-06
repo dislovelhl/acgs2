@@ -1,29 +1,38 @@
-import json
-import io
-import contextlib
-import unittest
-from src.core.shared.logging import init_service_logging, get_logger, create_correlation_middleware, set_correlation_id, clear_correlation_id
-from src.core.shared.otel_config import init_otel
-from fastapi import FastAPI, Request
 import asyncio
+import contextlib
+import io
+import json
+import sys
+import unittest
+
+from fastapi import FastAPI, Request
+from src.core.shared.acgs_logging import (
+    clear_correlation_id,
+    create_correlation_middleware,
+    get_logger,
+    init_service_logging,
+    set_correlation_id,
+)
+from src.core.shared.otel_config import init_otel
+
 
 class TestStructuredLogging(unittest.TestCase):
     def setUp(self):
-        # Redirect stdout to capture logs
-        self.log_capture = io.StringIO()
-        self.patch_stdout = contextlib.redirect_stdout(self.log_capture)
-        self.patch_stdout.__enter__()
+        # Capture stderr where logging output goes
+        self.stderr_capture = io.StringIO()
+        self.patch_stderr = contextlib.redirect_stderr(self.stderr_capture)
+        self.patch_stderr.__enter__()
 
     def tearDown(self):
-        self.patch_stdout.__exit__(None, None, None)
+        self.patch_stderr.__exit__(None, None, None)
 
     def test_json_logging(self):
         # Initialize logging in JSON mode
         logger = init_service_logging("test-service", level="INFO", json_format=True)
         logger.info("test_event", key="value")
 
-        output = self.log_capture.getvalue().strip()
-        log_records = [json.loads(line) for line in output.split('\n') if line]
+        output = self.stderr_capture.getvalue().strip()
+        log_records = [json.loads(line) for line in output.split("\n") if line]
 
         self.assertTrue(len(log_records) > 0)
         record = log_records[0]
@@ -40,11 +49,18 @@ class TestStructuredLogging(unittest.TestCase):
         set_correlation_id("test-corr-id")
         logger.info("event_with_corr")
 
-        output = self.log_capture.getvalue().strip()
-        record = json.loads(output.split('\n')[-1])
+        output = self.stderr_capture.getvalue().strip()
+        # Parse all JSON lines from output
+        json_lines = [line for line in output.split("\n") if line.strip()]
+        if json_lines:
+            record = json.loads(json_lines[-1])
+        else:
+            self.fail("No log output captured")
+
         self.assertEqual(record["correlation_id"], "test-corr-id")
 
         clear_correlation_id()
+
 
 if __name__ == "__main__":
     unittest.main()

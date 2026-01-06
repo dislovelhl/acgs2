@@ -31,7 +31,6 @@ from typing import Optional
 
 from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
-
 from src.core.shared.database import Base
 
 

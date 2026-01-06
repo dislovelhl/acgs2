@@ -10,15 +10,16 @@ services:
   opa:
     image: openpolicyagent/opa:latest
     command: run --server --log-level info --addr 0.0.0.0:8181
-    ports:
-      - "8181:8181"
+    # Security: Do not expose OPA port to host. Internal access only.
+    # ports:
+    #   - "8181:8181"
     volumes:
       - ./src/core/enhanced_agent_bus/policies:/policies:ro
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - acgs-dev
 
@@ -102,8 +103,9 @@ services:
       POSTGRES_DB: ${POSTGRES_ML_DB:-mlflow_db}
       POSTGRES_USER: ${POSTGRES_ML_USER:-mlflow}
       POSTGRES_PASSWORD: ${POSTGRES_ML_PASSWORD:-mlflow_password}
-    ports:
-      - "${POSTGRES_ML_PORT:-5432}:5432"
+    # Security: Do not expose internal DB port.
+    # ports:
+    #   - "${POSTGRES_ML_PORT:-5432}:5432"
     volumes:
       - postgres-ml-data:/var/lib/postgresql/data
     healthcheck:
@@ -164,11 +166,20 @@ services:
     volumes:
       - ./src/core/enhanced_agent_bus:/app
       - /app/__pycache__
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - opa
-      - redis
-      - kafka
-      - mlflow
+      opa:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
     networks:
       - acgs-dev
 
@@ -194,7 +205,8 @@ services:
       # Production: Must use exact domain URLs with HTTPS (e.g., https://acgs2.example.com)
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:8080,http://127.0.0.1:5173}
     depends_on:
-      - agent-bus
+      agent-bus:
+        condition: service_healthy
     networks:
       - acgs-dev
 
@@ -223,9 +235,16 @@ services:
     volumes:
       - ./src/core/services/analytics-api:/app
       - /app/__pycache__
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - redis
-      - kafka
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - acgs-dev
 
@@ -243,7 +262,8 @@ services:
       - ./analytics-dashboard:/app
       - /app/node_modules
     depends_on:
-      - analytics-api
+      analytics-api:
+        condition: service_healthy
     networks:
       - acgs-dev
 

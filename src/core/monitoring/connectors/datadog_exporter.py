@@ -5,7 +5,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 Exports telemetry data to Datadog via API.
 """
 
-import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -158,7 +157,6 @@ class DatadogExporter:
             response = await self._session.post(url, json=payload, headers=headers)
             response.raise_for_status()
 
-            logger.debug(f"Sent {len(payload['series'])} metrics to Datadog")
             return True
 
         except Exception as e:
@@ -224,7 +222,6 @@ class DatadogExporter:
             response = await self._session.post(url, json=payload, headers=headers)
             response.raise_for_status()
 
-            logger.debug(f"Sent {len(payload)} logs to Datadog")
             return True
 
         except Exception as e:
@@ -281,7 +278,6 @@ class DatadogExporter:
 
         # Note: Full APM integration requires the Datadog agent
         # This is a placeholder for API-based submission
-        logger.debug(f"Trace span prepared: {operation_name} ({duration_ms}ms)")
 
 
 # Convenience function for quick initialization

@@ -81,6 +81,7 @@ from ..verification.veriplan_z3 import VeriPlanFormalVerifier
 # Layer 1: Context & Memory Tests
 # ============================================================================
 
+
 class TestMambaHybridProcessor:
     """Tests for Mamba-2 Hybrid Processor."""
 
@@ -194,6 +195,7 @@ class TestConstitutionalMemorySystem:
 # Layer 2: Verification Tests
 # ============================================================================
 
+
 class TestMACIVerification:
     """Tests for MACI Verification Pipeline."""
 
@@ -280,8 +282,7 @@ class TestVeriPlanFormalVerifier:
         verifier = VeriPlanFormalVerifier()
 
         result = await verifier.verify_policy(
-            "always maintain data integrity",
-            {"data_valid": True}
+            "always maintain data integrity", {"data_valid": True}
         )
 
         assert result.constitutional_hash == CONSTITUTIONAL_HASH
@@ -299,6 +300,7 @@ class TestVeriPlanFormalVerifier:
 # ============================================================================
 # Layer 3: Temporal & Symbolic Tests
 # ============================================================================
+
 
 class TestConstitutionalTimeline:
     """Tests for Constitutional Timeline Engine."""
@@ -388,10 +390,7 @@ class TestEdgeCaseHandler:
         handler = ConstitutionalEdgeCaseHandler(reflection_threshold=0.7)
 
         # Input with violation - should trigger reflection
-        result = await handler.classify({
-            "action": "corrupt data",
-            "type": "violation"
-        })
+        result = await handler.classify({"action": "corrupt data", "type": "violation"})
 
         # May or may not trigger based on confidence
         assert result.system_used is not None
@@ -400,6 +399,7 @@ class TestEdgeCaseHandler:
 # ============================================================================
 # Layer 4: Governance & Policy Tests
 # ============================================================================
+
 
 class TestDemocraticGovernance:
     """Tests for Democratic Constitutional Governance."""
@@ -471,6 +471,7 @@ class TestVerifiedPolicyGenerator:
 # Integration Tests
 # ============================================================================
 
+
 class TestMCPServer:
     """Tests for MCP Server integration."""
 
@@ -480,8 +481,7 @@ class TestMCPServer:
         server = ACGS2MCPServer()
 
         result = await server.handle_tool_call(
-            "validate_constitutional_compliance",
-            {"action": {"test": True}}
+            "validate_constitutional_compliance", {"action": {"test": True}}
         )
 
         assert result.constitutional_hash == CONSTITUTIONAL_HASH
@@ -599,10 +599,7 @@ class TestConstitutionalGuardrails:
         """Test guardrails with clean action."""
         guardrails = ConstitutionalGuardrails()
 
-        result = await guardrails.enforce(
-            {"action": "read", "data": "test"},
-            {}
-        )
+        result = await guardrails.enforce({"action": "read", "data": "test"}, {})
 
         assert result.constitutional_hash == CONSTITUTIONAL_HASH
         assert result.audit_id is not None
@@ -612,10 +609,7 @@ class TestConstitutionalGuardrails:
         """Test input sanitization."""
         guardrails = ConstitutionalGuardrails(level=GuardrailLevel.STRICT)
 
-        result = await guardrails.enforce(
-            {"action": "<script>alert('xss')</script>"},
-            {}
-        )
+        result = await guardrails.enforce({"action": "<script>alert('xss')</script>"}, {})
 
         assert len(result.sanitization.modifications_made) > 0
 
@@ -624,10 +618,7 @@ class TestConstitutionalGuardrails:
         """Test policy-based blocking."""
         guardrails = ConstitutionalGuardrails()
 
-        result = await guardrails.enforce(
-            {"action": "admin_override_all_safety"},
-            {}
-        )
+        result = await guardrails.enforce({"action": "admin_override_all_safety"}, {})
 
         # Should be blocked by policy
         assert not result.policy_result.allowed or len(result.policy_result.reasons) > 0
@@ -636,6 +627,7 @@ class TestConstitutionalGuardrails:
 # ============================================================================
 # End-to-End Integration Tests
 # ============================================================================
+
 
 class TestEndToEndIntegration:
     """End-to-end integration tests."""
@@ -672,17 +664,14 @@ class TestEndToEndIntegration:
 
         # Layer 4: Policy verification
         policy_gen = VerifiedPolicyGenerator()
-        policy = await policy_gen.generate_verified_policy(
-            "Policy for data access with audit"
-        )
+        policy = await policy_gen.generate_verified_policy("Policy for data access with audit")
 
         assert policy.proof is not None
 
         # Integration: Guardrails check
         guardrails = ConstitutionalGuardrails()
         guard_result = await guardrails.enforce(
-            {"action": "data_access", "policy_id": policy.policy_id},
-            {}
+            {"action": "data_access", "policy_id": policy.policy_id}, {}
         )
 
         assert guard_result.audit_id is not None

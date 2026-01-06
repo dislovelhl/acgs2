@@ -29,7 +29,6 @@ from src.integrations.linear.gitlab_sync import GitLabSyncManager
 from src.integrations.linear.models import IssueEvent, LinearWebhookPayload
 from src.integrations.linear.slack_notifier import SlackNotifier
 
-
 # ============================================================================
 # Fixtures - Configuration
 # ============================================================================

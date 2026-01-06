@@ -7,9 +7,11 @@ import tempfile
 from datetime import date
 
 import pytest
-from src.generators.docx import DOCXGenerator
-from src.generators.pdf import PDFGenerator
-from src.generators.xlsx import XLSXGenerator
+from src.core.services.compliance_docs.src.generators import (
+    DOCXGenerator,
+    PDFGenerator,
+    XLSXGenerator,
+)
 
 
 @pytest.fixture
@@ -48,7 +50,9 @@ def test_pdf_generator_risk_assessment(temp_dir):
     assert file_path.suffix == ".pdf"
 
 
-@pytest.mark.skipif(not DOCXGenerator.__module__.startswith("src"), reason="python-docx not available")
+@pytest.mark.skipif(
+    not DOCXGenerator.__module__.startswith("src"), reason="python-docx not available"
+)
 def test_docx_generator_compliance_checklist(temp_dir):
     """Test DOCX generation for compliance checklist."""
     generator = DOCXGenerator(output_dir=temp_dir)

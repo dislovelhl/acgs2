@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class CognitiveSystem(Enum):
     """Cognitive system used for classification."""
+
     SYSTEM_1 = "system_1"  # Fast, intuitive, neural
     SYSTEM_2 = "system_2"  # Slow, deliberate, symbolic
 
@@ -37,6 +38,7 @@ class CognitiveSystem(Enum):
 @dataclass
 class NeuralPrediction:
     """Result from System 1 neural prediction."""
+
     prediction_id: str
     label: str
     confidence: float
@@ -48,6 +50,7 @@ class NeuralPrediction:
 @dataclass
 class ReflectionVector:
     """Reflection analysis from knowledge base."""
+
     error_probability: float
     violated_rules: List[str]
     attention_mask: List[int]  # Focused positions for System 2
@@ -57,6 +60,7 @@ class ReflectionVector:
 @dataclass
 class AbductiveCorrection:
     """Result from System 2 abductive reasoning."""
+
     corrected_label: str
     confidence: float
     derivation: List[str]  # Logical derivation steps
@@ -67,6 +71,7 @@ class AbductiveCorrection:
 @dataclass
 class ClassificationResult:
     """Final classification result."""
+
     result_id: str
     prediction: str
     confidence: float
@@ -92,6 +97,7 @@ class ClassificationResult:
 @dataclass
 class ReflectionResult:
     """Result from reflection analysis."""
+
     should_reflect: bool
     error_probability: float
     violated_rules: List[str]
@@ -106,11 +112,7 @@ class NeuralClassifier:
     Used for most cases; uncertain predictions trigger System 2.
     """
 
-    def __init__(
-        self,
-        model_path: Optional[str] = None,
-        embedding_dim: int = 128
-    ):
+    def __init__(self, model_path: Optional[str] = None, embedding_dim: int = 128):
         """
         Initialize neural classifier.
 
@@ -132,10 +134,7 @@ class NeuralClassifier:
         self._predictions_made = 0
         logger.info("Initialized NeuralClassifier (System 1)")
 
-    async def predict(
-        self,
-        input_data: ContextData
-    ) -> NeuralPrediction:
+    async def predict(self, input_data: ContextData) -> NeuralPrediction:
         """
         Make a fast neural prediction.
 
@@ -146,6 +145,7 @@ class NeuralClassifier:
             NeuralPrediction with label and confidence
         """
         import time
+
         start_time = time.perf_counter()
 
         # Simulate neural prediction
@@ -168,22 +168,16 @@ class NeuralClassifier:
             processing_time_ms=processing_time,
         )
 
-    async def _compute_embedding(
-        self,
-        input_data: ContextData
-    ) -> List[float]:
+    async def _compute_embedding(self, input_data: ContextData) -> List[float]:
         """Compute embedding from input data."""
         # Simulate embedding computation
         import hashlib
+
         content = str(input_data).encode()
         hash_bytes = hashlib.sha256(content).digest()
-        return [b / 255.0 for b in hash_bytes[:self.embedding_dim]]
+        return [b / 255.0 for b in hash_bytes[: self.embedding_dim]]
 
-    async def _classify(
-        self,
-        embedding: List[float],
-        input_data: ContextData
-    ) -> Tuple[str, float]:
+    async def _classify(self, embedding: List[float], input_data: ContextData) -> Tuple[str, float]:
         """Classify based on embedding."""
         # Simulate classification logic
         # Check for obvious patterns
@@ -231,7 +225,7 @@ class AbductionEngine:
         input_data: ContextData,
         neural_prediction: NeuralPrediction,
         violated_rules: List[str],
-        focused_space: List[int]
+        focused_space: List[int],
     ) -> AbductiveCorrection:
         """
         Perform abductive correction of neural prediction.
@@ -252,27 +246,18 @@ class AbductionEngine:
 
         # Step 1: Identify inconsistencies with knowledge base
         inconsistencies = await self._find_inconsistencies(
-            input_data,
-            neural_prediction,
-            violated_rules
+            input_data, neural_prediction, violated_rules
         )
 
         derivation.append(f"Found {len(inconsistencies)} inconsistencies")
 
         # Step 2: Generate hypotheses to explain inconsistencies
-        hypotheses = await self._generate_hypotheses(
-            input_data,
-            inconsistencies,
-            focused_space
-        )
+        hypotheses = await self._generate_hypotheses(input_data, inconsistencies, focused_space)
 
         derivation.append(f"Generated {len(hypotheses)} hypotheses")
 
         # Step 3: Select best hypothesis using abduction
-        best_hypothesis = await self._select_best_hypothesis(
-            hypotheses,
-            input_data
-        )
+        best_hypothesis = await self._select_best_hypothesis(hypotheses, input_data)
 
         derivation.append(f"Selected hypothesis: {best_hypothesis.get('label', 'unknown')}")
 
@@ -281,9 +266,7 @@ class AbductionEngine:
         confidence = best_hypothesis.get("confidence", 0.9)
 
         if corrected_label != neural_prediction.label:
-            corrections.append(
-                f"Changed {neural_prediction.label} → {corrected_label}"
-            )
+            corrections.append(f"Changed {neural_prediction.label} → {corrected_label}")
 
         self._corrections_made += 1
 
@@ -299,10 +282,7 @@ class AbductionEngine:
         )
 
     async def _find_inconsistencies(
-        self,
-        input_data: ContextData,
-        prediction: NeuralPrediction,
-        violated_rules: List[str]
+        self, input_data: ContextData, prediction: NeuralPrediction, violated_rules: List[str]
     ) -> List[JSONDict]:
         """Find inconsistencies between prediction and knowledge base."""
         inconsistencies = []
@@ -311,19 +291,18 @@ class AbductionEngine:
         for rule in violated_rules:
             rule_result = await self.kb.evaluate_rule(rule, input_data)
             if not rule_result.get("satisfied", True):
-                inconsistencies.append({
-                    "rule": rule,
-                    "expected": rule_result.get("expected"),
-                    "actual": prediction.label,
-                })
+                inconsistencies.append(
+                    {
+                        "rule": rule,
+                        "expected": rule_result.get("expected"),
+                        "actual": prediction.label,
+                    }
+                )
 
         return inconsistencies
 
     async def _generate_hypotheses(
-        self,
-        input_data: ContextData,
-        inconsistencies: List[JSONDict],
-        focused_space: List[int]
+        self, input_data: ContextData, inconsistencies: List[JSONDict], focused_space: List[int]
     ) -> List[JSONDict]:
         """Generate hypotheses to explain inconsistencies."""
         hypotheses = []
@@ -333,46 +312,46 @@ class AbductionEngine:
 
         # Hypothesis 1: Label should be different
         if inconsistencies:
-            hypotheses.append({
-                "type": "label_change",
-                "label": "violation",
-                "confidence": 0.85,
-                "explanation": "Rules indicate violation",
-            })
+            hypotheses.append(
+                {
+                    "type": "label_change",
+                    "label": "violation",
+                    "confidence": 0.85,
+                    "explanation": "Rules indicate violation",
+                }
+            )
 
         # Hypothesis 2: Input data was misinterpreted
-        hypotheses.append({
-            "type": "interpretation",
-            "label": "requires_review",
-            "confidence": 0.75,
-            "explanation": "Input ambiguous, needs human review",
-        })
+        hypotheses.append(
+            {
+                "type": "interpretation",
+                "label": "requires_review",
+                "confidence": 0.75,
+                "explanation": "Input ambiguous, needs human review",
+            }
+        )
 
         # Hypothesis 3: Original prediction correct
-        hypotheses.append({
-            "type": "confirmation",
-            "label": "compliant",
-            "confidence": 0.70,
-            "explanation": "Original prediction may be correct",
-        })
+        hypotheses.append(
+            {
+                "type": "confirmation",
+                "label": "compliant",
+                "confidence": 0.70,
+                "explanation": "Original prediction may be correct",
+            }
+        )
 
         return hypotheses
 
     async def _select_best_hypothesis(
-        self,
-        hypotheses: List[JSONDict],
-        input_data: ContextData
+        self, hypotheses: List[JSONDict], input_data: ContextData
     ) -> JSONDict:
         """Select the best hypothesis using abductive reasoning."""
         if not hypotheses:
             return {"label": "uncertain", "confidence": 0.5}
 
         # Sort by confidence and explanatory power
-        sorted_hyps = sorted(
-            hypotheses,
-            key=lambda h: h.get("confidence", 0),
-            reverse=True
-        )
+        sorted_hyps = sorted(hypotheses, key=lambda h: h.get("confidence", 0), reverse=True)
 
         return sorted_hyps[0]
 
@@ -423,7 +402,7 @@ class DeepProbLogKB:
         rule_id: str,
         description: str,
         check_fn: Callable[[ContextData], bool],
-        priority: float = 0.5
+        priority: float = 0.5,
     ) -> None:
         """Add a rule to the knowledge base."""
         self._rules[rule_id] = {
@@ -433,11 +412,7 @@ class DeepProbLogKB:
             "check": check_fn,
         }
 
-    async def evaluate_rule(
-        self,
-        rule_id: str,
-        input_data: ContextData
-    ) -> JSONDict:
+    async def evaluate_rule(self, rule_id: str, input_data: ContextData) -> JSONDict:
         """Evaluate a rule against input data."""
         if rule_id not in self._rules:
             return {"satisfied": True, "rule_id": rule_id, "reason": "Rule not found"}
@@ -458,17 +433,11 @@ class DeepProbLogKB:
                 "error": str(e),
             }
 
-    async def get_applicable_rules(
-        self,
-        input_data: ContextData
-    ) -> List[str]:
+    async def get_applicable_rules(self, input_data: ContextData) -> List[str]:
         """Get rules applicable to the input data."""
         return list(self._rules.keys())
 
-    async def check_all_rules(
-        self,
-        input_data: ContextData
-    ) -> Tuple[List[str], List[str]]:
+    async def check_all_rules(self, input_data: ContextData) -> Tuple[List[str], List[str]]:
         """
         Check all rules against input data.
 
@@ -504,7 +473,7 @@ class ConstitutionalEdgeCaseHandler:
         self,
         reflection_threshold: float = 0.7,
         neural_classifier: Optional[NeuralClassifier] = None,
-        knowledge_base: Optional[DeepProbLogKB] = None
+        knowledge_base: Optional[DeepProbLogKB] = None,
     ):
         """
         Initialize edge case handler.
@@ -528,15 +497,9 @@ class ConstitutionalEdgeCaseHandler:
             "corrections_made": 0,
         }
 
-        logger.info(
-            f"Initialized ConstitutionalEdgeCaseHandler "
-            f"threshold={reflection_threshold}"
-        )
+        logger.info(f"Initialized ConstitutionalEdgeCaseHandler threshold={reflection_threshold}")
 
-    async def classify(
-        self,
-        input_data: ContextData
-    ) -> ClassificationResult:
+    async def classify(self, input_data: ContextData) -> ClassificationResult:
         """
         Classify input with cognitive reflection.
 
@@ -547,6 +510,7 @@ class ConstitutionalEdgeCaseHandler:
             ClassificationResult with prediction and trace
         """
         import time
+
         start_time = time.perf_counter()
 
         result_id = f"class-{uuid.uuid4().hex[:8]}"
@@ -600,9 +564,7 @@ class ConstitutionalEdgeCaseHandler:
         )
 
     async def compute_reflection(
-        self,
-        input_data: ContextData,
-        prediction: NeuralPrediction
+        self, input_data: ContextData, prediction: NeuralPrediction
     ) -> ReflectionVector:
         """
         Compute reflection vector from knowledge base.

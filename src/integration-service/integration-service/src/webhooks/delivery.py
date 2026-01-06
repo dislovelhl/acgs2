@@ -18,13 +18,12 @@ from uuid import uuid4
 
 import httpx
 
-from exceptions.auth import AuthenticationError
-from exceptions.delivery import (
+from ..exceptions.auth import AuthenticationError
+from ..exceptions.delivery import (
     DeliveryConnectionError,
     DeliveryError,
     DeliveryTimeoutError,
 )
-
 from .config import WebhookFrameworkConfig, WebhookRetryPolicy
 from .models import (
     WebhookAuthType,
@@ -115,6 +114,7 @@ class WebhookConnectionError(DeliveryConnectionError):
             stacklevel=2,
         )
         super().__init__(*args, **kwargs)
+
 
 # Public API exports - make exceptions and classes available for import from this module
 __all__ = [
@@ -347,9 +347,9 @@ class WebhookDeliveryEngine:
 
         elif webhook_config.auth_type == WebhookAuthType.BEARER:
             if webhook_config.auth_value:
-                headers[webhook_config.auth_header] = (
-                    f"Bearer {webhook_config.auth_value.get_secret_value()}"
-                )
+                headers[
+                    webhook_config.auth_header
+                ] = f"Bearer {webhook_config.auth_value.get_secret_value()}"
 
         elif webhook_config.auth_type == WebhookAuthType.BASIC:
             if webhook_config.auth_value:
@@ -628,9 +628,7 @@ class WebhookDeliveryEngine:
                     continue
                 else:
                     duration_ms = int((time.monotonic() - start_time) * 1000)
-                    err_msg = (
-                        f"Delivery failed after " f"{retry_state.current_attempt} attempts: {e}"
-                    )
+                    err_msg = f"Delivery failed after {retry_state.current_attempt} attempts: {e}"
                     return await self._handle_delivery_failure(
                         delivery=delivery,
                         event=event,
@@ -814,7 +812,6 @@ class WebhookDeliveryEngine:
         matching = [s for s in subscriptions if s.should_deliver_event(event)]
 
         if not matching:
-            logger.debug(f"Event {event.id} did not match any subscriptions")
             return []
 
         tasks = [self.deliver(subscription, event) for subscription in matching]

@@ -12,13 +12,13 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
-  ListToolsRequestSchema,
   CallToolRequestSchema,
+  ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import config from "./config/index.js";
-import logger from "./utils/logger.js";
-import { NeuralDomainMapper } from "./neural/NeuralDomainMapper.js";
 import { validateConfigOrExit } from "./config/validator.js";
+import { NeuralDomainMapper } from "./neural/NeuralDomainMapper.js";
+import logger from "./utils/logger.js";
 
 // Validate configuration at startup (fail-fast behavior)
 // This ensures all required environment variables are present and valid
@@ -26,7 +26,8 @@ import { validateConfigOrExit } from "./config/validator.js";
 validateConfigOrExit(process.env as Record<string, unknown>);
 
 // HITL Approvals Service Configuration
-const HITL_APPROVALS_URL = process.env.HITL_APPROVALS_URL || "http://localhost:8003";
+const HITL_APPROVALS_URL =
+  process.env.HITL_APPROVALS_URL || "http://localhost:8003";
 const HITL_REQUEST_TIMEOUT_MS = 10000;
 
 // Type definitions for HITL approval requests
@@ -63,7 +64,10 @@ async function emitApprovalRequest(
   request: HITLApprovalRequest
 ): Promise<HITLApprovalResponse> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), HITL_REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    HITL_REQUEST_TIMEOUT_MS
+  );
 
   try {
     const response = await fetch(`${HITL_APPROVALS_URL}/api/approvals`, {
@@ -592,18 +596,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             decision_id: {
               type: "string",
-              description: "Unique identifier for the decision requiring approval",
+              description:
+                "Unique identifier for the decision requiring approval",
             },
             decision_type: {
               type: "string",
-              description: "Type of decision (e.g., 'high_risk', 'policy_change', 'resource_allocation')",
+              description:
+                "Type of decision (e.g., 'high_risk', 'policy_change', 'resource_allocation')",
             },
             decision_context: {
               type: "object",
               description: "Context and details about the decision",
               properties: {
-                summary: { type: "string", description: "Brief summary of the decision" },
-                rationale: { type: "string", description: "Reasoning behind the decision" },
+                summary: {
+                  type: "string",
+                  description: "Brief summary of the decision",
+                },
+                rationale: {
+                  type: "string",
+                  description: "Reasoning behind the decision",
+                },
                 affected_domains: {
                   type: "array",
                   items: { type: "string" },
@@ -624,11 +636,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             priority: {
               type: "string",
               enum: ["low", "medium", "high", "critical"],
-              description: "Priority for approval processing (defaults to impact_level)",
+              description:
+                "Priority for approval processing (defaults to impact_level)",
             },
             chain_id: {
               type: "string",
-              description: "Specific approval chain to use (optional, auto-selected based on decision_type if not provided)",
+              description:
+                "Specific approval chain to use (optional, auto-selected based on decision_type if not provided)",
             },
             requester_id: {
               type: "string",
@@ -639,13 +653,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: "Additional metadata for the approval request",
             },
           },
-          required: ["decision_id", "decision_type", "decision_context", "impact_level"],
+          required: [
+            "decision_id",
+            "decision_type",
+            "decision_context",
+            "impact_level",
+          ],
         },
       },
       {
         name: "hitl_check_status",
-        description:
-          "Check the status of a pending approval request.",
+        description: "Check the status of a pending approval request.",
         inputSchema: {
           type: "object",
           properties: {
@@ -808,15 +826,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      // Generate synthetic training data from the loaded graph
-      // Create properly typed training data structures
-      const syntheticInputs = Array.from({ length: 100 }, (_, i) => ({
-        id: `pattern_${i}`,
-        features: Array.from({ length: 16 }, () => Math.random()),
-        label: Math.random() > 0.5 ? 1 : 0,
-      }));
+      // Generate enhanced synthetic training data based on domain relationships
+      const graph = mapper.getCurrentGraph();
+      const syntheticInputs = generateEnhancedTrainingData(graph, 100);
 
-      const syntheticOutputs = syntheticInputs.map((input) => input.label);
+      const syntheticOutputs = syntheticInputs.map((input: any) => input.label);
 
       const trainingData = {
         inputs: syntheticInputs,
@@ -825,15 +839,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         epochs: typedArgs.epochs || 100,
       };
 
-      const validationInputs = Array.from({ length: 20 }, (_, i) => ({
-        id: `val_pattern_${i}`,
-        features: Array.from({ length: 16 }, () => Math.random()),
-        label: Math.random() > 0.5 ? 1 : 0,
-      }));
+      const validationInputs = generateEnhancedTrainingData(graph, 20);
 
       const validationData = {
         inputs: validationInputs,
-        outputs: validationInputs.map((input) => input.label),
+        outputs: validationInputs.map((input: any) => input.label),
         batchSize: 32,
         epochs: 1,
       };
@@ -905,7 +915,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: JSON.stringify(stats, null, 2),
+            text: JSON.stringify(toSerializable(stats), null, 2),
           },
         ],
       };
@@ -917,7 +927,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: JSON.stringify(cohesion, null, 2),
+            text: JSON.stringify(toSerializable(cohesion), null, 2),
           },
         ],
       };
@@ -929,7 +939,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: JSON.stringify(dependencies, null, 2),
+            text: JSON.stringify(toSerializable(dependencies), null, 2),
           },
         ],
       };
@@ -941,17 +951,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: JSON.stringify(optimization, null, 2),
+            text: JSON.stringify(toSerializable(optimization), null, 2),
           },
         ],
       };
     }
 
     if (name === "hitl_request_approval") {
-      const typedArgs = args as HITLRequestApprovalArgs;
+      const typedArgs = args as unknown as HITLRequestApprovalArgs;
 
       // Validate required fields
-      if (!typedArgs.decision_id || !typedArgs.decision_type || !typedArgs.impact_level) {
+      if (
+        !typedArgs.decision_id ||
+        !typedArgs.decision_type ||
+        !typedArgs.impact_level
+      ) {
         return {
           content: [
             {
@@ -959,7 +973,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(
                 {
                   status: "Error: Missing required fields",
-                  message: "decision_id, decision_type, decision_context, and impact_level are required",
+                  message:
+                    "decision_id, decision_type, decision_context, and impact_level are required",
                 },
                 null,
                 2
@@ -1012,7 +1027,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ],
         };
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return {
           content: [
             {
@@ -1022,7 +1038,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                   status: "Error: Failed to submit approval request",
                   error: errorMessage,
                   hitl_service_url: HITL_APPROVALS_URL,
-                  suggestion: "Ensure the HITL approvals service is running and accessible",
+                  suggestion:
+                    "Ensure the HITL approvals service is running and accessible",
                 },
                 null,
                 2
@@ -1035,7 +1052,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     if (name === "hitl_check_status") {
-      const typedArgs = args as HITLCheckStatusArgs;
+      const typedArgs = args as unknown as HITLCheckStatusArgs;
 
       if (!typedArgs.request_id) {
         return {
@@ -1057,7 +1074,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), HITL_REQUEST_TIMEOUT_MS);
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        HITL_REQUEST_TIMEOUT_MS
+      );
 
       try {
         const response = await fetch(
@@ -1115,7 +1135,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       } catch (error: unknown) {
         clearTimeout(timeoutId);
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return {
           content: [
             {
@@ -1151,6 +1172,144 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     };
   }
 });
+
+/**
+ * Generate enhanced training data based on domain graph relationships
+ */
+function generateEnhancedTrainingData(graph: any, count: number) {
+  const trainingSamples = [];
+
+  // Handle Map-based graph structure (graph.nodes and graph.edges are Maps)
+  const nodeCount = graph.nodes?.size || 0;
+  const edgeCount = graph.edges?.size || 0;
+
+  // Convert nodes Map to array for filtering
+  const nodesArray: any[] =
+    graph.nodes instanceof Map ? Array.from(graph.nodes.values()) : [];
+
+  // Count domain types from actual graph data
+  const functionalCount = nodesArray.filter(
+    (n) => n.type === "functional"
+  ).length;
+  const integrationCount = nodesArray.filter(
+    (n) => n.type === "integration"
+  ).length;
+  const technicalCount = nodesArray.filter(
+    (n) => n.type === "technical"
+  ).length;
+
+  for (let i = 0; i < count; i++) {
+    // Create features based on domain relationships and properties
+    const features = Array.from({ length: 16 }, (_, idx) => {
+      switch (idx) {
+        case 0: // Node count influence
+          return nodeCount / 20 + Math.random() * 0.1;
+        case 1: // Edge density
+          return edgeCount / Math.max(nodeCount, 1) / 2 + Math.random() * 0.1;
+        case 2: // Functional domain ratio
+          return (
+            functionalCount / Math.max(nodeCount, 1) + Math.random() * 0.05
+          );
+        case 3: // Integration domain ratio
+          return (
+            integrationCount / Math.max(nodeCount, 1) + Math.random() * 0.05
+          );
+        case 4: // Average node degree
+          const avgDegree = nodeCount ? (edgeCount * 2) / nodeCount : 0;
+          return Math.min(avgDegree / 5, 1) + Math.random() * 0.1;
+        case 5: // Domain connectivity score
+          const maxEdges = (nodeCount * (nodeCount - 1)) / 2;
+          const connectivity = maxEdges > 0 ? edgeCount / maxEdges : 0;
+          return Math.min(connectivity + Math.random() * 0.1, 1);
+        case 6: // Structural cohesion (based on domain distribution)
+          return (
+            0.7 +
+            (technicalCount / Math.max(nodeCount, 1)) * 0.2 +
+            Math.random() * 0.1
+          );
+        case 7: // Functional cohesion (based on functional domains)
+          return (
+            0.6 +
+            (functionalCount / Math.max(nodeCount, 1)) * 0.3 +
+            Math.random() * 0.1
+          );
+        case 8: // Behavioral patterns (based on integration domains)
+          return (
+            0.5 +
+            (integrationCount / Math.max(nodeCount, 1)) * 0.3 +
+            Math.random() * 0.2
+          );
+        case 9: // Semantic alignment (simulated)
+          return 0.8 + Math.random() * 0.2;
+        case 10: // Performance metric (based on complexity)
+          return Math.max(0.5, 1 - edgeCount / 50) + Math.random() * 0.15;
+        case 11: // Reliability score (based on structure)
+          return 0.85 + (nodeCount < 20 ? 0.1 : 0) + Math.random() * 0.05;
+        case 12: // Scalability factor (simulated)
+          return 0.75 + Math.random() * 0.25;
+        case 13: // Complexity measure (based on graph size)
+          return Math.min(nodeCount / 10, 1) + Math.random() * 0.1;
+        case 14: // Coupling strength (based on edge density)
+          return Math.min(edgeCount / 15, 1) + Math.random() * 0.1;
+        case 15: // Evolution potential (simulated)
+          return 0.6 + Math.random() * 0.4;
+        default:
+          return Math.random();
+      }
+    });
+
+    // Generate label based on domain health patterns
+    const cohesionScore = features.slice(6, 10).reduce((a, b) => a + b, 0) / 4;
+    const performanceScore =
+      features.slice(10, 13).reduce((a, b) => a + b, 0) / 3;
+    const complexityScore = features[13];
+
+    // Label as "healthy" (1) if cohesion and performance are good with manageable complexity
+    const label =
+      cohesionScore > 0.7 && performanceScore > 0.8 && complexityScore < 0.7
+        ? 1
+        : 0;
+
+    trainingSamples.push({
+      id: `enhanced_pattern_${i}`,
+      features: features,
+      label: label,
+    });
+  }
+
+  return trainingSamples;
+}
+
+/**
+ * Convert Maps/Sets into JSON-serializable structures (objects/arrays).
+ * MCP tool results are rendered as JSON text, so this prevents `Map` fields
+ * (e.g. `domainScores`, `dependencyGraph`) from showing up as `{}`.
+ */
+function toSerializable(value: unknown): unknown {
+  if (value instanceof Map) {
+    return Object.fromEntries(
+      Array.from(value.entries()).map(([k, v]) => [k, toSerializable(v)])
+    );
+  }
+
+  if (value instanceof Set) {
+    return Array.from(value.values()).map((v) => toSerializable(v));
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v) => toSerializable(v));
+  }
+
+  if (value && typeof value === "object") {
+    const obj: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      obj[k] = toSerializable(v);
+    }
+    return obj;
+  }
+
+  return value;
+}
 
 async function main() {
   const transport = new StdioServerTransport();

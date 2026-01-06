@@ -21,6 +21,10 @@ from .base import (
     RateLimitError,
     ValidationError,
 )
+from .datadog_adapter import (
+    DataDogAdapter,
+    DataDogCredentials,
+)
 from .jira_adapter import (
     JiraAdapter,
     JiraCredentials,
@@ -78,6 +82,8 @@ __all__ = [
     "ServiceNowAdapter",
     "ServiceNowAuthType",
     "ServiceNowCredentials",
+    "DataDogAdapter",
+    "DataDogCredentials",
     # PagerDuty incident management integration
     "PagerDutyAdapter",
     "PagerDutyAuthType",

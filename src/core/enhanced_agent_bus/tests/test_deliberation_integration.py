@@ -9,7 +9,6 @@ Tests the complete deliberation workflow including:
 - Multi-stakeholder consensus
 """
 
-
 import pytest
 
 # Import test targets
@@ -62,9 +61,7 @@ class TestDeliberationWorkflowIntegration:
 
     @pytest.mark.asyncio
     @pytest.mark.governance
-    async def test_workflow_constitutional_validation_pass(
-        self, workflow, sample_workflow_input
-    ):
+    async def test_workflow_constitutional_validation_pass(self, workflow, sample_workflow_input):
         """Test workflow with valid constitutional hash."""
         # Use default constitutional hash
         sample_workflow_input.constitutional_hash = "cdd01ef066bc6cf2"
@@ -78,9 +75,7 @@ class TestDeliberationWorkflowIntegration:
 
     @pytest.mark.asyncio
     @pytest.mark.governance
-    async def test_workflow_constitutional_validation_fail(
-        self, workflow, sample_workflow_input
-    ):
+    async def test_workflow_constitutional_validation_fail(self, workflow, sample_workflow_input):
         """Test workflow rejects invalid constitutional hash."""
         sample_workflow_input.constitutional_hash = "invalid-hash"
 
@@ -117,9 +112,7 @@ class TestDeliberationWorkflowIntegration:
         assert result.votes_required == 3
 
     @pytest.mark.asyncio
-    async def test_workflow_processing_time_tracking(
-        self, workflow, sample_workflow_input
-    ):
+    async def test_workflow_processing_time_tracking(self, workflow, sample_workflow_input):
         """Test processing time is tracked."""
         sample_workflow_input.require_multi_agent_vote = False
         sample_workflow_input.require_human_review = False

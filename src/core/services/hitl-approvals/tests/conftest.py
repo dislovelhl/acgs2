@@ -15,15 +15,14 @@ from typing import Any, AsyncGenerator, Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
-
 from app.models import (
     ApprovalChain,
     ApprovalLevel,
     ApprovalPriority,
     EscalationPolicy,
 )
+from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.fixture(scope="session")

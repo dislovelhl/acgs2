@@ -19,6 +19,10 @@ from .cors_config import (
     get_strict_cors_config,
     validate_origin,
 )
+from .expression_utils import (
+    redact_pii,
+    safe_eval_expr,
+)
 from .rate_limiter import (
     REDIS_AVAILABLE,
     TENANT_CONFIG_AVAILABLE,
@@ -93,4 +97,7 @@ __all__ = [
     "TENANT_ID_MAX_LENGTH",
     "TENANT_ID_MIN_LENGTH",
     "TENANT_ID_PATTERN",
+    # Expression Utils
+    "safe_eval_expr",
+    "redact_pii",
 ]

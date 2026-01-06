@@ -1,0 +1,26 @@
+# SuperClaude Repo Index Workflow Template
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.0.0
+
+name: sc_repo_index
+version: "1.0.0"
+description: "Efficient repository indexing for optimized context"
+constitutional_hash: cdd01ef066bc6cf2
+
+workflow_type: sequential
+
+config:
+  timeout_seconds: 120
+  fail_fast: true
+
+steps:
+  - id: repo_index
+    name: "Generate Repo Index"
+    action: repo_index_workflow
+    timeout: 110
+    description: "Create PROJECT_INDEX.md and PROJECT_INDEX.json"
+
+metadata:
+  author: "ACGS-2 Team"
+  category: "tools"
+  tags: ["repository", "indexing", "token-efficiency"]

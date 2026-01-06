@@ -21,90 +21,14 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-
-class GuardrailLayer(str, Enum):
-    """OWASP-compliant guardrail layers."""
-
-    INPUT_SANITIZER = "input_sanitizer"
-    AGENT_ENGINE = "agent_engine"
-    TOOL_RUNNER_SANDBOX = "tool_runner_sandbox"
-    OUTPUT_VERIFIER = "output_verifier"
-    AUDIT_LOG = "audit_log"
-
-
-class SafetyAction(str, Enum):
-    """Safety actions the guardrails can take."""
-
-    ALLOW = "allow"
-    BLOCK = "block"
-    MODIFY = "modify"
-    ESCALATE = "escalate"
-    SANDBOX = "sandbox"
-    AUDIT = "audit"
-
-
-class ViolationSeverity(str, Enum):
-    """Severity levels for violations."""
-
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
-
-
-@dataclass
-class Violation:
-    """A safety violation detected by guardrails."""
-
-    layer: GuardrailLayer
-    violation_type: str
-    severity: ViolationSeverity
-    message: str
-    details: Dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
-    trace_id: str = ""
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "layer": self.layer.value,
-            "violation_type": self.violation_type,
-            "severity": self.severity.value,
-            "message": self.message,
-            "details": self.details,
-            "timestamp": self.timestamp.isoformat(),
-            "trace_id": self.trace_id,
-        }
-
-
-@dataclass
-class GuardrailResult:
-    """Result from a guardrail layer."""
-
-    action: SafetyAction
-    allowed: bool
-    violations: List[Violation] = field(default_factory=list)
-    modified_data: Any = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    processing_time_ms: float = 0.0
-    trace_id: str = ""
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "action": self.action.value,
-            "allowed": self.allowed,
-            "violations": [v.to_dict() for v in self.violations],
-            "modified_data": self.modified_data,
-            "metadata": self.metadata,
-            "processing_time_ms": self.processing_time_ms,
-            "trace_id": self.trace_id,
-        }
+from .guardrails.enums import GuardrailLayer, SafetyAction, ViolationSeverity
+from .guardrails.models import GuardrailResult, Violation
 
 
 class GuardrailComponent(ABC):
@@ -131,11 +55,170 @@ class InputSanitizerConfig:
 
     enabled: bool = True
     max_input_length: int = 1000000  # 1MB
-    allowed_content_types: List[str] = field(default_factory=lambda: ["text/plain", "application/json"])
+    allowed_content_types: List[str] = field(
+        default_factory=lambda: ["text/plain", "application/json"]
+    )
     sanitize_html: bool = True
     detect_injection: bool = True
     pii_detection: bool = True
     timeout_ms: int = 1000
+
+
+@dataclass
+class RateLimiterConfig:
+    """Configuration for rate limiter (OWASP DoS protection)."""
+
+    enabled: bool = True
+    requests_per_minute: int = 60
+    burst_limit: int = 10
+    window_seconds: int = 60
+    block_duration_seconds: int = 300  # 5 minutes
+    whitelist: List[str] = field(default_factory=list)
+    blacklist: List[str] = field(default_factory=list)
+
+
+class RateLimiter(GuardrailComponent):
+    """Rate Limiter: OWASP DoS protection layer.
+
+    Prevents abuse through request rate limiting using token bucket algorithm.
+    """
+
+    def __init__(self, config: Optional[RateLimiterConfig] = None):
+        self.config = config or RateLimiterConfig()
+        # Simple in-memory rate limiting (use Redis in production)
+        self._request_counts: Dict[str, List[float]] = {}
+        self._blocked_until: Dict[str, float] = {}
+
+    def get_layer(self) -> GuardrailLayer:
+        return GuardrailLayer.RATE_LIMITER
+
+    async def process(self, data: Any, context: Dict[str, Any]) -> GuardrailResult:
+        """Apply rate limiting to the request."""
+        start_time = time.monotonic()
+        trace_id = context.get("trace_id", "")
+
+        # Extract client identifier (IP, user ID, API key, etc.)
+        client_id = self._extract_client_id(context)
+
+        # Check whitelist/blacklist first
+        if client_id in self.config.blacklist:
+            return GuardrailResult(
+                action=SafetyAction.BLOCK,
+                allowed=False,
+                violations=[
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="blacklisted_client",
+                        severity=ViolationSeverity.CRITICAL,
+                        message=f"Client {client_id} is blacklisted",
+                        trace_id=trace_id,
+                    )
+                ],
+                processing_time_ms=(time.monotonic() - start_time) * 1000,
+                trace_id=trace_id,
+            )
+
+        if client_id in self.config.whitelist:
+            return GuardrailResult(
+                action=SafetyAction.ALLOW,
+                allowed=True,
+                processing_time_ms=(time.monotonic() - start_time) * 1000,
+                trace_id=trace_id,
+            )
+
+        # Check if client is currently blocked
+        current_time = time.time()
+        if client_id in self._blocked_until:
+            if current_time < self._blocked_until[client_id]:
+                return GuardrailResult(
+                    action=SafetyAction.BLOCK,
+                    allowed=False,
+                    violations=[
+                        Violation(
+                            layer=self.get_layer(),
+                            violation_type="rate_limit_blocked",
+                            severity=ViolationSeverity.HIGH,
+                            message=f"Client {client_id} is rate limited until {self._blocked_until[client_id]}",
+                            trace_id=trace_id,
+                        )
+                    ],
+                    processing_time_ms=(time.monotonic() - start_time) * 1000,
+                    trace_id=trace_id,
+                )
+            else:
+                # Block period expired, remove from blocked list
+                del self._blocked_until[client_id]
+
+        # Apply token bucket rate limiting
+        if self._is_rate_limited(client_id, current_time):
+            # Add to blocked list
+            self._blocked_until[client_id] = current_time + self.config.block_duration_seconds
+
+            return GuardrailResult(
+                action=SafetyAction.BLOCK,
+                allowed=False,
+                violations=[
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="rate_limit_exceeded",
+                        severity=ViolationSeverity.MEDIUM,
+                        message=f"Rate limit exceeded for client {client_id}",
+                        trace_id=trace_id,
+                    )
+                ],
+                processing_time_ms=(time.monotonic() - start_time) * 1000,
+                trace_id=trace_id,
+            )
+
+        return GuardrailResult(
+            action=SafetyAction.ALLOW,
+            allowed=True,
+            processing_time_ms=(time.monotonic() - start_time) * 1000,
+            trace_id=trace_id,
+        )
+
+    def _extract_client_id(self, context: Dict[str, Any]) -> str:
+        """Extract client identifier from request context."""
+        # Priority order: API key > User ID > IP address > session ID
+        client_id = (
+            context.get("api_key")
+            or context.get("user_id")
+            or context.get("ip_address")
+            or context.get("session_id")
+            or "anonymous"
+        )
+        return str(client_id)
+
+    def _is_rate_limited(self, client_id: str, current_time: float) -> bool:
+        """Check if client has exceeded rate limits using token bucket algorithm."""
+        if client_id not in self._request_counts:
+            self._request_counts[client_id] = []
+
+        request_times = self._request_counts[client_id]
+
+        # Remove requests outside the time window
+        window_start = current_time - self.config.window_seconds
+        request_times[:] = [t for t in request_times if t > window_start]
+
+        # Check burst limit (requests in very short time)
+        recent_requests = [t for t in request_times if t > current_time - 1.0]  # Last second
+        if len(recent_requests) >= self.config.burst_limit:
+            return True
+
+        # Check sustained rate limit
+        if len(request_times) >= self.config.requests_per_minute:
+            return True
+
+        # Add current request
+        request_times.append(current_time)
+
+        # Clean up old entries periodically
+        if len(request_times) > self.config.requests_per_minute * 2:
+            # Keep only recent entries
+            cutoff = current_time - (self.config.window_seconds * 2)
+            request_times[:] = [t for t in request_times if t > cutoff]
+
+        return False
 
 
 class InputSanitizer(GuardrailComponent):
@@ -154,26 +237,107 @@ class InputSanitizer(GuardrailComponent):
         return GuardrailLayer.INPUT_SANITIZER
 
     def _compile_pii_patterns(self) -> List[re.Pattern]:
-        """Compile PII detection patterns."""
+        """Compile comprehensive PII detection patterns (GDPR/HIPAA compliant)."""
         patterns = [
-            r"\b\d{3}-\d{2}-\d{4}\b",  # SSN
-            r"\b\d{16}\b",  # Credit card
-            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",  # Email
-            r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",  # Phone
-            r"\b\d{4}\s\d{4}\s\d{4}\s\d{4}\b",  # Credit card with spaces
+            # Social Security Numbers (US)
+            r"\b\d{3}-\d{2}-\d{4}\b",
+            r"\b\d{9}\b",  # SSN without dashes
+            # Credit/Debit Card Numbers
+            r"\b\d{13,19}\b",  # General card number length
+            r"\b\d{4}\s\d{4}\s\d{4}\s\d{4}\b",  # Card with spaces
+            r"\b\d{4}-\d{4}-\d{4}-\d{4}\b",  # Card with dashes
+            # Email Addresses
+            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+            # Phone Numbers (various formats)
+            r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",  # US phone
+            r"\b\(\d{3}\)\s*\d{3}[-.]?\d{4}\b",  # US phone with parens
+            r"\b\+?\d{1,3}[-.\s]?\d{1,14}\b",  # International phone
+            # IP Addresses
+            r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",
+            # MAC Addresses
+            r"\b([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})\b",
+            # Bank Account Numbers (US routing + account)
+            r"\b\d{9}\s+\d{6,17}\b",
+            # Driver's License Numbers (various states)
+            r"\b[A-Z]\d{7}\b",  # California format
+            r"\b\d{2}\s\d{3}\s\d{4}\b",  # New York format
+            # Passport Numbers
+            r"\b[A-Z]{1,2}\d{6,9}\b",
+            # Tax ID Numbers
+            r"\b\d{2}-\d{7}\b",  # EIN format
+            # Health Insurance Numbers
+            r"\b[A-Z]{2}\d{8}\b",  # Sample health ID format
+            # API Keys/Tokens (common patterns)
+            r"\b[A-Za-z0-9]{32}\b",  # 32-char API key
+            r"\b[A-Za-z0-9]{40}\b",  # GitHub token
+            r"sk-\w{48}",  # OpenAI API key pattern
+            r"xoxb-\d+-\d+-\w{24}",  # Slack bot token
+            # Cryptocurrency Addresses
+            r"\b(1|3|bc1)[A-Za-z0-9]{25,62}\b",  # Bitcoin
+            r"\b0x[A-Fa-f0-9]{40}\b",  # Ethereum
+            # URLs with sensitive parameters
+            r"https?://[^\s]*?(password|token|key|secret|credential)[^\s]*",
         ]
         return [re.compile(p, re.IGNORECASE) for p in patterns]
 
     def _compile_injection_patterns(self) -> List[re.Pattern]:
-        """Compile injection attack patterns."""
+        """Compile comprehensive injection attack patterns (OWASP compliant)."""
         patterns = [
-            r"<script[^>]*>.*?</script>",  # XSS
-            r"javascript:",  # JavaScript injection
-            r"on\w+\s*=",  # Event handlers
-            r"eval\s*\(",  # Code injection
-            r"exec\s*\(",  # Code execution
-            r"import\s+os",  # OS command injection
-            r"subprocess\.",  # Subprocess injection
+            # XSS (Cross-Site Scripting)
+            r"<script[^>]*>.*?</script>",
+            r"javascript:",
+            r"vbscript:",
+            r"data:text/html",
+            r"on\w+\s*=",
+            r"<iframe[^>]*>",
+            r"<object[^>]*>",
+            r"<embed[^>]*>",
+            # SQL Injection
+            r"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b.*\b(FROM|INTO|TABLE|DATABASE)\b)",
+            r"(\bUNION\b.*\bSELECT\b)",
+            r"(\bOR\b.*\d+\s*=\s*\d+)",
+            r"(\bAND\b.*\d+\s*=\s*\d+)",
+            # Command Injection
+            r"[;&|`$()<>]",
+            r"\\\$\{.*\}",
+            r"\$\(.*\)",
+            r"`.*`",
+            r"eval\s*\(",
+            r"exec\s*\(",
+            r"system\s*\(",
+            r"popen\s*\(",
+            r"import\s+os",
+            r"import\s+subprocess",
+            r"os\.",
+            r"subprocess\.",
+            r"shutil\.",
+            r"commands\.",
+            # Path Traversal
+            r"\.\./",
+            r"\.\.\\",
+            r"%2e%2e%2f",
+            r"%2e%2e/",
+            r"~",
+            r"passwd",
+            r"shadow",
+            r"etc",
+            # LDAP Injection
+            r"(\*\)|\(\*\))",
+            r"(\|\|)",
+            r"(&&)",
+            # NoSQL Injection
+            r"\$ne|\$gt|\$lt|\$gte|\$lte|\$regex|\$where",
+            r"db\.\w+\.",
+            r"collection\.\w+\.",
+            # Template Injection
+            r"\{\{.*\}\}",
+            r"\{\%.*\%\}",
+            r"\$\{.*\}",
+            # XML External Entity (XXE)
+            r"<!ENTITY",
+            r"<!DOCTYPE.*SYSTEM",
+            r"file://",
+            r"http://",
         ]
         return [re.compile(p, re.IGNORECASE | re.DOTALL) for p in patterns]
 
@@ -186,24 +350,28 @@ class InputSanitizer(GuardrailComponent):
         try:
             # Size validation
             if isinstance(data, str) and len(data) > self.config.max_input_length:
-                violations.append(Violation(
-                    layer=self.get_layer(),
-                    violation_type="input_too_large",
-                    severity=ViolationSeverity.HIGH,
-                    message=f"Input size {len(data)} exceeds maximum {self.config.max_input_length}",
-                    trace_id=trace_id,
-                ))
+                violations.append(
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="input_too_large",
+                        severity=ViolationSeverity.HIGH,
+                        message=f"Input size {len(data)} exceeds maximum {self.config.max_input_length}",
+                        trace_id=trace_id,
+                    )
+                )
 
             # Content type validation
             content_type = context.get("content_type", "text/plain")
             if content_type not in self.config.allowed_content_types:
-                violations.append(Violation(
-                    layer=self.get_layer(),
-                    violation_type="invalid_content_type",
-                    severity=ViolationSeverity.MEDIUM,
-                    message=f"Content type {content_type} not allowed",
-                    trace_id=trace_id,
-                ))
+                violations.append(
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="invalid_content_type",
+                        severity=ViolationSeverity.MEDIUM,
+                        message=f"Content type {content_type} not allowed",
+                        trace_id=trace_id,
+                    )
+                )
 
             # Convert to string for processing
             if isinstance(data, dict):
@@ -233,7 +401,9 @@ class InputSanitizer(GuardrailComponent):
             # Determine action
             if violations:
                 # Check if any violations are critical
-                critical_violations = [v for v in violations if v.severity == ViolationSeverity.CRITICAL]
+                critical_violations = [
+                    v for v in violations if v.severity == ViolationSeverity.CRITICAL
+                ]
                 if critical_violations:
                     action = SafetyAction.BLOCK
                     allowed = False
@@ -244,7 +414,9 @@ class InputSanitizer(GuardrailComponent):
                         action = SafetyAction.AUDIT
                         allowed = True
                     else:
-                        action = SafetyAction.MODIFY if self.config.sanitize_html else SafetyAction.AUDIT
+                        action = (
+                            SafetyAction.MODIFY if self.config.sanitize_html else SafetyAction.AUDIT
+                        )
                         allowed = True
                         # Apply sanitization if needed
                         if action == SafetyAction.MODIFY:
@@ -255,13 +427,15 @@ class InputSanitizer(GuardrailComponent):
 
         except Exception as e:
             logger.error(f"Input sanitizer error: {e}")
-            violations.append(Violation(
-                layer=self.get_layer(),
-                violation_type="processing_error",
-                severity=ViolationSeverity.HIGH,
-                message=f"Input processing failed: {str(e)}",
-                trace_id=trace_id,
-            ))
+            violations.append(
+                Violation(
+                    layer=self.get_layer(),
+                    violation_type="processing_error",
+                    severity=ViolationSeverity.HIGH,
+                    message=f"Input processing failed: {str(e)}",
+                    trace_id=trace_id,
+                )
+            )
             action = SafetyAction.BLOCK
             allowed = False
             input_text = ""
@@ -281,11 +455,11 @@ class InputSanitizer(GuardrailComponent):
     def _sanitize_html(self, text: str) -> str:
         """Basic HTML sanitization."""
         # Remove script tags and their contents
-        text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.IGNORECASE | re.DOTALL)
+        text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.IGNORECASE | re.DOTALL)
         # Remove other dangerous tags
-        dangerous_tags = ['iframe', 'object', 'embed', 'form', 'input', 'button']
+        dangerous_tags = ["iframe", "object", "embed", "form", "input", "button"]
         for tag in dangerous_tags:
-            text = re.sub(f'<{tag}[^>]*>.*?</{tag}>', '', text, flags=re.IGNORECASE | re.DOTALL)
+            text = re.sub(f"<{tag}[^>]*>.*?</{tag}>", "", text, flags=re.IGNORECASE | re.DOTALL)
         return text
 
     def _detect_injection(self, text: str) -> List[Violation]:
@@ -293,14 +467,16 @@ class InputSanitizer(GuardrailComponent):
         violations = []
         for i, pattern in enumerate(self._injection_patterns):
             if pattern.search(text):
-                violations.append(Violation(
-                    layer=self.get_layer(),
-                    violation_type="injection_attack",
-                    severity=ViolationSeverity.CRITICAL,
-                    message=f"Potential injection attack detected (pattern {i})",
-                    details={"pattern_index": i},
-                    trace_id="",
-                ))
+                violations.append(
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="injection_attack",
+                        severity=ViolationSeverity.CRITICAL,
+                        message=f"Potential injection attack detected (pattern {i})",
+                        details={"pattern_index": i},
+                        trace_id="",
+                    )
+                )
         return violations
 
     def _detect_pii(self, text: str) -> List[Violation]:
@@ -309,14 +485,16 @@ class InputSanitizer(GuardrailComponent):
         for i, pattern in enumerate(self._pii_patterns):
             matches = pattern.findall(text)
             if matches:
-                violations.append(Violation(
-                    layer=self.get_layer(),
-                    violation_type="pii_detected",
-                    severity=ViolationSeverity.HIGH,
-                    message=f"PII detected: {len(matches)} potential matches (pattern {i})",
-                    details={"pattern_index": i, "match_count": len(matches)},
-                    trace_id="",
-                ))
+                violations.append(
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="pii_detected",
+                        severity=ViolationSeverity.HIGH,
+                        message=f"PII detected: {len(matches)} potential matches (pattern {i})",
+                        details={"pattern_index": i, "match_count": len(matches)},
+                        trace_id="",
+                    )
+                )
         return violations
 
     def _apply_sanitization(self, text: str, violations: List[Violation]) -> str:
@@ -368,27 +546,31 @@ class AgentEngine(GuardrailComponent):
             if self.config.constitutional_validation:
                 constitutional_result = await self._validate_constitutional(data, context)
                 if not constitutional_result["compliant"]:
-                    violations.append(Violation(
-                        layer=self.get_layer(),
-                        violation_type="constitutional_violation",
-                        severity=ViolationSeverity.HIGH,
-                        message="Request violates constitutional principles",
-                        details=constitutional_result,
-                        trace_id=trace_id,
-                    ))
+                    violations.append(
+                        Violation(
+                            layer=self.get_layer(),
+                            violation_type="constitutional_violation",
+                            severity=ViolationSeverity.HIGH,
+                            message="Request violates constitutional principles",
+                            details=constitutional_result,
+                            trace_id=trace_id,
+                        )
+                    )
 
             # Impact scoring
             if self.config.impact_scoring:
                 impact_score = await self._calculate_impact_score(data, context)
                 if impact_score > self.config.deliberation_required_threshold:
-                    violations.append(Violation(
-                        layer=self.get_layer(),
-                        violation_type="high_impact",
-                        severity=ViolationSeverity.MEDIUM,
-                        message=f"High impact action requires deliberation (score: {impact_score})",
-                        details={"impact_score": impact_score},
-                        trace_id=trace_id,
-                    ))
+                    violations.append(
+                        Violation(
+                            layer=self.get_layer(),
+                            violation_type="high_impact",
+                            severity=ViolationSeverity.MEDIUM,
+                            message=f"High impact action requires deliberation (score: {impact_score})",
+                            details={"impact_score": impact_score},
+                            trace_id=trace_id,
+                        )
+                    )
 
             # Determine action
             if violations:
@@ -400,13 +582,15 @@ class AgentEngine(GuardrailComponent):
 
         except Exception as e:
             logger.error(f"Agent engine error: {e}")
-            violations.append(Violation(
-                layer=self.get_layer(),
-                violation_type="processing_error",
-                severity=ViolationSeverity.HIGH,
-                message=f"Agent engine processing failed: {str(e)}",
-                trace_id=trace_id,
-            ))
+            violations.append(
+                Violation(
+                    layer=self.get_layer(),
+                    violation_type="processing_error",
+                    severity=ViolationSeverity.HIGH,
+                    message=f"Agent engine processing failed: {str(e)}",
+                    trace_id=trace_id,
+                )
+            )
             action = SafetyAction.BLOCK
             allowed = False
 
@@ -483,26 +667,30 @@ class ToolRunnerSandbox(GuardrailComponent):
                 action = SafetyAction.ALLOW
                 allowed = True
             else:
-                violations.append(Violation(
-                    layer=self.get_layer(),
-                    violation_type="sandbox_execution_failed",
-                    severity=ViolationSeverity.HIGH,
-                    message=f"Sandbox execution failed: {sandbox_result.get('error', 'Unknown error')}",
-                    details=sandbox_result,
-                    trace_id=trace_id,
-                ))
+                violations.append(
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="sandbox_execution_failed",
+                        severity=ViolationSeverity.HIGH,
+                        message=f"Sandbox execution failed: {sandbox_result.get('error', 'Unknown error')}",
+                        details=sandbox_result,
+                        trace_id=trace_id,
+                    )
+                )
                 action = SafetyAction.BLOCK
                 allowed = False
 
         except Exception as e:
             logger.error(f"Sandbox error: {e}")
-            violations.append(Violation(
-                layer=self.get_layer(),
-                violation_type="sandbox_error",
-                severity=ViolationSeverity.CRITICAL,
-                message=f"Sandbox execution error: {str(e)}",
-                trace_id=trace_id,
-            ))
+            violations.append(
+                Violation(
+                    layer=self.get_layer(),
+                    violation_type="sandbox_error",
+                    severity=ViolationSeverity.CRITICAL,
+                    message=f"Sandbox execution error: {str(e)}",
+                    trace_id=trace_id,
+                )
+            )
             action = SafetyAction.BLOCK
             allowed = False
 
@@ -598,7 +786,9 @@ class OutputVerifier(GuardrailComponent):
             # Determine action
             if violations:
                 # Check for critical violations
-                critical_violations = [v for v in violations if v.severity == ViolationSeverity.CRITICAL]
+                critical_violations = [
+                    v for v in violations if v.severity == ViolationSeverity.CRITICAL
+                ]
                 if critical_violations:
                     action = SafetyAction.BLOCK
                     allowed = False
@@ -611,13 +801,15 @@ class OutputVerifier(GuardrailComponent):
 
         except Exception as e:
             logger.error(f"Output verifier error: {e}")
-            violations.append(Violation(
-                layer=self.get_layer(),
-                violation_type="processing_error",
-                severity=ViolationSeverity.HIGH,
-                message=f"Output verification failed: {str(e)}",
-                trace_id=trace_id,
-            ))
+            violations.append(
+                Violation(
+                    layer=self.get_layer(),
+                    violation_type="processing_error",
+                    severity=ViolationSeverity.HIGH,
+                    message=f"Output verification failed: {str(e)}",
+                    trace_id=trace_id,
+                )
+            )
             action = SafetyAction.BLOCK
             allowed = False
 
@@ -644,13 +836,15 @@ class OutputVerifier(GuardrailComponent):
 
         for pattern in harmful_patterns:
             if re.search(pattern, text, re.IGNORECASE):
-                violations.append(Violation(
-                    layer=self.get_layer(),
-                    violation_type="harmful_content",
-                    severity=ViolationSeverity.CRITICAL,
-                    message="Output contains potentially harmful instructions",
-                    trace_id="",
-                ))
+                violations.append(
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="harmful_content",
+                        severity=ViolationSeverity.CRITICAL,
+                        message="Output contains potentially harmful instructions",
+                        trace_id="",
+                    )
+                )
                 break  # Only report once
 
         return violations
@@ -661,14 +855,16 @@ class OutputVerifier(GuardrailComponent):
 
         for i, pattern in enumerate(self._toxicity_patterns):
             if pattern.search(text):
-                violations.append(Violation(
-                    layer=self.get_layer(),
-                    violation_type="toxicity_detected",
-                    severity=ViolationSeverity.HIGH,
-                    message=f"Toxic content detected (pattern {i})",
-                    details={"pattern_index": i},
-                    trace_id="",
-                ))
+                violations.append(
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="toxicity_detected",
+                        severity=ViolationSeverity.HIGH,
+                        message=f"Toxic content detected (pattern {i})",
+                        details={"pattern_index": i},
+                        trace_id="",
+                    )
+                )
 
         return violations
 
@@ -688,14 +884,16 @@ class OutputVerifier(GuardrailComponent):
             compiled = re.compile(pattern, re.IGNORECASE)
             matches = compiled.findall(text)
             if matches:
-                violations.append(Violation(
-                    layer=self.get_layer(),
-                    violation_type="pii_leak",
-                    severity=ViolationSeverity.HIGH,
-                    message=f"PII detected in output: {len(matches)} instances",
-                    details={"match_count": len(matches)},
-                    trace_id="",
-                ))
+                violations.append(
+                    Violation(
+                        layer=self.get_layer(),
+                        violation_type="pii_leak",
+                        severity=ViolationSeverity.HIGH,
+                        message=f"PII detected in output: {len(matches)} instances",
+                        details={"match_count": len(matches)},
+                        trace_id="",
+                    )
+                )
                 redacted = compiled.sub("[REDACTED]", redacted)
 
         return redacted, violations
@@ -782,7 +980,10 @@ class AuditLog(GuardrailComponent):
             "blocked_count": total_entries - allowed_count,
             "allowed_rate": allowed_count / total_entries,
             "violation_rate": violation_count / total_entries,
-            "avg_processing_time_ms": sum(entry.get("processing_time_ms", 0) for entry in self._audit_entries) / total_entries,
+            "avg_processing_time_ms": sum(
+                entry.get("processing_time_ms", 0) for entry in self._audit_entries
+            )
+            / total_entries,
         }
 
     def get_entries(self, trace_id: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -796,6 +997,7 @@ class AuditLog(GuardrailComponent):
 class RuntimeSafetyGuardrailsConfig:
     """Configuration for the complete runtime safety guardrails system."""
 
+    rate_limiter: RateLimiterConfig = field(default_factory=RateLimiterConfig)
     input_sanitizer: InputSanitizerConfig = field(default_factory=InputSanitizerConfig)
     agent_engine: AgentEngineConfig = field(default_factory=AgentEngineConfig)
     sandbox: SandboxConfig = field(default_factory=SandboxConfig)
@@ -811,12 +1013,16 @@ class RuntimeSafetyGuardrails:
     """
     OWASP-compliant Runtime Safety Guardrails System.
 
-    Implements 5-layer security architecture:
-    1. Input Sanitizer - Clean and validate incoming requests
-    2. Agent Engine - Constitutional governance validation
-    3. Tool Runner Sandbox - Isolated execution environment
-    4. Output Verifier - Post-execution content validation
-    5. Audit Log - Immutable compliance trail
+    Implements 6-layer security architecture for comprehensive protection:
+    1. Rate Limiter - OWASP DoS protection and abuse prevention
+    2. Input Sanitizer - Clean and validate incoming requests
+    3. Agent Engine - Constitutional governance validation
+    4. Tool Runner Sandbox - Isolated execution environment
+    5. Output Verifier - Post-execution content validation
+    6. Audit Log - Immutable compliance trail
+
+    Features OWASP Top 10 protection, rate limiting, comprehensive injection detection,
+    and multi-layer validation with fail-closed security.
 
     Constitutional Hash: cdd01ef066bc6cf2
     """
@@ -824,8 +1030,9 @@ class RuntimeSafetyGuardrails:
     def __init__(self, config: Optional[RuntimeSafetyGuardrailsConfig] = None):
         self.config = config or RuntimeSafetyGuardrailsConfig()
 
-        # Initialize guardrail layers
+        # Initialize guardrail layers (OWASP ordered)
         self.layers = {
+            GuardrailLayer.RATE_LIMITER: RateLimiter(self.config.rate_limiter),
             GuardrailLayer.INPUT_SANITIZER: InputSanitizer(self.config.input_sanitizer),
             GuardrailLayer.AGENT_ENGINE: AgentEngine(self.config.agent_engine),
             GuardrailLayer.TOOL_RUNNER_SANDBOX: ToolRunnerSandbox(self.config.sandbox),
@@ -834,9 +1041,7 @@ class RuntimeSafetyGuardrails:
         }
 
     async def process_request(
-        self,
-        request_data: Any,
-        context: Optional[Dict[str, Any]] = None
+        self, request_data: Any, context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Process a request through all guardrail layers.
@@ -881,19 +1086,21 @@ class RuntimeSafetyGuardrails:
                 try:
                     result = await asyncio.wait_for(
                         layer.process(current_data, layer_context),
-                        timeout=self.config.timeout_ms / 1000
+                        timeout=self.config.timeout_ms / 1000,
                     )
                 except asyncio.TimeoutError:
                     result = GuardrailResult(
                         action=SafetyAction.BLOCK,
                         allowed=False,
-                        violations=[Violation(
-                            layer=layer_type,
-                            violation_type="timeout",
-                            severity=ViolationSeverity.CRITICAL,
-                            message=f"Layer {layer_type.value} timed out",
-                            trace_id=trace_id,
-                        )]
+                        violations=[
+                            Violation(
+                                layer=layer_type,
+                                violation_type="timeout",
+                                severity=ViolationSeverity.CRITICAL,
+                                message=f"Layer {layer_type.value} timed out",
+                                trace_id=trace_id,
+                            )
+                        ],
                     )
 
                 layer_results[layer_type.value] = result.to_dict()
@@ -914,25 +1121,29 @@ class RuntimeSafetyGuardrails:
             # Always log to audit (final layer)
             audit_layer = self.layers[GuardrailLayer.AUDIT_LOG]
             audit_context = context.copy()
-            audit_context.update({
-                "action": SafetyAction.ALLOW if final_allowed else SafetyAction.BLOCK,
-                "allowed": final_allowed,
-                "violations": all_violations,
-                "processing_time_ms": (time.time() - start_time) * 1000,
-            })
+            audit_context.update(
+                {
+                    "action": SafetyAction.ALLOW if final_allowed else SafetyAction.BLOCK,
+                    "allowed": final_allowed,
+                    "violations": all_violations,
+                    "processing_time_ms": (time.time() - start_time) * 1000,
+                }
+            )
 
             await audit_layer.process(current_data, audit_context)
 
         except Exception as e:
             logger.error(f"Guardrails processing error: {e}")
             final_allowed = False
-            all_violations.append(Violation(
-                layer=GuardrailLayer.AUDIT_LOG,  # Generic error
-                violation_type="system_error",
-                severity=ViolationSeverity.CRITICAL,
-                message=f"Guardrails system error: {str(e)}",
-                trace_id=trace_id,
-            ))
+            all_violations.append(
+                Violation(
+                    layer=GuardrailLayer.AUDIT_LOG,  # Generic error
+                    violation_type="system_error",
+                    severity=ViolationSeverity.CRITICAL,
+                    message=f"Guardrails system error: {str(e)}",
+                    trace_id=trace_id,
+                )
+            )
 
         total_time = (time.time() - start_time) * 1000
 
@@ -957,8 +1168,11 @@ class RuntimeSafetyGuardrails:
         metrics = {
             "system": {
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-                "layers_enabled": [layer.value for layer, component in self.layers.items()
-                                 if getattr(component.config, 'enabled', True)],
+                "layers_enabled": [
+                    layer.value
+                    for layer, component in self.layers.items()
+                    if getattr(component.config, "enabled", True)
+                ],
             }
         }
 

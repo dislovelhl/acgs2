@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from health_aggregator import (
     CONSTITUTIONAL_HASH,
     HealthAggregator,

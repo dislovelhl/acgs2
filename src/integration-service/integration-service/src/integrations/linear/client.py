@@ -8,7 +8,7 @@ exceptions in retry logic, unlike httpx-based clients.
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import aiohttp
 from tenacity import (
@@ -24,11 +24,40 @@ from ..base import (
     DeliveryError,
     IntegrationEvent,
     IntegrationResult,
-    IntegrationType,
 )
 from .credentials import LinearCredentials
 
 logger = logging.getLogger(__name__)
+
+
+class LinearClientError(Exception):
+    """Base exception for Linear client errors."""
+
+    pass
+
+
+class LinearAuthenticationError(LinearClientError):
+    """Exception raised when Linear API authentication fails."""
+
+    pass
+
+
+class LinearNotFoundError(LinearClientError):
+    """Exception raised when a Linear resource is not found."""
+
+    pass
+
+
+class LinearRateLimitError(LinearClientError):
+    """Exception raised when Linear API rate limit is exceeded."""
+
+    pass
+
+
+class LinearValidationError(LinearClientError):
+    """Exception raised when Linear API request validation fails."""
+
+    pass
 
 
 class LinearClient(BaseIntegration):
@@ -221,9 +250,13 @@ class LinearClient(BaseIntegration):
                         team_query, {"id": self.credentials.default_team_id}
                     )
                     if not (team_data.get("data", {}).get("team")):
-                        validation_errors.append(f"Invalid default team ID: {self.credentials.default_team_id}")
+                        validation_errors.append(
+                            f"Invalid default team ID: {self.credentials.default_team_id}"
+                        )
                 except Exception:
-                    validation_errors.append(f"Cannot access team ID: {self.credentials.default_team_id}")
+                    validation_errors.append(
+                        f"Cannot access team ID: {self.credentials.default_team_id}"
+                    )
 
             # Validate project ID if provided
             if self.credentials.default_project_id:
@@ -241,9 +274,13 @@ class LinearClient(BaseIntegration):
                         project_query, {"id": self.credentials.default_project_id}
                     )
                     if not (project_data.get("data", {}).get("project")):
-                        validation_errors.append(f"Invalid default project ID: {self.credentials.default_project_id}")
+                        validation_errors.append(
+                            f"Invalid default project ID: {self.credentials.default_project_id}"
+                        )
                 except Exception:
-                    validation_errors.append(f"Cannot access project ID: {self.credentials.default_project_id}")
+                    validation_errors.append(
+                        f"Cannot access project ID: {self.credentials.default_project_id}"
+                    )
 
             if validation_errors:
                 return IntegrationResult(
@@ -284,8 +321,7 @@ class LinearClient(BaseIntegration):
             issue_input = self._build_issue_input(event)
 
             response_data = await self._execute_graphql_query(
-                self.CREATE_ISSUE_MUTATION,
-                {"input": issue_input}
+                self.CREATE_ISSUE_MUTATION, {"input": issue_input}
             )
 
             # Handle GraphQL response
@@ -422,9 +458,7 @@ class LinearClient(BaseIntegration):
         return issue_input
 
     async def _execute_graphql_query(
-        self,
-        query: str,
-        variables: Optional[Dict[str, Any]] = None
+        self, query: str, variables: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Execute a GraphQL query against Linear API.
@@ -485,12 +519,14 @@ class LinearClient(BaseIntegration):
         return AsyncRetrying(
             stop=stop_after_attempt(max_attempts),
             wait=wait_exponential(multiplier=1, min=1, max=16),
-            retry=retry_if_exception_type((
-                aiohttp.ClientTimeout,
-                aiohttp.ClientError,
-                aiohttp.ClientConnectionError,
-                DeliveryError,
-            )),
+            retry=retry_if_exception_type(
+                (
+                    aiohttp.ClientTimeout,
+                    aiohttp.ClientError,
+                    aiohttp.ClientConnectionError,
+                    DeliveryError,
+                )
+            ),
             before_sleep=before_sleep_log(logger, logging.WARNING),
             reraise=True,
         )

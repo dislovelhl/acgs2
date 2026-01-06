@@ -58,7 +58,7 @@ impl OpaClient {
 
     pub async fn validate_constitutional(&self, message: &AgentMessage) -> Result<ValidationResult, Box<dyn std::error::Error + Send + Sync>> {
         let cache_key = format!("constitutional:{}:{}", message.message_id, message.constitutional_hash);
-        
+
         if let Some(cached) = self.cache.get(&cache_key).await {
             return Ok(cached);
         }
@@ -70,16 +70,16 @@ impl OpaClient {
         };
 
         let result = self.evaluate_policy("acgs/constitutional/validate", &input).await?;
-        
+
         self.cache.insert(cache_key, result.clone()).await;
         Ok(result)
     }
 
     async fn evaluate_policy<T: Serialize>(&self, policy_path: &str, input: &T) -> Result<ValidationResult, Box<dyn std::error::Error + Send + Sync>> {
         let url = format!("{}/v1/data/{}", self.endpoint, policy_path);
-        
+
         let opa_input = OpaInput { input };
-        
+
         let response = match self.client.post(&url)
             .json(&opa_input)
             .send()
@@ -106,7 +106,7 @@ impl OpaClient {
         };
 
         let mut validation_result = ValidationResult::new();
-        
+
         match opa_resp.result {
             Some(serde_json::Value::Bool(allowed)) => {
                 validation_result.is_valid = allowed;

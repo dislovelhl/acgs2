@@ -204,91 +204,91 @@ def validate_horizontal_scaling(
 
 def print_validation_report(result: HorizontalScalingResult) -> None:
     """Print formatted validation report."""
-    print()
-    print("=" * 70)
-    print("HORIZONTAL SCALING VALIDATION REPORT")
-    print("=" * 70)
-    print()
+    logger.debug()
+    logger.debug("=" * 70)
+    logger.debug("HORIZONTAL SCALING VALIDATION REPORT")
+    logger.debug("=" * 70)
+    logger.debug()
 
-    print("PERFORMANCE METRICS:")
-    print(f"  Total RPS:             {result.total_rps:,.2f}")
-    print(f"  Baseline RPS:          {result.baseline_rps:,.2f}")
-    print(f"  Instance Count:        {result.instance_count}")
-    print(f"  Scaling Factor:        {result.scaling_factor:.2f}x")
-    print(f"  Scaling Efficiency:    {result.scaling_efficiency_pct:.1f}%")
-    print()
+    logger.debug("PERFORMANCE METRICS:")
+    logger.debug(f"  Total RPS:             {result.total_rps:,.2f}")
+    logger.debug(f"  Baseline RPS:          {result.baseline_rps:,.2f}")
+    logger.debug(f"  Instance Count:        {result.instance_count}")
+    logger.debug(f"  Scaling Factor:        {result.scaling_factor:.2f}x")
+    logger.debug(f"  Scaling Efficiency:    {result.scaling_efficiency_pct:.1f}%")
+    logger.debug()
 
-    print("LATENCY METRICS:")
+    logger.debug("LATENCY METRICS:")
     p99_status = "[PASS]" if result.p99_latency_ms <= 1.0 else "[FAIL]"
-    print(f"  P99:  {result.p99_latency_ms:.3f}ms {p99_status}")
-    print(f"  P95:  {result.p95_latency_ms:.3f}ms")
-    print(f"  P50:  {result.p50_latency_ms:.3f}ms")
-    print(f"  Error Rate: {result.error_rate_pct:.2f}%")
-    print()
+    logger.debug(f"  P99:  {result.p99_latency_ms:.3f}ms {p99_status}")
+    logger.debug(f"  P95:  {result.p95_latency_ms:.3f}ms")
+    logger.debug(f"  P50:  {result.p50_latency_ms:.3f}ms")
+    logger.error(f"  Error Rate: {result.error_rate_pct:.2f}%")
+    logger.debug()
 
-    print("LOAD DISTRIBUTION:")
+    logger.debug("LOAD DISTRIBUTION:")
     if result.load_distribution:
         total = sum(result.load_distribution.values())
         for instance, count in result.load_distribution.items():
             pct = count / total * 100 if total > 0 else 0
-            print(f"  {instance}: {count:,} requests ({pct:.1f}%)")
+            logger.debug(f"  {instance}: {count:,} requests ({pct:.1f}%)")
     else:
-        print("  (No distribution data available)")
-    print()
+        logger.debug("  (No distribution data available)")
+    logger.debug()
 
-    print("VALIDATION RESULTS:")
-    print(f"  Linear Scaling:  {'PASS' if result.is_linear_scaling else 'FAIL'}")
-    print(f"  Load Balanced:   {'PASS' if result.is_balanced else 'FAIL'}")
-    print(f"  P99 < 1ms:       {'PASS' if result.p99_latency_ms <= 1.0 else 'FAIL'}")
-    print(f"  Error Rate:      {'PASS' if result.error_rate_pct < 0.1 else 'FAIL'}")
-    print()
+    logger.debug("VALIDATION RESULTS:")
+    logger.debug(f"  Linear Scaling:  {'PASS' if result.is_linear_scaling else 'FAIL'}")
+    logger.debug(f"  Load Balanced:   {'PASS' if result.is_balanced else 'FAIL'}")
+    logger.debug(f"  P99 < 1ms:       {'PASS' if result.p99_latency_ms <= 1.0 else 'FAIL'}")
+    logger.error(f"  Error Rate:      {'PASS' if result.error_rate_pct < 0.1 else 'FAIL'}")
+    logger.debug()
 
-    print("=" * 70)
+    logger.debug("=" * 70)
     if result.all_targets_met:
-        print("OVERALL: ALL HORIZONTAL SCALING TARGETS MET")
+        logger.debug("OVERALL: ALL HORIZONTAL SCALING TARGETS MET")
         factor = result.scaling_factor
-        print(f"Validated: {result.instance_count}x instances = {factor:.1f}x throughput")
+        logger.debug(f"Validated: {result.instance_count}x instances = {factor:.1f}x throughput")
     else:
-        print("OVERALL: SOME TARGETS NOT MET - REVIEW ABOVE")
-    print("=" * 70)
-    print()
+        logger.debug("OVERALL: SOME TARGETS NOT MET - REVIEW ABOVE")
+    logger.debug("=" * 70)
+    logger.debug()
 
 
 def print_promql_queries() -> None:
     """Print PromQL queries for manual verification."""
-    print()
-    print("=" * 70)
-    print("PromQL QUERIES FOR HORIZONTAL SCALING VALIDATION")
-    print("=" * 70)
-    print()
+    logger.debug()
+    logger.debug("=" * 70)
+    logger.debug("PromQL QUERIES FOR HORIZONTAL SCALING VALIDATION")
+    logger.debug("=" * 70)
+    logger.debug()
 
-    print("1. TOTAL RPS (across all instances):")
-    print("   sum(rate(http_requests_total[1m]))")
-    print()
+    logger.debug("1. TOTAL RPS (across all instances):")
+    logger.debug("   sum(rate(http_requests_total[1m]))")
+    logger.debug()
 
-    print("2. RPS PER INSTANCE:")
-    print("   rate(http_requests_total[1m]) by (instance)")
-    print()
+    logger.debug("2. RPS PER INSTANCE:")
+    logger.debug("   rate(http_requests_total[1m]) by (instance)")
+    logger.debug()
 
-    print("3. P99 LATENCY:")
-    print(
+    logger.debug("3. P99 LATENCY:")
+    logger.debug(
         "   histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))"
     )
-    print()
+    logger.debug()
 
-    print("4. LOAD DISTRIBUTION:")
-    print("   sum(http_requests_total) by (instance)")
-    print()
+    logger.debug("4. LOAD DISTRIBUTION:")
+    logger.debug("   sum(http_requests_total) by (instance)")
+    logger.debug()
 
-    print("5. ERROR RATE:")
-    print('   sum(rate(http_requests_total{status=~"5.."}[1m]))')
-    print("   / sum(rate(http_requests_total[1m])) * 100")
-    print()
+    logger.debug("5. ERROR RATE:")
+    logger.debug('   sum(rate(http_requests_total{status=~"5.."}[1m]))')
+    logger.debug("   / sum(rate(http_requests_total[1m])) * 100")
+    logger.debug()
 
-    print("6. SCALING EFFICIENCY:")
-    print("   (current_total_rps / (baseline_rps * instance_count)) * 100")
-    print()
-    print("=" * 70)
+    logger.debug("6. SCALING EFFICIENCY:")
+    logger.debug("   (current_total_rps / (baseline_rps * instance_count)) * 100")
+    logger.debug()
+    logger.debug("=" * 70)
 
 
 def main():
@@ -458,7 +458,7 @@ Examples:
             "is_balanced": result.is_balanced,
             "all_targets_met": result.all_targets_met,
         }
-        print(json.dumps(output, indent=2))
+        logger.debug(json.dumps(output, indent=2))
     else:
         print_validation_report(result)
 

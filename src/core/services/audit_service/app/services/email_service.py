@@ -11,7 +11,6 @@ Provides SMTP-based email delivery for compliance reports with:
 
 import logging
 import os
-import random
 import smtplib
 import ssl
 import time
@@ -161,7 +160,9 @@ class RetryConfig:
 
         # Add jitter if enabled
         if self.jitter:
-            jitter_amount = delay * self.jitter_factor * random.random()
+            import secrets
+
+            jitter_amount = delay * self.jitter_factor * secrets.SystemRandom().random()
             delay += jitter_amount
 
         return delay
@@ -533,7 +534,7 @@ Constitutional Hash: cdd01ef066bc6cf2
                 format="pdf"
             )
             if result.success:
-                print(f"Email sent at {result.sent_at}")
+
         """
         service = cls()
         return service.send_email(
@@ -667,8 +668,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 
                 # Log the failure
                 logger.warning(
-                    "Email delivery failed (attempt %d/%d): recipient=%s, "
-                    "error=%s, retryable=%s",
+                    "Email delivery failed (attempt %d/%d): recipient=%s, error=%s, retryable=%s",
                     attempt + 1,
                     config.max_retries + 1,
                     recipient,

@@ -62,6 +62,13 @@ except (ImportError, ValueError):
             get_deliberation_queue,
         )
         from impact_scorer import get_impact_scorer  # type: ignore
+        from llm_assistant import get_llm_assistant  # type: ignore
+        from opa_guard import GuardDecision, GuardResult, OPAGuard  # type: ignore
+        from redis_integration import (  # type: ignore
+            get_redis_deliberation_queue,
+            get_redis_voting_system,
+        )
+
         from interfaces import (  # type: ignore
             AdaptiveRouterProtocol,
             DeliberationQueueProtocol,
@@ -70,12 +77,6 @@ except (ImportError, ValueError):
             OPAGuardProtocol,
             RedisQueueProtocol,
             RedisVotingProtocol,
-        )
-        from llm_assistant import get_llm_assistant  # type: ignore
-        from opa_guard import GuardDecision, GuardResult, OPAGuard  # type: ignore
-        from redis_integration import (  # type: ignore
-            get_redis_deliberation_queue,
-            get_redis_voting_system,
         )
     except (ImportError, ValueError):
         import os
@@ -91,6 +92,13 @@ except (ImportError, ValueError):
             get_deliberation_queue,
         )
         from impact_scorer import get_impact_scorer  # type: ignore
+        from llm_assistant import get_llm_assistant  # type: ignore
+        from opa_guard import GuardDecision, GuardResult, OPAGuard  # type: ignore
+        from redis_integration import (  # type: ignore
+            get_redis_deliberation_queue,
+            get_redis_voting_system,
+        )
+
         from interfaces import (  # type: ignore
             AdaptiveRouterProtocol,
             DeliberationQueueProtocol,
@@ -99,12 +107,6 @@ except (ImportError, ValueError):
             OPAGuardProtocol,
             RedisQueueProtocol,
             RedisVotingProtocol,
-        )
-        from llm_assistant import get_llm_assistant  # type: ignore
-        from opa_guard import GuardDecision, GuardResult, OPAGuard  # type: ignore
-        from redis_integration import (  # type: ignore
-            get_redis_deliberation_queue,
-            get_redis_voting_system,
         )
 except (ImportError, ValueError):  # noqa: B025 - intentional fallback import pattern
     try:
@@ -148,7 +150,6 @@ except (ImportError, ValueError):  # noqa: B025 - intentional fallback import pa
             "System is configured to fail-closed to prevent insecure operation "
             "with mock components."
         ) from e
-
 
 logger = logging.getLogger(__name__)
 

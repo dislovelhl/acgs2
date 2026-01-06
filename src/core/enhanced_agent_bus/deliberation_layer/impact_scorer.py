@@ -9,11 +9,13 @@ This module provides ML-based impact scoring for governance decisions using:
 The fallback cascade ensures the service remains operational even when
 ML dependencies are unavailable.
 """
+
 import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -36,6 +38,7 @@ logger = logging.getLogger(__name__)
 ONNX_AVAILABLE = False
 try:
     import onnxruntime as ort
+
     ONNX_AVAILABLE = True
     logger.info(f"ONNX Runtime available: {ort.__version__}")
 except ImportError:
@@ -47,23 +50,26 @@ try:
     import torch
     from sklearn.metrics.pairwise import cosine_similarity
     from transformers import AutoModel, AutoTokenizer
+
     TRANSFORMERS_AVAILABLE = True
     logger.info(f"Transformers available: torch={torch.__version__}")
 except ImportError:
     logger.info("Transformers not available - will use heuristics fallback")
 
 # Feature flags based on availability (can be overridden via environment)
-USE_TRANSFORMERS = TRANSFORMERS_AVAILABLE and os.getenv("USE_TRANSFORMERS", "true").lower() == "true"
+USE_TRANSFORMERS = (
+    TRANSFORMERS_AVAILABLE and os.getenv("USE_TRANSFORMERS", "true").lower() == "true"
+)
 USE_ONNX = ONNX_AVAILABLE and os.getenv("USE_ONNX_INFERENCE", "true").lower() == "true"
 
 try:
     import onnxruntime as ort
+
     ONNX_AVAILABLE = True
 except ImportError:
     ONNX_AVAILABLE = False
 
 PROFILING_AVAILABLE = False
-
 
 @dataclass
 class ScoringConfig:
@@ -77,14 +83,12 @@ class ScoringConfig:
     critical_priority_boost: float = 0.9
     high_semantic_boost: float = 0.8
 
-
 @dataclass
 class ImpactAnalysis:
     score: float
     factors: Dict[str, float]
     recommendation: str
     requires_deliberation: bool
-
 
 class ImpactScorer:
     """
@@ -143,7 +147,9 @@ class ImpactScorer:
                             if "CUDAExecutionProvider" in active_providers:
                                 logger.info("GPU acceleration ENABLED ✓")
                             else:
-                                logger.warning("GPU acceleration DISABLED - running on CPU fallback")
+                                logger.warning(
+                                    "GPU acceleration DISABLED - running on CPU fallback"
+                                )
 
                             self._bert_enabled = True
                         except Exception as e:
@@ -235,11 +241,9 @@ class ImpactScorer:
 
             # Load tokenizer
             from transformers import AutoTokenizer
+
             cache_dir = os.getenv("TRANSFORMERS_CACHE", None)
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
-                cache_dir=cache_dir
-            )
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, cache_dir=cache_dir)
 
             # Find ONNX model file
             onnx_path = self._find_onnx_model_path()
@@ -248,12 +252,12 @@ class ImpactScorer:
                 return False
 
             # Create ONNX session with GPU if available
-            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
             self.onnx_session = ort.InferenceSession(str(onnx_path), providers=providers)
 
             # Verify GPU provider was loaded
             active_providers = self.onnx_session.get_providers()
-            if 'CUDAExecutionProvider' in active_providers:
+            if "CUDAExecutionProvider" in active_providers:
                 logger.info("GPU acceleration ENABLED ✓ - Using ONNX with CUDA")
             else:
                 logger.info("GPU acceleration DISABLED - Using ONNX with CPU fallback")
@@ -304,17 +308,12 @@ class ImpactScorer:
                 return True
 
             from transformers import AutoModel, AutoTokenizer
+
             cache_dir = os.getenv("TRANSFORMERS_CACHE", None)
 
             # Load tokenizer and model
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
-                cache_dir=cache_dir
-            )
-            self.model = AutoModel.from_pretrained(
-                self.model_name,
-                cache_dir=cache_dir
-            )
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, cache_dir=cache_dir)
+            self.model = AutoModel.from_pretrained(self.model_name, cache_dir=cache_dir)
             self.model.eval()  # Set to evaluation mode
 
             # Cache for reuse
@@ -500,7 +499,10 @@ class ImpactScorer:
                 if np.any(emb) and np.any(kw_emb):
                     if TRANSFORMERS_AVAILABLE:
                         from sklearn.metrics.pairwise import cosine_similarity
-                        sim = cosine_similarity(emb.reshape(1, -1) if emb.ndim == 1 else emb, kw_emb)
+
+                        sim = cosine_similarity(
+                            emb.reshape(1, -1) if emb.ndim == 1 else emb, kw_emb
+                        )
                         embedding_score = float(np.max(sim))
                     else:
                         # Manual cosine similarity fallback
@@ -509,11 +511,12 @@ class ImpactScorer:
                         embedding_score = max(sims) if sims else 0.0
 
             except Exception as e:
-                logger.debug(f"Embedding-based scoring failed: {e}")
 
         return max(keyword_score, embedding_score)
 
-    async def calculate_impact_score_async(self, message: Union[AgentMessage, JSONDict], context: JSONDict = None) -> float:
+    async def calculate_impact_score_async(
+        self, message: Union[AgentMessage, JSONDict], context: JSONDict = None
+    ) -> float:
         if not message and not context:
             return 0.1
 
@@ -568,8 +571,11 @@ class ImpactScorer:
         try:
             # Batch tokenization
             inputs = self.tokenizer(
-                texts, return_tensors="np" if self._onnx_enabled else "pt",
-                padding=True, truncation=True, max_length=512
+                texts,
+                return_tensors="np" if self._onnx_enabled else "pt",
+                padding=True,
+                truncation=True,
+                max_length=512,
             )
 
             if self._onnx_enabled and self.session:
@@ -578,6 +584,7 @@ class ImpactScorer:
                 embeddings = outputs[0][:, 0, :]
             else:
                 import torch
+
                 with torch.no_grad():
                     outputs = self.model(**inputs)
                     embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
@@ -592,6 +599,7 @@ class ImpactScorer:
                 # Semantic score calculation (max similarity to keywords)
                 if TRANSFORMERS_AVAILABLE:
                     from sklearn.metrics.pairwise import cosine_similarity
+
                     sim = cosine_similarity(emb, kw_emb)
                     embedding_score = float(np.max(sim))
                 else:
@@ -608,7 +616,9 @@ class ImpactScorer:
             logger.error(f"Batch scoring failed: {e}")
             return [self.calculate_impact_score(m) for m in messages]
 
-    def _calculate_impact_with_semantic(self, message: Union[AgentMessage, JSONDict], semantic_score: float) -> float:
+    def _calculate_impact_with_semantic(
+        self, message: Union[AgentMessage, JSONDict], semantic_score: float
+    ) -> float:
         """Helper to calculate impact score with a pre-computed semantic score."""
         # This is a simplified version of calculate_impact_score logic
         # For production, we should probably refactor calculate_impact_score to avoid duplication
@@ -740,7 +750,7 @@ class ImpactScorer:
             return results
 
         except Exception as e:
-            logger.debug("Batch embedding inference failed, falling back to sequential: %s", e)
+
             return self._batch_score_sequential(messages, contexts)
 
     def _batch_score_sequential(
@@ -755,7 +765,7 @@ class ImpactScorer:
         """
         return [
             self.calculate_impact_score(msg, ctx)
-            for msg, ctx in zip(messages, contexts)
+            for msg, ctx in zip(messages, contexts, strict=False)
         ]
 
     def _compute_combined_score(
@@ -832,8 +842,11 @@ class ImpactScorer:
 
         try:
             inputs = self.tokenizer(
-                text, return_tensors="np" if self._onnx_enabled else "pt",
-                padding=True, truncation=True, max_length=512
+                text,
+                return_tensors="np" if self._onnx_enabled else "pt",
+                padding=True,
+                truncation=True,
+                max_length=512,
             )
 
             if self._onnx_enabled and self.session:
@@ -845,6 +858,7 @@ class ImpactScorer:
             else:
                 # Standard PyTorch BERT
                 import torch
+
                 with torch.no_grad():
                     outputs = self.model(**inputs)
                     return outputs.last_hidden_state[:, 0, :].cpu().numpy()
@@ -859,11 +873,7 @@ class ImpactScorer:
 
         # Tokenize input
         inputs = self.tokenizer(
-            text,
-            max_length=512,
-            truncation=True,
-            padding="max_length",
-            return_tensors="np"
+            text, max_length=512, truncation=True, padding="max_length", return_tensors="np"
         )
 
         # Run ONNX inference
@@ -890,11 +900,7 @@ class ImpactScorer:
 
         # Tokenize input
         inputs = self.tokenizer(
-            text,
-            max_length=512,
-            truncation=True,
-            padding="max_length",
-            return_tensors="pt"
+            text, max_length=512, truncation=True, padding="max_length", return_tensors="pt"
         )
 
         # Run inference without gradient computation
@@ -916,7 +922,9 @@ class ImpactScorer:
                 self._keyword_embeddings = np.vstack(embs)
         return self._keyword_embeddings
 
-    def score_batch(self, texts: List[str], reference_texts: Optional[List[str]] = None) -> List[float]:
+    def score_batch(
+        self, texts: List[str], reference_texts: Optional[List[str]] = None
+    ) -> List[float]:
         """
         Process multiple texts efficiently with batching.
 
@@ -940,7 +948,7 @@ class ImpactScorer:
                     max_length=512,
                     truncation=True,
                     padding="max_length",
-                    return_tensors="pt"
+                    return_tensors="pt",
                 )
 
                 # Batch inference
@@ -951,6 +959,7 @@ class ImpactScorer:
                 # Compute similarities against keyword embeddings
                 kw_emb = self._get_keyword_embeddings()
                 from sklearn.metrics.pairwise import cosine_similarity
+
                 sims = cosine_similarity(embeddings, kw_emb)
 
                 # Return max similarity as score
@@ -961,7 +970,6 @@ class ImpactScorer:
 
         # Fallback to sequential processing
         return [self._calculate_semantic_score({"content": text}) for text in texts]
-
 
 def cosine_similarity_fallback(a: Any, b: Any) -> float:
     try:
@@ -976,26 +984,20 @@ def cosine_similarity_fallback(a: Any, b: Any) -> float:
     except Exception:
         return 0.0
 
-
 def get_gpu_decision_matrix():
     return {}
-
 
 def get_reasoning_matrix():
     return {}
 
-
 def get_risk_profile():
     return {}
-
 
 def get_profiling_report():
     return {}
 
-
 def get_vector_space_metrics():
     return {}
-
 
 def reset_impact_scorer():
     """Reset global scorer and clear model caches."""
@@ -1018,11 +1020,9 @@ def reset_impact_scorer():
 
     logger.info("Impact scorer and model caches reset")
 
-
 def reset_profiling():
     """Reset profiling state (placeholder for future profiling features)."""
     pass
-
 
 def get_ml_backend_status() -> Dict[str, Any]:
     """
@@ -1040,16 +1040,13 @@ def get_ml_backend_status() -> Dict[str, Any]:
         "onnx_cached": ImpactScorer._onnx_session_instance is not None,
     }
 
-
 _global_scorer = None
-
 
 def get_impact_scorer(**kwargs):
     global _global_scorer
     if not _global_scorer:
         _global_scorer = ImpactScorer(**kwargs)
     return _global_scorer
-
 
 def calculate_message_impact(message: AgentMessage) -> float:
     return get_impact_scorer().calculate_impact_score(message)

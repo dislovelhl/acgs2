@@ -9,7 +9,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Optional, Set, Any
+from typing import Any, Dict, List, Optional, Set
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -100,7 +101,11 @@ class VotingService:
         return True
 
     async def create_election(
-        self, message: AgentMessage, participants: List[str], timeout: int = None, participant_weights: Optional[Dict[str, float]] = None
+        self,
+        message: AgentMessage,
+        participants: List[str],
+        timeout: int = None,
+        participant_weights: Optional[Dict[str, float]] = None,
     ) -> str:
         """
         Create a new voting process for a high-impact message.
@@ -145,7 +150,9 @@ class VotingService:
         if await self._ensure_store_initialized():
             success = await self.election_store.save_election(election_id, election_data, timeout)
             if not success:
-                logger.warning(f"Failed to save election {election_id} to Redis, using in-memory fallback")
+                logger.warning(
+                    f"Failed to save election {election_id} to Redis, using in-memory fallback"
+                )
                 # Fallback to in-memory (for backward compatibility during migration)
                 if not hasattr(self, "_in_memory_elections"):
                     self._in_memory_elections: Dict[str, JSONDict] = {}
@@ -173,14 +180,14 @@ class VotingService:
             return False
 
         if election_data.get("status") != "OPEN":
-            logger.warning(f"Election {election_id} is not OPEN (status: {election_data.get('status')})")
+            logger.warning(
+                f"Election {election_id} is not OPEN (status: {election_data.get('status')})"
+            )
             return False
 
         participants = election_data.get("participants", [])
         if vote.agent_id not in participants:
-            logger.warning(
-                f"Agent {vote.agent_id} is not a participant in election {election_id}"
-            )
+            logger.warning(f"Agent {vote.agent_id} is not a participant in election {election_id}")
             return False
 
         # Get tenant_id from election
@@ -191,7 +198,9 @@ class VotingService:
             "agent_id": vote.agent_id,
             "decision": vote.decision,
             "reason": vote.reason,
-            "timestamp": vote.timestamp.isoformat() if isinstance(vote.timestamp, datetime) else vote.timestamp,
+            "timestamp": vote.timestamp.isoformat()
+            if isinstance(vote.timestamp, datetime)
+            else vote.timestamp,
         }
 
         # Publish vote event to Kafka BEFORE updating Redis (as per spec)
@@ -205,12 +214,16 @@ class VotingService:
                     "weight": election_data.get("participant_weights", {}).get(vote.agent_id, 1.0),
                     "reasoning": vote.reason,
                     "confidence": 1.0,  # Default confidence
-                    "timestamp": vote.timestamp.isoformat() if isinstance(vote.timestamp, datetime) else vote.timestamp,
+                    "timestamp": vote.timestamp.isoformat()
+                    if isinstance(vote.timestamp, datetime)
+                    else vote.timestamp,
                 }
 
                 success = await self.kafka_bus.publish_vote_event(tenant_id, vote_event_dict)
                 if not success:
-                    logger.warning(f"Failed to publish vote event to Kafka for election {election_id}, continuing anyway")
+                    logger.warning(
+                        f"Failed to publish vote event to Kafka for election {election_id}, continuing anyway"
+                    )
             except Exception as e:
                 logger.error(f"Error publishing vote event to Kafka: {e}")
                 # Continue with Redis update even if Kafka fails (fail-safe)
@@ -221,12 +234,19 @@ class VotingService:
             if not success:
                 logger.warning(f"Failed to add vote to Redis for election {election_id}")
                 # Fallback to in-memory
-                if hasattr(self, "_in_memory_elections") and election_id in self._in_memory_elections:
-                    self._in_memory_elections[election_id].setdefault("votes", {})[vote.agent_id] = vote_dict
+                if (
+                    hasattr(self, "_in_memory_elections")
+                    and election_id in self._in_memory_elections
+                ):
+                    self._in_memory_elections[election_id].setdefault("votes", {})[
+                        vote.agent_id
+                    ] = vote_dict
         else:
             # In-memory fallback
             if hasattr(self, "_in_memory_elections") and election_id in self._in_memory_elections:
-                self._in_memory_elections[election_id].setdefault("votes", {})[vote.agent_id] = vote_dict
+                self._in_memory_elections[election_id].setdefault("votes", {})[
+                    vote.agent_id
+                ] = vote_dict
 
         logger.info(f"Agent {vote.agent_id} cast {vote.decision} for election {election_id}")
 
@@ -347,7 +367,10 @@ class VotingService:
                     # Update Redis
                     if await self._ensure_store_initialized() and self.election_store:
                         await self.election_store.update_election_status(election_id, "EXPIRED")
-                    elif hasattr(self, "_in_memory_elections") and election_id in self._in_memory_elections:
+                    elif (
+                        hasattr(self, "_in_memory_elections")
+                        and election_id in self._in_memory_elections
+                    ):
                         self._in_memory_elections[election_id]["status"] = "EXPIRED"
                     logger.info(f"Election {election_id} expired.")
                     return "DENY"  # Default to deny on timeout
@@ -361,7 +384,9 @@ class VotingService:
                 return result
 
             # Otherwise recalculate (shouldn't happen in production, but fallback)
-            logger.warning(f"Election {election_id} is CLOSED but has no stored result, recalculating")
+            logger.warning(
+                f"Election {election_id} is CLOSED but has no stored result, recalculating"
+            )
             await self._check_resolution(election_id)
             election_data = await self._get_election_data(election_id)
             return election_data.get("result") if election_data else None

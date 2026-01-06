@@ -11,8 +11,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 from pydantic import ValidationError as PydanticValidationError
 
-from exceptions.validation import ConfigValidationError
-
+from ..exceptions.validation import ConfigValidationError
 from .models import (
     BaseIntegrationConfig,
     GitHubActionsConfig,
@@ -25,7 +24,6 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
-
 
 # Public API exports - make exceptions and validators available for import from this module
 __all__ = [

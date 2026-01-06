@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/approvals", tags=["approvals"])
 
-
 # =============================================================================
 # Request/Response Models
 # =============================================================================
@@ -273,7 +272,7 @@ async def submit_approval(
             current_level=approval_request.current_level,
             created_at=approval_request.created_at.isoformat(),
             approval_url=approval_url,
-            message="Approval request submitted successfully. " "Approvers will be notified.",
+            message="Approval request submitted successfully. Approvers will be notified.",
         )
 
     except ChainNotFoundError as e:

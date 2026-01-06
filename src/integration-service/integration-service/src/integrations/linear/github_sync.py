@@ -70,6 +70,7 @@ class GitHubSyncError(Exception):
 
 class GitHubAuthenticationError(GitHubSyncError):
     """Raised when GitHub authentication fails."""
+
     pass
 
 
@@ -88,6 +89,7 @@ class GitHubRateLimitError(GitHubSyncError):
 
 class GitHubNotFoundError(GitHubSyncError):
     """Raised when a GitHub resource is not found."""
+
     pass
 
 
@@ -170,7 +172,6 @@ class GitHubSyncManager:
             GitHubAuthenticationError: If GitHub authentication fails
         """
         if self._initialized:
-            logger.debug("GitHub sync manager already initialized")
             return
 
         logger.info("Initializing GitHub sync manager")
@@ -204,6 +205,7 @@ class GitHubSyncManager:
             if self._owns_linear_client:
                 if self.linear_client is None:
                     from .client import LinearClient
+
                     self.linear_client = LinearClient()
                 await self.linear_client.initialize()
 
@@ -279,7 +281,7 @@ class GitHubSyncManager:
 
         try:
             repo = self._github_client.get_repo(f"{owner}/{repo_name}")
-            logger.debug(f"Retrieved GitHub repo: {owner}/{repo_name}")
+
             return repo
 
         except UnknownObjectException as e:
@@ -340,9 +342,7 @@ class GitHubSyncManager:
         """
         self._ensure_initialized()
 
-        logger.info(
-            f"Syncing Linear issue {linear_issue_id} to GitHub {repo_owner}/{repo_name}"
-        )
+        logger.info(f"Syncing Linear issue {linear_issue_id} to GitHub {repo_owner}/{repo_name}")
 
         try:
             # Get Linear issue
@@ -361,8 +361,7 @@ class GitHubSyncManager:
 
             if not should_process:
                 logger.info(
-                    f"Skipping Linear→GitHub sync for {linear_issue_id} "
-                    "(duplicate or loop)"
+                    f"Skipping Linear→GitHub sync for {linear_issue_id} (duplicate or loop)"
                 )
                 return None
 
@@ -374,9 +373,7 @@ class GitHubSyncManager:
             )
 
             if not should_apply:
-                logger.info(
-                    f"Skipping Linear→GitHub sync for {linear_issue_id} (older update)"
-                )
+                logger.info(f"Skipping Linear→GitHub sync for {linear_issue_id} (older update)")
                 await self._dedup_manager.mark_processed(
                     event_id=event_id,
                     source=SYNC_SOURCE_LINEAR,
@@ -521,10 +518,7 @@ class GitHubSyncManager:
             body = self._build_github_issue_body(linear_issue)
 
             # Extract labels
-            labels = [
-                label["name"]
-                for label in linear_issue.get("labels", {}).get("nodes", [])
-            ]
+            labels = [label["name"] for label in linear_issue.get("labels", {}).get("nodes", [])]
 
             # Add Linear sync label
             labels.append("linear-sync")
@@ -594,8 +588,7 @@ class GitHubSyncManager:
                     github_issue.edit(state="open")
 
             logger.info(
-                f"Updated GitHub issue #{issue_number} from Linear "
-                f"{linear_issue.get('identifier')}"
+                f"Updated GitHub issue #{issue_number} from Linear {linear_issue.get('identifier')}"
             )
 
             return github_issue
@@ -683,9 +676,7 @@ class GitHubSyncManager:
         """
         self._ensure_initialized()
 
-        logger.info(
-            f"Syncing GitHub {repo_owner}/{repo_name}#{github_issue_number} to Linear"
-        )
+        logger.info(f"Syncing GitHub {repo_owner}/{repo_name}#{github_issue_number} to Linear")
 
         try:
             # Get GitHub repository and issue
@@ -918,8 +909,7 @@ class GitHubSyncManager:
 
             # Build comment body with attribution
             comment_body = (
-                f"**{github_comment.user.login}** commented on GitHub:\n\n"
-                f"{github_comment.body}"
+                f"**{github_comment.user.login}** commented on GitHub:\n\n{github_comment.body}"
             )
 
             # Add comment to Linear
@@ -976,8 +966,7 @@ class GitHubSyncManager:
             # Build comment with attribution
             if linear_comment_user:
                 comment_body = (
-                    f"**{linear_comment_user}** commented on Linear:\n\n"
-                    f"{linear_comment_body}"
+                    f"**{linear_comment_user}** commented on Linear:\n\n{linear_comment_body}"
                 )
             else:
                 comment_body = f"Comment from Linear:\n\n{linear_comment_body}"

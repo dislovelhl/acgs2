@@ -43,7 +43,6 @@ except ImportError:
 
 try:
     import redis
-
     from src.core.shared.config import settings
 
     HAS_REDIS = True
@@ -52,7 +51,6 @@ except ImportError:
     settings = None
 
 logger = logging.getLogger(__name__)
-
 
 # Import ValidationResult from the canonical source (enhanced_agent_bus)
 try:
@@ -541,7 +539,7 @@ class AuditLedger:
                 self.redis_client.set(f"audit:batch:{batch_id}:entries", json.dumps(entries_data))
                 self.redis_client.set("audit:batch_counter", self.batch_counter)
                 self.redis_client.rpush("audit:batches", batch_id)
-                logger.debug(f"Persisted batch {batch_id} to Redis")
+
                 return
             except Exception as e:
                 logger.error(f"Error saving to Redis: {e}")
@@ -561,7 +559,7 @@ class AuditLedger:
 
             with open(self.persistence_file, "w") as f:
                 json.dump(storage_data, f)
-            logger.debug(f"Persisted batch {batch_id} to local file")
+
         except Exception as e:
             logger.error(f"Error saving to local file: {e}")
 
@@ -667,6 +665,52 @@ class AuditLedger:
     async def get_entries_by_batch(self, batch_id: str) -> List[AuditEntry]:
         async with self._lock:
             return [entry for entry in self.entries if entry.batch_id == batch_id]
+
+    async def get_metrics_for_date(self, tenant_id: str, date: datetime.date) -> Dict[str, Any]:
+        """
+        Get compliance metrics for a specific date and tenant.
+
+        Args:
+            tenant_id: Tenant identifier
+            date: The specific date to calculate metrics for
+
+        Returns:
+            Dictionary containing metrics (compliance_score, controls_passing, etc.)
+        """
+        async with self._lock:
+            # Filter entries for the specific date and tenant
+            day_start = (
+                datetime.combine(date, datetime.min.time()).replace(tzinfo=timezone.utc).timestamp()
+            )
+            day_end = (
+                datetime.combine(date, datetime.max.time()).replace(tzinfo=timezone.utc).timestamp()
+            )
+
+            day_entries = []
+            for entry in self.entries:
+                if day_start <= entry.timestamp <= day_end:
+                    metadata = entry.validation_result.metadata
+                    if tenant_id == "all" or metadata.get("tenant_id") == tenant_id:
+                        day_entries.append(entry)
+
+            if not day_entries:
+                return {
+                    "compliance_score": 100.0,
+                    "controls_passing": 0,
+                    "controls_failing": 0,
+                    "audit_count": 0,
+                }
+
+            passing = sum(1 for e in day_entries if e.validation_result.is_valid)
+            failing = len(day_entries) - passing
+            score = (passing / len(day_entries)) * 100
+
+            return {
+                "compliance_score": score,
+                "controls_passing": passing,
+                "controls_failing": failing,
+                "audit_count": len(day_entries),
+            }
 
     async def get_ledger_stats(self) -> Dict[str, Any]:
         async with self._lock:

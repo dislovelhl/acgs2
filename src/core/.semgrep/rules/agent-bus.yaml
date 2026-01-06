@@ -13,12 +13,12 @@ rules:
   - id: acgs-message-missing-hash
     message: |
       AgentMessage created without explicit constitutional_hash.
-      
+
       While the model has a default, explicit hash setting ensures
       constitutional compliance is intentional and auditable.
-      
+
       Add: constitutional_hash=CONSTITUTIONAL_HASH
-      
+
       Import: from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
     severity: INFO
     languages: [python]
@@ -51,7 +51,7 @@ rules:
   - id: acgs-message-wrong-hash
     message: |
       AgentMessage created with non-standard constitutional hash.
-      
+
       The hash must be 'cdd01ef066bc6cf2' or imported from
       CONSTITUTIONAL_HASH constant.
     severity: ERROR
@@ -83,10 +83,10 @@ rules:
   - id: acgs-message-type-not-specified
     message: |
       AgentMessage created without message_type.
-      
+
       Specify MessageType (COMMAND, QUERY, EVENT, etc.) for proper
       routing and handling.
-      
+
       Import: from enhanced_agent_bus.models import MessageType
       Add: message_type=MessageType.COMMAND
     severity: WARNING
@@ -244,9 +244,9 @@ rules:
   - id: acgs-bus-not-started-before-use
     message: |
       EnhancedAgentBus used without calling start().
-      
+
       Always call await bus.start() before sending messages.
-      
+
       Correct pattern:
         bus = EnhancedAgentBus()
         await bus.start()
@@ -277,9 +277,9 @@ rules:
   - id: acgs-bus-not-stopped
     message: |
       EnhancedAgentBus created without corresponding stop() call.
-      
+
       Always stop the bus for proper resource cleanup.
-      
+
       Use try/finally or async context manager pattern:
         try:
             await bus.start()
@@ -352,10 +352,10 @@ rules:
   - id: acgs-redis-hardcoded-url
     message: |
       Hardcoded Redis URL detected.
-      
+
       Use get_redis_url() from shared.redis_config for centralized
       configuration and environment-based settings.
-      
+
       Import: from shared.redis_config import get_redis_url
       Use: redis_url = get_redis_url()
     severity: WARNING
@@ -385,14 +385,14 @@ rules:
   - id: acgs-redis-client-not-closed
     message: |
       Redis client created without proper cleanup.
-      
+
       Use async context manager or ensure close() is called
       to prevent connection leaks.
-      
+
       Pattern 1 - Context manager:
         async with redis.from_url(url) as client:
             await client.set("key", "value")
-      
+
       Pattern 2 - Try/finally:
         client = redis.from_url(url)
         try:
@@ -431,10 +431,10 @@ rules:
   - id: acgs-redis-missing-error-handling
     message: |
       Redis operation without error handling.
-      
+
       Redis connections can fail. Always handle ConnectionError
       and TimeoutError.
-      
+
       Pattern:
         try:
             await client.set("key", "value")
@@ -474,10 +474,10 @@ rules:
   - id: acgs-handler-missing-error-handling
     message: |
       Message handler missing error handling.
-      
+
       Handler exceptions should be caught to prevent message loss
       and enable proper error reporting.
-      
+
       Pattern:
         async def handle_message(msg: AgentMessage) -> ValidationResult:
             try:
@@ -515,10 +515,10 @@ rules:
   - id: acgs-validation-result-not-checked
     message: |
       ValidationResult not checked after validation.
-      
+
       Always check ValidationResult.is_valid before proceeding
       with message processing.
-      
+
       Pattern:
         result = await processor.process(message)
         if not result.is_valid:
@@ -597,10 +597,10 @@ rules:
   - id: acgs-relative-import-missing-fallback
     message: |
       Relative import missing fallback pattern.
-      
+
       Use try/except for relative imports to support both
       package and direct execution modes.
-      
+
       Pattern:
         try:
             from .models import AgentMessage
@@ -635,10 +635,10 @@ rules:
   - id: acgs-heavy-import-without-try
     message: |
       ImpactScorer imported without availability check.
-      
+
       ImpactScorer has heavy ML dependencies (transformers, torch).
       Use try/except to handle cases where dependencies are unavailable.
-      
+
       Pattern:
         try:
             from deliberation_layer.impact_scorer import ImpactScorer
@@ -675,11 +675,11 @@ rules:
   - id: acgs-high-impact-without-deliberation
     message: |
       High-impact operation without deliberation layer review.
-      
+
       Operations like policy changes, deletions, and governance updates
       should be routed through the deliberation layer for multi-agent
       consensus.
-      
+
       Pattern:
         layer = DeliberationLayer(impact_threshold=0.8)
         result = await layer.process_message(message)

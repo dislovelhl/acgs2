@@ -13,7 +13,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
-from ..types import JSONDict, ValidatorValue
+from ..integration_types import JSONDict, ValidatorValue
 from ..webhooks.models import (
     WebhookAuthType,
     WebhookConfig,
@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter(prefix="/api/webhooks", tags=["Webhooks"])
-
 
 # In-memory storage for webhook subscriptions (for development)
 # In production, this would be replaced with a database repository
@@ -631,16 +630,55 @@ async def test_webhook(
     # In production, this would actually send a test event using the delivery engine
     delivery_id = str(uuid4())
 
-    # TODO: Integrate with WebhookDeliveryEngine for actual test delivery
-    logger.info(f"Test delivery initiated for webhook {webhook_id} to {subscription.config.url}")
+    # Integrate with WebhookDeliveryEngine for actual test delivery
+    from ..webhooks.delivery import get_delivery_engine
+    from ..webhooks.models import WebhookEvent
 
-    return WebhookTestResponse(
-        success=True,
-        delivery_id=delivery_id,
-        status_code=200,
-        duration_ms=150,
-        error=None,
+    # Create a test webhook event
+    test_event = WebhookEvent(
+        id=f"test_{delivery_id}",
+        webhook_id=webhook_id,
+        event_type="webhook.test",
+        payload={
+            "test": True,
+            "timestamp": datetime.utcnow().isoformat(),
+            "webhook_id": webhook_id,
+            "message": "ACGS-2 Webhook Test Delivery",
+        },
+        headers={"X-Webhook-Test": "true", "X-ACGS2-Version": "2.0.0"},
+        created_at=datetime.utcnow(),
+        retry_count=0,
     )
+
+    # Get delivery engine and perform actual delivery
+    delivery_engine = get_delivery_engine()
+
+    try:
+        logger.info(
+            f"Test delivery initiated for webhook {webhook_id} to {subscription.config.url}"
+        )
+
+        # Perform actual delivery
+        result = await delivery_engine.deliver(subscription, test_event)
+
+        # Return real delivery results
+        return WebhookTestResponse(
+            success=result.success,
+            delivery_id=result.delivery_id,
+            status_code=result.status_code,
+            duration_ms=result.duration_ms,
+            error=result.error_message if not result.success else None,
+        )
+
+    except Exception as e:
+        logger.error(f"Test delivery failed for webhook {webhook_id}: {e}")
+        return WebhookTestResponse(
+            success=False,
+            delivery_id=delivery_id,
+            status_code=500,
+            duration_ms=0,
+            error=str(e),
+        )
 
 
 @router.get(

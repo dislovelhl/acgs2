@@ -118,7 +118,7 @@ class AnomalyDetector:
     def _check_sklearn_available(self) -> bool:
         """Check if scikit-learn is available"""
         if IsolationForest is None or StandardScaler is None:
-            logger.error("scikit-learn is not installed. " "Install with: pip install scikit-learn")
+            logger.error("scikit-learn is not installed. Install with: pip install scikit-learn")
             return False
         return True
 

@@ -39,12 +39,12 @@ import logging
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Optional, Dict, Union, List
-try:
-    from src.core.shared.types import JSONDict, JSONValue
-except ImportError:
-    JSONDict = Dict[str, Any]
-    JSONValue = Any
+from typing import TYPE_CHECKING, Dict, List, Optional
+
+from src.core.shared.types import JSONDict
+
+if TYPE_CHECKING:
+    from src.core.shared.models.sso_provider import SSOProvider
 
 try:
     from authlib.integrations.httpx_client import AsyncOAuth2Client
@@ -123,9 +123,9 @@ class OIDCProviderConfig:
     client_id: str
     client_secret: str
     server_metadata_url: str
-    scopes: list[str] = field(default_factory=lambda: list(DEFAULT_SCOPES))
+    scopes: List[str] = field(default_factory=lambda: list(DEFAULT_SCOPES))
     use_pkce: bool = True
-    extra_params: dict[str, str] = field(default_factory=dict)
+    extra_params: Dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
@@ -271,11 +271,11 @@ class OIDCHandler:
 
     def __init__(self) -> None:
         """Initialize OIDC handler."""
-        self._providers: dict[str, OIDCProviderConfig] = {}
-        self._metadata_cache: dict[str, JSONDict] = {}
-        self._metadata_timestamps: dict[str, datetime] = {}
-        self._pending_states: dict[str, JSONDict] = {}
-        self._http_client: Optional[Any] = None
+        self._providers: Dict[str, OIDCProviderConfig] = {}
+        self._metadata_cache: Dict[str, JSONDict] = {}
+        self._metadata_timestamps: Dict[str, datetime] = {}
+        self._pending_states: Dict[str, JSONDict] = {}
+        self._http_client: Optional["httpx.AsyncClient"] = None
 
         logger.info(
             "OIDC handler initialized",
@@ -330,7 +330,7 @@ class OIDCHandler:
 
     def register_provider_from_model(
         self,
-        provider: Any,  # SSOProvider model
+        provider: "SSOProvider",  # SSOProvider model
     ) -> None:
         """Register an OIDC provider from database model.
 
@@ -384,7 +384,7 @@ class OIDCHandler:
         """
         return list(self._providers.keys())
 
-    async def _get_http_client(self) -> Any:
+    async def _get_http_client(self) -> "httpx.AsyncClient":
         """Get or create HTTP client.
 
         Returns:

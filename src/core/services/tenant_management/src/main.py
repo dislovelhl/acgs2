@@ -7,15 +7,11 @@ A dedicated service for multi-tenant isolation, resource management,
 and access control in the ACGS-2 platform.
 """
 
-import os
-
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.core.shared.security.cors_config import get_cors_config
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-
-from src.core.shared.logging import (
+from src.core.shared.acgs_logging import (
     create_correlation_middleware,
     init_service_logging,
 )
@@ -24,6 +20,7 @@ from src.core.shared.metrics import (
     set_service_info,
     track_request_metrics,
 )
+from src.core.shared.security.cors_config import get_cors_config
 
 from .api import router
 from .service import TenantManagementService

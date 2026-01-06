@@ -11,12 +11,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { AnomaliesResponse } from "../types/anomalies";
 import type { UseDataResult } from "./types";
 
-/**
- * API base URL configured from environment variables.
- * Defaults to localhost:8080 if VITE_ANALYTICS_API_URL is not set.
- */
-const API_BASE_URL =
-  import.meta.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
+import { ANALYTICS_API_URL } from "../lib";
 
 /**
  * Custom hook for fetching anomaly detection data from the analytics API.
@@ -110,7 +105,7 @@ export function useAnomalies(
       setLoading(true);
       setError(null);
 
-      const url = new URL(`${API_BASE_URL}/anomalies`);
+      const url = new URL(`${ANALYTICS_API_URL}/anomalies`);
       if (severityFilter) {
         url.searchParams.set("severity", severityFilter);
       }
@@ -132,7 +127,9 @@ export function useAnomalies(
       const responseData: AnomaliesResponse = await response.json();
       setData(responseData);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to load anomalies"));
+      setError(
+        err instanceof Error ? err : new Error("Failed to load anomalies")
+      );
     } finally {
       setLoading(false);
     }

@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class MCPResourceType(Enum):
     """Types of MCP resources."""
+
     TEXT = "text"
     JSON = "json"
     BINARY = "binary"
@@ -36,6 +37,7 @@ class MCPResourceType(Enum):
 @dataclass
 class MCPResponse:
     """Response from MCP tool or resource."""
+
     content: JSONValue
     content_type: MCPResourceType = MCPResourceType.JSON
     metadata: JSONDict = field(default_factory=dict)
@@ -53,6 +55,7 @@ class MCPResponse:
 @dataclass
 class MCPResource:
     """An MCP resource definition."""
+
     uri: str
     name: str
     description: str
@@ -70,6 +73,7 @@ class MCPResource:
 @dataclass
 class MCPTool:
     """An MCP tool definition."""
+
     name: str
     description: str
     input_schema: JSONDict
@@ -86,6 +90,7 @@ class MCPTool:
 @dataclass
 class MCPPrompt:
     """An MCP prompt template."""
+
     name: str
     description: str
     arguments: List[JSONDict]
@@ -138,10 +143,12 @@ class ConstitutionalGovernanceEngine:
         for principle_id, principle_desc in self._principles.items():
             compliant = await self._check_principle(action, principle_id)
             if not compliant:
-                violations.append({
-                    "principle_id": principle_id,
-                    "description": principle_desc,
-                })
+                violations.append(
+                    {
+                        "principle_id": principle_id,
+                        "description": principle_desc,
+                    }
+                )
 
         return {
             "valid": len(violations) == 0,
@@ -150,11 +157,7 @@ class ConstitutionalGovernanceEngine:
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-    async def _check_principle(
-        self,
-        action: ContextData,
-        principle_id: str
-    ) -> bool:
+    async def _check_principle(self, action: ContextData, principle_id: str) -> bool:
         """Check if action complies with a specific principle."""
         # Simple compliance check
         action_str = str(action).lower()
@@ -163,14 +166,73 @@ class ConstitutionalGovernanceEngine:
             return "corrupt" not in action_str
 
         if principle_id == "constitutional_compliance":
-            return action.get("constitutional_hash") == CONSTITUTIONAL_HASH or \
-                   "constitutional_hash" not in action
+            return (
+                action.get("constitutional_hash") == CONSTITUTIONAL_HASH
+                or "constitutional_hash" not in action
+            )
 
         return True
 
     async def get_principles(self) -> Dict[str, str]:
         """Get all constitutional principles."""
         return self._principles.copy()
+
+    async def get_audit_logs(self, n: int = 10) -> List[Dict[str, Any]]:
+        """Fetch recent logs from audit ledger."""
+        try:
+            from ...services.audit_service.core.audit_ledger import get_audit_ledger
+
+            ledger = await get_audit_ledger()
+            # The get_recent_anchor_results returns recent anchor results,
+            # let's use a more direct way if possible or stick to it.
+            return ledger.get_recent_anchor_results(n)
+        except Exception as e:
+            logger.error(f"Failed to fetch audit logs: {e}")
+            return [{"error": str(e), "timestamp": time.time()}]
+
+    async def get_governance_kpis(self, tenant_id: str = "default") -> Dict[str, Any]:
+        """Get governance KPIs for a tenant."""
+        try:
+            from ...services.audit_service.app.api.governance import _calculate_kpis_from_ledger
+
+            return await _calculate_kpis_from_ledger(tenant_id)
+        except Exception as e:
+            logger.error(f"Failed to fetch governance KPIs: {e}")
+            return {"error": str(e)}
+
+    async def list_policies(self) -> List[Dict[str, Any]]:
+        """List all active policies."""
+        try:
+            from ...services.hitl_approvals.app.core.escalation.policy_manager import (
+                get_policy_manager,
+            )
+
+            pm = get_policy_manager()
+            policies = await pm.get_all_policies()
+            return [p.to_dict() if hasattr(p, "to_dict") else str(p) for p in policies]
+        except Exception as e:
+            logger.error(f"Failed to list policies: {e}")
+            return [{"error": str(e)}]
+
+    async def get_system_health(self) -> Dict[str, Any]:
+        """Get overall system health metrics."""
+        health = {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "constitutional_hash": CONSTITUTIONAL_HASH,
+            "services": {},
+        }
+
+        try:
+            # Check Audit Service
+            from ...services.audit_service.core.audit_ledger import get_audit_ledger
+
+            ledger = await get_audit_ledger()
+            health["services"]["audit"] = await ledger.get_anchor_health()
+        except Exception:
+            health["services"]["audit"] = {"status": "unreachable"}
+
+        return health
 
 
 class ACGS2MCPServer:
@@ -187,11 +249,7 @@ class ACGS2MCPServer:
     - Prompts: governance_decision, policy_evaluation, etc.
     """
 
-    def __init__(
-        self,
-        server_name: str = "acgs2-governance",
-        version: str = "1.0.0"
-    ):
+    def __init__(self, server_name: str = "acgs2-governance", version: str = "1.0.0"):
         """
         Initialize MCP server.
 
@@ -224,12 +282,9 @@ class ACGS2MCPServer:
             input_schema={
                 "type": "object",
                 "properties": {
-                    "action": {
-                        "type": "object",
-                        "description": "The action to validate"
-                    }
+                    "action": {"type": "object", "description": "The action to validate"}
                 },
-                "required": ["action"]
+                "required": ["action"],
             },
             handler=self._handle_validate,
         )
@@ -240,23 +295,50 @@ class ACGS2MCPServer:
             description="Check if an action complies with a specific policy",
             input_schema={
                 "type": "object",
-                "properties": {
-                    "action": {"type": "object"},
-                    "policy_id": {"type": "string"}
-                },
-                "required": ["action", "policy_id"]
+                "properties": {"action": {"type": "object"}, "policy_id": {"type": "string"}},
+                "required": ["action", "policy_id"],
             },
             handler=self._handle_check_policy,
+        )
+
+        # Tool: Get governance KPIs
+        self._tools["get_governance_kpis"] = MCPTool(
+            name="get_governance_kpis",
+            description="Retrieve governance KPIs for a specific tenant",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "tenant_id": {
+                        "type": "string",
+                        "default": "default",
+                        "description": "Tenant ID",
+                    }
+                },
+            },
+            handler=self._handle_get_kpis,
+        )
+
+        # Tool: List policies
+        self._tools["list_policies"] = MCPTool(
+            name="list_policies",
+            description="List all active escalation and governance policies",
+            input_schema={"type": "object", "properties": {}},
+            handler=self._handle_list_policies,
+        )
+
+        # Tool: Get system health
+        self._tools["get_system_health"] = MCPTool(
+            name="get_system_health",
+            description="Get overall system health and service status",
+            input_schema={"type": "object", "properties": {}},
+            handler=self._handle_get_health,
         )
 
         # Tool: Get constitutional hash
         self._tools["get_constitutional_hash"] = MCPTool(
             name="get_constitutional_hash",
             description="Get the current constitutional hash for validation",
-            input_schema={
-                "type": "object",
-                "properties": {}
-            },
+            input_schema={"type": "object", "properties": {}},
             handler=self._handle_get_hash,
         )
 
@@ -272,6 +354,12 @@ class ACGS2MCPServer:
             uri="constitutional://hash",
             name="Constitutional Hash",
             description="Current constitutional hash for validation",
+        )
+
+        self._resources["audit://logs"] = MCPResource(
+            uri="audit://logs",
+            name="Audit Logs",
+            description="Recent governance and decision logs",
         )
 
     def _register_builtin_prompts(self):
@@ -293,11 +381,7 @@ class ACGS2MCPServer:
             ],
         )
 
-    async def handle_tool_call(
-        self,
-        tool_name: str,
-        arguments: JSONDict
-    ) -> MCPResponse:
+    async def handle_tool_call(self, tool_name: str, arguments: JSONDict) -> MCPResponse:
         """
         Handle an MCP tool call.
 
@@ -351,23 +435,24 @@ class ACGS2MCPServer:
                 metadata={"uri": uri},
             )
 
+        if uri == "audit://logs":
+            logs = await self.governance_engine.get_audit_logs(n=20)
+            return MCPResponse(
+                content=logs,
+                metadata={"uri": uri},
+            )
+
         return MCPResponse(
             content={"error": f"Unknown resource: {uri}"},
             metadata={"uri": uri, "success": False},
         )
 
-    async def _handle_validate(
-        self,
-        arguments: JSONDict
-    ) -> JSONDict:
+    async def _handle_validate(self, arguments: JSONDict) -> JSONDict:
         """Handle validate_constitutional_compliance tool."""
         action = arguments.get("action", {})
         return await self.governance_engine.validate(action)
 
-    async def _handle_check_policy(
-        self,
-        arguments: JSONDict
-    ) -> JSONDict:
+    async def _handle_check_policy(self, arguments: JSONDict) -> JSONDict:
         """Handle check_policy tool."""
         action = arguments.get("action", {})
         policy_id = arguments.get("policy_id", "")
@@ -377,10 +462,21 @@ class ACGS2MCPServer:
         result["policy_id"] = policy_id
         return result
 
-    async def _handle_get_hash(
-        self,
-        arguments: JSONDict
-    ) -> JSONDict:
+    async def _handle_get_kpis(self, arguments: JSONDict) -> JSONDict:
+        """Handle get_governance_kpis tool."""
+        tenant_id = arguments.get("tenant_id", "default")
+        return await self.governance_engine.get_governance_kpis(tenant_id)
+
+    async def _handle_list_policies(self, arguments: JSONDict) -> JSONDict:
+        """Handle list_policies tool."""
+        policies = await self.governance_engine.list_policies()
+        return {"policies": policies, "count": len(policies)}
+
+    async def _handle_get_health(self, arguments: JSONDict) -> JSONDict:
+        """Handle get_system_health tool."""
+        return await self.governance_engine.get_system_health()
+
+    async def _handle_get_hash(self, arguments: JSONDict) -> JSONDict:
         """Handle get_constitutional_hash tool."""
         return {
             "constitutional_hash": CONSTITUTIONAL_HASH,

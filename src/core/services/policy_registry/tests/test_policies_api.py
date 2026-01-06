@@ -72,6 +72,7 @@ class MockPolicy:
 
     def model_dump_json(self):
         import json
+
         return json.dumps(self.dict())
 
 
@@ -110,6 +111,7 @@ class MockPolicyVersion:
 
     def model_dump_json(self):
         import json
+
         return json.dumps(self.dict())
 
 

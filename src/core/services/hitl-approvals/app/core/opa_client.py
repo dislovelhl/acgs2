@@ -230,7 +230,6 @@ class OPAClient:
         cache_key = self._generate_cache_key(policy_path, input_data)
         cached_result = self._get_from_cache(cache_key)
         if cached_result:
-            logger.debug(f"Cache hit for policy: {policy_path}")
             return cached_result
 
         try:

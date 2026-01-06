@@ -6,7 +6,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict
+
+try:
+    from src.core.shared.types import DocumentData
+except ImportError:
+    from typing import Any, Dict
+
+    DocumentData = Dict[str, Any]
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +31,7 @@ class BaseGenerator(ABC):
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     @abstractmethod
-    def generate(self, data: Dict[str, Any], filename: str) -> Path:
+    def generate(self, data: DocumentData, filename: str) -> Path:
         """
         Generate a document from data.
 

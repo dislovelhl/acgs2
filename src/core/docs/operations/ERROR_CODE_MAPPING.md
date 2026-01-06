@@ -216,12 +216,12 @@ For each error code, we provide:
   - Private key mismatch
 
 #### ACGS-1502: CORSConfigurationError
-- **Scenario**: TODO - CORS allowing all origins (compliance_docs)
+- **Scenario**: CORS policy misconfigured
 - **Severity**: CRITICAL (Security)
 - **Impact**: Security-Vulnerability
 - **Location**: `acgs2-core/services/compliance_docs/src/main.py:25`
-- **Description**: CORS policy misconfigured allowing all origins
-- **TODO Reference**: TODO_CATALOG.md - CRITICAL priority
+- **Description**: CORS policy misconfigured. Use centralized `get_cors_config()`.
+- **Status**: RESOLVED
 - **Security Impact**: Allows any origin to access API
 
 #### ACGS-1503: SecretNotFoundError
@@ -509,13 +509,13 @@ For each error code, we provide:
 ### ACGS-23xx: Role-Based Access Control
 
 #### ACGS-2301: RoleVerificationError
-- **Scenario**: TODO - Role verification via OPA (approval_chain_engine.py)
+- **Scenario**: Role verification via OPA
 - **Severity**: HIGH (Security)
-- **Impact**: Security-Gap
+- **Impact**: Security-Enforced
 - **Location**: `acgs2-core/services/hitl_approvals/app/services/approval_chain_engine.py:148`
-- **Description**: Role verification failed or not implemented
-- **TODO Reference**: TODO_CATALOG.md - HIGH priority
-- **Current Behavior**: Role verification not implemented via OPA
+- **Description**: Role verification performed via OPA.
+- **Status**: RESOLVED
+- **Current Behavior**: Role verification implemented via OPA
 
 #### ACGS-2302: InsufficientPermissionsError
 - **Severity**: HIGH
@@ -1171,13 +1171,13 @@ For each error code, we provide:
 ### ACGS-51xx: Approval Chain
 
 #### ACGS-5101: ApprovalChainResolutionError
-- **Scenario**: TODO - Dynamic chain resolution via OPA (approvals.py)
+- **Scenario**: Dynamic chain resolution via OPA
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
 - **Location**: `acgs2-core/services/hitl_approvals/app/api/approvals.py:34`
-- **Description**: Cannot resolve approval chain
-- **TODO Reference**: TODO_CATALOG.md - HIGH priority
-- **Current Behavior**: Uses static fallback logic, OPA integration not implemented
+- **Description**: Cannot resolve approval chain.
+- **Status**: RESOLVED
+- **Current Behavior**: Dynamic OPA-based resolution implemented
 
 #### ACGS-5102: ApprovalTimeoutError
 - **Severity**: MEDIUM
@@ -1257,13 +1257,13 @@ For each error code, we provide:
 - **Description**: Webhook failed after all retries
 
 #### ACGS-5204: WebhookConfigurationError
-- **Scenario**: TODO - WebhookDeliveryEngine integration (webhooks.py)
+- **Scenario**: WebhookDeliveryEngine integration
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
 - **Location**: `integration-service/src/api/webhooks.py:633`
-- **Description**: Webhook misconfigured or integration not complete
-- **TODO Reference**: TODO_CATALOG.md - HIGH priority
-- **Current Behavior**: Test delivery not implemented
+- **Description**: Webhook misconfigured or integration not complete.
+- **Status**: RESOLVED
+- **Current Behavior**: Test delivery implemented via `WebhookDeliveryEngine`
 
 #### ACGS-5211: WebhookConnectionError
 - **Exception**: `WebhookConnectionError` (integration-service)
@@ -1586,15 +1586,15 @@ For each error code, we provide:
 
 #### ACGS-6511: AuditLedgerError
 - **Exception**: `AuditLedgerError` (hitl-approvals)
-- **Scenario**: TODO - Audit ledger integration (audit_service)
+- **Scenario**: Audit ledger integration
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
 - **Location**: `acgs2-core/services/hitl_approvals/app/audit/ledger.py`
-- **Description**: Base exception for audit ledger errors
-- **TODO References**:
-  - `audit_service/app/api/governance.py:39` - KPI integration
-  - `audit_service/app/api/governance.py:170` - Trend data integration
-  - `audit_service/app/tasks/report_tasks.py:128` - Audit log fetching
+- **Description**: Base exception for audit ledger errors.
+- **Status**: RESOLVED
+- **Recent Integration**:
+  - `audit_service/app/api/governance.py` - KPI and Trend integration complete
+  - `audit_service/app/tasks/report_tasks.py` - Audit log fetching complete
 
 #### ACGS-6512: ImmutabilityError
 - **Exception**: `ImmutabilityError` (hitl-approvals/audit)

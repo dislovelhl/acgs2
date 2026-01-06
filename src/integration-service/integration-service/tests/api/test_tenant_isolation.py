@@ -92,9 +92,7 @@ class TestTenantContextTracking:
         assert response2.json()["audit_context"]["user_id"] == expected_user
 
         # Get policy endpoint
-        response3 = test_client.get(
-            "/api/policy/policies/acgs2-security-001", headers=auth_headers
-        )
+        response3 = test_client.get("/api/policy/policies/acgs2-security-001", headers=auth_headers)
         assert response3.status_code == 200
         assert response3.json()["audit_context"]["tenant_id"] == expected_tenant
         assert response3.json()["audit_context"]["user_id"] == expected_user
@@ -168,17 +166,13 @@ class TestCurrentPolicyAccessBehavior:
         policy_id = "acgs2-security-001"
 
         # Test tenant can access the policy
-        response1 = test_client.get(
-            f"/api/policy/policies/{policy_id}", headers=auth_headers
-        )
+        response1 = test_client.get(f"/api/policy/policies/{policy_id}", headers=auth_headers)
         assert response1.status_code == 200
         assert response1.json()["policy"]["id"] == policy_id
         assert response1.json()["audit_context"]["tenant_id"] == "test-tenant-456"
 
         # Admin tenant can access the same policy
-        response2 = test_client.get(
-            f"/api/policy/policies/{policy_id}", headers=admin_auth_headers
-        )
+        response2 = test_client.get(f"/api/policy/policies/{policy_id}", headers=admin_auth_headers)
         assert response2.status_code == 200
         assert response2.json()["policy"]["id"] == policy_id
         assert response2.json()["audit_context"]["tenant_id"] == "admin-tenant-000"
@@ -364,9 +358,7 @@ class TestTenantSecurityBoundaries:
     ):
         """Verify invalid tokens cannot access any tenant's resources."""
         # Cannot list policies
-        response1 = test_client.get(
-            "/api/policy/policies", headers=malformed_auth_headers
-        )
+        response1 = test_client.get("/api/policy/policies", headers=malformed_auth_headers)
         assert response1.status_code == 401
 
         # Cannot get specific policy

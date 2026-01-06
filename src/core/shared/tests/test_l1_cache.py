@@ -11,7 +11,6 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import MagicMock
 
 import pytest
-
 from src.core.shared.l1_cache import (
     CONSTITUTIONAL_HASH,
     L1Cache,

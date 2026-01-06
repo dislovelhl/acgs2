@@ -8,7 +8,7 @@ GitHub, and GitLab integrations.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from pydantic import (
@@ -58,9 +58,7 @@ class SourceConfig(BaseModel):
     api_token: Optional[SecretStr] = Field(
         None, description="API token for authentication (GitHub, GitLab)"
     )
-    api_key: Optional[SecretStr] = Field(
-        None, description="API key for authentication (JIRA)"
-    )
+    api_key: Optional[SecretStr] = Field(None, description="API key for authentication (JIRA)")
     username: Optional[str] = Field(None, description="Username (JIRA, ServiceNow)")
     password: Optional[SecretStr] = Field(None, description="Password (ServiceNow)")
     user_email: Optional[str] = Field(None, description="User email (JIRA)")
@@ -84,9 +82,7 @@ class SourceConfig(BaseModel):
         default_factory=list,
         description="Filter items by status (e.g., ['open', 'in_progress'])",
     )
-    label_filter: List[str] = Field(
-        default_factory=list, description="Filter items by labels/tags"
-    )
+    label_filter: List[str] = Field(default_factory=list, description="Filter items by labels/tags")
     date_from: Optional[datetime] = Field(
         None, description="Import items created/updated after this date"
     )
@@ -141,12 +137,8 @@ class ImportOptions(BaseModel):
     include_attachments: bool = Field(
         default=False, description="Include file attachments (may increase processing time)"
     )
-    include_history: bool = Field(
-        default=False, description="Include item history/audit trail"
-    )
-    dry_run: bool = Field(
-        default=False, description="Simulate import without committing changes"
-    )
+    include_history: bool = Field(default=False, description="Include item history/audit trail")
+    dry_run: bool = Field(default=False, description="Simulate import without committing changes")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -166,7 +158,9 @@ class ImportRequest(BaseModel):
         description="Unique identifier for this import request",
     )
     source_type: SourceType = Field(..., description="Type of external data source")
-    source_config: SourceConfig = Field(..., description="Source connection and filter configuration")
+    source_config: SourceConfig = Field(
+        ..., description="Source connection and filter configuration"
+    )
     options: ImportOptions = Field(
         default_factory=ImportOptions, description="Import behavior options"
     )
@@ -174,9 +168,7 @@ class ImportRequest(BaseModel):
     # Metadata
     requested_by: Optional[str] = Field(None, description="User ID who requested the import")
     tenant_id: Optional[str] = Field(None, description="Tenant ID for multi-tenant deployments")
-    correlation_id: Optional[str] = Field(
-        None, description="Correlation ID for request tracing"
-    )
+    correlation_id: Optional[str] = Field(None, description="Correlation ID for request tracing")
     tags: List[str] = Field(default_factory=list, description="Tags for categorizing the import")
 
     model_config = ConfigDict(
@@ -208,9 +200,7 @@ class ImportProgress(BaseModel):
     failed_items: int = Field(0, ge=0, description="Number of failed items")
     skipped_items: int = Field(0, ge=0, description="Number of skipped items (duplicates)")
 
-    percentage: float = Field(
-        0.0, ge=0.0, le=100.0, description="Percentage complete (0-100)"
-    )
+    percentage: float = Field(0.0, ge=0.0, le=100.0, description="Percentage complete (0-100)")
     estimated_time_remaining: Optional[int] = Field(
         None, ge=0, description="Estimated seconds remaining"
     )
@@ -295,9 +285,7 @@ class PreviewItem(BaseModel):
     created_at: Optional[datetime] = Field(None, description="Creation date")
     updated_at: Optional[datetime] = Field(None, description="Last update date")
     labels: List[str] = Field(default_factory=list, description="Labels/tags")
-    metadata: Dict[str, Any] = Field(
-        default_factory=dict, description="Additional item metadata"
-    )
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional item metadata")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -310,9 +298,7 @@ class PreviewResponse(BaseModel):
     """
 
     source_type: SourceType = Field(..., description="Type of external data source")
-    total_available: int = Field(
-        0, ge=0, description="Total number of items available for import"
-    )
+    total_available: int = Field(0, ge=0, description="Total number of items available for import")
     preview_items: List[PreviewItem] = Field(
         default_factory=list, description="Sample items (typically first 10-50)"
     )

@@ -1,5 +1,5 @@
 # ACGS-2 Performance Optimization Guide
-**Constitutional Hash:** `cdd01ef066bc6cf2`  
+**Constitutional Hash:** `cdd01ef066bc6cf2`
 **Date:** December 23, 2025
 
 ## Overview
@@ -187,16 +187,16 @@ COMPILED_INJECTION_PATTERNS = [
 def _detect_prompt_injection(self, message: AgentMessage) -> Optional[ValidationResult]:
     """Detect potential prompt injection attacks with short-circuit optimization."""
     content = str(message.content)
-    
+
     # Short-circuit: Only check if content is suspiciously long or contains keywords
     if len(content) < 50 or not any(kw in content.lower() for kw in ['ignore', 'system', 'prompt']):
         return None
-    
+
     # Full regex check only for suspicious content
     for pattern in COMPILED_INJECTION_PATTERNS:
         if pattern.search(content):
             return ValidationResult(is_valid=False, ...)
-    
+
     return None
 ```
 
@@ -225,7 +225,7 @@ class MessageProcessor:
     def __init__(self):
         self._l1_cache = {}  # In-memory cache
         self._l1_max_size = 1000
-        
+
     @lru_cache(maxsize=1000)
     async def _cached_validation(self, hash_key: str) -> ValidationResult:
         """L1 in-memory cache for hot validations."""
@@ -238,14 +238,14 @@ async def _get_cached_validation(self, cache_key: str) -> Optional[ValidationRes
     # L1: Check in-memory
     if cache_key in self._l1_cache:
         return self._l1_cache[cache_key]
-    
+
     # L2: Check Redis
     cached = await self._redis.get(cache_key)
     if cached:
         result = ValidationResult.from_json(cached)
         self._l1_cache[cache_key] = result  # Populate L1
         return result
-    
+
     return None
 ```
 
@@ -431,6 +431,6 @@ These optimizations are **optional enhancements** for extreme-scale deployments 
 
 ---
 
-**Guide Version:** 1.0  
-**Constitutional Hash:** cdd01ef066bc6cf2  
+**Guide Version:** 1.0
+**Constitutional Hash:** cdd01ef066bc6cf2
 **Last Updated:** December 23, 2025

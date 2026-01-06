@@ -335,7 +335,7 @@
                 <div class="report-meta-item">
                     <div class="report-meta-label">Audit Period</div>
                     <div class="report-meta-value">
-                        {{ audit_period_start | format_date }} - {{ audit_period_end | format_date }}
+                        {{ (audit_period_start | default(None)) | format_date }} - {{ (audit_period_end | default(None)) | format_date }}
                     </div>
                 </div>
                 <div class="report-meta-item">

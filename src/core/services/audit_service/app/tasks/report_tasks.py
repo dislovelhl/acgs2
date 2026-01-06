@@ -106,7 +106,7 @@ def _generate_report_id(tenant_id: str, framework: str) -> str:
     return f"RPT-{tenant_id[:8].upper()}-{framework.upper()}-{timestamp}"
 
 
-def _fetch_logs_for_tenant(
+async def _fetch_logs_for_tenant(
     tenant_id: str,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -114,8 +114,7 @@ def _fetch_logs_for_tenant(
     """
     Fetch decision logs for a tenant.
 
-    In a real implementation, this would query the audit ledger database.
-    For now, returns an empty list that can be mocked in tests.
+    Integrates with the audit ledger to fetch real decision logs with date filtering.
 
     Args:
         tenant_id: Target tenant identifier
@@ -125,15 +124,74 @@ def _fetch_logs_for_tenant(
     Returns:
         List of decision log dictionaries
     """
-    # TODO: Implement actual log fetching from audit ledger
-    # This should integrate with the audit_ledger database or service
-    logger.info(
-        "Fetching logs for tenant=%s, start_date=%s, end_date=%s",
-        tenant_id,
-        start_date,
-        end_date,
-    )
-    return []
+    from ..core.audit_ledger import get_audit_ledger
+
+    try:
+        logger.info(
+            "Fetching logs for tenant=%s, start_date=%s, end_date=%s",
+            tenant_id,
+            start_date,
+            end_date,
+        )
+
+        ledger = await get_audit_ledger()
+
+        # Filter ledger entries by tenant and date range
+        filtered_logs = []
+
+        # Access ledger entries directly for full history (or as much as is in memory/persistence)
+        # In a production environment with millions of logs, this would be a database query.
+        for entry in ledger.entries:
+            vr = entry.validation_result
+            metadata = vr.metadata
+
+            # Check tenant filter
+            if tenant_id and tenant_id != "all" and tenant_id != "default":
+                log_tenant = metadata.get("tenant_id")
+                if log_tenant != tenant_id:
+                    continue
+
+            # Check date range filter
+            if entry.timestamp:
+                log_datetime = datetime.fromtimestamp(entry.timestamp, tz=timezone.utc)
+                if start_date and log_datetime < start_date:
+                    continue
+                if end_date and log_datetime > end_date:
+                    continue
+
+            # Format log entry for report
+            log_entry = {
+                "timestamp": entry.timestamp,
+                "date": datetime.fromtimestamp(entry.timestamp, tz=timezone.utc).isoformat()
+                if entry.timestamp
+                else None,
+                "tenant_id": metadata.get("tenant_id", "default"),
+                "decision_type": metadata.get("decision_type", "unknown"),
+                "agent_id": metadata.get("agent_id", "unknown"),
+                "action": metadata.get("action", "unknown"),
+                "impact_score": metadata.get("impact_score", 0.0),
+                "constitutional_compliant": vr.is_valid,
+                "errors": vr.errors,
+                "warnings": vr.warnings,
+                "hash": entry.hash,
+                "batch_id": entry.batch_id,
+                "anchored": entry.batch_id
+                is not None,  # If it has a batch_id, it's at least queued for anchoring
+            }
+
+            filtered_logs.append(log_entry)
+
+        # Sort by timestamp descending (most recent first)
+        filtered_logs.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+
+        logger.info("Fetched %d decision logs for tenant %s", len(filtered_logs), tenant_id)
+
+        return filtered_logs
+
+    except Exception as e:
+        logger.error("Failed to fetch logs from audit ledger: %s", e, exc_info=True)
+        # Return empty list on error to maintain API compatibility
+        return []
 
 
 def _save_report_to_storage(
@@ -177,7 +235,7 @@ def _save_report_to_storage(
     acks_late=True,
     queue="reports",
 )
-def generate_scheduled_report(
+async def generate_scheduled_report(
     self,
     tenant_id: str,
     framework: str,
@@ -229,7 +287,7 @@ def generate_scheduled_report(
         ReportGenerator = _get_report_generator()
 
         # Fetch logs for the tenant
-        logs = _fetch_logs_for_tenant(tenant_id)
+        logs = await _fetch_logs_for_tenant(tenant_id)
 
         # Generate the report based on format
         format_lower = format.lower()
@@ -255,7 +313,7 @@ def generate_scheduled_report(
         file_size = len(report_bytes)
 
         logger.info(
-            "Report generated successfully: report_id=%s, file_path=%s, " "size=%d bytes",
+            "Report generated successfully: report_id=%s, file_path=%s, size=%d bytes",
             report_id,
             file_path,
             file_size,
@@ -290,7 +348,7 @@ def generate_scheduled_report(
 
     except MaxRetriesExceededError:
         logger.error(
-            "Max retries exceeded for report generation: report_id=%s, " "tenant=%s, framework=%s",
+            "Max retries exceeded for report generation: report_id=%s, tenant=%s, framework=%s",
             report_id,
             tenant_id,
             framework,
@@ -398,7 +456,7 @@ def _send_report_email(
     acks_late=True,
     queue="reports",
 )
-def generate_report_async(
+async def generate_report_async(
     self,
     tenant_id: str,
     framework: str,
@@ -447,7 +505,7 @@ def generate_report_async(
 
         # Use provided logs or fetch from storage
         if logs is None:
-            logs = _fetch_logs_for_tenant(tenant_id)
+            logs = await _fetch_logs_for_tenant(tenant_id)
 
         # Generate the report based on format
         format_lower = format.lower()
@@ -473,7 +531,7 @@ def generate_report_async(
         file_size = len(report_bytes)
 
         logger.info(
-            "Async report generated successfully: report_id=%s, file_path=%s, " "size=%d bytes",
+            "Async report generated successfully: report_id=%s, file_path=%s, size=%d bytes",
             report_id,
             file_path,
             file_size,

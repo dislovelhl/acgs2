@@ -1,0 +1,763 @@
+openapi: 3.1.0
+info:
+  title: ACGS-2 Enhanced Agent Bus API
+  description: |
+    High-performance message bus providing constitutional enforcement,
+    multi-agent coordination, and intelligent task orchestration with
+    DAG-based execution.
+
+    **Constitutional Hash**: cdd01ef066bc6cf2
+
+    **Key Features**:
+    - Constitutional hash validation for all operations
+    - Multi-agent message routing and coordination
+    - DAG-based task decomposition and execution
+    - Real-time pub/sub messaging via Redis and Kafka
+    - ML-based impact scoring and decision support
+    - Adaptive governance policy synthesis
+    - Circuit breaker patterns for fault tolerance
+
+  version: 1.0.0
+  contact:
+    name: ACGS-2 Agent Bus Support
+    url: https://acgs2.example.com/support
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: http://agent-bus:8000
+    description: Internal service endpoint
+
+tags:
+  - name: Health
+    description: Service health and status endpoints
+  - name: Messages
+    description: Agent message routing and coordination
+  - name: Constitutional
+    description: Constitutional compliance validation
+  - name: Tasks
+    description: DAG-based task orchestration
+  - name: Governance
+    description: Governance decision evaluation
+  - name: Metrics
+    description: Impact scoring and metrics
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the Enhanced Agent Bus
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /messages/send:
+    post:
+      summary: Send message to agent
+      description: |
+        Send a message to a specific agent or broadcast to multiple agents
+        with constitutional compliance validation.
+      operationId: sendMessage
+      tags:
+        - Messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+        '400':
+          description: Invalid message format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Constitutional compliance violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /messages/receive:
+    get:
+      summary: Receive messages for agent
+      description: |
+        Retrieve pending messages for a specific agent from the message queue.
+      operationId: receiveMessages
+      tags:
+        - Messages
+      parameters:
+        - name: agent_id
+          in: query
+          required: true
+          description: Agent identifier
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of messages to retrieve
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: timeout
+          in: query
+          required: false
+          description: Long-polling timeout in seconds
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 30
+            default: 0
+      responses:
+        '200':
+          description: Messages retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiveMessagesResponse'
+
+  /constitutional/validate:
+    post:
+      summary: Validate constitutional compliance
+      description: |
+        Validate an operation or decision against constitutional principles
+        using cryptographic hash verification (cdd01ef066bc6cf2).
+      operationId: validateConstitutional
+      tags:
+        - Constitutional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConstitutionalValidationRequest'
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstitutionalValidationResponse'
+        '400':
+          description: Invalid validation request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/submit:
+    post:
+      summary: Submit task for DAG execution
+      description: |
+        Submit a task for decomposition and execution using DAG-based
+        orchestration with dependency resolution.
+      operationId: submitTask
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskSubmissionRequest'
+      responses:
+        '202':
+          description: Task accepted for execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskSubmissionResponse'
+        '400':
+          description: Invalid task definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/{task_id}/status:
+    get:
+      summary: Get task execution status
+      description: |
+        Retrieve the current execution status and progress of a submitted task.
+      operationId: getTaskStatus
+      tags:
+        - Tasks
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          description: Task identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskStatusResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /governance/evaluate:
+    post:
+      summary: Evaluate governance decision
+      description: |
+        Evaluate a governance decision using adaptive governance engine
+        with ML-based impact scoring and policy synthesis.
+      operationId: evaluateGovernance
+      tags:
+        - Governance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovernanceEvaluationRequest'
+      responses:
+        '200':
+          description: Governance evaluation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernanceEvaluationResponse'
+        '400':
+          description: Invalid evaluation request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /metrics/impact:
+    get:
+      summary: Get impact scores
+      description: |
+        Retrieve ML-based impact scores for governance decisions
+        and system operations.
+      operationId: getImpactScores
+      tags:
+        - Metrics
+      parameters:
+        - name: decision_id
+          in: query
+          required: false
+          description: Specific decision ID to retrieve impact score
+          schema:
+            type: string
+        - name: start_time
+          in: query
+          required: false
+          description: Start time for time range query
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          required: false
+          description: End time for time range query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Impact scores retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImpactScoresResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          example: healthy
+        service:
+          type: string
+          example: enhanced-agent-bus
+        constitutional_hash:
+          type: string
+          example: cdd01ef066bc6cf2
+        version:
+          type: string
+          example: "1.0.0"
+        uptime_seconds:
+          type: number
+          example: 86400
+        connected_agents:
+          type: integer
+          example: 42
+
+    SendMessageRequest:
+      type: object
+      required:
+        - from_agent_id
+        - to_agent_id
+        - message_type
+        - payload
+      properties:
+        from_agent_id:
+          type: string
+          description: Sender agent identifier
+          example: agent-governance-001
+        to_agent_id:
+          type: string
+          description: Recipient agent identifier (or "broadcast" for all agents)
+          example: agent-audit-001
+        message_type:
+          type: string
+          description: Message type for routing
+          enum:
+            - command
+            - query
+            - event
+            - notification
+            - governance_decision
+          example: command
+        payload:
+          type: object
+          description: Message payload
+          additionalProperties: true
+        priority:
+          type: string
+          description: Message priority
+          enum: [low, normal, high, critical]
+          default: normal
+        constitutional_compliance_required:
+          type: boolean
+          description: Whether constitutional validation is required
+          default: true
+        correlation_id:
+          type: string
+          description: Correlation ID for request tracking
+          format: uuid
+
+    SendMessageResponse:
+      type: object
+      required:
+        - message_id
+        - status
+        - timestamp
+      properties:
+        message_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        status:
+          type: string
+          enum: [sent, queued, failed]
+          example: sent
+        timestamp:
+          type: string
+          format: date-time
+        constitutional_validation:
+          type: object
+          properties:
+            passed:
+              type: boolean
+            hash_verified:
+              type: boolean
+            violations:
+              type: array
+              items:
+                type: string
+
+    ReceiveMessagesResponse:
+      type: object
+      required:
+        - messages
+        - count
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        count:
+          type: integer
+          example: 5
+        has_more:
+          type: boolean
+          example: false
+
+    Message:
+      type: object
+      required:
+        - message_id
+        - from_agent_id
+        - to_agent_id
+        - message_type
+        - payload
+        - timestamp
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        from_agent_id:
+          type: string
+        to_agent_id:
+          type: string
+        message_type:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        priority:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        correlation_id:
+          type: string
+          format: uuid
+
+    ConstitutionalValidationRequest:
+      type: object
+      required:
+        - operation_type
+        - operation_data
+      properties:
+        operation_type:
+          type: string
+          description: Type of operation to validate
+          example: governance_decision
+        operation_data:
+          type: object
+          description: Operation details for validation
+          additionalProperties: true
+        context:
+          type: object
+          description: Additional context for validation
+          additionalProperties: true
+
+    ConstitutionalValidationResponse:
+      type: object
+      required:
+        - valid
+        - constitutional_hash
+        - timestamp
+      properties:
+        valid:
+          type: boolean
+          description: Whether operation is constitutionally compliant
+          example: true
+        constitutional_hash:
+          type: string
+          description: Validated constitutional hash
+          example: cdd01ef066bc6cf2
+        violations:
+          type: array
+          description: List of violations (if any)
+          items:
+            type: object
+            properties:
+              principle:
+                type: string
+              severity:
+                type: string
+                enum: [critical, high, medium, low]
+              description:
+                type: string
+        recommendations:
+          type: array
+          description: Recommendations for compliance
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    TaskSubmissionRequest:
+      type: object
+      required:
+        - task_name
+        - task_type
+        - parameters
+      properties:
+        task_name:
+          type: string
+          description: Human-readable task name
+          example: Process governance workflow
+        task_type:
+          type: string
+          description: Task type for handler selection
+          example: governance_workflow
+        parameters:
+          type: object
+          description: Task execution parameters
+          additionalProperties: true
+        dependencies:
+          type: array
+          description: Task dependencies (task IDs)
+          items:
+            type: string
+            format: uuid
+        priority:
+          type: string
+          enum: [low, normal, high, critical]
+          default: normal
+        timeout_seconds:
+          type: integer
+          description: Maximum execution time
+          minimum: 1
+          default: 300
+
+    TaskSubmissionResponse:
+      type: object
+      required:
+        - task_id
+        - status
+        - submitted_at
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        status:
+          type: string
+          enum: [pending, queued, running, completed, failed]
+          example: queued
+        submitted_at:
+          type: string
+          format: date-time
+        estimated_completion:
+          type: string
+          format: date-time
+
+    TaskStatusResponse:
+      type: object
+      required:
+        - task_id
+        - status
+        - progress
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, queued, running, completed, failed, cancelled]
+        progress:
+          type: number
+          description: Progress percentage (0-100)
+          minimum: 0
+          maximum: 100
+          example: 75.5
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        result:
+          type: object
+          description: Task result (if completed)
+          additionalProperties: true
+        error:
+          type: object
+          description: Error details (if failed)
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+        subtasks:
+          type: array
+          description: DAG subtasks status
+          items:
+            type: object
+            properties:
+              subtask_id:
+                type: string
+              name:
+                type: string
+              status:
+                type: string
+              progress:
+                type: number
+
+    GovernanceEvaluationRequest:
+      type: object
+      required:
+        - decision_type
+        - decision_data
+      properties:
+        decision_type:
+          type: string
+          description: Type of governance decision
+          example: policy_approval
+        decision_data:
+          type: object
+          description: Decision details for evaluation
+          additionalProperties: true
+        context:
+          type: object
+          description: Decision context
+          additionalProperties: true
+        require_impact_score:
+          type: boolean
+          description: Whether to compute ML impact score
+          default: true
+
+    GovernanceEvaluationResponse:
+      type: object
+      required:
+        - decision_id
+        - recommendation
+        - confidence
+      properties:
+        decision_id:
+          type: string
+          format: uuid
+        recommendation:
+          type: string
+          enum: [approve, reject, escalate, modify]
+          example: approve
+        confidence:
+          type: number
+          description: Confidence score (0-1)
+          minimum: 0
+          maximum: 1
+          example: 0.95
+        impact_score:
+          type: number
+          description: ML-based impact score
+          minimum: 0
+          maximum: 100
+          example: 67.3
+        reasoning:
+          type: array
+          description: Explanation of recommendation
+          items:
+            type: string
+        policy_matches:
+          type: array
+          description: Matching governance policies
+          items:
+            type: object
+            properties:
+              policy_id:
+                type: string
+              policy_name:
+                type: string
+              match_score:
+                type: number
+        constitutional_compliance:
+          type: boolean
+          description: Constitutional compliance status
+        timestamp:
+          type: string
+          format: date-time
+
+    ImpactScoresResponse:
+      type: object
+      required:
+        - scores
+        - count
+      properties:
+        scores:
+          type: array
+          items:
+            type: object
+            properties:
+              decision_id:
+                type: string
+                format: uuid
+              decision_type:
+                type: string
+              impact_score:
+                type: number
+                minimum: 0
+                maximum: 100
+              factors:
+                type: object
+                properties:
+                  compliance_risk:
+                    type: number
+                  operational_impact:
+                    type: number
+                  stakeholder_impact:
+                    type: number
+                  precedent_alignment:
+                    type: number
+              timestamp:
+                type: string
+                format: date-time
+        count:
+          type: integer
+        statistics:
+          type: object
+          properties:
+            average_score:
+              type: number
+            median_score:
+              type: number
+            std_deviation:
+              type: number
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: CONSTITUTIONAL_VIOLATION
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+        request_id:
+          type: string
+          format: uuid
+
+security:
+  - InternalAuth: []
+
+components:
+  securitySchemes:
+    InternalAuth:
+      type: apiKey
+      in: header
+      name: X-Internal-API-Key
+      description: Internal service API key for authentication

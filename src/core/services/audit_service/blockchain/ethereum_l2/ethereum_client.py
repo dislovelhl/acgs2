@@ -62,6 +62,7 @@ class EthereumL2Client:
                 - private_key: 私钥（用于交易签名）
                 - contract_address: 审计合约地址
                 - gas_limit: Gas限制
+                - rpc_url: 自定义 RPC URL (可选)
         """
         if network not in self.NETWORKS:
             raise ValueError(f"Unsupported network: {network}")
@@ -69,6 +70,17 @@ class EthereumL2Client:
         self.network = network
         self.network_config = self.NETWORKS[network]
         self.config = config
+
+        # Security hardening: Validate RPC URL
+        rpc_url = config.get("rpc_url") or self.network_config["rpc_url"]
+        if not rpc_url.startswith("https://"):
+            logger.warning(
+                f"Insecure Ethereum RPC URL: {rpc_url}. HTTPS is required for production."
+            )
+            if not config.get("allow_insecure_rpc", False):
+                raise ValueError(f"Insecure RPC URL blocked: {rpc_url}")
+
+        self.rpc_url = rpc_url
         self.web3 = None
         self.contract = None
         self.account = None

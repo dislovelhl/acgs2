@@ -84,7 +84,6 @@ MACIEnforcer: Optional[type] = None
 MACIRole: Optional[type] = None
 MACIRoleRegistry: Optional[type] = None
 
-
 # =============================================================================
 # Import Resolution Functions
 # =============================================================================
@@ -449,7 +448,6 @@ def initialize_all_imports() -> None:
 # Initialize on module load (maintains backward compatibility)
 DEFAULT_REDIS_URL: str = _init_redis_config()
 initialize_all_imports()
-
 
 # =============================================================================
 # Generic Import Utilities (for reducing redundant try/except patterns)

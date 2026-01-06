@@ -35,6 +35,8 @@ from ...shared.types import (
     ConfigDict,
     JSONDict,
     StepResult,
+)
+from ...shared.types import (
     WorkflowState as WorkflowStateData,
 )
 from .. import CONSTITUTIONAL_HASH
@@ -563,7 +565,9 @@ class TemporalWorkflowEngine:
 
         return False
 
-    async def _validate_constitutional_compliance(self, step: WorkflowStep, result: StepResult) -> bool:
+    async def _validate_constitutional_compliance(
+        self, step: WorkflowStep, result: StepResult
+    ) -> bool:
         """Validate that step execution maintains constitutional compliance."""
         # Check constitutional hash consistency
         if hasattr(result, "get") and result.get("constitutional_hash") != CONSTITUTIONAL_HASH:

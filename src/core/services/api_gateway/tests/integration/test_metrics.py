@@ -106,13 +106,13 @@ class TestStructuredLoggingIntegration:
         """Test that request logging follows structured format."""
         # This is hard to test directly without log capture,
         # but we can verify the logging imports are working
-        from src.core.shared.logging import get_logger
+        from src.core.shared.acgs_logging import get_logger
 
         logger = get_logger("test")
         assert logger is not None
 
         # Verify logging functions exist
-        from src.core.shared.logging import log_error, log_request_end, log_request_start
+        from src.core.shared.acgs_logging import log_error, log_request_end, log_request_start
 
         assert callable(log_request_start)
         assert callable(log_request_end)
@@ -120,7 +120,7 @@ class TestStructuredLoggingIntegration:
 
     def test_business_event_logging(self, client, sample_feedback):
         """Test business event logging structure."""
-        from src.core.shared.logging import get_logger, log_business_event
+        from src.core.shared.acgs_logging import get_logger, log_business_event
 
         logger = get_logger("test")
 

@@ -25,9 +25,9 @@ import httpx
 from pydantic import Field, SecretStr, field_validator, model_validator
 
 # Import exceptions from centralized exceptions module
-from exceptions.auth import AuthenticationError
-from exceptions.delivery import DeliveryError
-from exceptions.integration import RateLimitError
+from ..exceptions.auth import AuthenticationError
+from ..exceptions.delivery import DeliveryError
+from ..exceptions.integration import RateLimitError
 
 # Import base integration classes and models
 from .base import (
@@ -41,13 +41,11 @@ from .base import (
 
 logger = logging.getLogger(__name__)
 
-
 class ServiceNowAuthType(str, Enum):
     """ServiceNow authentication types"""
 
     BASIC = "basic"
     OAUTH = "oauth"
-
 
 class ServiceNowIncidentState(str, Enum):
     """ServiceNow incident states"""
@@ -58,7 +56,6 @@ class ServiceNowIncidentState(str, Enum):
     RESOLVED = "6"
     CLOSED = "7"
     CANCELED = "8"
-
 
 # Default impact/urgency mapping from ACGS-2 severity
 # ServiceNow uses: 1 = High, 2 = Medium, 3 = Low
@@ -77,7 +74,6 @@ DEFAULT_URGENCY_MAP: Dict[EventSeverity, str] = {
     EventSeverity.LOW: "3",
     EventSeverity.INFO: "3",
 }
-
 
 class ServiceNowCredentials(IntegrationCredentials):
     """
@@ -218,7 +214,6 @@ class ServiceNowCredentials(IntegrationCredentials):
                 raise ValueError("Client secret is required for OAuth authentication")
         return self
 
-
 class ServiceNowAdapter(BaseIntegration):
     """
     ServiceNow incident management integration adapter.
@@ -327,8 +322,6 @@ class ServiceNowAdapter(BaseIntegration):
             if datetime.now(timezone.utc) < self._token_expires_at:
                 return True
 
-        logger.debug(f"Refreshing OAuth token for '{self.name}'")
-
         try:
             client = await self.get_http_client()
             token_url = f"{self._get_base_url()}{self.OAUTH_TOKEN_PATH}"
@@ -351,7 +344,7 @@ class ServiceNowAdapter(BaseIntegration):
                 from datetime import timedelta
 
                 self._token_expires_at += timedelta(seconds=expires_in - 300)
-                logger.debug(f"OAuth token refreshed for '{self.name}'")
+
                 return True
             else:
                 logger.error(f"Failed to refresh OAuth token: HTTP {response.status_code}")
@@ -371,7 +364,6 @@ class ServiceNowAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating authentication success/failure
         """
-        logger.debug(f"Authenticating with ServiceNow for '{self.name}'")
 
         try:
             client = await self.get_http_client()
@@ -469,7 +461,6 @@ class ServiceNowAdapter(BaseIntegration):
         Returns:
             IntegrationResult with validation status and any issues found
         """
-        logger.debug(f"Validating ServiceNow integration '{self.name}'")
 
         validation_issues: List[str] = []
 
@@ -501,7 +492,7 @@ class ServiceNowAdapter(BaseIntegration):
             )
 
             if incident_response.status_code == 200:
-                logger.debug("Incident table accessible")
+
             elif incident_response.status_code == 401:
                 validation_issues.append("Authentication failed - invalid credentials")
                 return IntegrationResult(
@@ -587,7 +578,6 @@ class ServiceNowAdapter(BaseIntegration):
             DeliveryError: If incident creation fails
             RateLimitError: If rate limited by ServiceNow
         """
-        logger.debug(f"Creating ServiceNow incident for event {event.event_id}")
 
         try:
             # Refresh OAuth token if needed
@@ -889,7 +879,6 @@ class ServiceNowAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating connection status
         """
-        logger.debug(f"Testing ServiceNow connection for '{self.name}'")
 
         try:
             client = await self.get_http_client()
@@ -904,7 +893,7 @@ class ServiceNowAdapter(BaseIntegration):
 
             # Any response (even 401) indicates the server is reachable
             if response.status_code < 500:
-                logger.debug(f"ServiceNow instance reachable at {self.snow_credentials.instance}")
+
                 return IntegrationResult(
                     success=True,
                     integration_name=self.name,
@@ -958,8 +947,6 @@ class ServiceNowAdapter(BaseIntegration):
         """
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
-
-        logger.debug(f"Fetching ServiceNow incident {incident_number}")
 
         try:
             # Refresh OAuth token if needed
@@ -1040,8 +1027,6 @@ class ServiceNowAdapter(BaseIntegration):
         """
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
-
-        logger.debug(f"Adding work note to ServiceNow incident {incident_number}")
 
         try:
             # Refresh OAuth token if needed

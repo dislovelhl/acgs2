@@ -5,13 +5,11 @@ Human-in-the-Loop approval workflow engine for ACGS-2 AI governance.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from src.core.shared.security.cors_config import get_cors_config
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-
+from alembic import command
+from alembic.config import Config
 from app.api.routes import router
 from app.config.settings import settings
 from app.core.approval_chain import approval_engine
@@ -19,8 +17,12 @@ from app.notifications.base import notification_manager
 from app.notifications.pagerduty import PagerDutyProvider
 from app.notifications.slack import SlackProvider
 from app.notifications.teams import TeamsProvider
-from src.core.shared.logging import create_correlation_middleware, init_service_logging
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from src.core.shared.acgs_logging import create_correlation_middleware, init_service_logging
 from src.core.shared.metrics import create_metrics_endpoint, set_service_info
+from src.core.shared.security.cors_config import get_cors_config
 
 # Initialize structured logging
 
@@ -29,7 +31,25 @@ logger = init_service_logging("hitl-approvals")
 logger = logging.getLogger(__name__)
 
 
-from app.database import Base, engine
+def run_db_migrations():
+    """Run database migrations using Alembic"""
+    logger.info("Running database migrations...")
+    try:
+        # Get the directory where this file is located
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        ini_path = os.path.join(base_dir, "alembic.ini")
+
+        alembic_cfg = Config(ini_path)
+        # Ensure the script_location is absolute
+        alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "migrations"))
+
+        # Run migrations synchronously in the startup phase
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully")
+    except Exception as e:
+        logger.error(f"Database migrations failed: {e}")
+        if settings.environment == "production":
+            raise
 
 
 @asynccontextmanager
@@ -39,11 +59,8 @@ async def lifespan(app: FastAPI):
     logger.info("Starting HITL Approvals Service...")
 
     try:
-        # Initialize database
-        async with engine.begin() as conn:
-            # TODO: Use Alembic for migrations in production
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database initialized")
+        # Run database migrations
+        run_db_migrations()
 
         # Initialize approval chain engine
         await approval_engine.initialize()
@@ -132,7 +149,7 @@ async def shutdown_notifications():
         try:
             if hasattr(provider, "close"):
                 await provider.close()
-                logger.debug(f"Closed notification provider: {provider_name}")
+
         except Exception as e:
             logger.error(f"Error closing notification provider {provider_name}: {e}")
 

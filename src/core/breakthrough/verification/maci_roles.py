@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 class Branch(Enum):
     """Three branches of constitutional governance."""
+
     EXECUTIVE = "executive"
     LEGISLATIVE = "legislative"
     JUDICIAL = "judicial"
@@ -45,6 +46,7 @@ class Branch(Enum):
 
 class DecisionType(Enum):
     """Types of decisions each branch can make."""
+
     POLICY_CREATION = "policy_creation"
     POLICY_EXECUTION = "policy_execution"
     CONSTITUTIONAL_REVIEW = "constitutional_review"
@@ -55,6 +57,7 @@ class DecisionType(Enum):
 @dataclass
 class ConstitutionalDecision:
     """A decision made by a constitutional branch."""
+
     decision_id: str
     branch: Branch
     decision_type: DecisionType
@@ -77,15 +80,31 @@ class ConstitutionalDecision:
 @dataclass
 class SeparationOfPowers:
     """Mathematical guarantees for branch separation."""
-    executive_permissions: Set[str] = field(default_factory=lambda: {
-        "execute_policy", "enforce_decision", "monitor_compliance", "initiate_override"
-    })
-    legislative_permissions: Set[str] = field(default_factory=lambda: {
-        "create_policy", "amend_policy", "propose_constitutional_amendment", "approve_budget"
-    })
-    judicial_permissions: Set[str] = field(default_factory=lambda: {
-        "review_constitutionality", "resolve_disputes", "interpret_constitution", "issue_injunctions"
-    })
+
+    executive_permissions: Set[str] = field(
+        default_factory=lambda: {
+            "execute_policy",
+            "enforce_decision",
+            "monitor_compliance",
+            "initiate_override",
+        }
+    )
+    legislative_permissions: Set[str] = field(
+        default_factory=lambda: {
+            "create_policy",
+            "amend_policy",
+            "propose_constitutional_amendment",
+            "approve_budget",
+        }
+    )
+    judicial_permissions: Set[str] = field(
+        default_factory=lambda: {
+            "review_constitutionality",
+            "resolve_disputes",
+            "interpret_constitution",
+            "issue_injunctions",
+        }
+    )
 
     def validate_separation(self, branch: Branch, action: str) -> bool:
         """Validate that action is permitted for this branch."""
@@ -100,9 +119,7 @@ class SeparationOfPowers:
     def get_forbidden_actions(self, branch: Branch) -> Set[str]:
         """Get actions forbidden for this branch."""
         all_actions = (
-            self.executive_permissions |
-            self.legislative_permissions |
-            self.judicial_permissions
+            self.executive_permissions | self.legislative_permissions | self.judicial_permissions
         )
         if branch == Branch.EXECUTIVE:
             return all_actions - self.executive_permissions
@@ -121,17 +138,13 @@ class AgentProtocol(Protocol):
     capabilities: Set[str]
 
     async def make_decision(
-        self,
-        context: ConstitutionalContext,
-        decision_type: DecisionType
+        self, context: ConstitutionalContext, decision_type: DecisionType
     ) -> ConstitutionalDecision:
         """Make a decision within constitutional bounds."""
         ...
 
     async def validate_decision(
-        self,
-        decision: ConstitutionalDecision,
-        context: ConstitutionalContext
+        self, decision: ConstitutionalDecision, context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Validate a decision against constitutional principles."""
         ...
@@ -162,14 +175,14 @@ class ConstitutionalAgent:
         return set()
 
     async def make_decision(
-        self,
-        context: ConstitutionalContext,
-        decision_type: DecisionType
+        self, context: ConstitutionalContext, decision_type: DecisionType
     ) -> ConstitutionalDecision:
         """Make a decision within constitutional bounds."""
         # Validate decision type is appropriate for branch
         if not self._validate_decision_type(decision_type):
-            raise ValueError(f"Decision type {decision_type} not permitted for {self.branch} branch")
+            raise ValueError(
+                f"Decision type {decision_type} not permitted for {self.branch} branch"
+            )
 
         # Create decision
         decision = ConstitutionalDecision(
@@ -179,12 +192,14 @@ class ConstitutionalAgent:
             content=context,
             justification=f"{self.branch.value} branch decision",
             timestamp=time.time(),
-            audit_trail=[{
-                "agent_id": self.agent_id,
-                "action": "decision_made",
-                "timestamp": time.time(),
-                "branch": self.branch.value
-            }]
+            audit_trail=[
+                {
+                    "agent_id": self.agent_id,
+                    "action": "decision_made",
+                    "timestamp": time.time(),
+                    "branch": self.branch.value,
+                }
+            ],
         )
 
         # Record in history
@@ -196,25 +211,14 @@ class ConstitutionalAgent:
     def _validate_decision_type(self, decision_type: DecisionType) -> bool:
         """Validate that decision type is appropriate for this branch."""
         branch_decisions = {
-            Branch.EXECUTIVE: {
-                DecisionType.POLICY_EXECUTION,
-                DecisionType.OVERRIDE_REQUEST
-            },
-            Branch.LEGISLATIVE: {
-                DecisionType.POLICY_CREATION,
-                DecisionType.CONSTITUTIONAL_REVIEW
-            },
-            Branch.JUDICIAL: {
-                DecisionType.CONSTITUTIONAL_REVIEW,
-                DecisionType.DISPUTE_RESOLUTION
-            }
+            Branch.EXECUTIVE: {DecisionType.POLICY_EXECUTION, DecisionType.OVERRIDE_REQUEST},
+            Branch.LEGISLATIVE: {DecisionType.POLICY_CREATION, DecisionType.CONSTITUTIONAL_REVIEW},
+            Branch.JUDICIAL: {DecisionType.CONSTITUTIONAL_REVIEW, DecisionType.DISPUTE_RESOLUTION},
         }
         return decision_type in branch_decisions.get(self.branch, set())
 
     async def validate_decision(
-        self,
-        decision: ConstitutionalDecision,
-        context: ConstitutionalContext
+        self, decision: ConstitutionalDecision, context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Validate a decision against constitutional principles."""
         # Check constitutional hash
@@ -238,9 +242,7 @@ class ConstitutionalAgent:
         return True, "Decision validated"
 
     async def _judicial_review(
-        self,
-        decision: ConstitutionalDecision,
-        context: ConstitutionalContext
+        self, decision: ConstitutionalDecision, context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Judicial review of executive decisions."""
         # Placeholder for constitutional review logic
@@ -248,9 +250,7 @@ class ConstitutionalAgent:
         return True, "Executive decision constitutionally sound"
 
     async def _legislative_review(
-        self,
-        decision: ConstitutionalDecision,
-        context: ConstitutionalContext
+        self, decision: ConstitutionalDecision, context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Judicial review of legislative decisions."""
         # Placeholder for constitutional review logic
@@ -266,9 +266,7 @@ class ExecutiveAgent(ConstitutionalAgent):
         self.enforcement_actions: List[JSONDict] = []
 
     async def execute_decision(
-        self,
-        decision: ConstitutionalDecision,
-        context: ConstitutionalContext
+        self, decision: ConstitutionalDecision, context: ConstitutionalContext
     ) -> JSONDict:
         """Execute a decision with compensable operations."""
         execution_record = {
@@ -276,7 +274,7 @@ class ExecutiveAgent(ConstitutionalAgent):
             "timestamp": time.time(),
             "status": "executing",
             "compensable": True,
-            "audit_trail": decision.audit_trail.copy()
+            "audit_trail": decision.audit_trail.copy(),
         }
 
         try:
@@ -287,34 +285,28 @@ class ExecutiveAgent(ConstitutionalAgent):
             result = await self._perform_execution(decision, context)
 
             # Record successful execution
-            execution_record.update({
-                "status": "completed",
-                "result": result,
-                "completed_at": time.time()
-            })
+            execution_record.update(
+                {"status": "completed", "result": result, "completed_at": time.time()}
+            )
 
             # Add enforcement action
-            self.enforcement_actions.append({
-                "decision_id": decision.decision_id,
-                "action": "executed",
-                "timestamp": time.time(),
-                "result": result
-            })
+            self.enforcement_actions.append(
+                {
+                    "decision_id": decision.decision_id,
+                    "action": "executed",
+                    "timestamp": time.time(),
+                    "result": result,
+                }
+            )
 
         except Exception as e:
-            execution_record.update({
-                "status": "failed",
-                "error": str(e),
-                "failed_at": time.time()
-            })
+            execution_record.update({"status": "failed", "error": str(e), "failed_at": time.time()})
             logger.error(f"Execution failed for decision {decision.decision_id}: {e}")
 
         return execution_record
 
     async def _perform_execution(
-        self,
-        decision: ConstitutionalDecision,
-        context: ConstitutionalContext
+        self, decision: ConstitutionalDecision, context: ConstitutionalContext
     ) -> JSONDict:
         """Perform the actual execution of a decision."""
         # Placeholder for execution logic
@@ -332,30 +324,24 @@ class LegislativeAgent(ConstitutionalAgent):
         self.active_policies: Dict[str, PolicyData] = {}
 
     async def propose_policy(
-        self,
-        policy_content: PolicyData,
-        justification: str
+        self, policy_content: PolicyData, justification: str
     ) -> ConstitutionalDecision:
         """Propose a new policy for consideration."""
         proposal = {
             "policy_content": policy_content,
             "justification": justification,
             "proposed_at": time.time(),
-            "status": "proposed"
+            "status": "proposed",
         }
 
         self.proposed_policies.append(proposal)
 
         return await self.make_decision(
-            content=proposal,
-            decision_type=DecisionType.POLICY_CREATION
+            content=proposal, decision_type=DecisionType.POLICY_CREATION
         )
 
     async def amend_policy(
-        self,
-        policy_id: str,
-        amendments: PolicyData,
-        justification: str
+        self, policy_id: str, amendments: PolicyData, justification: str
     ) -> ConstitutionalDecision:
         """Amend an existing policy."""
         if policy_id not in self.active_policies:
@@ -365,12 +351,11 @@ class LegislativeAgent(ConstitutionalAgent):
             "policy_id": policy_id,
             "amendments": amendments,
             "justification": justification,
-            "amended_at": time.time()
+            "amended_at": time.time(),
         }
 
         return await self.make_decision(
-            content=amendment_record,
-            decision_type=DecisionType.POLICY_CREATION
+            content=amendment_record, decision_type=DecisionType.POLICY_CREATION
         )
 
 
@@ -383,16 +368,14 @@ class JudicialAgent(ConstitutionalAgent):
         self.resolved_disputes: List[JSONDict] = []
 
     async def review_constitutionality(
-        self,
-        decision: ConstitutionalDecision,
-        context: ConstitutionalContext
+        self, decision: ConstitutionalDecision, context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Review a decision for constitutional compliance."""
         case_record = {
             "decision_id": decision.decision_id,
             "review_type": "constitutionality",
             "started_at": time.time(),
-            "status": "reviewing"
+            "status": "reviewing",
         }
 
         self.review_cases.append(case_record)
@@ -401,32 +384,30 @@ class JudicialAgent(ConstitutionalAgent):
         is_valid, reasoning = await self.validate_decision(decision, context)
 
         # Update case record
-        case_record.update({
-            "completed_at": time.time(),
-            "status": "completed",
-            "is_constitutional": is_valid,
-            "reasoning": reasoning
-        })
+        case_record.update(
+            {
+                "completed_at": time.time(),
+                "status": "completed",
+                "is_constitutional": is_valid,
+                "reasoning": reasoning,
+            }
+        )
 
         return is_valid, reasoning
 
     async def resolve_dispute(
-        self,
-        dispute_description: str,
-        parties_involved: List[str],
-        context: ConstitutionalContext
+        self, dispute_description: str, parties_involved: List[str], context: ConstitutionalContext
     ) -> ConstitutionalDecision:
         """Resolve a constitutional dispute."""
         dispute_record = {
             "dispute_description": dispute_description,
             "parties_involved": parties_involved,
             "filed_at": time.time(),
-            "context": context
+            "context": context,
         }
 
         return await self.make_decision(
-            content=dispute_record,
-            decision_type=DecisionType.DISPUTE_RESOLUTION
+            content=dispute_record, decision_type=DecisionType.DISPUTE_RESOLUTION
         )
 
 
@@ -449,11 +430,13 @@ class MACIOrchestrator:
         self.legislative = LegislativeAgent("legislative-primary")
         self.judicial = JudicialAgent("judicial-primary")
 
-        self.agents.update({
-            self.executive.agent_id: self.executive,
-            self.legislative.agent_id: self.legislative,
-            self.judicial.agent_id: self.judicial
-        })
+        self.agents.update(
+            {
+                self.executive.agent_id: self.executive,
+                self.legislative.agent_id: self.legislative,
+                self.judicial.agent_id: self.judicial,
+            }
+        )
 
         logger.info("Initialized MACI Orchestrator with three-branch separation")
 
@@ -462,7 +445,7 @@ class MACIOrchestrator:
         requesting_branch: Branch,
         decision_type: DecisionType,
         content: DecisionData,
-        context: ConstitutionalContext
+        context: ConstitutionalContext,
     ) -> Tuple[bool, str, Optional[ConstitutionalDecision]]:
         """
         Process a decision request through the constitutional system.
@@ -471,8 +454,14 @@ class MACIOrchestrator:
             Tuple of (approved, reasoning, decision)
         """
         # Validate branch permissions
-        if not self.separation_of_powers.validate_separation(requesting_branch, decision_type.value):
-            return False, f"Branch {requesting_branch.value} not permitted to make {decision_type.value} decisions", None
+        if not self.separation_of_powers.validate_separation(
+            requesting_branch, decision_type.value
+        ):
+            return (
+                False,
+                f"Branch {requesting_branch.value} not permitted to make {decision_type.value} decisions",
+                None,
+            )
 
         # Get appropriate agent
         agent = self._get_agent_for_branch(requesting_branch)
@@ -485,7 +474,9 @@ class MACIOrchestrator:
 
             # Judicial review if required
             if self._requires_judicial_review(decision_type):
-                is_valid, reasoning = await self.judicial.review_constitutionality(decision, context)
+                is_valid, reasoning = await self.judicial.review_constitutionality(
+                    decision, context
+                )
                 if not is_valid:
                     return False, f"Judicial review failed: {reasoning}", None
 
@@ -509,13 +500,11 @@ class MACIOrchestrator:
         return decision_type in {
             DecisionType.CONSTITUTIONAL_REVIEW,
             DecisionType.OVERRIDE_REQUEST,
-            DecisionType.POLICY_CREATION
+            DecisionType.POLICY_CREATION,
         }
 
     async def get_consensus(
-        self,
-        decision: ConstitutionalDecision,
-        required_branches: List[Branch]
+        self, decision: ConstitutionalDecision, required_branches: List[Branch]
     ) -> Tuple[bool, str]:
         """
         Get consensus across multiple branches for important decisions.
@@ -549,12 +538,13 @@ class MACIOrchestrator:
         if consensus_ratio >= decision.consensus_threshold:
             return True, f"Consensus achieved ({approved_votes}/{len(votes)})"
         else:
-            return False, f"Consensus failed ({approved_votes}/{len(votes)} < {decision.consensus_threshold})"
+            return (
+                False,
+                f"Consensus failed ({approved_votes}/{len(votes)} < {decision.consensus_threshold})",
+            )
 
     async def _get_branch_vote(
-        self,
-        agent: ConstitutionalAgent,
-        decision: ConstitutionalDecision
+        self, agent: ConstitutionalAgent, decision: ConstitutionalDecision
     ) -> bool:
         """Get a branch's vote on a decision."""
         # Placeholder for voting logic
@@ -569,24 +559,24 @@ class MACIOrchestrator:
                 "executive": {
                     "agent_id": self.executive.agent_id,
                     "decisions_made": len(self.executive.decision_history),
-                    "executions": len(self.executive.enforcement_actions)
+                    "executions": len(self.executive.enforcement_actions),
                 },
                 "legislative": {
                     "agent_id": self.legislative.agent_id,
                     "decisions_made": len(self.legislative.decision_history),
-                    "policies_proposed": len(self.legislative.proposed_policies)
+                    "policies_proposed": len(self.legislative.proposed_policies),
                 },
                 "judicial": {
                     "agent_id": self.judicial.agent_id,
                     "decisions_made": len(self.judicial.decision_history),
-                    "reviews_completed": len(self.judicial.review_cases)
-                }
+                    "reviews_completed": len(self.judicial.review_cases),
+                },
             },
             "total_decisions": len(self.decision_log),
             "separation_violations": 0,  # Track any violations
             "last_activity": max(
                 self.executive.last_activity,
                 self.legislative.last_activity,
-                self.judicial.last_activity
-            )
+                self.judicial.last_activity,
+            ),
         }

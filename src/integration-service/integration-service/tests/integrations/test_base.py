@@ -476,6 +476,7 @@ class TestBatchProcessingPartialSuccess:
         test_credentials: TestIntegrationCredentials,
     ):
         """Test partial success with default one-by-one implementation."""
+
         # Create custom adapter that fails on odd event IDs
         class PartialFailAdapter(TestIntegration):
             async def _do_send_event(self, event: IntegrationEvent) -> IntegrationResult:
@@ -746,7 +747,7 @@ class TestBatchErrorHandling:
             # Even indices succeed, odd indices fail (based on partial behavior)
             if i % 2 == 0:
                 assert result.success is True
-                assert f"evt-test-{i+1:03d}" in result.external_id
+                assert f"evt-test-{i + 1:03d}" in result.external_id
             else:
                 assert result.success is False
 

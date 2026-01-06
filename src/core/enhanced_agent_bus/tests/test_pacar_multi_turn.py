@@ -6,7 +6,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.core.enhanced_agent_bus.config import BusConfiguration
 from src.core.enhanced_agent_bus.sdpc.conversation import MessageRole
 from src.core.enhanced_agent_bus.sdpc.pacar_manager import PACARManager
@@ -46,16 +45,18 @@ async def test_pacar_verifier_multi_turn(bus_config):
     mock_assistant.analyze_message_impact.return_value = {
         "risk_level": "low",
         "confidence": 0.9,
-        "reasoning": ["Test review"]
+        "reasoning": ["Test review"],
     }
     mock_assistant.ainvoke_multi_turn.return_value = {
         "recommended_decision": "approve",
         "risk_level": "low",
         "confidence": 0.95,
-        "reasoning": ["Content is safe."]
+        "reasoning": ["Content is safe."],
     }
 
-    with patch("enhanced_agent_bus.sdpc.pacar_verifier.get_llm_assistant", return_value=mock_assistant):
+    with patch(
+        "enhanced_agent_bus.sdpc.pacar_verifier.get_llm_assistant", return_value=mock_assistant
+    ):
         verifier = PACARVerifier(config=bus_config)
 
         # Mock manager
@@ -70,7 +71,7 @@ async def test_pacar_verifier_multi_turn(bus_config):
         result = await verifier.verify_with_context(content, intent, session_id=session_id)
 
         assert result["is_valid"] is True
-        assert verifier.manager.add_message.call_count == 3 # User, Critique, Result
+        assert verifier.manager.add_message.call_count == 3  # User, Critique, Result
 
         # Check first call (user)
         verifier.manager.add_message.assert_any_call(

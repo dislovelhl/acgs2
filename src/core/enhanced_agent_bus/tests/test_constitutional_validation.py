@@ -6,6 +6,7 @@ Comprehensive tests for constitutional validation paths.
 """
 
 import pytest
+
 from core import EnhancedAgentBus, MessageProcessor
 
 # Import from module names that conftest.py patches (models, validators, core)

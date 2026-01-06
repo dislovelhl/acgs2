@@ -8,8 +8,9 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
+
 try:
-    from src.core.shared.types import JSONDict, JSONValue, AgentInfo, MetadataDict
+    from src.core.shared.types import AgentInfo, JSONDict, JSONValue, MetadataDict
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any

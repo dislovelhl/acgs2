@@ -108,7 +108,7 @@ class TestSecurityHeadersPresence:
             json={
                 "system_name": "test-system",
                 "system_version": "1.0.0",
-                "high_risk_category": "BIOMETRIC_IDENTIFICATION",
+                "high_risk_category": "biometric_identification",
                 "system_description": "Test system",
                 "context": {},
             },
@@ -215,7 +215,7 @@ class TestSecurityHeadersOnDifferentMethods:
             json={
                 "system_name": "test-system",
                 "system_version": "1.0.0",
-                "high_risk_category": "BIOMETRIC_IDENTIFICATION",
+                "high_risk_category": "biometric_identification",
             },
         )
 
@@ -317,7 +317,7 @@ class TestSecurityHeadersWithCORS:
 
     def test_security_headers_and_cors_headers_coexist(self, client: TestClient):
         """Test both security and CORS headers are present."""
-        response = client.get("/health")
+        response = client.get("/health", headers={"Origin": "http://localhost:3000"})
 
         # Security headers should be present
         assert "Content-Security-Policy" in response.headers
@@ -530,7 +530,7 @@ class TestEUAIActEndpointSecurityHeaders:
             json={
                 "system_name": "test-ai-system",
                 "system_version": "2.0.0",
-                "high_risk_category": "CRITICAL_INFRASTRUCTURE",
+                "high_risk_category": "critical_infrastructure",
                 "system_description": "Critical infrastructure AI system",
                 "context": {"deployment": "production"},
             },
@@ -554,7 +554,7 @@ class TestEUAIActEndpointSecurityHeaders:
             json={
                 "system_name": "governance-ai",
                 "system_version": "1.0.0",
-                "high_risk_category": "BIOMETRIC_IDENTIFICATION",
+                "high_risk_category": "biometric_identification",
             },
         )
 

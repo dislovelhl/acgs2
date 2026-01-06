@@ -6,18 +6,18 @@ security module for use in integration-service API endpoints.
 """
 
 from src.core.shared.security.auth import (
-    UserClaims,
+    AuthenticationMiddleware,
     TokenResponse,
+    UserClaims,
     create_access_token,
-    verify_token,
+    create_test_token,
     get_current_user,
     get_current_user_optional,
-    require_role,
     require_permission,
+    require_role,
     require_tenant_access,
-    AuthenticationMiddleware,
-    create_test_token,
     security,
+    verify_token,
 )
 
 # Re-export all authentication components

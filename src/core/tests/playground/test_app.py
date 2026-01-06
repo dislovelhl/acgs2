@@ -329,10 +329,10 @@ class TestValidateEndpointWithOPAErrors:
 
     def test_validate_with_opa_connection_error_class(self):
         """Test validation with OPAConnectionError raises 503."""
-        from cli.opa_service import OPAConnectionError
         from fastapi.testclient import TestClient
 
         import playground.app as app_module
+        from cli.opa_service import OPAConnectionError
 
         mock_service = MagicMock()
         mock_service.async_validate_policy = AsyncMock(
@@ -504,10 +504,10 @@ class TestEvaluateEndpointWithOPAErrors:
 
     def test_evaluate_opa_connection_error(self):
         """Test evaluation when OPA connection fails."""
-        from cli.opa_service import OPAConnectionError
         from fastapi.testclient import TestClient
 
         import playground.app as app_module
+        from cli.opa_service import OPAConnectionError
 
         mock_service = MagicMock()
         mock_service.async_evaluate_policy = AsyncMock(

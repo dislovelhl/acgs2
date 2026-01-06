@@ -2,7 +2,6 @@
 
 import pytest
 import torch
-
 from src.core.enhanced_agent_bus.context.mamba_hybrid import (
     CONSTITUTIONAL_HASH,
     ConstitutionalContextProcessor,
@@ -67,10 +66,7 @@ class TestConstitutionalMambaHybrid:
         """Test model initialization."""
         d_model = 256
         num_layers = 3
-        model = ConstitutionalMambaHybrid(
-            d_model=d_model,
-            num_mamba_layers=num_layers
-        )
+        model = ConstitutionalMambaHybrid(d_model=d_model, num_mamba_layers=num_layers)
 
         assert model.d_model == d_model
         assert len(model.mamba_layers) == num_layers
@@ -119,11 +115,11 @@ class TestConstitutionalContextProcessor:
 
         result = processor.process_constitutional_context(context, critical_principles)
 
-        assert 'embeddings' in result
-        assert 'critical_positions' in result
-        assert 'context_length' in result
-        assert 'constitutional_hash' in result
-        assert result['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert "embeddings" in result
+        assert "critical_positions" in result
+        assert "context_length" in result
+        assert "constitutional_hash" in result
+        assert result["constitutional_hash"] == CONSTITUTIONAL_HASH
 
     def test_validate_constitutional_compliance(self):
         """Test compliance validation."""
@@ -132,8 +128,7 @@ class TestConstitutionalContextProcessor:
         constitutional_principles = ["All actions must be constitutional"]
 
         score = processor.validate_constitutional_compliance(
-            decision_context,
-            constitutional_principles
+            decision_context, constitutional_principles
         )
 
         assert 0.0 <= score <= 1.0

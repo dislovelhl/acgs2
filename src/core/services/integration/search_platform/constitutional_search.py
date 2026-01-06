@@ -35,7 +35,6 @@ from .models import SearchMatch
 
 logger = logging.getLogger(__name__)
 
-
 class ConstitutionalCodeSearchService:
     """
     Service for searching code with constitutional compliance awareness.
@@ -385,7 +384,6 @@ class ConstitutionalCodeSearchService:
                 violations = await self.trivy_scanner.scan_image(image_name)
                 all_violations.extend(violations)
             except Exception as e:
-                logger.debug(f"Could not scan image {image_name}: {e}")
 
         duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
@@ -487,7 +485,6 @@ class ConstitutionalCodeSearchService:
         ]
 
         return violations
-
 
 # Re-export all symbols for backward compatibility
 __all__ = [

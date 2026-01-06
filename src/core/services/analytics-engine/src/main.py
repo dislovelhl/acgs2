@@ -50,7 +50,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("analytics-engine")
 
-
 class AnalyticsEngineConfig:
     """Configuration for the analytics engine."""
 
@@ -86,7 +85,6 @@ class AnalyticsEngineConfig:
         self.output_dir = output_dir or os.getenv("PDF_OUTPUT_DIR", "./data")
         self.contamination = contamination
         self.forecast_days = forecast_days
-
 
 class AnalyticsEngineResult:
     """Container for analytics engine processing results."""
@@ -185,7 +183,6 @@ class AnalyticsEngineResult:
             }
 
         return result
-
 
 class AnalyticsEngine:
     """
@@ -466,9 +463,7 @@ class AnalyticsEngine:
         }
 
         result = self.insight_generator.generate_insight(governance_data)
-        logger.info(
-            f"Insights generated: model={result.model_used}, " f"tokens={result.tokens_used}"
-        )
+        logger.info(f"Insights generated: model={result.model_used}, tokens={result.tokens_used}")
         return result
 
     def generate_pdf_report(
@@ -638,7 +633,6 @@ class AnalyticsEngine:
 
         return result
 
-
 def create_parser() -> argparse.ArgumentParser:
     """Create the command-line argument parser."""
     parser = argparse.ArgumentParser(
@@ -766,7 +760,6 @@ Environment Variables:
 
     return parser
 
-
 async def main_async(args: argparse.Namespace) -> int:
     """Async main entry point."""
     # Configure logging level
@@ -789,25 +782,23 @@ async def main_async(args: argparse.Namespace) -> int:
     if args.status:
         status = engine.get_status()
         if args.json_output:
-            print(json.dumps(status, indent=2, default=str))
+
         else:
-            print("\n=== Analytics Engine Status ===")
-            print(f"Kafka configured: {status['kafka_configured']}")
-            print(f"OpenAI available: {status['openai_available']}")
-            print(f"Tenant ID: {status['tenant_id']}")
-            print("\nComponent Status:")
-            print(
+
+            logger.debug(
                 f"  - Anomaly Detector: sklearn={status['anomaly_detector']['sklearn_available']}"
             )
-            print(f"  - Predictor: prophet={status['predictor']['prophet_available']}")
+
             api_key_configured = status["insight_generator"]["api_key_configured"]
-            print(f"  - Insight Generator: api_key={api_key_configured}")
-            print(f"  - PDF Exporter: reportlab={status['pdf_exporter']['reportlab_available']}")
+
+            logger.debug(
+                f"  - PDF Exporter: reportlab={status['pdf_exporter']['reportlab_available']}"
+            )
         return 0
 
     # Validate arguments
     if args.source == "json" and not args.input:
-        print("Error: --input required when --source is 'json'", file=sys.stderr)
+        logger.error("Error: --input required when --source is 'json'", file=sys.stderr)
         return 1
 
     # Run based on mode
@@ -855,49 +846,39 @@ async def main_async(args: argparse.Namespace) -> int:
 
         # Output results
         if args.json_output:
-            print(json.dumps(result.to_dict(), indent=2, default=str))
+
         else:
-            print("\n=== Analytics Engine Results ===")
-            print(f"Timestamp: {result.timestamp.isoformat()}")
-            print(f"Events Processed: {result.events_processed}")
 
             if result.metrics:
-                print("\nMetrics:")
-                print(f"  - Violations: {result.metrics.violation_count}")
-                print(f"  - Total Events: {result.metrics.total_events}")
-                print(f"  - Unique Users: {result.metrics.unique_users}")
 
             if result.anomalies:
-                print(f"\nAnomalies: {result.anomalies.anomalies_detected} detected")
 
             if result.forecast:
                 if result.forecast.model_trained:
                     summary = result.forecast.summary
-                    print(f"\nForecast ({result.forecast.forecast_days} days):")
+
                     if "trend_direction" in summary:
-                        print(f"  - Trend: {summary['trend_direction']}")
+
                     if "total_predicted_violations" in summary:
-                        print(f"  - Total Predicted: {summary['total_predicted_violations']:.0f}")
+                        logger.debug(
+                            f"  - Total Predicted: {summary['total_predicted_violations']:.0f}"
+                        )
                 else:
-                    print(f"\nForecast: {result.forecast.error_message}")
 
             if result.insights:
                 if result.insights.insight:
-                    print(f"\nInsight: {result.insights.insight.summary}")
+
                 else:
-                    print(f"\nInsight: {result.insights.error_message}")
 
             if result.pdf_result:
                 if result.pdf_result.success:
-                    print(f"\nPDF Report: {result.pdf_result.file_path}")
+
                 else:
-                    print(f"\nPDF Report: {result.pdf_result.error_message}")
 
             if result.warnings:
-                print(f"\nWarnings: {', '.join(result.warnings)}")
 
             if result.errors:
-                print(f"\nErrors: {', '.join(result.errors)}")
+                logger.error(f"\nErrors: {', '.join(result.errors)}")
                 return 1
 
         return 0
@@ -905,18 +886,16 @@ async def main_async(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.exception("Engine error")
         if args.json_output:
-            print(json.dumps({"error": str(e)}, indent=2))
-        else:
-            print(f"Error: {e}", file=sys.stderr)
-        return 1
 
+        else:
+            logger.error(f"Error: {e}", file=sys.stderr)
+        return 1
 
 def main() -> int:
     """Main entry point."""
     parser = create_parser()
     args = parser.parse_args()
     return asyncio.run(main_async(args))
-
 
 if __name__ == "__main__":
     sys.exit(main())

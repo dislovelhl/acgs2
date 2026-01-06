@@ -58,9 +58,7 @@ def validation_dataset() -> Dict[str, Any]:
 def keyword_scorer():
     """Create a scorer that uses only keyword-based scoring (no ONNX/BERT)."""
     reset_impact_scorer()
-    with patch(
-        "enhanced_agent_bus.deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False
-    ):
+    with patch("enhanced_agent_bus.deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
         scorer = ImpactScorer(use_onnx=False)
         scorer._bert_enabled = False
         scorer._onnx_enabled = False
@@ -107,28 +105,41 @@ class TestValidationDatasetIntegrity:
         required_fields = ["id", "category", "message", "expected_risk_level"]
         for case in validation_dataset["test_cases"]:
             for field in required_fields:
-                assert field in case, f"Test case {case.get('id', 'unknown')} missing field: {field}"
+                assert (
+                    field in case
+                ), f"Test case {case.get('id', 'unknown')} missing field: {field}"
 
     def test_test_case_categories_are_valid(self, validation_dataset):
         """Verify test cases have valid categories."""
         valid_categories = {
-            "security", "financial", "governance", "emergency",
-            "mixed", "benign", "priority", "tools", "semantic",
-            "edge_case", "combined", "message_type", "length",
-            "blockchain", "alerts"
+            "security",
+            "financial",
+            "governance",
+            "emergency",
+            "mixed",
+            "benign",
+            "priority",
+            "tools",
+            "semantic",
+            "edge_case",
+            "combined",
+            "message_type",
+            "length",
+            "blockchain",
+            "alerts",
         }
         for case in validation_dataset["test_cases"]:
-            assert case["category"] in valid_categories, (
-                f"Test case {case['id']} has invalid category: {case['category']}"
-            )
+            assert (
+                case["category"] in valid_categories
+            ), f"Test case {case['id']} has invalid category: {case['category']}"
 
     def test_expected_risk_levels_are_valid(self, validation_dataset):
         """Verify expected risk levels are valid."""
         valid_levels = {"low", "medium", "high"}
         for case in validation_dataset["test_cases"]:
-            assert case["expected_risk_level"] in valid_levels, (
-                f"Test case {case['id']} has invalid risk level: {case['expected_risk_level']}"
-            )
+            assert (
+                case["expected_risk_level"] in valid_levels
+            ), f"Test case {case['id']} has invalid risk level: {case['expected_risk_level']}"
 
 
 class TestKeywordBasedScoring:
@@ -137,59 +148,49 @@ class TestKeywordBasedScoring:
     def test_high_risk_cases_score_high(self, validation_dataset, keyword_scorer):
         """Verify high-risk cases receive high scores."""
         high_risk_cases = [
-            c for c in validation_dataset["test_cases"]
-            if c["expected_risk_level"] == "high"
+            c for c in validation_dataset["test_cases"] if c["expected_risk_level"] == "high"
         ]
 
         for case in high_risk_cases:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             min_expected = case.get("expected_min_score", 0.5)
-            assert score >= min_expected - 0.1, (
-                f"Case {case['id']}: Expected score >= {min_expected - 0.1}, got {score}"
-            )
+            assert (
+                score >= min_expected - 0.1
+            ), f"Case {case['id']}: Expected score >= {min_expected - 0.1}, got {score}"
 
     def test_low_risk_cases_score_low(self, validation_dataset, keyword_scorer):
         """Verify low-risk cases receive low scores."""
         low_risk_cases = [
-            c for c in validation_dataset["test_cases"]
-            if c["expected_risk_level"] == "low"
+            c for c in validation_dataset["test_cases"] if c["expected_risk_level"] == "low"
         ]
 
         for case in low_risk_cases:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             max_expected = case.get("expected_max_score", 0.5)
-            assert score <= max_expected + 0.1, (
-                f"Case {case['id']}: Expected score <= {max_expected + 0.1}, got {score}"
-            )
+            assert (
+                score <= max_expected + 0.1
+            ), f"Case {case['id']}: Expected score <= {max_expected + 0.1}, got {score}"
 
     def test_critical_priority_boosts_score(self, validation_dataset, keyword_scorer):
         """Verify critical priority correctly boosts the score."""
         priority_cases = [
-            c for c in validation_dataset["test_cases"]
+            c
+            for c in validation_dataset["test_cases"]
             if c["category"] == "priority" and c.get("context", {}).get("priority") == "critical"
         ]
 
         for case in priority_cases:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
-            assert score >= 0.9, (
-                f"Case {case['id']}: Critical priority should boost to >= 0.9, got {score}"
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
+            assert (
+                score >= 0.9
+            ), f"Case {case['id']}: Critical priority should boost to >= 0.9, got {score}"
 
 
 class TestONNXVsKeywordParity:
     """Tests for accuracy parity between ONNX and keyword-based scoring."""
 
     def _calculate_agreement_rate(
-        self,
-        onnx_scores: List[float],
-        keyword_scores: List[float],
-        tolerance: float
+        self, onnx_scores: List[float], keyword_scores: List[float], tolerance: float
     ) -> Tuple[float, List[int]]:
         """
         Calculate agreement rate between two score lists.
@@ -203,7 +204,7 @@ class TestONNXVsKeywordParity:
         agreements = 0
         disagreements = []
 
-        for i, (onnx, keyword) in enumerate(zip(onnx_scores, keyword_scores)):
+        for i, (onnx, keyword) in enumerate(zip(onnx_scores, keyword_scores, strict=False)):
             if abs(onnx - keyword) <= tolerance:
                 agreements += 1
             else:
@@ -212,9 +213,7 @@ class TestONNXVsKeywordParity:
         rate = agreements / len(onnx_scores) if onnx_scores else 0.0
         return rate, disagreements
 
-    def test_scoring_agreement_threshold(
-        self, validation_dataset, onnx_scorer, keyword_scorer
-    ):
+    def test_scoring_agreement_threshold(self, validation_dataset, onnx_scorer, keyword_scorer):
         """
         Verify ONNX and keyword scoring agree within threshold.
 
@@ -278,12 +277,12 @@ class TestONNXVsKeywordParity:
             onnx_score = onnx_scorer.calculate_impact_score(message, context)
             keyword_score = keyword_scorer.calculate_impact_score(message, context)
 
-            assert 0.0 <= onnx_score <= 1.0, (
-                f"ONNX score {onnx_score} out of range for case {case['id']}"
-            )
-            assert 0.0 <= keyword_score <= 1.0, (
-                f"Keyword score {keyword_score} out of range for case {case['id']}"
-            )
+            assert (
+                0.0 <= onnx_score <= 1.0
+            ), f"ONNX score {onnx_score} out of range for case {case['id']}"
+            assert (
+                0.0 <= keyword_score <= 1.0
+            ), f"Keyword score {keyword_score} out of range for case {case['id']}"
 
     def test_score_consistency_same_input(self, onnx_scorer, keyword_scorer):
         """Verify both scorers produce consistent scores for same input."""
@@ -291,13 +290,9 @@ class TestONNXVsKeywordParity:
         context = {}
 
         # Score multiple times
-        onnx_scores = [
-            onnx_scorer.calculate_impact_score(test_message, context)
-            for _ in range(5)
-        ]
+        onnx_scores = [onnx_scorer.calculate_impact_score(test_message, context) for _ in range(5)]
         keyword_scores = [
-            keyword_scorer.calculate_impact_score(test_message, context)
-            for _ in range(5)
+            keyword_scorer.calculate_impact_score(test_message, context) for _ in range(5)
         ]
 
         # All scores should be identical for deterministic scoring
@@ -330,21 +325,17 @@ class TestSemanticImprovement:
                 )
 
     @pytest.mark.skipif(
-        not TRANSFORMERS_AVAILABLE,
-        reason="Transformers not available for semantic testing"
+        not TRANSFORMERS_AVAILABLE, reason="Transformers not available for semantic testing"
     )
     def test_semantic_understanding_cases(self, validation_dataset, bert_scorer):
         """Test that BERT understands semantic meaning in advantage cases."""
         semantic_case_ids = set(validation_dataset.get("semantic_improvement_cases", []))
         semantic_cases = [
-            c for c in validation_dataset["test_cases"]
-            if c["id"] in semantic_case_ids
+            c for c in validation_dataset["test_cases"] if c["id"] in semantic_case_ids
         ]
 
         for case in semantic_cases:
-            score = bert_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = bert_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             min_expected = case.get("expected_min_score", 0.3)
 
             # BERT should recognize security-related semantic content
@@ -368,14 +359,14 @@ class TestBatchScoringParity:
         # Sequential scoring
         sequential_scores = [
             onnx_scorer.calculate_impact_score(msg, ctx)
-            for msg, ctx in zip(messages, contexts)
+            for msg, ctx in zip(messages, contexts, strict=False)
         ]
 
         # Compare
-        for i, (batch, seq) in enumerate(zip(batch_scores, sequential_scores)):
-            assert batch == pytest.approx(seq, abs=0.01), (
-                f"Batch score {batch} != sequential score {seq} at index {i}"
-            )
+        for i, (batch, seq) in enumerate(zip(batch_scores, sequential_scores, strict=False)):
+            assert batch == pytest.approx(
+                seq, abs=0.01
+            ), f"Batch score {batch} != sequential score {seq} at index {i}"
 
     def test_batch_matches_sequential_keyword(self, validation_dataset, keyword_scorer):
         """Verify batch scoring matches sequential scoring for keywords."""
@@ -388,14 +379,14 @@ class TestBatchScoringParity:
         # Sequential scoring
         sequential_scores = [
             keyword_scorer.calculate_impact_score(msg, ctx)
-            for msg, ctx in zip(messages, contexts)
+            for msg, ctx in zip(messages, contexts, strict=False)
         ]
 
         # Compare
-        for i, (batch, seq) in enumerate(zip(batch_scores, sequential_scores)):
-            assert batch == pytest.approx(seq, abs=0.01), (
-                f"Batch score {batch} != sequential score {seq} at index {i}"
-            )
+        for i, (batch, seq) in enumerate(zip(batch_scores, sequential_scores, strict=False)):
+            assert batch == pytest.approx(
+                seq, abs=0.01
+            ), f"Batch score {batch} != sequential score {seq} at index {i}"
 
 
 class TestEdgeCaseScoring:
@@ -404,10 +395,7 @@ class TestEdgeCaseScoring:
     @pytest.fixture
     def edge_cases(self, validation_dataset):
         """Extract edge case test cases."""
-        return [
-            c for c in validation_dataset["test_cases"]
-            if c["category"] == "edge_case"
-        ]
+        return [c for c in validation_dataset["test_cases"] if c["category"] == "edge_case"]
 
     def test_empty_content_handling(self, edge_cases, onnx_scorer, keyword_scorer):
         """Verify empty content is handled gracefully."""
@@ -477,39 +465,33 @@ class TestCategoryScoring:
         security_cases = cases_by_category.get("security", [])
 
         for case in security_cases:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             min_expected = case.get("expected_min_score", 0.5)
-            assert score >= min_expected - 0.15, (
-                f"Security case {case['id']}: score {score} below expected {min_expected - 0.15}"
-            )
+            assert (
+                score >= min_expected - 0.15
+            ), f"Security case {case['id']}: score {score} below expected {min_expected - 0.15}"
 
     def test_benign_category_low_scores(self, cases_by_category, keyword_scorer):
         """Verify benign cases score appropriately low."""
         benign_cases = cases_by_category.get("benign", [])
 
         for case in benign_cases:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             max_expected = case.get("expected_max_score", 0.4)
-            assert score <= max_expected + 0.1, (
-                f"Benign case {case['id']}: score {score} above expected {max_expected + 0.1}"
-            )
+            assert (
+                score <= max_expected + 0.1
+            ), f"Benign case {case['id']}: score {score} above expected {max_expected + 0.1}"
 
     def test_financial_category_scores(self, cases_by_category, keyword_scorer):
         """Verify financial cases score based on risk level."""
         financial_cases = cases_by_category.get("financial", [])
 
         for case in financial_cases:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             min_expected = case.get("expected_min_score", 0.5)
-            assert score >= min_expected - 0.15, (
-                f"Financial case {case['id']}: score {score} below expected {min_expected - 0.15}"
-            )
+            assert (
+                score >= min_expected - 0.15
+            ), f"Financial case {case['id']}: score {score} below expected {min_expected - 0.15}"
 
 
 class TestAccuracyMetrics:
@@ -518,51 +500,43 @@ class TestAccuracyMetrics:
     def test_overall_high_risk_detection_rate(self, validation_dataset, keyword_scorer):
         """Verify high-risk cases are detected with acceptable rate."""
         high_risk_cases = [
-            c for c in validation_dataset["test_cases"]
-            if c["expected_risk_level"] == "high"
+            c for c in validation_dataset["test_cases"] if c["expected_risk_level"] == "high"
         ]
 
         detected = 0
         for case in high_risk_cases:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             if score >= 0.5:  # Threshold for high-risk detection
                 detected += 1
 
         detection_rate = detected / len(high_risk_cases) if high_risk_cases else 0.0
-        assert detection_rate >= 0.85, (
-            f"High-risk detection rate {detection_rate:.2%} below 85% threshold"
-        )
+        assert (
+            detection_rate >= 0.85
+        ), f"High-risk detection rate {detection_rate:.2%} below 85% threshold"
 
     def test_overall_low_risk_classification_rate(self, validation_dataset, keyword_scorer):
         """Verify low-risk cases are correctly classified."""
         low_risk_cases = [
-            c for c in validation_dataset["test_cases"]
-            if c["expected_risk_level"] == "low"
+            c for c in validation_dataset["test_cases"] if c["expected_risk_level"] == "low"
         ]
 
         correct = 0
         for case in low_risk_cases:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             if score < 0.5:  # Threshold for low-risk classification
                 correct += 1
 
         classification_rate = correct / len(low_risk_cases) if low_risk_cases else 0.0
-        assert classification_rate >= 0.9, (
-            f"Low-risk classification rate {classification_rate:.2%} below 90% threshold"
-        )
+        assert (
+            classification_rate >= 0.9
+        ), f"Low-risk classification rate {classification_rate:.2%} below 90% threshold"
 
     def test_average_score_by_risk_level(self, validation_dataset, keyword_scorer):
         """Verify average scores follow expected risk level ordering."""
         scores_by_level = {"low": [], "medium": [], "high": []}
 
         for case in validation_dataset["test_cases"]:
-            score = keyword_scorer.calculate_impact_score(
-                case["message"], case.get("context", {})
-            )
+            score = keyword_scorer.calculate_impact_score(case["message"], case.get("context", {}))
             scores_by_level[case["expected_risk_level"]].append(score)
 
         avg_low = np.mean(scores_by_level["low"]) if scores_by_level["low"] else 0.0
@@ -570,12 +544,12 @@ class TestAccuracyMetrics:
         avg_high = np.mean(scores_by_level["high"]) if scores_by_level["high"] else 1.0
 
         # Average scores should follow ordering: low < medium < high
-        assert avg_low < avg_medium, (
-            f"Average low ({avg_low:.2f}) should be less than medium ({avg_medium:.2f})"
-        )
-        assert avg_medium <= avg_high, (
-            f"Average medium ({avg_medium:.2f}) should be less than or equal to high ({avg_high:.2f})"
-        )
+        assert (
+            avg_low < avg_medium
+        ), f"Average low ({avg_low:.2f}) should be less than medium ({avg_medium:.2f})"
+        assert (
+            avg_medium <= avg_high
+        ), f"Average medium ({avg_medium:.2f}) should be less than or equal to high ({avg_high:.2f})"
 
 
 class TestScorerFlags:

@@ -6,16 +6,15 @@ in retry logic, fixing the issue where httpx exceptions were referenced but
 aiohttp transport was used.
 """
 
-import asyncio
-import json
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import aiohttp
 import pytest
 
 from src.integrations.linear.client import LinearClient
 from src.integrations.linear.credentials import LinearCredentials
-from ..base import IntegrationEvent, IntegrationResult
+
+from ..base import IntegrationEvent
 
 
 class TestLinearClient:
@@ -97,7 +96,7 @@ class TestLinearClient:
     async def test_aiohttp_exception_handling_timeout(self, client):
         """Test that aiohttp ClientTimeout exceptions are properly handled."""
         # Mock aiohttp to raise ClientTimeout
-        with patch.object(client, '_execute_graphql_query') as mock_execute:
+        with patch.object(client, "_execute_graphql_query") as mock_execute:
             mock_execute.side_effect = aiohttp.ClientTimeout()
 
             # This should trigger retry logic, not fail with unhandled exception
@@ -110,7 +109,7 @@ class TestLinearClient:
     @pytest.mark.asyncio
     async def test_aiohttp_exception_handling_connection_error(self, client):
         """Test that aiohttp ClientConnectionError exceptions are properly handled."""
-        with patch.object(client, '_execute_graphql_query') as mock_execute:
+        with patch.object(client, "_execute_graphql_query") as mock_execute:
             mock_execute.side_effect = aiohttp.ClientConnectionError("Connection failed")
 
             result = await client._send_event_with_retry(client.sample_event)
@@ -121,12 +120,9 @@ class TestLinearClient:
     @pytest.mark.asyncio
     async def test_aiohttp_exception_handling_response_error(self, client):
         """Test that aiohttp ClientResponseError exceptions are properly handled."""
-        with patch.object(client, '_execute_graphql_query') as mock_execute:
+        with patch.object(client, "_execute_graphql_query") as mock_execute:
             mock_execute.side_effect = aiohttp.ClientResponseError(
-                request_info=Mock(),
-                history=Mock(),
-                status=429,
-                message="Too Many Requests"
+                request_info=Mock(), history=Mock(), status=429, message="Too Many Requests"
             )
 
             result = await client._send_event_with_retry(client.sample_event)
@@ -145,13 +141,15 @@ class TestLinearClient:
                     "issue": {
                         "id": "issue-123",
                         "title": "[HIGH] Test Policy Violation",
-                        "url": "https://linear.app/issue/issue-123"
-                    }
+                        "url": "https://linear.app/issue/issue-123",
+                    },
                 }
             }
         }
 
-        with patch.object(client, '_execute_graphql_query', return_value=mock_response) as mock_execute:
+        with patch.object(
+            client, "_execute_graphql_query", return_value=mock_response
+        ) as mock_execute:
             result = await client._do_send_event(sample_event)
 
             assert result.success
@@ -171,15 +169,12 @@ class TestLinearClient:
             "data": {
                 "issueCreate": {
                     "success": False,
-                    "errors": [
-                        {"message": "Team not found"},
-                        {"message": "Invalid project ID"}
-                    ]
+                    "errors": [{"message": "Team not found"}, {"message": "Invalid project ID"}],
                 }
             }
         }
 
-        with patch.object(client, '_execute_graphql_query', return_value=mock_response):
+        with patch.object(client, "_execute_graphql_query", return_value=mock_response):
             result = await client._do_send_event(sample_event)
 
             assert not result.success
@@ -205,16 +200,10 @@ class TestLinearClient:
     async def test_authentication_success(self, client):
         """Test successful authentication."""
         mock_response = {
-            "data": {
-                "viewer": {
-                    "id": "user-123",
-                    "name": "Test User",
-                    "email": "test@example.com"
-                }
-            }
+            "data": {"viewer": {"id": "user-123", "name": "Test User", "email": "test@example.com"}}
         }
 
-        with patch.object(client, '_execute_graphql_query', return_value=mock_response):
+        with patch.object(client, "_execute_graphql_query", return_value=mock_response):
             result = await client._do_authenticate()
 
             assert result.success
@@ -223,13 +212,9 @@ class TestLinearClient:
     @pytest.mark.asyncio
     async def test_authentication_failure(self, client):
         """Test authentication failure."""
-        mock_response = {
-            "errors": [
-                {"message": "Invalid API key"}
-            ]
-        }
+        mock_response = {"errors": [{"message": "Invalid API key"}]}
 
-        with patch.object(client, '_execute_graphql_query', return_value=mock_response):
+        with patch.object(client, "_execute_graphql_query", return_value=mock_response):
             result = await client._do_authenticate()
 
             assert not result.success
@@ -239,7 +224,7 @@ class TestLinearClient:
     async def test_validation_with_invalid_team(self, client):
         """Test validation with invalid team ID."""
         # Mock team query to return no team
-        with patch.object(client, '_execute_graphql_query') as mock_execute:
+        with patch.object(client, "_execute_graphql_query") as mock_execute:
             # First call for auth (successful)
             mock_execute.side_effect = [
                 {"data": {"viewer": {"id": "user-123"}}},  # Auth success

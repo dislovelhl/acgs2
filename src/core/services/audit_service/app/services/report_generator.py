@@ -42,7 +42,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
 # Default HTML template for compliance reports
 DEFAULT_REPORT_TEMPLATE = """
 <!DOCTYPE html>

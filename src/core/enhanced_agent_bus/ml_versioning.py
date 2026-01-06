@@ -31,7 +31,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
 # Configuration defaults
 DEFAULT_MODEL_NAME = os.getenv("MODEL_REGISTRY_NAME", "governance_impact_scorer")
 DEFAULT_CHAMPION_ALIAS = os.getenv("CHAMPION_ALIAS", "champion")
@@ -332,7 +331,6 @@ class MLflowVersionManager:
             return self._version_to_info(version)
 
         except MlflowException:
-            logger.debug(f"No model version found for alias '{alias}'")
             return None
 
     def get_champion_model(self) -> Optional[Any]:

@@ -90,7 +90,7 @@ def parse_locust_stats_csv(file_path: Path) -> Optional[PerformanceResults]:
             rows = list(reader)
 
             if not rows:
-                print(f"ERROR: Empty CSV file: {file_path}", file=sys.stderr)
+                # print(f"ERROR: Empty CSV file: {file_path}", file=sys.stderr)  # DEBUG_CLEANUP
                 return None
 
             # Find the "Aggregated" row (overall stats) or use last row
@@ -123,10 +123,10 @@ def parse_locust_stats_csv(file_path: Path) -> Optional[PerformanceResults]:
             return results
 
     except FileNotFoundError:
-        print(f"ERROR: Results file not found: {file_path}", file=sys.stderr)
+        # print(f"ERROR: Results file not found: {file_path}", file=sys.stderr)  # DEBUG_CLEANUP
         return None
     except (csv.Error, ValueError, KeyError) as e:
-        print(f"ERROR: Failed to parse CSV: {e}", file=sys.stderr)
+        # print(f"ERROR: Failed to parse CSV: {e}", file=sys.stderr)  # DEBUG_CLEANUP
         return None
 
 
@@ -212,24 +212,24 @@ def validate_performance(
 
 def print_results_summary(results: PerformanceResults) -> None:
     """Print a summary of the performance results."""
-    print("=" * 60)
-    print("PERFORMANCE TEST RESULTS SUMMARY")
-    print("=" * 60)
-    print(f"Total Requests:     {results.total_requests:,}")
-    print(f"Failed Requests:    {results.failure_count:,}")
-    print(f"Error Rate:         {results.error_rate:.2f}%")
-    print("-" * 40)
-    print("Response Times (ms):")
-    print(f"  Min:              {results.min_response_time:.3f}")
-    print(f"  Median (P50):     {results.p50_response_time:.3f}")
-    print(f"  Average:          {results.average_response_time:.3f}")
-    print(f"  P90:              {results.p90_response_time:.3f}")
-    print(f"  P95:              {results.p95_response_time:.3f}")
-    print(f"  P99:              {results.p99_response_time:.3f}")
-    print(f"  Max:              {results.max_response_time:.3f}")
-    print("-" * 40)
-    print(f"Throughput:         {results.requests_per_second:.2f} req/s")
-    print("=" * 60)
+    # print("=" * 60)  # DEBUG_CLEANUP
+    # print("PERFORMANCE TEST RESULTS SUMMARY")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
+    # print(f"Total Requests:     {results.total_requests:,}")  # DEBUG_CLEANUP
+    # print(f"Failed Requests:    {results.failure_count:,}")  # DEBUG_CLEANUP
+    # print(f"Error Rate:         {results.error_rate:.2f}%")  # DEBUG_CLEANUP
+    # print("-" * 40)  # DEBUG_CLEANUP
+    # print("Response Times (ms):")  # DEBUG_CLEANUP
+    # print(f"  Min:              {results.min_response_time:.3f}")  # DEBUG_CLEANUP
+    # print(f"  Median (P50):     {results.p50_response_time:.3f}")  # DEBUG_CLEANUP
+    # print(f"  Average:          {results.average_response_time:.3f}")  # DEBUG_CLEANUP
+    # print(f"  P90:              {results.p90_response_time:.3f}")  # DEBUG_CLEANUP
+    # print(f"  P95:              {results.p95_response_time:.3f}")  # DEBUG_CLEANUP
+    # print(f"  P99:              {results.p99_response_time:.3f}")  # DEBUG_CLEANUP
+    # print(f"  Max:              {results.max_response_time:.3f}")  # DEBUG_CLEANUP
+    # print("-" * 40)  # DEBUG_CLEANUP
+    # print(f"Throughput:         {results.requests_per_second:.2f} req/s")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
 
 
 def print_validation_results(
@@ -238,23 +238,23 @@ def print_validation_results(
     failures: list[str],
 ) -> None:
     """Print validation results."""
-    print()
-    print("=" * 60)
-    print("THRESHOLD VALIDATION RESULTS")
-    print("=" * 60)
+    # print()  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
+    # print("THRESHOLD VALIDATION RESULTS")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
 
     for msg in passes:
-        print(f"  PASS: {msg}")
+        # print(f"  PASS: {msg}")  # DEBUG_CLEANUP
 
     for msg in failures:
-        print(f"  FAIL: {msg}")
+        # print(f"  FAIL: {msg}")  # DEBUG_CLEANUP
 
-    print("-" * 40)
+    # print("-" * 40)  # DEBUG_CLEANUP
     if passed:
-        print("RESULT: ALL PERFORMANCE THRESHOLDS PASSED")
+        # print("RESULT: ALL PERFORMANCE THRESHOLDS PASSED")  # DEBUG_CLEANUP
     else:
-        print("RESULT: PERFORMANCE THRESHOLDS FAILED")
-    print("=" * 60)
+        # print("RESULT: PERFORMANCE THRESHOLDS FAILED")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
 
 
 def output_json_report(
@@ -291,7 +291,7 @@ def output_json_report(
     with open(output_file, "w") as f:
         json.dump(report, f, indent=2)
 
-    print(f"\nJSON report written to: {output_file}")
+    # print(f"\nJSON report written to: {output_file}")  # DEBUG_CLEANUP
 
 
 def main() -> int:

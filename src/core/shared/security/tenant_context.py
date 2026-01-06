@@ -29,7 +29,7 @@ import os
 import re
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 from fastapi import Header, HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -277,7 +277,6 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         # Handle missing tenant ID
         if not tenant_id:
             if self.config.required and not self.config.fail_open:
-                logger.debug(f"Missing {self.config.header_name} header for {request.url.path}")
                 return JSONResponse(
                     status_code=400,
                     content={

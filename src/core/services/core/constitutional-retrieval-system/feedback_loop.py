@@ -431,18 +431,18 @@ class FeedbackLoop:
         # Adjust retrieval limits based on performance
         avg_docs = performance.get("avg_documents_retrieved", 5)
         if avg_docs < 3:
-            recommendations["increase_retrieval_limit"] = (
-                "Increase from current limit to retrieve more documents"
-            )
+            recommendations[
+                "increase_retrieval_limit"
+            ] = "Increase from current limit to retrieve more documents"
         elif avg_docs > 10:
             recommendations["decrease_retrieval_limit"] = "Decrease limit to improve relevance"
 
         # Adjust similarity thresholds
         success_rate = performance.get("retrieval_success_rate", 0.0)
         if success_rate < 0.7:
-            recommendations["lower_similarity_threshold"] = (
-                "Lower threshold to include more potentially relevant documents"
-            )
+            recommendations[
+                "lower_similarity_threshold"
+            ] = "Lower threshold to include more potentially relevant documents"
 
         # Chunk size optimization
         query_length = performance.get("avg_query_length", 100)

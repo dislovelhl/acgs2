@@ -260,7 +260,6 @@ def configure_beat_schedule(app: Celery) -> None:
 # Apply beat schedule to the celery app
 configure_beat_schedule(celery_app)
 
-
 # Expose app for celery CLI compatibility
 # Usage: celery -A acgs2-core.services.audit_service.app.celery_app worker
 # Usage: celery -A acgs2-core.services.audit_service.app.celery_app beat

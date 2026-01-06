@@ -13,7 +13,6 @@ Comprehensive edge case coverage for GovernanceService including:
 """
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -23,12 +22,9 @@ from acgs2_sdk.models import (
     ApprovalRequest,
     ApprovalStatus,
     CreateApprovalRequest,
-    GovernanceDecision,
     PaginatedResponse,
     SubmitApprovalDecision,
 )
-from acgs2_sdk.services.governance import GovernanceService
-
 
 # =============================================================================
 # Empty Input Edge Cases

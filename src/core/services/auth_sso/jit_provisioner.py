@@ -25,6 +25,7 @@ class ProvisionedUser:
 
     Represents a user created or updated via JIT provisioning.
     """
+
     user_id: str
     external_id: str
     email: str
@@ -301,8 +302,6 @@ class JITProvisioner:
         if maci_roles != existing.get("maci_roles", []):
             await self.user_store.update_user_roles(user_id, maci_roles)
             logger.info(f"Updated roles for user {user_id}: {maci_roles}")
-
-        logger.debug(f"JIT updated existing user: {user_id}")
 
         # Parse created_at from existing data
         created_at = existing.get("created_at")

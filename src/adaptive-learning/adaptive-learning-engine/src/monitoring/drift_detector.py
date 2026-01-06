@@ -90,9 +90,7 @@ import logging
 import threading
 import time
 from collections import deque
-from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
 from typing import Any, Callable, Deque, Dict, List, Optional
 
 import numpy as np
@@ -102,57 +100,8 @@ from evidently.report import Report
 
 logger = logging.getLogger(__name__)
 
-
-class DriftStatus(Enum):
-    """Current drift detection status."""
-
-    NO_DRIFT = "no_drift"  # No significant drift detected
-    DRIFT_DETECTED = "drift_detected"  # Significant drift detected
-    INSUFFICIENT_DATA = "insufficient_data"  # Not enough data for detection
-    DISABLED = "disabled"  # Drift detection is disabled
-    ERROR = "error"  # Error during drift detection
-
-
-@dataclass
-class DriftResult:
-    """Result from a drift detection check."""
-
-    status: DriftStatus
-    drift_detected: bool
-    drift_score: float  # Share of drifted columns (0.0 - 1.0)
-    drift_threshold: float
-    columns_drifted: Dict[str, bool]  # Per-column drift status
-    column_drift_scores: Dict[str, float]  # Per-column drift scores
-    reference_size: int
-    current_size: int
-    timestamp: float = field(default_factory=time.time)
-    message: str = ""
-
-
-@dataclass
-class DriftAlert:
-    """Alert generated when drift is detected."""
-
-    drift_result: DriftResult
-    severity: str  # "warning" or "critical"
-    triggered_at: float = field(default_factory=time.time)
-    acknowledged: bool = False
-    alert_id: str = field(default_factory=lambda: f"drift_{int(time.time() * 1000)}")
-
-
-@dataclass
-class DriftMetrics:
-    """Aggregated drift detection metrics."""
-
-    total_checks: int
-    drift_detections: int
-    last_check_time: Optional[float]
-    last_drift_time: Optional[float]
-    current_drift_score: float
-    average_drift_score: float
-    status: DriftStatus
-    consecutive_drift_count: int
-    data_points_collected: int
+from .drift.enums import DriftStatus
+from .drift.models import DriftAlert, DriftMetrics, DriftResult
 
 
 class DriftDetector:
@@ -234,8 +183,6 @@ class DriftDetector:
         # Check for drift (will compute and cache)
         result = detector.check_drift()
         if result.drift_detected:
-            print(f"Drift detected! Score: {result.drift_score}")
-            print(f"Drifted columns: {result.columns_drifted}")
 
         # Subsequent checks with same data will use cache
         result2 = detector.check_drift()  # Returns cached result
@@ -1004,7 +951,6 @@ class DriftDetector:
                     combined_checksum == self._report_cache_checksum
                     and self._last_report_cache is not None
                 ):
-                    logger.debug("Returning cached drift result")
                     # Update timestamp to reflect when check was requested, not when it was computed
                     cached_result = self._last_report_cache
                     return DriftResult(

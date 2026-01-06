@@ -35,7 +35,6 @@ from typing import Any, Optional
 
 from sqlalchemy import Boolean, DateTime, Enum, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
-
 from src.core.shared.database import Base
 from src.core.shared.models.user import SSOProviderType
 

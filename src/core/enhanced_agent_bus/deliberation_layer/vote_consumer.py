@@ -65,7 +65,9 @@ class VoteEventConsumer:
             voting_service: VotingService instance (creates new one if not provided)
         """
         self.tenant_id = tenant_id.replace(".", "_") if tenant_id else "default"
-        self.bootstrap_servers = bootstrap_servers or settings.kafka.get("bootstrap_servers", "localhost:9092")
+        self.bootstrap_servers = bootstrap_servers or settings.kafka.get(
+            "bootstrap_servers", "localhost:9092"
+        )
         self.voting_service = voting_service or VotingService()
         self.consumer: Optional[AIOKafkaConsumer] = None
         self._running = False
@@ -90,7 +92,9 @@ class VoteEventConsumer:
 
             await self.consumer.start()
             self._running = True
-            logger.info(f"VoteEventConsumer started for tenant {self.tenant_id}, topic {self._vote_topic}")
+            logger.info(
+                f"VoteEventConsumer started for tenant {self.tenant_id}, topic {self._vote_topic}"
+            )
 
             # Start consume loop in background
             asyncio.create_task(self._consume_loop())
@@ -164,7 +168,6 @@ class VoteEventConsumer:
         # Deduplicate: check if agent already voted
         existing_votes = election_data.get("votes", {})
         if agent_id in existing_votes:
-            logger.debug(f"Duplicate vote from {agent_id} for election {election_id}, ignoring")
             return
 
         # Convert vote_event to Vote dataclass

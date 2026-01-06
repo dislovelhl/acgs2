@@ -10,16 +10,16 @@ ERRORS=0
 find . -name "*.md" -not -path "*/.*" | while read -r md_file; do
     # Extract links in format [text](path)
     links=$(grep -oE "\[[^]]+\]\([^)]+\)" "$md_file")
-    
+
     while read -r link; do
         # Extract the path from the link
         target=$(echo "$link" | sed -E 's/\[.+\]\((.+)\)/\1/' | cut -d'#' -f1)
-        
+
         # Skip external links
         if [[ "$target" =~ ^http ]] || [[ "$target" == "" ]] || [[ "$target" =~ ^mailto: ]]; then
             continue
         fi
-        
+
         # Handle file:/// paths
         if [[ "$target" =~ ^file:// ]]; then
             target_path=${target#file://}
@@ -38,7 +38,7 @@ find . -name "*.md" -not -path "*/.*" | while read -r md_file; do
             dir_path=$(dirname "$md_file")
             resolved_target="$dir_path/$target"
         fi
-        
+
         # Check if file exists
         if [ ! -e "$resolved_target" ] && [ ! -d "$resolved_target" ]; then
             echo "❌ Dead link in $md_file: $target (Resolved to: $resolved_target)"

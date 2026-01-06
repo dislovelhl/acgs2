@@ -7,7 +7,8 @@ Follows the fire-and-forget pattern for zero-latency impact.
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -124,7 +125,7 @@ class MeteringManager:
             )
         except Exception as e:
             # Never let metering errors affect the critical path
-            logger.debug(f"Metering error (non-critical): {e}")
+            logger.warning(f"Metering recording failed: {e}")
 
     def record_deliberation_request(
         self,
@@ -159,7 +160,7 @@ class MeteringManager:
             )
         except Exception as e:
             # Never let metering errors affect the critical path
-            logger.debug(f"Metering error (non-critical): {e}")
+            logger.warning(f"Metering recording failed: {e}")
 
     def record_validation_result(
         self,
@@ -193,7 +194,8 @@ class MeteringManager:
                 },
             )
         except Exception as e:
-            logger.debug(f"Metering error (non-critical): {e}")
+            # Never let metering errors affect the critical path
+            logger.warning(f"Metering recording failed: {e}")
 
     def get_metrics(self) -> JSONDict:
         """Get metering metrics for monitoring.

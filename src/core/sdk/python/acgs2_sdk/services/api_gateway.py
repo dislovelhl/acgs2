@@ -3,13 +3,13 @@ ACGS-2 API Gateway Service
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Union, Optional
+from typing import TYPE_CHECKING, Any, Union
 
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
-    JSONValue = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]  # type: ignore[misc]
-    JSONDict = Dict[str, JSONValue]  # type: ignore[misc]
+    JSONValue = Union[str, int, float, bool, None, dict[str, Any], list[Any]]  # type: ignore[misc]
+    JSONDict = dict[str, JSONValue]  # type: ignore[misc]
 
 if TYPE_CHECKING:
     from acgs2_sdk.client import ACGS2Client
@@ -41,7 +41,7 @@ class APIGatewayService:
         rating: int,
         title: str,
         description: str = "",
-        metadata: Optional[JSONDict] = None,
+        metadata: JSONDict | None = None,
     ) -> JSONDict:
         """Submit user feedback.
 

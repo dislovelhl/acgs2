@@ -79,7 +79,9 @@ class EUAIActComplianceChecklist(BaseModel):
     assessment_date: date = Field(..., description="Date of compliance assessment")
     assessor_name: str = Field(..., description="Name of person conducting assessment")
     assessor_role: str = Field(..., description="Role of assessor")
-    high_risk_category: HighRiskCategory = Field(..., description="High-risk category per Article 6")
+    high_risk_category: HighRiskCategory = Field(
+        ..., description="High-risk category per Article 6"
+    )
     findings: List[EUAIActComplianceFinding] = Field(
         default_factory=list, description="Compliance findings"
     )
@@ -101,7 +103,9 @@ class RiskFactor(BaseModel):
     factor_id: str = Field(..., description="Unique risk factor identifier")
     category: str = Field(..., description="Risk category (e.g., 'Data Quality', 'Bias')")
     description: str = Field(..., description="Risk factor description")
-    likelihood: str = Field(..., description="Likelihood assessment (e.g., 'High', 'Medium', 'Low')")
+    likelihood: str = Field(
+        ..., description="Likelihood assessment (e.g., 'High', 'Medium', 'Low')"
+    )
     impact: str = Field(..., description="Impact assessment (e.g., 'High', 'Medium', 'Low')")
     risk_level: RiskLevel = Field(..., description="Calculated risk level")
     mitigation_measures: List[str] = Field(
@@ -118,7 +122,9 @@ class EUAIActRiskAssessment(BaseModel):
     assessment_date: date = Field(..., description="Date of risk assessment")
     assessor_name: str = Field(..., description="Name of person conducting assessment")
     assessor_qualifications: str = Field(..., description="Assessor qualifications/credentials")
-    high_risk_category: HighRiskCategory = Field(..., description="High-risk category per Article 6")
+    high_risk_category: HighRiskCategory = Field(
+        ..., description="High-risk category per Article 6"
+    )
     system_description: str = Field(..., description="Description of the AI system")
     intended_purpose: str = Field(..., description="Intended purpose of the AI system")
     risk_factors: List[RiskFactor] = Field(..., description="Identified risk factors")
@@ -167,9 +173,7 @@ class EUAIActHumanOversight(BaseModel):
     oversight_measures: List[HumanOversightMeasure] = Field(
         ..., description="Human oversight measures implemented"
     )
-    oversight_effectiveness: str = Field(
-        ..., description="Assessment of oversight effectiveness"
-    )
+    oversight_effectiveness: str = Field(..., description="Assessment of oversight effectiveness")
     escalation_procedures: List[str] = Field(
         default_factory=list, description="Procedures for escalating issues to human oversight"
     )
@@ -198,7 +202,9 @@ class QuarterlyComplianceMetrics(BaseModel):
     total_assessments: int = Field(..., description="Total compliance assessments conducted")
     compliant_systems: int = Field(..., description="Number of compliant systems")
     non_compliant_systems: int = Field(..., description="Number of non-compliant systems")
-    partial_compliance_systems: int = Field(..., description="Number of partially compliant systems")
+    partial_compliance_systems: int = Field(
+        ..., description="Number of partially compliant systems"
+    )
     critical_findings: int = Field(..., description="Number of critical findings")
     high_findings: int = Field(..., description="Number of high-severity findings")
     remediation_actions_taken: int = Field(..., description="Number of remediation actions taken")

@@ -16,7 +16,18 @@ import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, BinaryIO, Optional, Union
+from typing import Any, BinaryIO, Dict, List, Optional, Union
+
+try:
+    from src.core.shared.types import DocumentData, JSONDict, JSONValue
+except ImportError:
+    from typing import Any, Dict, List, Union
+
+    JSONPrimitive = Union[str, int, float, bool, None]
+    JSONDict = Dict[str, Any]
+    JSONList = List[Any]
+    JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
+    DocumentData = Dict[str, JSONValue]
 
 from docx import Document
 from docx.enum.section import WD_ORIENT
@@ -29,9 +40,9 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.table import Table
 
 from ..models.base import ComplianceFramework
+from .base import BaseGenerator
 
 logger = logging.getLogger(__name__)
-
 
 # Default output path for generated DOCX files
 _DEFAULT_OUTPUT_PATH = Path(tempfile.gettempdir()) / "compliance-reports"
@@ -231,9 +242,9 @@ class DOCXTableBuilder:
 
     def create_simple_table(
         self,
-        headers: list[str],
-        rows: list[list[Any]],
-        col_widths: Optional[list[float]] = None,
+        headers: List[str],
+        rows: List[List[JSONValue]],
+        col_widths: Optional[List[float]] = None,
     ) -> Table:
         """
         Create a simple table with headers and rows.
@@ -291,7 +302,7 @@ class DOCXTableBuilder:
 
     def create_evidence_table(
         self,
-        evidence_records: list[dict[str, Any]],
+        evidence_records: List[JSONDict],
         include_status: bool = True,
     ) -> Table:
         """
@@ -327,7 +338,7 @@ class DOCXTableBuilder:
 
     def create_control_mapping_table(
         self,
-        mappings: list[dict[str, Any]],
+        mappings: List[JSONDict],
         framework: str,
     ) -> Table:
         """
@@ -350,9 +361,7 @@ class DOCXTableBuilder:
 
         rows = []
         for mapping in mappings:
-            coverage = mapping.get(
-                "coverage_percentage", mapping.get("coverage_level", 100)
-            )
+            coverage = mapping.get("coverage_percentage", mapping.get("coverage_level", 100))
             if isinstance(coverage, int):
                 coverage_str = f"{coverage}%"
             else:
@@ -370,7 +379,7 @@ class DOCXTableBuilder:
 
         return self.create_simple_table(headers, rows, col_widths)
 
-    def _format_date(self, value: Any) -> str:
+    def _format_date(self, value: Optional[Union[datetime, str]]) -> str:
         """Format a datetime value for display."""
         if value is None:
             return "N/A"
@@ -378,7 +387,7 @@ class DOCXTableBuilder:
             return value.strftime("%Y-%m-%d")
         return str(value)
 
-    def _format_status(self, status: Any) -> str:
+    def _format_status(self, status: JSONValue) -> str:
         """Format a status value for display."""
         if not status:
             return "N/A"
@@ -421,7 +430,7 @@ class DOCXTableBuilder:
             tbl.insert(0, tbl_pr)
 
 
-class ComplianceDOCXGenerator:
+class DOCXGenerator(BaseGenerator):
     """
     Main DOCX generator for compliance documentation.
 
@@ -431,18 +440,96 @@ class ComplianceDOCXGenerator:
 
     def __init__(
         self,
+        output_dir: Union[str, Path, None] = None,
         orientation: str = "portrait",
     ) -> None:
         """
         Initialize the DOCX generator.
 
         Args:
+            output_dir: Directory for generated documents.
             orientation: Page orientation ('portrait' or 'landscape').
         """
+        if output_dir is None:
+            output_dir = _get_output_path()
+        super().__init__(str(output_dir))
         self.orientation = orientation
         self._document: Optional[Document] = None
         self._styles: Optional[ComplianceDOCXStyles] = None
         self._table_builder: Optional[DOCXTableBuilder] = None
+
+    def generate(
+        self,
+        data: DocumentData,
+        output_path: Optional[Union[str, Path]] = None,
+    ) -> Path:
+        """
+        Produce a compliance report using a unified interface.
+
+        Args:
+            data: The document data, including a mandatory "document_type" key.
+            output_path: Where to save the resulting DOCX.
+
+        Returns:
+            The Path where the file was written.
+
+        Raises:
+            ValueError: If document_type is missing or unsupported.
+        """
+        doc_type = data.get("document_type")
+        if not doc_type:
+            raise ValueError("Direct generation requires 'document_type' in data.")
+
+        # Handle output path resolution if provided
+        if output_path:
+            output_path = Path(output_path)
+            # Ensure extension
+            if not output_path.suffix:
+                output_path = output_path.with_suffix(".docx")
+            # Ensure generated in output_dir if not absolute
+            if not output_path.is_absolute():
+                output_path = self.output_dir / output_path
+
+        if doc_type == "soc2_report":
+            return self.generate_soc2_report(data, output_path)
+        elif doc_type == "iso27001_report":
+            return self.generate_iso27001_report(data, output_path)
+        elif doc_type == "gdpr_report":
+            return self.generate_gdpr_report(data, output_path)
+        elif doc_type == "euaiact_report":
+            return self.generate_euaiact_report(data, output_path)
+        # Handle EU AI Act specific types from simpler generators
+        elif doc_type in [
+            "risk_assessment",
+            "human_oversight",
+            "compliance_checklist",
+            "quarterly_report",
+        ]:
+            return self.generate_euaiact_report(data, output_path)
+        else:
+            # Default to EU AI Act report if unknown but it's the most common case for these
+            return self.generate_euaiact_report(data, output_path)
+
+    @property
+    def document(self) -> Document:
+        """Get the active Document instance."""
+        from typing import cast
+
+        return cast(Document, self._document)
+
+    @property
+    def styles(self) -> ComplianceDOCXStyles:
+        """Get the active ComplianceDOCXStyles instance."""
+        from typing import cast
+
+        return cast(ComplianceDOCXStyles, self._styles)
+
+    @property
+    def table_builder(self) -> DOCXTableBuilder:
+        """Get the active DOCXTableBuilder instance."""
+        from typing import cast
+
+        return cast(DOCXTableBuilder, self._table_builder)
 
     def _create_document(self) -> Document:
         """
@@ -485,17 +572,19 @@ class ComplianceDOCXGenerator:
             report_date: Report generation date.
             confidentiality: Confidentiality level.
         """
+        assert self._document is not None
+        assert self._styles is not None
         # Add blank paragraphs for spacing
         for _ in range(4):
-            self._document.add_paragraph()
+            self.document.add_paragraph()
 
         # Title
-        title_para = self._document.add_paragraph(title, style="Title")
+        title_para = self.document.add_paragraph(title, style="Title")
         title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         # Subtitle
         if subtitle:
-            subtitle_para = self._document.add_paragraph()
+            subtitle_para = self.document.add_paragraph()
             subtitle_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run = subtitle_para.add_run(subtitle)
             run.font.size = Pt(16)
@@ -503,11 +592,11 @@ class ComplianceDOCXGenerator:
 
         # Add spacing
         for _ in range(2):
-            self._document.add_paragraph()
+            self.document.add_paragraph()
 
         # Organization
         if organization:
-            org_para = self._document.add_paragraph()
+            org_para = self.document.add_paragraph()
             org_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run = org_para.add_run(f"Prepared for: {organization}")
             run.font.size = Pt(14)
@@ -515,7 +604,7 @@ class ComplianceDOCXGenerator:
 
         # Report Date
         if report_date:
-            date_para = self._document.add_paragraph()
+            date_para = self.document.add_paragraph()
             date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
             date_str = report_date.strftime("%B %d, %Y")
             run = date_para.add_run(f"Report Date: {date_str}")
@@ -524,18 +613,18 @@ class ComplianceDOCXGenerator:
 
         # Add spacing before confidentiality notice
         for _ in range(4):
-            self._document.add_paragraph()
+            self.document.add_paragraph()
 
         # Confidentiality Notice
         if confidentiality:
-            conf_para = self._document.add_paragraph()
+            conf_para = self.document.add_paragraph()
             conf_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run = conf_para.add_run(confidentiality.upper())
             run.font.bold = True
             run.font.size = Pt(12)
             run.font.color.rgb = self._styles.DANGER_COLOR
 
-            notice_para = self._document.add_paragraph()
+            notice_para = self.document.add_paragraph()
             notice_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
             notice_run = notice_para.add_run(
                 "This document contains confidential information. "
@@ -545,7 +634,7 @@ class ComplianceDOCXGenerator:
             notice_run.font.color.rgb = self._styles.MUTED_COLOR
 
         # Page break after title page
-        self._document.add_page_break()
+        self.document.add_page_break()
 
     def _add_section(
         self,
@@ -561,11 +650,10 @@ class ComplianceDOCXGenerator:
             content: Optional section content.
             level: Heading level (1, 2, or 3).
         """
-        heading_style = f"Heading {level}"
-        self._document.add_heading(title, level=level)
+        self.document.add_heading(title, level=level)
 
         if content:
-            self._document.add_paragraph(content)
+            self.document.add_paragraph(content)
 
     def _add_paragraph(
         self,
@@ -581,7 +669,7 @@ class ComplianceDOCXGenerator:
             bold: Whether text is bold.
             italic: Whether text is italic.
         """
-        para = self._document.add_paragraph()
+        para = self.document.add_paragraph()
         run = para.add_run(text)
         run.font.bold = bold
         run.font.italic = italic
@@ -594,7 +682,7 @@ class ComplianceDOCXGenerator:
             items: List of items to include.
         """
         for item in items:
-            para = self._document.add_paragraph(item, style="List Bullet")
+            self.document.add_paragraph(item, style="List Bullet")
 
     def _add_numbered_list(self, items: list[str]) -> None:
         """
@@ -604,13 +692,13 @@ class ComplianceDOCXGenerator:
             items: List of items to include.
         """
         for item in items:
-            para = self._document.add_paragraph(item, style="List Number")
+            self.document.add_paragraph(item, style="List Number")
 
     def _add_table(
         self,
-        headers: list[str],
-        rows: list[list[Any]],
-        col_widths: Optional[list[float]] = None,
+        headers: List[str],
+        rows: List[List[JSONValue]],
+        col_widths: Optional[List[float]] = None,
     ) -> Table:
         """
         Add a table to the document.
@@ -623,11 +711,11 @@ class ComplianceDOCXGenerator:
         Returns:
             The created Table object.
         """
-        return self._table_builder.create_simple_table(headers, rows, col_widths)
+        return self.table_builder.create_simple_table(headers, rows, col_widths)
 
     def _add_page_break(self) -> None:
         """Add a page break to the document."""
-        self._document.add_page_break()
+        self.document.add_page_break()
 
     def _save_document(
         self,
@@ -642,11 +730,11 @@ class ComplianceDOCXGenerator:
         if isinstance(output, (str, Path)):
             output_path = Path(output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            self._document.save(str(output_path))
+            self.document.save(str(output_path))
         else:
-            self._document.save(output)
+            self.document.save(output)
 
-    def _format_date(self, value: Any) -> str:
+    def _format_date(self, value: Optional[Union[datetime, str]]) -> str:
         """Format a datetime value for display."""
         if value is None:
             return "N/A"
@@ -656,7 +744,7 @@ class ComplianceDOCXGenerator:
 
     def generate_soc2_report(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -744,7 +832,7 @@ class ComplianceDOCXGenerator:
             self._add_paragraph(
                 "The following table shows how ACGS guardrail controls map to SOC 2 controls."
             )
-            self._table_builder.create_control_mapping_table(
+            self.table_builder.create_control_mapping_table(
                 [m if isinstance(m, dict) else m.model_dump() for m in mappings],
                 "SOC2",
             )
@@ -762,7 +850,7 @@ class ComplianceDOCXGenerator:
 
     def generate_iso27001_report(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -807,9 +895,7 @@ class ComplianceDOCXGenerator:
                         [
                             entry.get("control_id", "N/A"),
                             entry.get("control_title", "N/A"),
-                            str(entry.get("applicability", "applicable"))
-                            .replace("_", " ")
-                            .title(),
+                            str(entry.get("applicability", "applicable")).replace("_", " ").title(),
                             status_display,
                         ]
                     )
@@ -842,9 +928,7 @@ class ComplianceDOCXGenerator:
                             [
                                 ctrl.get("control_id", "N/A"),
                                 ctrl.get("title", "N/A"),
-                                str(ctrl.get("status", "N/A"))
-                                .replace("_", " ")
-                                .title(),
+                                str(ctrl.get("status", "N/A")).replace("_", " ").title(),
                             ]
                         )
 
@@ -867,7 +951,7 @@ class ComplianceDOCXGenerator:
 
     def generate_gdpr_report(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -931,6 +1015,7 @@ class ComplianceDOCXGenerator:
                     purposes = activity.get("purposes", [])
                     purposes_str = ", ".join(purposes[:2]) if purposes else "N/A"
                     if len(purposes) > 2:
+                        # PERFORMANCE: Consider using list.append() + "".join() instead of += in loops
                         purposes_str += "..."
 
                     rows.append(
@@ -976,9 +1061,7 @@ class ComplianceDOCXGenerator:
             self._add_paragraph(
                 "The following security measures are implemented to protect personal data:"
             )
-            self._add_bullet_list(
-                [m.get("description", str(m)) for m in security_measures[:10]]
-            )
+            self._add_bullet_list([m.get("description", str(m)) for m in security_measures[:10]])
 
         # Generate output path if not provided
         if output_path is None:
@@ -993,7 +1076,7 @@ class ComplianceDOCXGenerator:
 
     def generate_euaiact_report(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -1075,9 +1158,7 @@ class ComplianceDOCXGenerator:
                 rows.append(
                     [
                         assessment.get("system_id", "N/A"),
-                        str(assessment.get("assessment_type", "N/A"))
-                        .replace("_", " ")
-                        .title(),
+                        str(assessment.get("assessment_type", "N/A")).replace("_", " ").title(),
                         assessment.get("assessment_result", "N/A").title(),
                         assessment.get("certificate_number", "N/A") or "N/A",
                     ]
@@ -1093,9 +1174,7 @@ class ComplianceDOCXGenerator:
         tech_docs = report_data.get("technical_documentation", [])
         if tech_docs:
             self._add_section("Technical Documentation (Annex IV)")
-            self._add_paragraph(
-                "The following AI systems have complete technical documentation:"
-            )
+            self._add_paragraph("The following AI systems have complete technical documentation:")
             doc_items = []
             for doc in tech_docs[:10]:
                 system_name = doc.get("system_name", "Unknown System")
@@ -1127,7 +1206,7 @@ class ComplianceDOCXGenerator:
 
 
 def generate_docx(
-    report_data: dict[str, Any],
+    report_data: DocumentData,
     framework: Union[str, ComplianceFramework],
     output_path: Optional[Union[str, Path]] = None,
     orientation: str = "portrait",
@@ -1159,7 +1238,7 @@ def generate_docx(
         ... )
         >>> print(f"Report generated at: {path}")
     """
-    generator = ComplianceDOCXGenerator(orientation=orientation)
+    generator = DOCXGenerator(orientation=orientation)
 
     # Normalize framework
     if isinstance(framework, ComplianceFramework):
@@ -1183,7 +1262,7 @@ def generate_docx(
 
 
 def generate_docx_to_buffer(
-    report_data: dict[str, Any],
+    report_data: DocumentData,
     framework: Union[str, ComplianceFramework],
     orientation: str = "portrait",
 ) -> io.BytesIO:
@@ -1208,7 +1287,7 @@ def generate_docx_to_buffer(
         >>> # Use buffer.getvalue() to get bytes for streaming
     """
     buffer = io.BytesIO()
-    generator = ComplianceDOCXGenerator(orientation=orientation)
+    generator = DOCXGenerator(orientation=orientation)
 
     # Normalize framework
     if isinstance(framework, ComplianceFramework):

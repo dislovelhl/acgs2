@@ -78,14 +78,12 @@ class RoleMapper:
             List of MACI roles (deduplicated)
         """
         if not groups:
-            logger.debug("No groups provided, returning default role")
             return [idp_config.default_role or self.default_role]
 
         # Get role mappings from config
         mappings = idp_config.role_mappings
 
         if not mappings:
-            logger.debug("No role mappings configured for IdP, using default")
             return [idp_config.default_role or self.default_role]
 
         # Sort by priority (higher first)
@@ -97,15 +95,11 @@ class RoleMapper:
         for mapping in sorted_mappings:
             if mapping.matches(groups):
                 matched_roles.add(mapping.maci_role)
-                logger.debug(
-                    f"Mapped group '{mapping.idp_group}' -> '{mapping.maci_role}'"
-                )
 
         # Return matched roles or default
         if matched_roles:
             return list(matched_roles)
         else:
-            logger.debug(f"No matching mappings for groups {groups}")
             return [idp_config.default_role or self.default_role]
 
     def get_highest_privilege_role(self, roles: List[str]) -> str:

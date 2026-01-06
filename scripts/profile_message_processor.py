@@ -18,16 +18,20 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 
 # Add the enhanced_agent_bus to path
-sys.path.insert(0, '/home/dislove/document/acgs2/acgs2-core')
+sys.path.insert(0, "/home/dislove/document/acgs2/acgs2-core")
 
 # Mock missing dependencies
-sys.modules['litellm'] = type(sys)('litellm')
-sys.modules['litellm.caching'] = type(sys)('caching')
-sys.modules['config'] = type(sys)('config')
-sys.modules['config'].BusConfiguration = type('BusConfiguration', (), {
-    'intelligence': type('obj', (object,), {'intent_classifier_enabled': False}),
-    'deliberation': type('obj', (object,), {'enabled': False})
-})()
+sys.modules["litellm"] = type(sys)("litellm")
+sys.modules["litellm.caching"] = type(sys)("caching")
+sys.modules["config"] = type(sys)("config")
+sys.modules["config"].BusConfiguration = type(
+    "BusConfiguration",
+    (),
+    {
+        "intelligence": type("obj", (object,), {"intent_classifier_enabled": False}),
+        "deliberation": type("obj", (object,), {"enabled": False}),
+    },
+)()
 
 try:
     from src.core.enhanced_agent_bus.message_processor import MessageProcessor
@@ -40,6 +44,7 @@ except ImportError as e:
 @dataclass
 class ProfilingResult:
     """Result of profiling a single operation."""
+
     operation: str
     total_time: float
     call_count: int
@@ -51,6 +56,7 @@ class ProfilingResult:
 @dataclass
 class PipelineProfile:
     """Complete profiling results for message processing pipeline."""
+
     total_messages: int
     total_time: float
     avg_latency: float
@@ -91,14 +97,14 @@ async def profile_message_processing(num_messages: int = 1000) -> PipelineProfil
     messages = []
     for i in range(num_messages):
         msg = AgentMessage(
-            message_id=f'profile-{i}',
-            from_agent='test-agent',
-            to_agent='bus',
+            message_id=f"profile-{i}",
+            from_agent="test-agent",
+            to_agent="bus",
             message_type=MessageType.TASK_REQUEST,
             priority=Priority.NORMAL,
-            content=f'test message {i}',
-            tenant_id='test-tenant',
-            constitutional_hash='cdd01ef066bc6cf2'
+            content=f"test message {i}",
+            tenant_id="test-tenant",
+            constitutional_hash="cdd01ef066bc6cf2",
         )
         messages.append(msg)
 
@@ -128,7 +134,7 @@ async def profile_message_processing(num_messages: int = 1000) -> PipelineProfil
 
     # Analyze profiling results
     s = io.StringIO()
-    ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+    ps = pstats.Stats(profiler, stream=s).sort_stats("cumulative")
     ps.print_stats()
 
     # Parse profiling output to extract component times
@@ -147,7 +153,7 @@ async def profile_message_processing(num_messages: int = 1000) -> PipelineProfil
         p95_latency=latencies[p95_index],
         p99_latency=latencies[p99_index],
         throughput_rps=num_messages / total_time,
-        component_breakdown=component_breakdown
+        component_breakdown=component_breakdown,
     )
 
 
@@ -162,7 +168,7 @@ def parse_profiling_output(profile_output: str) -> Dict[str, ProfilingResult]:
         Dictionary of component profiling results
     """
     results = {}
-    lines = profile_output.split('\n')
+    lines = profile_output.split("\n")
 
     # Skip header lines
     in_stats = False
@@ -171,7 +177,7 @@ def parse_profiling_output(profile_output: str) -> Dict[str, ProfilingResult]:
         if not line:
             continue
 
-        if line.startswith('ncalls'):
+        if line.startswith("ncalls"):
             in_stats = True
             continue
 
@@ -179,20 +185,20 @@ def parse_profiling_output(profile_output: str) -> Dict[str, ProfilingResult]:
             continue
 
         # Parse stats line: ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-        if line and not line.startswith('ncalls'):
+        if line and not line.startswith("ncalls"):
             try:
                 parts = line.split()
                 if len(parts) >= 6:
                     ncalls = parts[0]
                     tottime = float(parts[1])
                     cumtime = float(parts[3])
-                    filename_lineno = ' '.join(parts[5:])
+                    filename_lineno = " ".join(parts[5:])
 
                     # Extract function name
-                    if '(' in filename_lineno and ')' in filename_lineno:
-                        func_part = filename_lineno.split('(')[-1].split(')')[0]
-                        if '.' in func_part:
-                            operation = func_part.split('.')[-1]
+                    if "(" in filename_lineno and ")" in filename_lineno:
+                        func_part = filename_lineno.split("(")[-1].split(")")[0]
+                        if "." in func_part:
+                            operation = func_part.split(".")[-1]
                         else:
                             operation = func_part
                     else:
@@ -201,10 +207,11 @@ def parse_profiling_output(profile_output: str) -> Dict[str, ProfilingResult]:
                     results[operation] = ProfilingResult(
                         operation=operation,
                         total_time=tottime,
-                        call_count=int(ncalls.split('/')[0]) if '/' in ncalls else int(ncalls),
-                        avg_time=tottime / (int(ncalls.split('/')[0]) if '/' in ncalls else int(ncalls)),
+                        call_count=int(ncalls.split("/")[0]) if "/" in ncalls else int(ncalls),
+                        avg_time=tottime
+                        / (int(ncalls.split("/")[0]) if "/" in ncalls else int(ncalls)),
                         cumulative_time=cumtime,
-                        filename_lineno=filename_lineno
+                        filename_lineno=filename_lineno,
                     )
             except (ValueError, IndexError):
                 continue
@@ -214,9 +221,9 @@ def parse_profiling_output(profile_output: str) -> Dict[str, ProfilingResult]:
 
 def print_profiling_report(profile: PipelineProfile):
     """Print a detailed profiling report."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("MESSAGE PROCESSOR PROFILING REPORT")
-    print("="*80)
+    print("=" * 80)
 
     print("\nOVERALL PERFORMANCE:")
     print(f"  Total Messages: {profile.total_messages}")
@@ -225,53 +232,59 @@ def print_profiling_report(profile: PipelineProfile):
     print(f"  P95 Latency: {profile.p95_latency:.2f}ms")
     print(f"  P99 Latency: {profile.p99_latency:.2f}ms")
     print(f"  Throughput: {profile.throughput_rps:.0f} RPS")
-    print(f"  Memory Usage: {profile.memory_usage_mb:.2f} MB" if profile.memory_usage_mb else "  Memory Usage: Not measured")
+    print(
+        f"  Memory Usage: {profile.memory_usage_mb:.2f} MB"
+        if profile.memory_usage_mb
+        else "  Memory Usage: Not measured"
+    )
 
     print("\nTOP PERFORMANCE BOTTLENECKS:")
 
     # Sort components by cumulative time
     sorted_components = sorted(
-        profile.component_breakdown.values(),
-        key=lambda x: x.cumulative_time,
-        reverse=True
+        profile.component_breakdown.values(), key=lambda x: x.cumulative_time, reverse=True
     )
 
     for i, component in enumerate(sorted_components[:10]):  # Top 10
-        print(f"  {i+1:2d}. {component.operation:<30} "
-              f"{component.cumulative_time:>8.3f}s "
-              f"({component.cumulative_time/profile.total_time*100:>5.1f}%) "
-              f"calls: {component.call_count:>6}")
+        print(
+            f"  {i+1:2d}. {component.operation:<30} "
+            f"{component.cumulative_time:>8.3f}s "
+            f"({component.cumulative_time/profile.total_time*100:>5.1f}%) "
+            f"calls: {component.call_count:>6}"
+        )
 
     print("\nDETAILED COMPONENT ANALYSIS:")
 
     # Group by potential bottleneck categories
     categories = {
-        'Intent Classification': [],
-        'Validation': [],
-        'SDPC Processing': [],
-        'Memory Profiling': [],
-        'Other': []
+        "Intent Classification": [],
+        "Validation": [],
+        "SDPC Processing": [],
+        "Memory Profiling": [],
+        "Other": [],
     }
 
     for component in sorted_components:
         name = component.operation.lower()
-        if 'intent' in name or 'classifier' in name:
-            categories['Intent Classification'].append(component)
-        elif 'valid' in name or 'check' in name:
-            categories['Validation'].append(component)
-        elif 'sdpc' in name or 'pacar' in name or 'asc' in name:
-            categories['SDPC Processing'].append(component)
-        elif 'profil' in name or 'memory' in name:
-            categories['Memory Profiling'].append(component)
+        if "intent" in name or "classifier" in name:
+            categories["Intent Classification"].append(component)
+        elif "valid" in name or "check" in name:
+            categories["Validation"].append(component)
+        elif "sdpc" in name or "pacar" in name or "asc" in name:
+            categories["SDPC Processing"].append(component)
+        elif "profil" in name or "memory" in name:
+            categories["Memory Profiling"].append(component)
         else:
-            categories['Other'].append(component)
+            categories["Other"].append(component)
 
     for category, components in categories.items():
         if components:
             print(f"\n  {category}:")
             for component in components[:5]:  # Top 5 per category
-                    print(f"    {component.operation:<25} {component.cumulative_time:>8.3f}s ({component.cumulative_time/profile.total_time*100:>5.1f}%)")
-    print("\n" + "="*80)
+                print(
+                    f"    {component.operation:<25} {component.cumulative_time:>8.3f}s ({component.cumulative_time/profile.total_time*100:>5.1f}%)"
+                )
+    print("\n" + "=" * 80)
 
 
 async def main():
@@ -294,6 +307,7 @@ async def main():
     except Exception as e:
         print(f"Profiling failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

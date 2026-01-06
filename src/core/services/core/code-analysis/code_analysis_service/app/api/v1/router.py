@@ -10,9 +10,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from pydantic import BaseModel
-
 from app.models.schemas import (
     AnalysisRequest,
     AnalysisResponse,
@@ -28,10 +25,12 @@ from app.utils.constitutional import (
     ensure_constitutional_compliance,
 )
 from app.utils.logging import get_logger, log_api_request, log_api_response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
 
 # Internal imports
 try:
-    from src.core.shared.types import UserAttributes, JSONDict
+    from src.core.shared.types import JSONDict, UserAttributes
 except ImportError:
     UserAttributes = Dict[str, Any]
     JSONDict = Dict[str, Any]

@@ -6,9 +6,10 @@ Abstract protocol definitions for dependency injection support.
 These protocols enable loose coupling and testability.
 """
 
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
+
 try:
-    from src.core.shared.types import JSONDict, JSONValue, AgentInfo, MetadataDict
+    from src.core.shared.types import AgentInfo, JSONDict, JSONValue, MetadataDict
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -295,9 +296,11 @@ except (ImportError, ValueError):
             RedisVotingProtocol,
         )
     except (ImportError, ValueError):
-        ImpactScorerProtocol = AdaptiveRouterProtocol = DeliberationQueueProtocol = (
-            LLMAssistantProtocol
-        ) = OPAGuardProtocol = RedisQueueProtocol = RedisVotingProtocol = Any
+        ImpactScorerProtocol = (
+            AdaptiveRouterProtocol
+        ) = (
+            DeliberationQueueProtocol
+        ) = LLMAssistantProtocol = OPAGuardProtocol = RedisQueueProtocol = RedisVotingProtocol = Any
 
 __all__ = [
     "AgentRegistry",

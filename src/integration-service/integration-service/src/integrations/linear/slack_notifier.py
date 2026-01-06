@@ -55,6 +55,7 @@ class SlackNotifierError(Exception):
 
 class SlackAuthenticationError(SlackNotifierError):
     """Raised when Slack authentication fails."""
+
     pass
 
 
@@ -73,11 +74,13 @@ class SlackRateLimitError(SlackNotifierError):
 
 class SlackChannelNotFoundError(SlackNotifierError):
     """Raised when specified Slack channel is not found."""
+
     pass
 
 
 class SlackNotConfiguredError(SlackNotifierError):
     """Raised when Slack integration is not configured."""
+
     pass
 
 
@@ -185,7 +188,7 @@ class SlackNotifier:
 
             if time_since_last_send < SLACK_RATE_LIMIT_SECONDS:
                 sleep_time = SLACK_RATE_LIMIT_SECONDS - time_since_last_send
-                logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f}s")
+
                 await asyncio.sleep(sleep_time)
 
             self._last_send_time = asyncio.get_event_loop().time()
@@ -332,17 +335,17 @@ class SlackNotifier:
             # Truncate long descriptions
             max_len = 500
             truncated_desc = (
-                description[:max_len] + "..."
-                if len(description) > max_len
-                else description
+                description[:max_len] + "..." if len(description) > max_len else description
             )
-            blocks.append({
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": truncated_desc,
-                },
-            })
+            blocks.append(
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": truncated_desc,
+                    },
+                }
+            )
 
         # Add metadata
         metadata_parts = [f"*Issue ID:* `{issue_id}`"]
@@ -353,33 +356,37 @@ class SlackNotifier:
         if assignee:
             metadata_parts.append(f"*Assignee:* {assignee}")
 
-        blocks.append({
-            "type": "context",
-            "elements": [
-                {
-                    "type": "mrkdwn",
-                    "text": " | ".join(metadata_parts),
-                }
-            ],
-        })
+        blocks.append(
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": " | ".join(metadata_parts),
+                    }
+                ],
+            }
+        )
 
         # Add link to issue
         if url:
-            blocks.append({
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "View in Linear",
-                            "emoji": True,
-                        },
-                        "url": url,
-                        "style": "primary",
-                    }
-                ],
-            })
+            blocks.append(
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "View in Linear",
+                                "emoji": True,
+                            },
+                            "url": url,
+                            "style": "primary",
+                        }
+                    ],
+                }
+            )
 
         return blocks
 
@@ -438,20 +445,22 @@ class SlackNotifier:
 
         # Add link to issue
         if url:
-            blocks.append({
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "View in Linear",
-                            "emoji": True,
-                        },
-                        "url": url,
-                    }
-                ],
-            })
+            blocks.append(
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "View in Linear",
+                                "emoji": True,
+                            },
+                            "url": url,
+                        }
+                    ],
+                }
+            )
 
         return blocks
 
@@ -520,20 +529,22 @@ class SlackNotifier:
 
         # Add link to issue
         if url:
-            blocks.append({
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "View in Linear",
-                            "emoji": True,
-                        },
-                        "url": url,
-                    }
-                ],
-            })
+            blocks.append(
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "View in Linear",
+                                "emoji": True,
+                            },
+                            "url": url,
+                        }
+                    ],
+                }
+            )
 
         return blocks
 
@@ -569,19 +580,13 @@ class SlackNotifier:
         """
         # Skip if Slack not configured
         if not self._config.is_configured:
-            logger.info(
-                f"Slack not configured, skipping issue created notification "
-                f"for {issue_id}"
-            )
+            logger.info(f"Slack not configured, skipping issue created notification for {issue_id}")
             return False
 
         # Check for duplicate notification
         event_id = f"slack_issue_created_{issue_id}"
         if await self._dedup_manager.is_duplicate(event_id):
-            logger.info(
-                f"Duplicate Slack notification detected for issue created: "
-                f"{issue_id}"
-            )
+            logger.info(f"Duplicate Slack notification detected for issue created: {issue_id}")
             return False
 
         # Use default channel if not specified
@@ -667,8 +672,7 @@ class SlackNotifier:
         # Skip if Slack not configured
         if not self._config.is_configured:
             logger.info(
-                f"Slack not configured, skipping status changed notification "
-                f"for {issue_id}"
+                f"Slack not configured, skipping status changed notification for {issue_id}"
             )
             return False
 
@@ -676,10 +680,7 @@ class SlackNotifier:
         timestamp = datetime.now(timezone.utc).timestamp()
         event_id = f"slack_status_changed_{issue_id}_{new_status}_{timestamp}"
         if await self._dedup_manager.is_duplicate(event_id):
-            logger.info(
-                f"Duplicate Slack notification detected for status change: "
-                f"{issue_id}"
-            )
+            logger.info(f"Duplicate Slack notification detected for status change: {issue_id}")
             return False
 
         # Use default channel if not specified
@@ -763,24 +764,17 @@ class SlackNotifier:
         """
         # Skip if Slack not configured
         if not self._config.is_configured:
-            logger.info(
-                f"Slack not configured, skipping comment added notification "
-                f"for {issue_id}"
-            )
+            logger.info(f"Slack not configured, skipping comment added notification for {issue_id}")
             return False
 
         # Check for duplicate notification (using comment body hash)
         import hashlib
 
-        comment_hash = hashlib.md5(
-            comment_body.encode(), usedforsecurity=False
-        ).hexdigest()[:8]
+        comment_hash = hashlib.md5(comment_body.encode(), usedforsecurity=False).hexdigest()[:8]
         event_id = f"slack_comment_added_{issue_id}_{comment_hash}"
 
         if await self._dedup_manager.is_duplicate(event_id):
-            logger.info(
-                f"Duplicate Slack notification detected for comment: {issue_id}"
-            )
+            logger.info(f"Duplicate Slack notification detected for comment: {issue_id}")
             return False
 
         # Use default channel if not specified
@@ -849,7 +843,7 @@ def get_slack_notifier() -> SlackNotifier:
     global _slack_notifier_instance
     if _slack_notifier_instance is None:
         _slack_notifier_instance = SlackNotifier()
-        logger.debug("SlackNotifier singleton instance created")
+
     return _slack_notifier_instance
 
 
@@ -861,4 +855,3 @@ def reset_slack_notifier():
     """
     global _slack_notifier_instance
     _slack_notifier_instance = None
-    logger.debug("SlackNotifier singleton instance reset")

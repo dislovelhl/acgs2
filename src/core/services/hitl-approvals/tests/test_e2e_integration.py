@@ -19,8 +19,6 @@ from typing import Any, Dict, List
 from unittest.mock import AsyncMock
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-
 from app.audit.ledger import get_audit_ledger, reset_audit_ledger
 from app.core.approval_engine import (
     get_approval_engine,
@@ -40,6 +38,7 @@ from app.models import (
     ApprovalStatus,
     AuditEntryType,
 )
+from httpx import ASGITransport, AsyncClient
 
 logger = logging.getLogger(__name__)
 

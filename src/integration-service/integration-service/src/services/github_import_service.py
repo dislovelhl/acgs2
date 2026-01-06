@@ -14,14 +14,13 @@ Features:
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
 from ..models.import_models import (
-    DuplicateHandling,
     ImportedItem,
     ImportProgress,
     PreviewItem,
@@ -40,18 +39,11 @@ class GitHubImportConfig(BaseModel):
     repository: str = Field(..., description="Repository name (e.g., 'owner/repo')")
 
     # Optional filters
-    state: str = Field(
-        default="all",
-        description="Filter by state: 'open', 'closed', or 'all'"
-    )
+    state: str = Field(default="all", description="Filter by state: 'open', 'closed', or 'all'")
     labels: List[str] = Field(
-        default_factory=list,
-        description="Filter by labels (e.g., ['bug', 'enhancement'])"
+        default_factory=list, description="Filter by labels (e.g., ['bug', 'enhancement'])"
     )
-    milestone: Optional[str] = Field(
-        None,
-        description="Filter by milestone number or title"
-    )
+    milestone: Optional[str] = Field(None, description="Filter by milestone number or title")
 
     @field_validator("repository")
     @classmethod
@@ -165,7 +157,6 @@ class GitHubImportService:
         Returns:
             Tuple of (success, error_message)
         """
-        logger.debug(f"Testing GitHub connection for repository {self.config.repository}")
 
         try:
             client = await self._get_client()
@@ -271,9 +262,7 @@ class GitHubImportService:
             )
 
             # Transform to preview items
-            preview_items = [
-                self._transform_to_preview_item(issue) for issue in issues
-            ]
+            preview_items = [self._transform_to_preview_item(issue) for issue in issues]
 
             # Collect statistics
             item_type_counts: Dict[str, int] = {}
@@ -291,13 +280,10 @@ class GitHubImportService:
             # Collect warnings
             warnings = []
             if total > 1000:
-                warnings.append(
-                    f"Large dataset ({total} items) will be processed in batches"
-                )
+                warnings.append(f"Large dataset ({total} items) will be processed in batches")
 
             logger.info(
-                f"GitHub preview successful: {len(preview_items)} items "
-                f"({total} total available)"
+                f"GitHub preview successful: {len(preview_items)} items ({total} total available)"
             )
 
             return PreviewResponse(
@@ -412,9 +398,7 @@ class GitHubImportService:
                 progress.failed_items += current_batch_size
 
             # Update progress
-            progress.percentage = (
-                (progress.processed_items / total * 100.0) if total > 0 else 100.0
-            )
+            progress.percentage = (progress.processed_items / total * 100.0) if total > 0 else 100.0
 
             # Call progress callback if provided
             if progress_callback:
@@ -478,7 +462,6 @@ class GitHubImportService:
         params["sort"] = "created"
         params["direction"] = "asc"
 
-        logger.debug(f"Built GitHub query params: {params}")
         return params
 
     async def _fetch_issues(
@@ -524,9 +507,10 @@ class GitHubImportService:
 
             # Check Link header for pagination info
             link_header = response.headers.get("Link", "")
-            if "rel=\"last\"" in link_header:
+            if 'rel="last"' in link_header:
                 # Parse last page number from Link header
                 import re
+
                 last_page_match = re.search(r'page=(\d+)>; rel="last"', link_header)
                 if last_page_match:
                     last_page = int(last_page_match.group(1))
@@ -534,12 +518,8 @@ class GitHubImportService:
                     total = last_page * per_page
 
             # If we got fewer items than requested and no last page, this is all
-            if len(issues) < per_page and "rel=\"last\"" not in link_header:
+            if len(issues) < per_page and 'rel="last"' not in link_header:
                 total = (page - 1) * per_page + len(issues)
-
-            logger.debug(
-                f"Fetched {len(issues)} issues (estimated total: {total})"
-            )
 
             return issues, total
 
@@ -552,9 +532,7 @@ class GitHubImportService:
                 remaining = response.headers.get("X-RateLimit-Remaining", "0")
                 if remaining == "0":
                     reset_time = response.headers.get("X-RateLimit-Reset", "unknown")
-                    raise Exception(
-                        f"GitHub API rate limit exceeded. Resets at: {reset_time}"
-                    )
+                    raise Exception(f"GitHub API rate limit exceeded. Resets at: {reset_time}")
             raise Exception("Access denied - check repository permissions and token scopes")
 
         elif response.status_code == 404:
@@ -589,17 +567,13 @@ class GitHubImportService:
 
         if issue.get("created_at"):
             try:
-                created_at = datetime.fromisoformat(
-                    issue["created_at"].replace("Z", "+00:00")
-                )
+                created_at = datetime.fromisoformat(issue["created_at"].replace("Z", "+00:00"))
             except Exception:
                 pass
 
         if issue.get("updated_at"):
             try:
-                updated_at = datetime.fromisoformat(
-                    issue["updated_at"].replace("Z", "+00:00")
-                )
+                updated_at = datetime.fromisoformat(issue["updated_at"].replace("Z", "+00:00"))
             except Exception:
                 pass
 
@@ -631,7 +605,9 @@ class GitHubImportService:
             metadata={
                 "author": issue.get("user", {}).get("login") if issue.get("user") else None,
                 "comments": issue.get("comments", 0),
-                "milestone": issue.get("milestone", {}).get("title") if issue.get("milestone") else None,
+                "milestone": issue.get("milestone", {}).get("title")
+                if issue.get("milestone")
+                else None,
                 "locked": issue.get("locked", False),
                 "html_url": issue.get("html_url"),
             },
@@ -664,7 +640,6 @@ class GitHubImportService:
         if self._client is not None:
             await self._client.aclose()
             self._client = None
-        logger.debug("GitHub import service closed")
 
 
 async def create_github_import_service(

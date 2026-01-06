@@ -265,8 +265,7 @@ class TeamsProvider(NotificationProvider):
 
             # Handle failure
             logger.error(
-                f"Teams notification failed for request {payload.request_id}: "
-                "send() returned False"
+                f"Teams notification failed for request {payload.request_id}: send() returned False"
             )
             return NotificationResult(
                 status=NotificationStatus.FAILED,

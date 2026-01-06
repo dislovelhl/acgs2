@@ -166,7 +166,9 @@ class TimeoutChecker:
                     created_at_str = election_data.get("created_at", "")
                     if created_at_str:
                         if isinstance(created_at_str, str):
-                            created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                            created_at = datetime.fromisoformat(
+                                created_at_str.replace("Z", "+00:00")
+                            )
                         else:
                             created_at = created_at_str
                         timeout_seconds = int((expires_at - created_at).total_seconds())
@@ -191,7 +193,9 @@ class TimeoutChecker:
                 signature = ""
 
             audit_record = {
-                "event_type": VoteEventType.ESCALATION_TRIGGERED.value if VoteEventType else "escalation_triggered",
+                "event_type": VoteEventType.ESCALATION_TRIGGERED.value
+                if VoteEventType
+                else "escalation_triggered",
                 "election_id": election_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "signature": signature,
@@ -199,6 +203,6 @@ class TimeoutChecker:
             }
 
             await self.kafka_bus.publish_audit_record(tenant_id, audit_record)
-            logger.debug(f"Published escalation event for election {election_id}")
+
         except Exception as e:
             logger.error(f"Failed to publish escalation event: {e}")

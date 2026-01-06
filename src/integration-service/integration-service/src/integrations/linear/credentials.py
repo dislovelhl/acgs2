@@ -22,23 +22,23 @@ class LinearCredentials(IntegrationCredentials):
 
     # Linear specific fields
     api_key: SecretStr = Field(..., description="Linear personal access token")
-    base_url: str = Field("https://api.linear.app/graphql", description="Linear GraphQL API endpoint")
+    base_url: str = Field(
+        "https://api.linear.app/graphql", description="Linear GraphQL API endpoint"
+    )
 
     # Optional organization settings
     organization_id: Optional[str] = Field(None, description="Linear organization ID")
     default_team_id: Optional[str] = Field(None, description="Default team ID for issue creation")
-    default_project_id: Optional[str] = Field(None, description="Default project ID for issue creation")
+    default_project_id: Optional[str] = Field(
+        None, description="Default project ID for issue creation"
+    )
 
     # Issue creation settings
     default_issue_template: Optional[str] = Field(
-        None,
-        description="Template for issue titles and descriptions"
+        None, description="Template for issue titles and descriptions"
     )
     default_priority: Optional[int] = Field(
-        None,
-        description="Default priority level (1-4, where 1 is highest)",
-        ge=1,
-        le=4
+        None, description="Default priority level (1-4, where 1 is highest)", ge=1, le=4
     )
 
     @validator("base_url")

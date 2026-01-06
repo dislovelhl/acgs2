@@ -25,7 +25,8 @@
 export { LoadingState } from "./types";
 
 /**
- * Re-exports the API base URL configuration constant.
- * @see {@link API_BASE_URL} for detailed documentation
+ * Re-exports the API base URL configuration constants.
+ * @see {@link ANALYTICS_API_URL} for detailed documentation
+ * @see {@link INTEGRATION_API_URL} for detailed documentation
  */
-export { API_BASE_URL } from "./config";
+export { ANALYTICS_API_URL, INTEGRATION_API_URL, API_BASE_URL } from "./config";

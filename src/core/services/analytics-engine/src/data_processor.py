@@ -183,7 +183,6 @@ class GovernanceDataProcessor:
 
             if events:
                 self._events_buffer.extend(events)
-                logger.debug(f"Consumed {len(events)} governance events")
 
         except Exception as e:
             logger.error(f"Error consuming Kafka events: {e}")
@@ -420,7 +419,6 @@ class GovernanceDataProcessor:
     def clear_buffer(self) -> None:
         """Clear the events buffer"""
         self._events_buffer = []
-        logger.debug("Events buffer cleared")
 
     def get_buffer_size(self) -> int:
         """Get the current size of the events buffer"""

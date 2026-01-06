@@ -1058,46 +1058,33 @@ echo "TLS_KEY_PATH=/path/to/key.pem" >> .env
 **Impact**: Security-Vulnerability
 **Location**: `acgs2-core/services/compliance_docs/src/main.py:25`
 
-**Description**: CORS policy misconfigured allowing all origins. This is a known TODO that creates a security vulnerability.
+**Description**: CORS policy misconfigured. The service should use the centralized `get_cors_config()` from `src/core/shared/security/cors_config.py` to apply environment-specific CORS policies.
 
-**Current Behavior**: CORS is configured to allow all origins (`*`), which allows any website to access the API.
+**Current Behavior**: CORS is configured using `get_cors_config()`, which prevents wildcard origins in production environments.
 
 **Security Impact**:
-- Cross-site request forgery (CSRF) attacks possible
+- Cross-site request forgery (CSRF) attacks possible if misconfigured
 - Unauthorized API access from malicious sites
 - Data exposure to untrusted origins
 
 **Resolution**:
-1. **Review TODO comment** in `compliance_docs/src/main.py:25`
-
-2. **Configure proper CORS policy**:
+1. **Ensure use of `get_cors_config()`**:
+   The `add_middleware` call should look like:
    ```python
-   # Replace wildcard with specific origins
-   app.add_middleware(
-       CORSMiddleware,
-       allow_origins=[
-           "https://app.example.com",
-           "https://dashboard.example.com"
-       ],
-       allow_credentials=True,
-       allow_methods=["GET", "POST", "PUT", "DELETE"],
-       allow_headers=["*"],
-   )
+   from src.core.shared.security.cors_config import get_cors_config
+   app.add_middleware(CORSMiddleware, **get_cors_config())
    ```
 
-3. **Use environment variable for origins**:
+2. **Verify environment variables**:
+   In production, ensure `ALLOWED_ORIGINS` is set correctly in `.env` or Kubernetes secrets.
+
+3. **Check origin whitelist**:
    ```bash
-   # In .env:
-   ALLOWED_ORIGINS=https://app.example.com,https://dashboard.example.com
+   grep ALLOWED_ORIGINS .env
    ```
 
-4. **Implement origin validation**:
-   ```python
-   import os
-   allowed_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
-   ```
-
-**TODO Reference**: See `TODO_CATALOG.md` - CRITICAL priority
+**Permanent Fix**:
+Always use the centralized CORS configuration utility to ensure consistent security across all services.
 
 **Related Errors**: ACGS-1501, ACGS-1503
 

@@ -82,11 +82,6 @@ def setup_baseline():
     # Print column info
     logger.info(f"Feature columns: {list(df_check.columns)}")
 
-    print("\nBaseline setup complete!")
-    print(f"  Samples: {len(df_check)}")
-    print(f"  Columns: {len(df_check.columns)}")
-    print(f"  Path: {parquet_path}")
-
     return parquet_path
 
 

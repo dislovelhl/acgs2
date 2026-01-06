@@ -22,7 +22,6 @@ except ImportError:
 
 try:
     import pybreaker
-
     from src.core.shared.circuit_breaker import CircuitBreakerRegistry
 
     CIRCUIT_BREAKER_AVAILABLE = True
@@ -205,7 +204,6 @@ class HealthAggregator:
             breaker: Circuit breaker instance (must have 'current_state' attribute)
         """
         self._custom_breakers[name] = breaker
-        logger.debug(f"[{self.config.constitutional_hash}] Registered circuit breaker: {name}")
 
     def unregister_circuit_breaker(self, name: str) -> None:
         """Unregister a custom circuit breaker."""

@@ -42,9 +42,9 @@ import httpx
 from pydantic import Field, SecretStr, field_validator, model_validator
 
 # Import exceptions from centralized exceptions module
-from exceptions.auth import AuthenticationError
-from exceptions.delivery import DeliveryError
-from exceptions.integration import RateLimitError
+from ..exceptions.auth import AuthenticationError
+from ..exceptions.delivery import DeliveryError
+from ..exceptions.integration import RateLimitError
 
 # Import base integration classes and models
 from .base import (
@@ -269,8 +269,8 @@ class SentinelAdapter(BaseIntegration):
 
         # Check batch metrics
         metrics = adapter.metrics
-        print(f"Batches sent: {metrics['batches_sent']}")
-        print(f"Events via batch: {metrics['batch_events_total']}")
+        logger.info(f"Batches sent: {metrics['batches_sent']}")
+        logger.info(f"Events via batch: {metrics['batch_events_total']}")
 
     Features:
         - Azure AD OAuth2 authentication with automatic token refresh
@@ -385,8 +385,6 @@ class SentinelAdapter(BaseIntegration):
         if self._is_token_valid():
             return self._access_token
 
-        logger.debug("Acquiring new Azure AD access token")
-
         try:
             client = await self.get_http_client()
 
@@ -485,7 +483,6 @@ class SentinelAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating authentication success/failure
         """
-        logger.debug(f"Authenticating with Azure AD for '{self.name}'")
 
         try:
             # Try to get an access token - this validates credentials
@@ -536,7 +533,6 @@ class SentinelAdapter(BaseIntegration):
         Returns:
             IntegrationResult with validation status and any issues found
         """
-        logger.debug(f"Validating Sentinel integration '{self.name}'")
 
         validation_issues: List[str] = []
 
@@ -604,8 +600,7 @@ class SentinelAdapter(BaseIntegration):
                 dcr_id = self.sentinel_credentials.dcr_immutable_id
                 stream = self.sentinel_credentials.stream_name
                 validation_issues.append(
-                    f"DCR or stream not found - verify DCR ID '{dcr_id}' "
-                    f"and stream name '{stream}'"
+                    f"DCR or stream not found - verify DCR ID '{dcr_id}' and stream name '{stream}'"
                 )
 
             elif response.status_code == 413:
@@ -664,7 +659,6 @@ class SentinelAdapter(BaseIntegration):
             DeliveryError: If delivery fails after retries
             RateLimitError: If rate limited by Azure
         """
-        logger.debug(f"Sending event {event.event_id} to Sentinel")
 
         try:
             # Ensure we have a valid token
@@ -694,7 +688,6 @@ class SentinelAdapter(BaseIntegration):
 
             # Handle success (200 or 204)
             if response.status_code in (200, 204):
-                logger.debug(f"Event {event.event_id} sent to Sentinel")
                 return IntegrationResult(
                     success=True,
                     integration_name=self.name,
@@ -906,8 +899,6 @@ class SentinelAdapter(BaseIntegration):
         if not events:
             return []
 
-        logger.debug(f"Sending batch of {len(events)} events to Sentinel")
-
         try:
             # Ensure we have a valid token
             access_token = await self._get_access_token()
@@ -944,7 +935,7 @@ class SentinelAdapter(BaseIntegration):
             # Handle success (200 or 204)
             if response.status_code in (200, 204):
                 # All events succeeded
-                logger.debug(f"Batch of {len(events)} events sent to Sentinel successfully")
+
                 return [
                     IntegrationResult(
                         success=True,
@@ -1007,17 +998,26 @@ class SentinelAdapter(BaseIntegration):
                 )
 
             else:
-                # Unexpected error
+                # Unexpected error (e.g., 500)
                 try:
                     error_data = response.json()
                     error_msg = error_data.get("error", {}).get("message", "Batch delivery failed")
                 except json.JSONDecodeError:
                     error_msg = f"Batch delivery failed: HTTP {response.status_code}"
-                raise DeliveryError(
-                    error_msg,
-                    self.name,
-                    details={"status_code": response.status_code},
+
+                logger.warning(
+                    f"Sentinel batch delivery failed with status {response.status_code}: {error_msg}"
                 )
+                return [
+                    IntegrationResult(
+                        success=False,
+                        integration_name=self.name,
+                        operation="send_event",
+                        error_code="BATCH_FAILED",
+                        error_message=error_msg,
+                    )
+                    for _ in events
+                ]
 
         except (RateLimitError, AuthenticationError):
             # Re-raise these specific exceptions
@@ -1057,7 +1057,6 @@ class SentinelAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating connection status
         """
-        logger.debug(f"Testing Sentinel connection for '{self.name}'")
 
         try:
             client = await self.get_http_client()

@@ -123,10 +123,19 @@ class CORSConfig:
     @staticmethod
     def _is_valid_origin(origin: str) -> bool:
         """Check if origin is a valid URL format."""
-        if origin.startswith("http://") or origin.startswith("https://"):
-            # Basic validation - could be enhanced with URL parsing
-            return True
-        return False
+        from urllib.parse import urlparse
+
+        try:
+            result = urlparse(origin)
+            return all(
+                [
+                    result.scheme in ("http", "https"),
+                    result.netloc,
+                    not result.fragment,  # Origins shouldn't have fragments
+                ]
+            )
+        except (ValueError, AttributeError):
+            return False
 
     def to_middleware_kwargs(self) -> dict:
         """Convert to FastAPI CORSMiddleware kwargs."""

@@ -34,13 +34,13 @@ async def create_approval_request(request: CreateApprovalRequest):
             description=request.description,
             requester_id=request.requester_id,
             priority=request.priority,
-            context=request.context
+            context=request.context,
         )
 
         if not request_id:
             raise HTTPException(
                 status_code=400,
-                detail="Could not create approval request. Check chain ID and trigger conditions."
+                detail="Could not create approval request. Check chain ID and trigger conditions.",
             )
 
         return {"request_id": request_id, "status": "created"}
@@ -61,13 +61,13 @@ async def approve_request(request_id: str, approval: ApprovalResponse):
             request_id=request_id,
             approver_id=approval.approver_id,
             decision=approval.decision,
-            rationale=approval.rationale
+            rationale=approval.rationale,
         )
 
         if not success:
             raise HTTPException(
                 status_code=400,
-                detail="Could not submit approval decision. Check request ID and approver authorization."
+                detail="Could not submit approval decision. Check request ID and approver authorization.",
             )
 
         return {"request_id": request_id, "status": "decision_recorded"}
@@ -102,7 +102,7 @@ async def list_requests(
     status: Optional[ApprovalStatus] = None,
     requester_id: Optional[str] = None,
     limit: int = 50,
-    offset: int = 0
+    offset: int = 0,
 ):
     """
     List approval requests with optional filtering

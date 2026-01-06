@@ -5,12 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import logging
 from datetime import UTC, datetime
-from typing import Any, TypeVar, Dict, Union, List
+from typing import Any, TypeVar, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
-    JSONValue = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]  # type: ignore[misc]
-    JSONDict = Dict[str, JSONValue]  # type: ignore[misc]
+    JSONValue = Union[str, int, float, bool, None, dict[str, Any], list[Any]]  # type: ignore[misc]
+    JSONDict = dict[str, JSONValue]  # type: ignore[misc]
 from uuid import uuid4
 
 import httpx
@@ -160,7 +161,6 @@ class ACGS2Client:
         )
         async def _do_request() -> JSONDict:
             headers = {HEADER_REQUEST_ID: str(uuid4())}
-            logger.debug(f"Request: {method} {path}")
 
             try:
                 response = await client.request(
@@ -174,8 +174,6 @@ class ACGS2Client:
                 raise TimeoutError(str(e)) from e
             except httpx.RequestError as e:
                 raise NetworkError(str(e)) from e
-
-            logger.debug(f"Response: {response.status_code}")
 
             if response.status_code >= 400:
                 self._handle_error_response(response)

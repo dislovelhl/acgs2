@@ -476,7 +476,7 @@ class TestBatchInference:
 
                 return [
                     self.calculate_impact_score(msg, ctx)
-                    for msg, ctx in zip(messages, contexts)
+                    for msg, ctx in zip(messages, contexts, strict=False)
                 ]
 
             def calculate_impact_score(self, message, context=None):
@@ -519,9 +519,7 @@ class TestBatchInference:
                     if "content" in message:
                         c = message["content"]
                         res.append(
-                            str(c["text"])
-                            if isinstance(c, dict) and "text" in c
-                            else str(c)
+                            str(c["text"]) if isinstance(c, dict) and "text" in c else str(c)
                         )
                     if "payload" in message:
                         p = message["payload"]
@@ -673,13 +671,11 @@ class TestBatchInference:
         batch_results = batch_scorer.batch_score_impact(messages)
 
         # Sequential scoring
-        sequential_results = [
-            batch_scorer.calculate_impact_score(msg) for msg in messages
-        ]
+        sequential_results = [batch_scorer.calculate_impact_score(msg) for msg in messages]
 
         # Results should be identical
         assert len(batch_results) == len(sequential_results)
-        for batch_score, seq_score in zip(batch_results, sequential_results):
+        for batch_score, seq_score in zip(batch_results, sequential_results, strict=False):
             assert abs(batch_score - seq_score) < 1e-6
 
     def test_batch_inference_large_batch(self, batch_scorer):
@@ -687,7 +683,11 @@ class TestBatchInference:
         import time
 
         messages = [
-            {"content": f"test message {i} with security alert" if i % 5 == 0 else f"normal message {i}"}
+            {
+                "content": f"test message {i} with security alert"
+                if i % 5 == 0
+                else f"normal message {i}"
+            }
             for i in range(50)
         ]
 
@@ -965,9 +965,7 @@ class TestExtractTextContent:
                     if "content" in message:
                         c = message["content"]
                         res.append(
-                            str(c["text"])
-                            if isinstance(c, dict) and "text" in c
-                            else str(c)
+                            str(c["text"]) if isinstance(c, dict) and "text" in c else str(c)
                         )
                     if "payload" in message:
                         p = message["payload"]

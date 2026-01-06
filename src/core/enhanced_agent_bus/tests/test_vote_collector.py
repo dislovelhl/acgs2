@@ -10,7 +10,6 @@ Validates:
 - Concurrent session support
 """
 
-
 import pytest
 
 # Import test targets

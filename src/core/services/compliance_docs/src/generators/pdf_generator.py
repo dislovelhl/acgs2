@@ -15,11 +15,22 @@ import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, BinaryIO, Optional, Union
+from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
+
+try:
+    from src.core.shared.types import DocumentData, JSONDict, JSONValue
+except ImportError:
+    from typing import Any, Dict, List, Union
+
+    JSONPrimitive = Union[str, int, float, bool, None]
+    JSONDict = Dict[str, Any]
+    JSONList = List[Any]
+    JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
+    DocumentData = Dict[str, JSONValue]
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
@@ -34,9 +45,9 @@ from reportlab.platypus import (
 )
 
 from ..models.base import ComplianceFramework
+from .base import BaseGenerator
 
 logger = logging.getLogger(__name__)
-
 
 # Default output path for generated PDFs
 _DEFAULT_OUTPUT_PATH = Path(tempfile.gettempdir()) / "compliance-reports"
@@ -281,9 +292,9 @@ class PDFTableBuilder:
 
     def create_simple_table(
         self,
-        headers: list[str],
-        rows: list[list[Any]],
-        col_widths: Optional[list[float]] = None,
+        headers: List[str],
+        rows: List[List[JSONValue]],
+        col_widths: Optional[List[float]] = None,
         table_style: Optional[TableStyle] = None,
     ) -> Table:
         """
@@ -323,7 +334,7 @@ class PDFTableBuilder:
 
     def create_evidence_table(
         self,
-        evidence_records: list[dict[str, Any]],
+        evidence_records: List[JSONDict],
         include_status: bool = True,
     ) -> Table:
         """
@@ -359,7 +370,7 @@ class PDFTableBuilder:
 
     def create_control_mapping_table(
         self,
-        mappings: list[dict[str, Any]],
+        mappings: List[JSONDict],
         framework: str,
     ) -> Table:
         """
@@ -400,7 +411,7 @@ class PDFTableBuilder:
 
         return self.create_simple_table(headers, rows, col_widths)
 
-    def _format_date(self, value: Any) -> str:
+    def _format_date(self, value: Optional[Union[datetime, str]]) -> str:
         """Format a datetime value for display."""
         if value is None:
             return "N/A"
@@ -408,7 +419,7 @@ class PDFTableBuilder:
             return value.strftime("%Y-%m-%d")
         return str(value)
 
-    def _format_status(self, status: Any) -> str:
+    def _format_status(self, status: JSONValue) -> str:
         """Format a status value for display."""
         if not status:
             return "N/A"
@@ -416,7 +427,7 @@ class PDFTableBuilder:
         return status_str
 
 
-class CompliancePDFGenerator:
+class PDFGenerator(BaseGenerator):
     """
     Main PDF generator for compliance documentation.
 
@@ -426,26 +437,93 @@ class CompliancePDFGenerator:
 
     def __init__(
         self,
-        pagesize: tuple = letter,
-        margins: Optional[dict[str, float]] = None,
+        output_dir: Union[str, Path, None] = None,
+        pagesize=A4,
+        margins: Union[Tuple[float, float, float, float], Dict[str, float]] = (
+            72,
+            72,
+            72,
+            72,
+        ),
     ) -> None:
         """
         Initialize the PDF generator.
 
         Args:
-            pagesize: Page size tuple (width, height). Default is US Letter.
-            margins: Optional dict with 'left', 'right', 'top', 'bottom' margins.
+            output_dir: Directory for generated documents.
+            pagesize: ReportLab pagesize object (default: A4).
+            margins: Margins as tuple (top, right, bottom, left) or dict with keys.
         """
+        if output_dir is None:
+            output_dir = _get_output_path()
+        super().__init__(str(output_dir))
         self.pagesize = pagesize
-        self.margins = margins or {
-            "left": 0.75 * inch,
-            "right": 0.75 * inch,
-            "top": 0.75 * inch,
-            "bottom": 0.75 * inch,
-        }
+
+        # Normalize margins to dict
+        if isinstance(margins, tuple):
+            # Assume CSS order: top, right, bottom, left
+            self.margins = {
+                "top": margins[0],
+                "right": margins[1],
+                "bottom": margins[2],
+                "left": margins[3],
+            }
+        else:
+            self.margins = margins
         self.styles = CompliancePDFStyles()
         self.table_builder = PDFTableBuilder(self.styles)
-        self._story: list = []
+        self._story: List[Union[Paragraph, Table, PageBreak, Spacer, ListFlowable]] = []
+
+    def generate(
+        self,
+        data: DocumentData,
+        output_path: Optional[Union[str, Path]] = None,
+    ) -> Path:
+        """
+        Produce a compliance report using a unified interface.
+
+        Args:
+            data: The document data, including a mandatory "document_type" key.
+            output_path: Where to save the resulting PDF.
+
+        Returns:
+            The Path where the file was written.
+
+        Raises:
+            ValueError: If document_type is missing or unsupported.
+        """
+        doc_type = data.get("document_type")
+        if not doc_type:
+            raise ValueError("Direct generation requires 'document_type' in data.")
+
+        # Handle output path resolution if provided
+        if output_path:
+            output_path = Path(output_path)
+            # Ensure extension
+            if not output_path.suffix:
+                output_path = output_path.with_suffix(".pdf")
+            # Ensure generated in output_dir if not absolute
+            if not output_path.is_absolute():
+                output_path = self.output_dir / output_path
+
+        if doc_type == "soc2_report":
+            return self.generate_soc2_report(data, output_path)
+        elif doc_type == "iso27001_report":
+            return self.generate_iso27001_report(data, output_path)
+        elif doc_type == "gdpr_report":
+            return self.generate_gdpr_report(data, output_path)
+        elif doc_type == "euaiact_report":
+            return self.generate_euaiact_report(data, output_path)
+        # Handle EU AI Act specific types from simpler generators
+        elif doc_type in [
+            "risk_assessment",
+            "human_oversight",
+            "compliance_checklist",
+            "quarterly_report",
+        ]:
+            return self.generate_euaiact_report(data, output_path)
+        else:
+            return self.generate_euaiact_report(data, output_path)
 
     def _reset_story(self) -> None:
         """Reset the document story for a new document."""
@@ -651,7 +729,7 @@ class CompliancePDFGenerator:
 
     def generate_soc2_report(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -766,7 +844,7 @@ class CompliancePDFGenerator:
 
     def generate_iso27001_report(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -857,7 +935,7 @@ class CompliancePDFGenerator:
 
     def generate_gdpr_report(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -923,6 +1001,7 @@ class CompliancePDFGenerator:
                     purposes = activity.get("purposes", [])
                     purposes_str = ", ".join(purposes[:2]) if purposes else "N/A"
                     if len(purposes) > 2:
+                        # PERFORMANCE: Consider using list.append() + "".join() instead of += in loops
                         purposes_str += "..."
 
                     rows.append(
@@ -983,7 +1062,7 @@ class CompliancePDFGenerator:
 
     def generate_euaiact_report(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -1096,7 +1175,7 @@ class CompliancePDFGenerator:
         logger.info(f"Generated EU AI Act report: {output_path}")
         return Path(output_path)
 
-    def _format_date(self, value: Any) -> str:
+    def _format_date(self, value: Optional[Union[datetime, str]]) -> str:
         """Format a datetime value for display."""
         if value is None:
             return "N/A"
@@ -1106,7 +1185,7 @@ class CompliancePDFGenerator:
 
 
 def generate_pdf(
-    report_data: dict[str, Any],
+    report_data: DocumentData,
     framework: Union[str, ComplianceFramework],
     output_path: Optional[Union[str, Path]] = None,
     pagesize: tuple = letter,
@@ -1136,7 +1215,7 @@ def generate_pdf(
         ... )
         >>> print(f"Report generated at: {path}")
     """
-    generator = CompliancePDFGenerator(pagesize=pagesize)
+    generator = PDFGenerator(pagesize=pagesize)
 
     # Normalize framework
     if isinstance(framework, ComplianceFramework):
@@ -1160,7 +1239,7 @@ def generate_pdf(
 
 
 def generate_pdf_to_buffer(
-    report_data: dict[str, Any],
+    report_data: DocumentData,
     framework: Union[str, ComplianceFramework],
     pagesize: tuple = letter,
 ) -> io.BytesIO:
@@ -1185,7 +1264,7 @@ def generate_pdf_to_buffer(
         >>> # Use buffer.getvalue() to get bytes for streaming
     """
     buffer = io.BytesIO()
-    generator = CompliancePDFGenerator(pagesize=pagesize)
+    generator = PDFGenerator(pagesize=pagesize)
 
     # Normalize framework
     if isinstance(framework, ComplianceFramework):

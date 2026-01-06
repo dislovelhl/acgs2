@@ -24,8 +24,8 @@ from typing import (
     Protocol,
     TypeVar,
     runtime_checkable,
-    Union,
 )
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:

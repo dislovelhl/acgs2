@@ -193,7 +193,7 @@ rules:
   - id: acgs-key-in-source-control
     message: |
       Potential cryptographic key file reference in code.
-      
+
       Ensure key files are in .gitignore and not committed to source control.
       Use environment variables or secret management for key paths.
     severity: WARNING
@@ -218,9 +218,9 @@ rules:
   - id: acgs-signature-not-verified
     message: |
       Signature verification may be missing.
-      
+
       Always verify signatures before trusting signed data.
-      
+
       Pattern:
         try:
             public_key.verify(signature, message)
@@ -254,13 +254,13 @@ rules:
   - id: acgs-signature-verification-exception-not-handled
     message: |
       Signature verification without exception handling.
-      
+
       Ed25519 verify() raises InvalidSignature on failure.
       Always handle this exception.
-      
+
       Pattern:
         from cryptography.exceptions import InvalidSignature
-        
+
         try:
             public_key.verify(signature_bytes, content_bytes)
             return True
@@ -299,12 +299,12 @@ rules:
   - id: acgs-policy-signature-not-validated
     message: |
       Policy loaded without signature validation.
-      
+
       All policy content must be signature-validated before use.
-      
+
       Use:
         from services.policy_registry.app.services.crypto_service import CryptoService
-        
+
         if not CryptoService.verify_policy_signature(content, signature, public_key):
             raise SecurityError("Policy signature invalid")
     severity: ERROR
@@ -344,12 +344,12 @@ rules:
   - id: acgs-ed25519-key-generation
     message: |
       Ed25519 key generation detected - ensure proper storage.
-      
+
       Generated keys should be:
         - Stored securely (encrypted at rest)
         - Never logged or printed
         - Protected with appropriate permissions
-      
+
       Pattern:
         private_key = ed25519.Ed25519PrivateKey.generate()
         # Store securely, never log
@@ -370,7 +370,7 @@ rules:
   - id: acgs-key-size-too-small
     message: |
       Potential weak key size detected.
-      
+
       Ensure cryptographic keys meet minimum security requirements:
         - RSA: >= 2048 bits (prefer Ed25519 instead)
         - AES: >= 256 bits
@@ -380,7 +380,7 @@ rules:
       - pattern-either:
           - pattern: rsa.generate_private_key(..., key_size=1024, ...)
           - pattern: rsa.generate_private_key(..., key_size=512, ...)
-          - pattern: AES.new($KEY, ...) 
+          - pattern: AES.new($KEY, ...)
       - metavariable-comparison:
           comparison: len($KEY) < 32
           metavariable: $KEY
@@ -403,13 +403,13 @@ rules:
   - id: acgs-base64-key-decode-unvalidated
     message: |
       Base64-decoded key without validation.
-      
+
       Validate base64 input before decoding to prevent errors
       and potential attacks.
-      
+
       Pattern:
         import base64
-        
+
         try:
             key_bytes = base64.b64decode(key_b64)
             if len(key_bytes) != 32:  # Ed25519 key size
@@ -446,9 +446,9 @@ rules:
   - id: acgs-ssl-verify-disabled
     message: |
       SSL certificate verification disabled.
-      
+
       Disabling SSL verification allows man-in-the-middle attacks.
-      
+
       Fix: Remove verify=False or set to True
     severity: ERROR
     languages: [python]
@@ -471,7 +471,7 @@ rules:
   - id: acgs-insecure-ssl-context
     message: |
       Insecure SSL context configuration detected.
-      
+
       Do not disable hostname checking or certificate verification.
     severity: ERROR
     languages: [python]

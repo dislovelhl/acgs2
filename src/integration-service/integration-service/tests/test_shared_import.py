@@ -39,17 +39,16 @@ def test_import_shared_config():
 def test_import_shared_logging():
     """Verify that we can import the shared logging module."""
     try:
-        from src.core.shared.logging import get_logger
+        from src.core.shared.acgs_logging import get_logger
 
         assert callable(get_logger)
     except ImportError as e:
-        pytest.fail(f"Failed to import from src.core.shared.logging: {e}")
+        pytest.fail(f"Failed to import from src.core.shared.acgs_logging: {e}")
 
 
 def test_jwt_configuration_accessible():
     """Verify that JWT configuration from src.core.shared.config is accessible."""
     import os
-    from src.core.shared.config import settings
 
     # Set a test JWT_SECRET if not already set
     if not os.getenv("JWT_SECRET"):
@@ -69,6 +68,7 @@ def test_jwt_configuration_accessible():
 def test_create_test_token():
     """Verify that we can create a test token using the shared auth module."""
     import os
+
     from src.core.shared.security.auth import create_test_token
 
     # Ensure JWT_SECRET is set for token creation

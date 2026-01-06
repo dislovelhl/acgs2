@@ -20,6 +20,7 @@ import {
   TrendingUp,
   XOctagon,
 } from "lucide-react";
+import { LoadingState, ANALYTICS_API_URL as API_BASE_URL } from "../../lib";
 
 /** Severity levels for compliance violations */
 type Severity = "critical" | "high" | "medium" | "low";
@@ -56,13 +57,6 @@ interface ComplianceData {
   recent_violations: ComplianceViolation[];
   frameworks_analyzed: string[];
 }
-
-/** Widget loading state */
-type LoadingState = "idle" | "loading" | "success" | "error";
-
-/** API URL from environment */
-const API_BASE_URL =
-  import.meta.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
 
 /**
  * Gets the appropriate icon for a severity level
@@ -218,7 +212,8 @@ export function ComplianceWidget(): JSX.Element {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.detail || `Failed to fetch compliance data: ${response.status}`
+          errorData.detail ||
+            `Failed to fetch compliance data: ${response.status}`
         );
       }
 
@@ -327,7 +322,9 @@ export function ComplianceWidget(): JSX.Element {
             aria-label="Refresh compliance data"
           >
             <RefreshCw
-              className={`h-4 w-4 ${loadingState === "loading" ? "animate-spin" : ""}`}
+              className={`h-4 w-4 ${
+                loadingState === "loading" ? "animate-spin" : ""
+              }`}
             />
           </button>
         </div>
@@ -368,7 +365,9 @@ export function ComplianceWidget(): JSX.Element {
           aria-label="Refresh compliance data"
         >
           <RefreshCw
-            className={`h-4 w-4 ${loadingState === "loading" ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${
+              loadingState === "loading" ? "animate-spin" : ""
+            }`}
           />
         </button>
       </div>
@@ -385,7 +384,11 @@ export function ComplianceWidget(): JSX.Element {
             </div>
             <div className="flex items-center gap-1">
               {getTrendIcon(data.trend)}
-              <span className={`text-sm font-medium capitalize ${getTrendColor(data.trend)}`}>
+              <span
+                className={`text-sm font-medium capitalize ${getTrendColor(
+                  data.trend
+                )}`}
+              >
                 {data.trend}
               </span>
             </div>
@@ -398,8 +401,8 @@ export function ComplianceWidget(): JSX.Element {
                 data.overall_score >= 90
                   ? "bg-green-600"
                   : data.overall_score >= 70
-                    ? "bg-yellow-600"
-                    : "bg-red-600"
+                  ? "bg-yellow-600"
+                  : "bg-red-600"
               }`}
               style={{ width: `${data.overall_score}%` }}
             />

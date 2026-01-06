@@ -203,9 +203,7 @@ class GovernanceWorkflow:
             GovernanceWorkflowError: If workflow execution fails
         """
         start_time = time.time()
-        logger.info(
-            f"Evaluating action: {action_request.get('action', {}).get('type', 'unknown')}"
-        )
+        logger.info(f"Evaluating action: {action_request.get('action', {}).get('type', 'unknown')}")
 
         # Initialize tracking variables
         constitutional_valid = False
@@ -235,9 +233,7 @@ class GovernanceWorkflow:
             else:
                 # Step 2: Evaluate action and assess risk
                 logger.debug("Step 2: Evaluating action and assessing risk")
-                action_allowed, risk_score, risk_assessment = self._evaluate_action(
-                    action_request
-                )
+                action_allowed, risk_score, risk_assessment = self._evaluate_action(action_request)
 
                 if not action_allowed:
                     # Early exit: Policy denial
@@ -246,9 +242,7 @@ class GovernanceWorkflow:
                 else:
                     # Step 3: Determine if HITL approval required
                     logger.debug("Step 3: Determining HITL requirement")
-                    hitl_required, hitl_info = self._determine_hitl(
-                        action_request, risk_score
-                    )
+                    hitl_required, hitl_info = self._determine_hitl(action_request, risk_score)
 
                     if hitl_required:
                         # Step 4: Handle HITL approval workflow
@@ -269,15 +263,11 @@ class GovernanceWorkflow:
                                     "decision_note", "Denied by human reviewer"
                                 )
                             )
-                            logger.warning(
-                                f"Action denied by HITL reviewer: {denial_reasons[-1]}"
-                            )
+                            logger.warning(f"Action denied by HITL reviewer: {denial_reasons[-1]}")
                     else:
                         # Auto-approved (no HITL required)
                         final_decision = "allow"
-                        logger.info(
-                            f"Action auto-approved (risk score: {risk_score:.3f})"
-                        )
+                        logger.info(f"Action auto-approved (risk score: {risk_score:.3f})")
 
             # Step 5: Log decision to audit trail
             logger.debug("Step 5: Logging decision to audit trail")
@@ -354,9 +344,7 @@ class GovernanceWorkflow:
                 processing_time=processing_time,
             )
 
-    def _validate_constitution(
-        self, action_request: dict
-    ) -> tuple[bool, list[str]]:
+    def _validate_constitution(self, action_request: dict) -> tuple[bool, list[str]]:
         """
         Step 1: Validate action against constitutional principles.
 
@@ -385,9 +373,7 @@ class GovernanceWorkflow:
             valid = policy_result.get("valid", False)
             violations = policy_result.get("denial_reasons", [])
 
-            logger.debug(
-                f"Constitutional validation: valid={valid}, violations={len(violations)}"
-            )
+            logger.debug(f"Constitutional validation: valid={valid}, violations={len(violations)}")
             return valid, violations
 
         except (OPAConnectionError, OPAPolicyError) as e:
@@ -396,9 +382,7 @@ class GovernanceWorkflow:
                 f"Failed to validate constitutional compliance: {e}"
             ) from e
 
-    def _evaluate_action(
-        self, action_request: dict
-    ) -> tuple[bool, float, dict]:
+    def _evaluate_action(self, action_request: dict) -> tuple[bool, float, dict]:
         """
         Step 2: Evaluate action and calculate risk score.
 
@@ -428,20 +412,14 @@ class GovernanceWorkflow:
             allowed = policy_result.get("allowed", False)
             risk_score = policy_result.get("risk_score", 0.0)
 
-            logger.debug(
-                f"Action evaluation: allowed={allowed}, risk_score={risk_score:.3f}"
-            )
+            logger.debug(f"Action evaluation: allowed={allowed}, risk_score={risk_score:.3f}")
             return allowed, risk_score, policy_result
 
         except (OPAConnectionError, OPAPolicyError) as e:
             logger.error(f"Action evaluation failed: {e}")
-            raise GovernanceEvaluationError(
-                f"Failed to evaluate action: {e}"
-            ) from e
+            raise GovernanceEvaluationError(f"Failed to evaluate action: {e}") from e
 
-    def _determine_hitl(
-        self, action_request: dict, risk_score: float
-    ) -> tuple[bool, dict]:
+    def _determine_hitl(self, action_request: dict, risk_score: float) -> tuple[bool, dict]:
         """
         Step 3: Determine if human-in-the-loop approval is required.
 
@@ -478,13 +456,9 @@ class GovernanceWorkflow:
 
         except (OPAConnectionError, OPAPolicyError) as e:
             logger.error(f"HITL determination failed: {e}")
-            raise GovernanceEvaluationError(
-                f"Failed to determine HITL requirement: {e}"
-            ) from e
+            raise GovernanceEvaluationError(f"Failed to determine HITL requirement: {e}") from e
 
-    def _handle_approval(
-        self, action_request: dict, hitl_info: dict
-    ) -> tuple[bool, dict]:
+    def _handle_approval(self, action_request: dict, hitl_info: dict) -> tuple[bool, dict]:
         """
         Step 4: Handle human-in-the-loop approval workflow.
 
@@ -513,14 +487,10 @@ class GovernanceWorkflow:
                 priority=hitl_info.get("priority", "normal"),
             )
 
-            logger.info(
-                f"Created HITL approval request: {approval_request.request_id}"
-            )
+            logger.info(f"Created HITL approval request: {approval_request.request_id}")
 
             # Simulate reviewer assignment and decision
-            reviewer_id = self.hitl.assign_reviewer(
-                approval_request.required_expertise
-            )
+            reviewer_id = self.hitl.assign_reviewer(approval_request.required_expertise)
             logger.debug(f"Assigned reviewer: {reviewer_id}")
 
             # Simulate review process
@@ -546,9 +516,7 @@ class GovernanceWorkflow:
 
         except Exception as e:
             logger.error(f"HITL approval workflow failed: {e}")
-            raise GovernanceWorkflowError(
-                f"Failed to process HITL approval: {e}"
-            ) from e
+            raise GovernanceWorkflowError(f"Failed to process HITL approval: {e}") from e
 
     def _log_decision(
         self,

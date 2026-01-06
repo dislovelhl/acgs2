@@ -200,7 +200,6 @@ class InsightGenerator:
         if cached_time:
             age = (datetime.now(timezone.utc) - cached_time).total_seconds()
             if age < self.cache_ttl_seconds:
-                logger.debug(f"Cache hit for key {cache_key[:8]}...")
                 return cached.get("data")
 
         # Expired, remove from cache
@@ -222,7 +221,6 @@ class InsightGenerator:
             "timestamp": datetime.now(timezone.utc),
             "data": data,
         }
-        logger.debug(f"Cached result for key {cache_key[:8]}...")
 
     def _call_openai_with_retry(
         self,
@@ -446,7 +444,7 @@ Respond ONLY with the JSON object, no additional text."""
             self._last_generation_time = now
 
             logger.info(
-                f"Generated insight using {response['model']} " f"({response['tokens']} tokens)"
+                f"Generated insight using {response['model']} ({response['tokens']} tokens)"
             )
 
             return InsightGenerationResult(

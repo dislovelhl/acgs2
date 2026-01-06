@@ -257,7 +257,7 @@ class TestLinearQueryExecution:
         )
 
         with pytest.raises(LinearNotFoundError, match="not found"):
-            await initialized_client._execute_query("query { issue(id: \"invalid\") { id } }")
+            await initialized_client._execute_query('query { issue(id: "invalid") { id } }')
 
     @pytest.mark.asyncio
     async def test_query_execution_handles_authentication_error(
@@ -272,9 +272,7 @@ class TestLinearQueryExecution:
             await initialized_client._execute_query("query { viewer { id } }")
 
     @pytest.mark.asyncio
-    async def test_query_execution_handles_validation_error(
-        self, initialized_client: LinearClient
-    ):
+    async def test_query_execution_handles_validation_error(self, initialized_client: LinearClient):
         """Test query execution handles validation errors."""
         initialized_client._client.execute_async = AsyncMock(
             side_effect=TransportQueryError("Validation error: invalid field")
@@ -564,9 +562,7 @@ class TestLinearIssueUpdate:
         assert input_data["labelIds"] == ["label-1"]
 
     @pytest.mark.asyncio
-    async def test_update_issue_requires_at_least_one_field(
-        self, initialized_client: LinearClient
-    ):
+    async def test_update_issue_requires_at_least_one_field(self, initialized_client: LinearClient):
         """Test that update_issue requires at least one field."""
         with pytest.raises(LinearValidationError, match="At least one field"):
             await initialized_client.update_issue(issue_id="issue-123")

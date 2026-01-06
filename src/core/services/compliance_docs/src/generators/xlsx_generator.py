@@ -18,23 +18,27 @@ import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, BinaryIO, Optional, Union
+from typing import Any, BinaryIO, Dict, List, Optional, Union
+
+try:
+    from src.core.shared.types import DocumentData, JSONDict, JSONValue
+except ImportError:
+    from typing import Any, Dict, List, Union
+
+    JSONPrimitive = Union[str, int, float, bool, None]
+    JSONDict = Dict[str, Any]
+    JSONList = List[Any]
+    JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
+    DocumentData = Dict[str, JSONValue]
 
 from openpyxl import Workbook
-from openpyxl.styles import (
-    Alignment,
-    Border,
-    Font,
-    PatternFill,
-    Side,
-)
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
 from ..models.base import ComplianceFramework
+from .base import BaseGenerator
 
 logger = logging.getLogger(__name__)
-
 
 # Default output path for generated XLSX files
 _DEFAULT_OUTPUT_PATH = Path(tempfile.gettempdir()) / "compliance-reports"
@@ -68,168 +72,7 @@ def _ensure_output_dir() -> Path:
     return output_path
 
 
-class ComplianceXLSXStyles:
-    """
-    Custom styles for compliance XLSX documents.
-
-    Provides professional, consistent styling across all compliance spreadsheets.
-    """
-
-    # Color definitions (hex without #)
-    PRIMARY_COLOR = "1A365D"  # Dark blue
-    SECONDARY_COLOR = "2C5282"  # Medium blue
-    HEADER_BG_COLOR = "2C5282"  # Blue for headers
-    HEADER_TEXT_COLOR = "FFFFFF"  # White text
-    ALT_ROW_COLOR = "F7FAFC"  # Light gray
-    SUCCESS_COLOR = "276749"  # Green
-    DANGER_COLOR = "C53030"  # Red
-    WARNING_COLOR = "C05621"  # Orange
-    BORDER_COLOR = "E2E8F0"  # Light gray border
-
-    def __init__(self) -> None:
-        """Initialize XLSX styles."""
-        self._create_styles()
-
-    def _create_styles(self) -> None:
-        """Create reusable style objects."""
-        # Font styles
-        self.title_font = Font(
-            name="Calibri",
-            size=16,
-            bold=True,
-            color=self.PRIMARY_COLOR,
-        )
-
-        self.header_font = Font(
-            name="Calibri",
-            size=11,
-            bold=True,
-            color=self.HEADER_TEXT_COLOR,
-        )
-
-        self.subheader_font = Font(
-            name="Calibri",
-            size=12,
-            bold=True,
-            color=self.SECONDARY_COLOR,
-        )
-
-        self.body_font = Font(
-            name="Calibri",
-            size=10,
-            color="2D3748",
-        )
-
-        self.bold_font = Font(
-            name="Calibri",
-            size=10,
-            bold=True,
-            color="2D3748",
-        )
-
-        self.success_font = Font(
-            name="Calibri",
-            size=10,
-            bold=True,
-            color=self.SUCCESS_COLOR,
-        )
-
-        self.danger_font = Font(
-            name="Calibri",
-            size=10,
-            bold=True,
-            color=self.DANGER_COLOR,
-        )
-
-        self.warning_font = Font(
-            name="Calibri",
-            size=10,
-            bold=True,
-            color=self.WARNING_COLOR,
-        )
-
-        # Fill styles
-        self.header_fill = PatternFill(
-            start_color=self.HEADER_BG_COLOR,
-            end_color=self.HEADER_BG_COLOR,
-            fill_type="solid",
-        )
-
-        self.alt_row_fill = PatternFill(
-            start_color=self.ALT_ROW_COLOR,
-            end_color=self.ALT_ROW_COLOR,
-            fill_type="solid",
-        )
-
-        self.success_fill = PatternFill(
-            start_color="C6F6D5",
-            end_color="C6F6D5",
-            fill_type="solid",
-        )
-
-        self.danger_fill = PatternFill(
-            start_color="FED7D7",
-            end_color="FED7D7",
-            fill_type="solid",
-        )
-
-        self.warning_fill = PatternFill(
-            start_color="FEEBC8",
-            end_color="FEEBC8",
-            fill_type="solid",
-        )
-
-        # Border styles
-        thin_border = Side(style="thin", color=self.BORDER_COLOR)
-        self.border = Border(
-            left=thin_border,
-            right=thin_border,
-            top=thin_border,
-            bottom=thin_border,
-        )
-
-        # Alignment styles
-        self.center_align = Alignment(
-            horizontal="center",
-            vertical="center",
-            wrap_text=True,
-        )
-
-        self.left_align = Alignment(
-            horizontal="left",
-            vertical="center",
-            wrap_text=True,
-        )
-
-        self.wrap_align = Alignment(
-            horizontal="left",
-            vertical="top",
-            wrap_text=True,
-        )
-
-    def get_status_style(self, status: str) -> tuple[Font, Optional[PatternFill]]:
-        """
-        Get font and fill for a status value.
-
-        Args:
-            status: Status string (e.g., 'effective', 'compliant', 'completed').
-
-        Returns:
-            Tuple of (font, fill) for the status.
-        """
-        status_lower = str(status).lower().replace("_", " ")
-
-        if any(
-            word in status_lower
-            for word in ["effective", "compliant", "completed", "passed", "yes"]
-        ):
-            return self.success_font, self.success_fill
-        elif any(word in status_lower for word in ["ineffective", "non-compliant", "failed", "no"]):
-            return self.danger_font, self.danger_fill
-        elif any(word in status_lower for word in ["partial", "in progress", "pending", "review"]):
-            return self.warning_font, self.warning_fill
-
-        return self.body_font, None
+from .xlsx_styles import ComplianceXLSXStyles
 
 
 class XLSXTableBuilder:
@@ -261,9 +104,9 @@ class XLSXTableBuilder:
     def create_evidence_sheet(
         self,
         sheet_name: str,
-        headers: list[str],
-        rows: list[list[Any]],
-        col_widths: Optional[list[int]] = None,
+        headers: List[str],
+        rows: List[List[JSONValue]],
+        col_widths: Optional[List[int]] = None,
         status_column: Optional[int] = None,
     ) -> Worksheet:
         """
@@ -338,7 +181,7 @@ class XLSXTableBuilder:
     def create_summary_sheet(
         self,
         sheet_name: str,
-        summary_data: list[tuple[str, Any]],
+        summary_data: List[tuple[str, JSONValue]],
     ) -> Worksheet:
         """
         Create a summary sheet with key-value pairs.
@@ -378,7 +221,7 @@ class XLSXTableBuilder:
         return ws
 
 
-class ComplianceXLSXGenerator:
+class XLSXGenerator(BaseGenerator):
     """
     Main XLSX generator for compliance documentation.
 
@@ -388,19 +231,88 @@ class ComplianceXLSXGenerator:
 
     def __init__(
         self,
+        output_dir: Union[str, Path, None] = None,
         write_only: bool = False,
     ) -> None:
         """
         Initialize the XLSX generator.
 
         Args:
-            write_only: Enable write_only mode for large files (>10k rows).
-                       In write_only mode, cells cannot be styled individually.
+            output_dir: Directory for generated documents.
+            write_only: Whether to use write-only mode for large files.
         """
+        if output_dir is None:
+            output_dir = _get_output_path()
+        super().__init__(str(output_dir))
         self.write_only = write_only
         self._workbook: Optional[Workbook] = None
         self._styles: Optional[ComplianceXLSXStyles] = None
         self._table_builder: Optional[XLSXTableBuilder] = None
+
+    def generate(
+        self,
+        data: DocumentData,
+        output_path: Optional[Union[str, Path]] = None,
+    ) -> Path:
+        """
+        Produce a compliance matrix using a unified interface.
+
+        Args:
+            data: The document data, including a mandatory "document_type" key.
+            output_path: Where to save the resulting XLSX.
+
+        Returns:
+            The Path where the file was written.
+
+        Raises:
+            ValueError: If document_type is missing or unsupported.
+        """
+        doc_type = data.get("document_type")
+        if not doc_type:
+            raise ValueError("Direct generation requires 'document_type' in data.")
+
+        # Handle output path resolution if provided
+        if output_path:
+            output_path = Path(output_path)
+            # Ensure extension
+            if not output_path.suffix:
+                output_path = output_path.with_suffix(".xlsx")
+            # Ensure generated in output_dir if not absolute
+            if not output_path.is_absolute():
+                output_path = self.output_dir / output_path
+
+        if doc_type == "soc2_report" or doc_type == "soc2_matrix":
+            return self.generate_soc2_matrix(data, output_path)
+        elif doc_type == "iso27001_report" or doc_type == "iso27001_matrix":
+            return self.generate_iso27001_matrix(data, output_path)
+        elif doc_type == "gdpr_report" or doc_type == "gdpr_matrix":
+            return self.generate_gdpr_matrix(data, output_path)
+        elif doc_type == "euaiact_report" or doc_type == "euaiact_matrix":
+            return self.generate_euaiact_matrix(data, output_path)
+        # Handle EU AI Act specific types from simpler generators
+        elif doc_type in [
+            "risk_assessment",
+            "human_oversight",
+            "compliance_checklist",
+            "quarterly_report",
+        ]:
+            return self.generate_euaiact_matrix(data, output_path)
+        else:
+            return self.generate_euaiact_matrix(data, output_path)
+
+    @property
+    def workbook(self) -> Workbook:
+        """Get the active Workbook instance."""
+        from typing import cast
+
+        return cast(Workbook, self._workbook)
+
+    @property
+    def table_builder(self) -> XLSXTableBuilder:
+        """Get the active XLSXTableBuilder instance."""
+        from typing import cast
+
+        return cast(XLSXTableBuilder, self._table_builder)
 
     def _create_workbook(self, estimated_rows: int = 0) -> Workbook:
         """
@@ -427,7 +339,8 @@ class ComplianceXLSXGenerator:
 
         return self._workbook
 
-    def _format_date(self, value: Any) -> Any:
+    @staticmethod
+    def _format_date(value: Optional[Union[datetime, str]]) -> Union[datetime, str, None]:
         """
         Format a datetime value for Excel.
 
@@ -442,10 +355,10 @@ class ComplianceXLSXGenerator:
         if value is None:
             return "N/A"
         if isinstance(value, datetime):
-            return value  # Excel auto-converts
+            return value.replace(tzinfo=None)  # Excel doesn't support timezones
         return str(value)
 
-    def _format_status(self, status: Any) -> str:
+    def _format_status(self, status: JSONValue) -> str:
         """Format a status value for display."""
         if not status:
             return "N/A"
@@ -464,13 +377,13 @@ class ComplianceXLSXGenerator:
         if isinstance(output, (str, Path)):
             output_path = Path(output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            self._workbook.save(str(output_path))
+            self.workbook.save(str(output_path))
         else:
-            self._workbook.save(output)
+            self.workbook.save(output)
 
     def generate_soc2_matrix(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -496,13 +409,13 @@ class ComplianceXLSXGenerator:
             ("Organization", org_name),
             ("Audit Period Start", self._format_date(audit_start)),
             ("Audit Period End", self._format_date(audit_end)),
-            ("Generated At", datetime.now(timezone.utc)),
+            ("Generated At", self._format_date(datetime.now(timezone.utc))),
             ("Total Controls", report_data.get("total_controls", 0)),
             ("Controls Tested", report_data.get("controls_tested", 0)),
             ("Controls Effective", report_data.get("controls_effective", 0)),
             ("Controls with Exceptions", report_data.get("controls_with_exceptions", 0)),
         ]
-        self._table_builder.create_summary_sheet("Summary", summary_data)
+        self.table_builder.create_summary_sheet("Summary", summary_data)
 
         # Evidence Matrix sheet
         headers = [
@@ -535,7 +448,7 @@ class ComplianceXLSXGenerator:
                 ]
             )
 
-        self._table_builder.create_evidence_sheet(
+        self.table_builder.create_evidence_sheet(
             sheet_name="Evidence Matrix",
             headers=headers,
             rows=rows,
@@ -568,7 +481,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Control Mappings",
                 headers=mapping_headers,
                 rows=mapping_rows,
@@ -597,7 +510,7 @@ class ComplianceXLSXGenerator:
 
                 # Truncate sheet name to Excel's 31 char limit
                 sheet_name = f"TSC - {criteria_name}"[:31]
-                self._table_builder.create_evidence_sheet(
+                self.table_builder.create_evidence_sheet(
                     sheet_name=sheet_name,
                     headers=tsc_headers,
                     rows=tsc_rows,
@@ -607,7 +520,7 @@ class ComplianceXLSXGenerator:
         # Generate output path if not provided
         if output_path is None:
             output_dir = _ensure_output_dir()
-            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            timestamp = self._format_date(datetime.now(timezone.utc)).strftime("%Y%m%d_%H%M%S")
             output_path = output_dir / f"soc2_matrix_{timestamp}.xlsx"
 
         self._save_workbook(output_path)
@@ -617,7 +530,7 @@ class ComplianceXLSXGenerator:
 
     def generate_iso27001_matrix(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -641,7 +554,7 @@ class ComplianceXLSXGenerator:
             ("Report Type", "ISO 27001:2022 Annex A Evidence Matrix"),
             ("Organization", org_name),
             ("ISMS Scope", scope or "Not specified"),
-            ("Generated At", datetime.now(timezone.utc)),
+            ("Generated At", self._format_date(datetime.now(timezone.utc))),
             ("Total Controls", report_data.get("total_controls", 93)),
             ("Applicable Controls", report_data.get("applicable_controls", 0)),
             ("Implemented Controls", report_data.get("implemented_controls", 0)),
@@ -650,7 +563,7 @@ class ComplianceXLSXGenerator:
                 f"{report_data.get('implementation_percentage', 0):.1f}%",
             ),
         ]
-        self._table_builder.create_summary_sheet("Summary", summary_data)
+        self.table_builder.create_summary_sheet("Summary", summary_data)
 
         # Statement of Applicability sheet
         soa = report_data.get("statement_of_applicability", {})
@@ -681,7 +594,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Statement of Applicability",
                 headers=soa_headers,
                 rows=soa_rows,
@@ -716,7 +629,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Evidence Matrix",
                 headers=evidence_headers,
                 rows=evidence_rows,
@@ -751,7 +664,7 @@ class ComplianceXLSXGenerator:
 
                 # Truncate sheet name to Excel's 31 char limit
                 sheet_name = theme_name[:31]
-                self._table_builder.create_evidence_sheet(
+                self.table_builder.create_evidence_sheet(
                     sheet_name=sheet_name,
                     headers=theme_headers,
                     rows=theme_rows,
@@ -762,7 +675,7 @@ class ComplianceXLSXGenerator:
         # Generate output path if not provided
         if output_path is None:
             output_dir = _ensure_output_dir()
-            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            timestamp = self._format_date(datetime.now(timezone.utc)).strftime("%Y%m%d_%H%M%S")
             output_path = output_dir / f"iso27001_matrix_{timestamp}.xlsx"
 
         self._save_workbook(output_path)
@@ -772,7 +685,7 @@ class ComplianceXLSXGenerator:
 
     def generate_gdpr_matrix(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -800,7 +713,7 @@ class ComplianceXLSXGenerator:
             ("Report Type", "GDPR Article 30 Records of Processing"),
             ("Organization", org_name),
             ("Entity Role", self._format_status(entity_role)),
-            ("Generated At", datetime.now(timezone.utc)),
+            ("Generated At", self._format_date(datetime.now(timezone.utc))),
             ("Total Processing Activities", len(processing_activities)),
             ("Controller", controller_record.get("controller_name", "N/A")),
         ]
@@ -811,7 +724,7 @@ class ComplianceXLSXGenerator:
             summary_data.append(("DPO Name", dpo.get("name", "N/A")))
             summary_data.append(("DPO Email", dpo.get("email", "N/A")))
 
-        self._table_builder.create_summary_sheet("Summary", summary_data)
+        self.table_builder.create_summary_sheet("Summary", summary_data)
 
         # Processing Activities sheet (Article 30(1))
         if processing_activities:
@@ -833,6 +746,7 @@ class ComplianceXLSXGenerator:
                 purposes = activity.get("purposes", [])
                 purposes_str = ", ".join(purposes[:3])
                 if len(purposes) > 3:
+                    # PERFORMANCE: Consider using list.append() + "".join() instead of += in loops
                     purposes_str += f" (+{len(purposes) - 3} more)"
 
                 recipients = activity.get("recipients", [])
@@ -843,6 +757,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
                 if len(recipients) > 2:
+                    # PERFORMANCE: Consider using list.append() + "".join() instead of += in loops
                     recipients_str += f" (+{len(recipients) - 2} more)"
 
                 data_subjects = activity.get("data_subject_categories", [])
@@ -864,7 +779,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Processing Activities",
                 headers=pa_headers,
                 rows=pa_rows,
@@ -901,7 +816,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Data Flows",
                 headers=df_headers,
                 rows=df_rows,
@@ -933,7 +848,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Security Measures",
                 headers=sm_headers,
                 rows=sm_rows,
@@ -944,7 +859,7 @@ class ComplianceXLSXGenerator:
         # Generate output path if not provided
         if output_path is None:
             output_dir = _ensure_output_dir()
-            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            timestamp = self._format_date(datetime.now(timezone.utc)).strftime("%Y%m%d_%H%M%S")
             output_path = output_dir / f"gdpr_matrix_{timestamp}.xlsx"
 
         self._save_workbook(output_path)
@@ -954,7 +869,7 @@ class ComplianceXLSXGenerator:
 
     def generate_euaiact_matrix(
         self,
-        report_data: dict[str, Any],
+        report_data: DocumentData,
         output_path: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
@@ -982,13 +897,13 @@ class ComplianceXLSXGenerator:
             ("Report Type", "EU AI Act Compliance Matrix"),
             ("Organization", org_name),
             ("Organization Role", self._format_status(org_role)),
-            ("Generated At", datetime.now(timezone.utc)),
+            ("Generated At", self._format_date(datetime.now(timezone.utc))),
             ("Total AI Systems", len(ai_systems)),
             ("High-Risk Systems", high_risk),
             ("Limited-Risk Systems", limited_risk),
             ("Minimal-Risk Systems", minimal_risk),
         ]
-        self._table_builder.create_summary_sheet("Summary", summary_data)
+        self.table_builder.create_summary_sheet("Summary", summary_data)
 
         # AI Systems Inventory sheet
         if ai_systems:
@@ -1021,7 +936,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="AI Systems Inventory",
                 headers=sys_headers,
                 rows=sys_rows,
@@ -1057,7 +972,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Risk Assessments",
                 headers=ra_headers,
                 rows=ra_rows,
@@ -1092,7 +1007,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Conformity Assessments",
                 headers=ca_headers,
                 rows=ca_rows,
@@ -1129,7 +1044,7 @@ class ComplianceXLSXGenerator:
                     ]
                 )
 
-            self._table_builder.create_evidence_sheet(
+            self.table_builder.create_evidence_sheet(
                 sheet_name="Technical Documentation",
                 headers=td_headers,
                 rows=td_rows,
@@ -1140,7 +1055,7 @@ class ComplianceXLSXGenerator:
         # Generate output path if not provided
         if output_path is None:
             output_dir = _ensure_output_dir()
-            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            timestamp = self._format_date(datetime.now(timezone.utc)).strftime("%Y%m%d_%H%M%S")
             output_path = output_dir / f"euaiact_matrix_{timestamp}.xlsx"
 
         self._save_workbook(output_path)
@@ -1150,7 +1065,7 @@ class ComplianceXLSXGenerator:
 
 
 def generate_xlsx(
-    report_data: dict[str, Any],
+    report_data: DocumentData,
     framework: Union[str, ComplianceFramework],
     output_path: Optional[Union[str, Path]] = None,
     write_only: bool = False,
@@ -1183,7 +1098,7 @@ def generate_xlsx(
         ... )
         >>> print(f"Matrix generated at: {path}")
     """
-    generator = ComplianceXLSXGenerator(write_only=write_only)
+    generator = XLSXGenerator(write_only=write_only)
 
     # Normalize framework
     if isinstance(framework, ComplianceFramework):
@@ -1207,7 +1122,7 @@ def generate_xlsx(
 
 
 def generate_xlsx_to_buffer(
-    report_data: dict[str, Any],
+    report_data: DocumentData,
     framework: Union[str, ComplianceFramework],
     write_only: bool = False,
 ) -> io.BytesIO:
@@ -1232,7 +1147,7 @@ def generate_xlsx_to_buffer(
         >>> # Use buffer.getvalue() to get bytes for streaming
     """
     buffer = io.BytesIO()
-    generator = ComplianceXLSXGenerator(write_only=write_only)
+    generator = XLSXGenerator(write_only=write_only)
 
     # Normalize framework
     if isinstance(framework, ComplianceFramework):
@@ -1248,10 +1163,10 @@ def generate_xlsx_to_buffer(
         summary_data = [
             ("Report Type", "SOC 2 Type II Evidence Matrix"),
             ("Organization", org_name),
-            ("Generated At", datetime.now(timezone.utc)),
+            ("Generated At", generator._format_date(datetime.now(timezone.utc))),
         ]
-        generator._table_builder.create_summary_sheet("Summary", summary_data)
-        generator._table_builder.create_evidence_sheet(
+        generator.table_builder.create_summary_sheet("Summary", summary_data)
+        generator.table_builder.create_evidence_sheet(
             sheet_name="Evidence Matrix",
             headers=["Control ID", "Criteria", "Description", "Status"],
             rows=[["See generate_xlsx() for full implementation", "", "", ""]],
@@ -1261,10 +1176,10 @@ def generate_xlsx_to_buffer(
         summary_data = [
             ("Report Type", "ISO 27001:2022 Annex A Evidence Matrix"),
             ("Organization", org_name),
-            ("Generated At", datetime.now(timezone.utc)),
+            ("Generated At", generator._format_date(datetime.now(timezone.utc))),
         ]
-        generator._table_builder.create_summary_sheet("Summary", summary_data)
-        generator._table_builder.create_evidence_sheet(
+        generator.table_builder.create_summary_sheet("Summary", summary_data)
+        generator.table_builder.create_evidence_sheet(
             sheet_name="Evidence Matrix",
             headers=["Control ID", "Theme", "Description", "Status"],
             rows=[["See generate_xlsx() for full implementation", "", "", ""]],
@@ -1274,10 +1189,10 @@ def generate_xlsx_to_buffer(
         summary_data = [
             ("Report Type", "GDPR Article 30 Records"),
             ("Organization", org_name),
-            ("Generated At", datetime.now(timezone.utc)),
+            ("Generated At", generator._format_date(datetime.now(timezone.utc))),
         ]
-        generator._table_builder.create_summary_sheet("Summary", summary_data)
-        generator._table_builder.create_evidence_sheet(
+        generator.table_builder.create_summary_sheet("Summary", summary_data)
+        generator.table_builder.create_evidence_sheet(
             sheet_name="Processing Activities",
             headers=["Activity", "Purposes", "Data Categories", "Status"],
             rows=[["See generate_xlsx() for full implementation", "", "", ""]],
@@ -1287,10 +1202,10 @@ def generate_xlsx_to_buffer(
         summary_data = [
             ("Report Type", "EU AI Act Compliance Matrix"),
             ("Organization", org_name),
-            ("Generated At", datetime.now(timezone.utc)),
+            ("Generated At", generator._format_date(datetime.now(timezone.utc))),
         ]
-        generator._table_builder.create_summary_sheet("Summary", summary_data)
-        generator._table_builder.create_evidence_sheet(
+        generator.table_builder.create_summary_sheet("Summary", summary_data)
+        generator.table_builder.create_evidence_sheet(
             sheet_name="AI Systems",
             headers=["System ID", "Name", "Risk Level", "Status"],
             rows=[["See generate_xlsx() for full implementation", "", "", ""]],

@@ -419,7 +419,7 @@ impl MessageProcessor {
 
         message.status = MessageStatus::Delivered;
         *self.processed_count.write() += 1;
-        
+
         let mut metrics = self.metrics.write();
         *metrics.entry("messages_processed".to_string()).or_insert(0) += 1;
 

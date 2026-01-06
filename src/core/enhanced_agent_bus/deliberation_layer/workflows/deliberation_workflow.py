@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -381,14 +382,18 @@ class DefaultDeliberationActivities(DeliberationActivities):
             votes = []
             for agent_id, vote_data in votes_dict.items():
                 if isinstance(vote_data, dict):
-                    votes.append(Vote(
-                        agent_id=vote_data.get("agent_id", agent_id),
-                        decision=vote_data.get("decision", "ABSTAIN"),
-                        reason=vote_data.get("reason"),
-                        timestamp=datetime.fromisoformat(vote_data["timestamp"].replace("Z", "+00:00"))
-                        if isinstance(vote_data.get("timestamp"), str)
-                        else vote_data.get("timestamp", datetime.now(timezone.utc)),
-                    ))
+                    votes.append(
+                        Vote(
+                            agent_id=vote_data.get("agent_id", agent_id),
+                            decision=vote_data.get("decision", "ABSTAIN"),
+                            reason=vote_data.get("reason"),
+                            timestamp=datetime.fromisoformat(
+                                vote_data["timestamp"].replace("Z", "+00:00")
+                            )
+                            if isinstance(vote_data.get("timestamp"), str)
+                            else vote_data.get("timestamp", datetime.now(timezone.utc)),
+                        )
+                    )
 
             # If election is resolved or expired, return votes
             if status in ["CLOSED", "EXPIRED"]:

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -22,6 +23,7 @@ except ImportError:
 # Optional torch import for Mamba processing
 try:
     import torch
+
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
@@ -34,6 +36,7 @@ try:
         get_mamba_hybrid_processor,
         initialize_mamba_processor,
     )
+
     MAMBA_AVAILABLE = True
 except ImportError:
     MAMBA_AVAILABLE = False
@@ -544,10 +547,7 @@ class ContextManager:
         return resolutions.get(ref_type, ref_type)
 
     async def process_long_context(
-        self,
-        context: ConversationContext,
-        max_tokens: int = 1_000_000,
-        use_attention: bool = False
+        self, context: ConversationContext, max_tokens: int = 1_000_000, use_attention: bool = False
     ) -> ConversationContext:
         """
         Process conversation context using Mamba-2 Hybrid Processor for long contexts.
@@ -593,8 +593,7 @@ class ContextManager:
 
             # Process through Mamba hybrid processor
             processed_tensor = mamba_manager.process_context(
-                input_tensor=input_tensor,
-                use_attention=use_attention
+                input_tensor=input_tensor, use_attention=use_attention
             )
 
             # Extract insights from processed tensor
@@ -606,7 +605,7 @@ class ContextManager:
             context.metadata["mamba_config"] = {
                 "max_tokens": max_tokens,
                 "attention_used": use_attention,
-                "constitutional_hash": CONSTITUTIONAL_HASH
+                "constitutional_hash": CONSTITUTIONAL_HASH,
             }
 
             logger.info(f"Processed long context with Mamba-2: strength={context_strength:.2f}")
@@ -691,7 +690,6 @@ class ContextManager:
         for entity_type in entities_to_remove:
             del context.entities[entity_type]
 
-        logger.debug(f"Pruned context: {len(entities_to_remove)} entities removed")
         return context
 
     def get_context_summary(self, context: ConversationContext) -> str:

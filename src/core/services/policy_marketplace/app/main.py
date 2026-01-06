@@ -13,7 +13,6 @@ from typing import Any, Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
 from src.core.shared.security.cors_config import get_cors_config
 
 # Import rate limiting middleware

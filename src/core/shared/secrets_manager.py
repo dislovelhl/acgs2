@@ -16,9 +16,10 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -120,7 +121,7 @@ class SecretsManager:
 
         # Check rotation status
         for secret in manager.secrets_needing_rotation():
-            print(f"{secret.name} needs rotation")
+
     """
 
     def __init__(
@@ -497,7 +498,7 @@ class SecretsManager:
             String in .env format
         """
         lines = [
-            f"# ACGS-2 Secrets Export",
+            "# ACGS-2 Secrets Export",
             f"# Generated: {datetime.now(timezone.utc).isoformat()}",
             f"# Constitutional Hash: {CONSTITUTIONAL_HASH}",
             "",

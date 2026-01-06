@@ -6,7 +6,7 @@ ACGS-2 Constraint Generator
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 # Internal imports
 try:
@@ -323,9 +323,7 @@ if (require.main === module) {{
 }}
 """
 
-    def _build_generation_prompt(
-        self, request: GenerationRequest, constraints: JSONDict
-    ) -> str:
+    def _build_generation_prompt(self, request: GenerationRequest, constraints: JSONDict) -> str:
         """构建生成提示"""
         prompt_parts = [
             f"Generate {request.language} code for the following task:",

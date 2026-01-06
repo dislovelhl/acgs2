@@ -8,7 +8,6 @@ Extended tests for models to improve coverage.
 from datetime import datetime, timezone
 
 import pytest
-
 from src.core.enhanced_agent_bus.models import (
     CONSTITUTIONAL_HASH,
     AgentMessage,

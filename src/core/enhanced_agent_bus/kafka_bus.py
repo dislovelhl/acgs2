@@ -23,10 +23,10 @@ try:
     from .models import AgentMessage, MessageType
     from .shared.config import settings
 except ImportError:
+    from src.core.shared.config import settings  # type: ignore
+
     from exceptions import MessageDeliveryError  # type: ignore
     from models import AgentMessage, MessageType  # type: ignore
-
-    from src.core.shared.config import settings  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ class KafkaEventBus:
             msg_dict = message.to_dict_raw()
 
             await self.producer.send_and_wait(topic, value=msg_dict, key=key)
-            logger.debug(f"Message {message.message_id} sent to topic {topic}")
+
             return True
         except Exception as e:
             logger.error(
@@ -216,7 +216,7 @@ class KafkaEventBus:
 
         try:
             await self.producer.send_and_wait(topic, value=vote_event, key=key)
-            logger.debug(f"Vote event published to topic {topic} for election {election_id}")
+
             return True
         except Exception as e:
             logger.error(
@@ -247,7 +247,7 @@ class KafkaEventBus:
 
         try:
             await self.producer.send_and_wait(topic, value=audit_record, key=key)
-            logger.debug(f"Audit record published to topic {topic} for election {election_id}")
+
             return True
         except Exception as e:
             logger.error(

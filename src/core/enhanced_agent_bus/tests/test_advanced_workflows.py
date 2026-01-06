@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from src.core.enhanced_agent_bus.deliberation_layer.workflows.constitutional_saga import (
     ConstitutionalSagaWorkflow,
     FileSagaPersistenceProvider,

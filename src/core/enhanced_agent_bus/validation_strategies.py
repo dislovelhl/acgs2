@@ -24,10 +24,11 @@ except ImportError:
 # PQC imports (lazy loaded for optional dependency)
 try:
     from quantum_research.post_quantum_crypto import (
+        ConstitutionalHashValidator,
         PQCAlgorithm,
         PQCSignature,
-        ConstitutionalHashValidator,
     )
+
     PQC_AVAILABLE = True
 except ImportError:
     PQC_AVAILABLE = False
@@ -236,9 +237,10 @@ class PQCValidationStrategy:
             try:
                 from quantum_research.post_quantum_crypto import (
                     ConstitutionalHashValidator,
-                    PQCSignature,
                     PQCAlgorithm,
+                    PQCSignature,
                 )
+
                 self._validator = ConstitutionalHashValidator()
                 self._PQCSignature = PQCSignature
                 self._PQCAlgorithm = PQCAlgorithm
@@ -266,7 +268,10 @@ class PQCValidationStrategy:
             if self._hybrid_mode:
                 # Fall back to static hash validation when PQC is unavailable
                 if message.constitutional_hash != self._constitutional_hash:
-                    return False, f"Constitutional hash mismatch: expected {self._constitutional_hash}"
+                    return (
+                        False,
+                        f"Constitutional hash mismatch: expected {self._constitutional_hash}",
+                    )
                 return True, None
             return False, "PQC validator not available"
 
@@ -275,7 +280,10 @@ class PQCValidationStrategy:
             if self._hybrid_mode:
                 # Fall back to static hash validation
                 if message.constitutional_hash != self._constitutional_hash:
-                    return False, f"Constitutional hash mismatch: expected {self._constitutional_hash}"
+                    return (
+                        False,
+                        f"Constitutional hash mismatch: expected {self._constitutional_hash}",
+                    )
                 return True, None
             else:
                 return False, "PQC signature required but not provided"
@@ -323,9 +331,7 @@ class PQCValidationStrategy:
 
             # Validate the signature
             is_valid = self._validator.verify_governance_decision(
-                decision=decision,
-                signature=signature_obj,
-                public_key=public_key_bytes
+                decision=decision, signature=signature_obj, public_key=public_key_bytes
             )
 
             if is_valid:

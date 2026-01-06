@@ -66,7 +66,7 @@ class ApprovalEngine:
             await self.redis.set(
                 f"chain:{chain.id}",
                 chain.json(),
-                ex=86400  # 24 hours TTL
+                ex=86400,  # 24 hours TTL
             )
 
     async def create_approval_request(
@@ -76,7 +76,7 @@ class ApprovalEngine:
         description: str,
         requester_id: str,
         priority: ApprovalPriority = ApprovalPriority.MEDIUM,
-        context: Dict[str, Any] = None
+        context: Dict[str, Any] = None,
     ) -> Optional[str]:
         """
         Create a new approval request
@@ -90,7 +90,9 @@ class ApprovalEngine:
 
         # Check if request meets trigger conditions
         if not self._check_trigger_conditions(chain.trigger_conditions, context or {}):
-            logger.info("Request does not meet trigger conditions", chain_id=chain_id, context=context)
+            logger.info(
+                "Request does not meet trigger conditions", chain_id=chain_id, context=context
+            )
             return None
 
         # Create approval request
@@ -101,7 +103,7 @@ class ApprovalEngine:
             requester_id=requester_id,
             priority=priority,
             context=context or {},
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=chain.sla_minutes)
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=chain.sla_minutes),
         )
 
         # Save request
@@ -116,18 +118,14 @@ class ApprovalEngine:
             "request",
             request.id,
             requester_id,
-            {"chain_id": chain_id, "priority": priority.value}
+            {"chain_id": chain_id, "priority": priority.value},
         )
 
         logger.info("Created approval request", request_id=request.id, chain_id=chain_id)
         return request.id
 
     async def approve_request(
-        self,
-        request_id: str,
-        approver_id: str,
-        decision: ApprovalStatus,
-        rationale: str = None
+        self, request_id: str, approver_id: str, decision: ApprovalStatus, rationale: str = None
     ) -> bool:
         """
         Submit an approval decision
@@ -140,7 +138,9 @@ class ApprovalEngine:
             return False
 
         if request.status != ApprovalStatus.PENDING:
-            logger.warning("Request is not pending", request_id=request_id, status=request.status.value)
+            logger.warning(
+                "Request is not pending", request_id=request_id, status=request.status.value
+            )
             return False
 
         chain = await self.load_chain(request.chain_id)
@@ -156,7 +156,7 @@ class ApprovalEngine:
                 "Unauthorized approver",
                 request_id=request_id,
                 approver_id=approver_id,
-                step_approvers=current_step.approvers
+                step_approvers=current_step.approvers,
             )
             return False
 
@@ -166,7 +166,7 @@ class ApprovalEngine:
             step_index=request.current_step_index,
             approver_id=approver_id,
             decision=decision,
-            rationale=rationale
+            rationale=rationale,
         )
 
         request.approvals.append(approval_decision.dict())
@@ -174,8 +174,10 @@ class ApprovalEngine:
 
         # Check if step is complete
         step_approvals = [
-            a for a in request.approvals
-            if a["step_index"] == request.current_step_index and a["decision"] == ApprovalStatus.APPROVED
+            a
+            for a in request.approvals
+            if a["step_index"] == request.current_step_index
+            and a["decision"] == ApprovalStatus.APPROVED
         ]
 
         if len(step_approvals) >= current_step.required_approvals:
@@ -198,14 +200,14 @@ class ApprovalEngine:
             "request",
             request_id,
             approver_id,
-            {"decision": decision.value, "step_index": request.current_step_index}
+            {"decision": decision.value, "step_index": request.current_step_index},
         )
 
         logger.info(
             "Approval decision submitted",
             request_id=request_id,
             approver_id=approver_id,
-            decision=decision.value
+            decision=decision.value,
         )
         return True
 
@@ -219,22 +221,30 @@ class ApprovalEngine:
         if not chain:
             return None
 
-        current_step = chain.steps[request.current_step_index] if request.current_step_index < len(chain.steps) else None
+        current_step = (
+            chain.steps[request.current_step_index]
+            if request.current_step_index < len(chain.steps)
+            else None
+        )
 
         # Calculate time remaining
         time_remaining = None
         if current_step and request.status == ApprovalStatus.PENDING:
-            step_deadline = request.created_at + timedelta(minutes=sum(
-                step.timeout_minutes for step in chain.steps[:request.current_step_index + 1]
-            ))
-            time_remaining = max(0, int((step_deadline - datetime.now(timezone.utc)).total_seconds() / 60))
+            step_deadline = request.created_at + timedelta(
+                minutes=sum(
+                    step.timeout_minutes for step in chain.steps[: request.current_step_index + 1]
+                )
+            )
+            time_remaining = max(
+                0, int((step_deadline - datetime.now(timezone.utc)).total_seconds() / 60)
+            )
 
         return {
             "request": request,
             "chain": chain,
             "current_step": current_step,
             "time_remaining_minutes": time_remaining,
-            "can_approve": False  # Would need user context to determine
+            "can_approve": False,  # Would need user context to determine
         }
 
     async def _start_workflow(self, request: ApprovalRequest, chain: ApprovalChain) -> None:
@@ -264,7 +274,7 @@ class ApprovalEngine:
             logger.info(
                 "Advanced to next approval step",
                 request_id=request.id,
-                step_index=request.current_step_index
+                step_index=request.current_step_index,
             )
 
     async def _schedule_escalation(self, request: ApprovalRequest, step: ApprovalStep) -> None:
@@ -283,10 +293,11 @@ class ApprovalEngine:
 
             # Check if request is still pending and at this step
             current_request = await self._load_request(request.id)
-            if (current_request and
-                current_request.status == ApprovalStatus.PENDING and
-                current_request.current_step_index == request.current_step_index):
-
+            if (
+                current_request
+                and current_request.status == ApprovalStatus.PENDING
+                and current_request.current_step_index == request.current_step_index
+            ):
                 await self._escalate_step(current_request, step)
 
         task = asyncio.create_task(escalate())
@@ -294,13 +305,15 @@ class ApprovalEngine:
 
     async def _escalate_step(self, request: ApprovalRequest, step: ApprovalStep) -> None:
         """Escalate a step according to escalation rules"""
-        logger.info("Escalating approval step", request_id=request.id, step_index=request.current_step_index)
+        logger.info(
+            "Escalating approval step", request_id=request.id, step_index=request.current_step_index
+        )
 
         # Record escalation
         escalation_record = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "step_index": request.current_step_index,
-            "reason": "timeout"
+            "reason": "timeout",
         }
         request.escalations.append(escalation_record)
 
@@ -319,7 +332,7 @@ class ApprovalEngine:
                 "request",
                 request.id,
                 "system",
-                {"step_index": request.current_step_index, "escalated_to": rule.escalate_to}
+                {"step_index": request.current_step_index, "escalated_to": rule.escalate_to},
             )
 
         await self._save_request(request)
@@ -340,17 +353,29 @@ class ApprovalEngine:
         # Implementation would integrate with notification providers
         logger.info("Sending step notifications", request_id=request.id, step_name=step.name)
 
-    async def _send_escalation_notifications(self, request: ApprovalRequest, rule: EscalationRule) -> None:
+    async def _send_escalation_notifications(
+        self, request: ApprovalRequest, rule: EscalationRule
+    ) -> None:
         """Send escalation notifications"""
         # Implementation would integrate with notification providers
-        logger.info("Sending escalation notifications", request_id=request.id, channels=rule.notification_channels)
+        logger.info(
+            "Sending escalation notifications",
+            request_id=request.id,
+            channels=rule.notification_channels,
+        )
 
     async def _send_completion_notifications(self, request: ApprovalRequest) -> None:
         """Send workflow completion notifications"""
         # Implementation would integrate with notification providers
-        logger.info("Sending completion notifications", request_id=request.id, final_status=request.status.value)
+        logger.info(
+            "Sending completion notifications",
+            request_id=request.id,
+            final_status=request.status.value,
+        )
 
-    def _check_trigger_conditions(self, conditions: Dict[str, Any], context: Dict[str, Any]) -> bool:
+    def _check_trigger_conditions(
+        self, conditions: Dict[str, Any], context: Dict[str, Any]
+    ) -> bool:
         """Check if request context meets trigger conditions"""
         # Simple implementation - could be extended with more complex logic
         for key, expected_value in conditions.items():
@@ -383,16 +408,11 @@ class ApprovalEngine:
             await self.redis.set(
                 f"request:{request.id}",
                 request.json(),
-                ex=604800  # 7 days TTL
+                ex=604800,  # 7 days TTL
             )
 
     async def _audit_action(
-        self,
-        action: str,
-        entity_type: str,
-        entity_id: str,
-        actor_id: str,
-        details: Dict[str, Any]
+        self, action: str, entity_type: str, entity_id: str, actor_id: str, details: Dict[str, Any]
     ) -> None:
         """Record an audit entry"""
         if self.audit_callback:
@@ -401,6 +421,6 @@ class ApprovalEngine:
                 entity_id=entity_id,
                 action=action,
                 actor_id=actor_id,
-                details=details
+                details=details,
             )
             await self.audit_callback(audit_entry)

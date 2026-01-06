@@ -18,7 +18,7 @@ The following pipeline ensures that all constitutional policies are tested and v
 
 ### Stage 3: Compilation & Signing
 - **Tool**: `tools/policy_bundle_manager.py`
-- **Action**: 
+- **Action**:
     1. Compile policies into a `.tar.gz` bundle.
     2. Sign the bundle hash using Ed25519 private key (stored in Vault).
     3. Generate metadata including the Constitutional Hash.

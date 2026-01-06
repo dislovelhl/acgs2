@@ -7,7 +7,6 @@ and MessageProcessor.
 """
 
 import pytest
-
 from src.core.enhanced_agent_bus.agent_bus import MACI_AVAILABLE, EnhancedAgentBus
 from src.core.enhanced_agent_bus.message_processor import MessageProcessor
 from src.core.enhanced_agent_bus.models import (

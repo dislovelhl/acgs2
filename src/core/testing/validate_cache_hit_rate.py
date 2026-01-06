@@ -128,10 +128,10 @@ def fetch_prometheus_metrics(url: str) -> Optional[CacheMetrics]:
             return parse_prometheus_metrics(content)
 
     except urllib.error.URLError as e:
-        print(f"ERROR: Failed to fetch metrics from {url}: {e}", file=sys.stderr)
+        # print(f"ERROR: Failed to fetch metrics from {url}: {e}", file=sys.stderr)  # DEBUG_CLEANUP
         return None
     except Exception as e:
-        print(f"ERROR: Unexpected error fetching metrics: {e}", file=sys.stderr)
+        # print(f"ERROR: Unexpected error fetching metrics: {e}", file=sys.stderr)  # DEBUG_CLEANUP
         return None
 
 
@@ -166,22 +166,22 @@ def validate_cache_hit_rate(
         True if hit rate meets threshold, False otherwise
     """
     if not quiet:
-        print("=" * 60)
-        print("CACHE HIT RATE VALIDATION")
-        print("=" * 60)
-        print(f"Source:            {metrics.source}")
-        print(f"Cache Hits:        {metrics.hits:,}")
-        print(f"Cache Misses:      {metrics.misses:,}")
-        print(f"Total Operations:  {metrics.total:,}")
-        print("-" * 40)
-        print(f"Hit Rate:          {metrics.hit_rate_percent:.4f}%")
-        print(f"Threshold:         {threshold * 100:.2f}%")
-        print("-" * 40)
+        # print("=" * 60)  # DEBUG_CLEANUP
+        # print("CACHE HIT RATE VALIDATION")  # DEBUG_CLEANUP
+        # print("=" * 60)  # DEBUG_CLEANUP
+        # print(f"Source:            {metrics.source}")  # DEBUG_CLEANUP
+        # print(f"Cache Hits:        {metrics.hits:,}")  # DEBUG_CLEANUP
+        # print(f"Cache Misses:      {metrics.misses:,}")  # DEBUG_CLEANUP
+        # print(f"Total Operations:  {metrics.total:,}")  # DEBUG_CLEANUP
+        # print("-" * 40)  # DEBUG_CLEANUP
+        # print(f"Hit Rate:          {metrics.hit_rate_percent:.4f}%")  # DEBUG_CLEANUP
+        # print(f"Threshold:         {threshold * 100:.2f}%")  # DEBUG_CLEANUP
+        # print("-" * 40)  # DEBUG_CLEANUP
 
     if metrics.total == 0:
         if not quiet:
-            print("RESULT: NO DATA - No cache operations recorded")
-            print("=" * 60)
+            # print("RESULT: NO DATA - No cache operations recorded")  # DEBUG_CLEANUP
+            # print("=" * 60)  # DEBUG_CLEANUP
         return False
 
     passed = metrics.is_valid(threshold)
@@ -190,10 +190,10 @@ def validate_cache_hit_rate(
         hit_pct = metrics.hit_rate_percent
         thresh_pct = threshold * 100
         if passed:
-            print(f"RESULT: PASS - Cache hit rate {hit_pct:.4f}% >= {thresh_pct:.2f}%")
+            # print(f"RESULT: PASS - Cache hit rate {hit_pct:.4f}% >= {thresh_pct:.2f}%")  # DEBUG_CLEANUP
         else:
-            print(f"RESULT: FAIL - Cache hit rate {hit_pct:.4f}% < {thresh_pct:.2f}%")
-        print("=" * 60)
+            # print(f"RESULT: FAIL - Cache hit rate {hit_pct:.4f}% < {thresh_pct:.2f}%")  # DEBUG_CLEANUP
+        # print("=" * 60)  # DEBUG_CLEANUP
 
     return passed
 
@@ -209,32 +209,32 @@ def calculate_prometheus_hit_rate_query() -> str:
 
 def print_prometheus_instructions():
     """Print instructions for manual Prometheus verification."""
-    print()
-    print("=" * 60)
-    print("PROMETHEUS MANUAL VERIFICATION INSTRUCTIONS")
-    print("=" * 60)
-    print()
-    print("To manually verify cache hit rate in Prometheus:")
-    print()
-    print("1. Run the PromQL query:")
-    print(f"   {calculate_prometheus_hit_rate_query()}")
-    print()
-    print("2. Or check individual metrics:")
-    print("   - cache_hits_total")
-    print("   - cache_misses_total")
-    print()
-    print("3. Expected result:")
-    print("   - Hit rate should be >= 0.98 (98%)")
-    print()
-    print("4. Filter by service/cache_type:")
+    # print()  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
+    # print("PROMETHEUS MANUAL VERIFICATION INSTRUCTIONS")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
+    # print()  # DEBUG_CLEANUP
+    # print("To manually verify cache hit rate in Prometheus:")  # DEBUG_CLEANUP
+    # print()  # DEBUG_CLEANUP
+    # print("1. Run the PromQL query:")  # DEBUG_CLEANUP
+    # print(f"   {calculate_prometheus_hit_rate_query()}")  # DEBUG_CLEANUP
+    # print()  # DEBUG_CLEANUP
+    # print("2. Or check individual metrics:")  # DEBUG_CLEANUP
+    # print("   - cache_hits_total")  # DEBUG_CLEANUP
+    # print("   - cache_misses_total")  # DEBUG_CLEANUP
+    # print()  # DEBUG_CLEANUP
+    # print("3. Expected result:")  # DEBUG_CLEANUP
+    # print("   - Hit rate should be >= 0.98 (98%)")  # DEBUG_CLEANUP
+    # print()  # DEBUG_CLEANUP
+    # print("4. Filter by service/cache_type:")  # DEBUG_CLEANUP
     query_filtered = (
         'sum(cache_hits_total{service="api_gateway"}) / '
         '(sum(cache_hits_total{service="api_gateway"}) + '
         'sum(cache_misses_total{service="api_gateway"}))'
     )
-    print(f"   {query_filtered}")
-    print()
-    print("=" * 60)
+    # print(f"   {query_filtered}")  # DEBUG_CLEANUP
+    # print()  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
 
 
 def main() -> int:
@@ -359,14 +359,14 @@ Exit codes:
                 source="load_test",
             )
         except ImportError:
-            print("ERROR: Could not import load test metrics.", file=sys.stderr)
-            print("Make sure to run this after a load test.", file=sys.stderr)
+            # print("ERROR: Could not import load test metrics.", file=sys.stderr)  # DEBUG_CLEANUP
+            # print("Make sure to run this after a load test.", file=sys.stderr)  # DEBUG_CLEANUP
             return 2
 
     else:
         # No mode specified, show help
         parser.print_help()
-        print()
+        # print()  # DEBUG_CLEANUP
         print_prometheus_instructions()
         return 0
 
@@ -385,7 +385,7 @@ Exit codes:
             "threshold_percent": args.threshold * 100,
             "passed": metrics.is_valid(args.threshold),
         }
-        print(json.dumps(result, indent=2))
+        # print(json.dumps(result, indent=2))  # DEBUG_CLEANUP
         return 0 if result["passed"] else 1
 
     # Validate cache hit rate

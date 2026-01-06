@@ -30,14 +30,16 @@ logger = logging.getLogger(__name__)
 
 class MACIRole(Enum):
     """MACI role separation following separation of powers."""
-    EXECUTIVE = "executive"    # Proposes actions, executes decisions
+
+    EXECUTIVE = "executive"  # Proposes actions, executes decisions
     LEGISLATIVE = "legislative"  # Defines rules, extracts constraints
-    JUDICIAL = "judicial"        # Validates compliance, resolves disputes
+    JUDICIAL = "judicial"  # Validates compliance, resolves disputes
 
 
 @dataclass
 class GovernanceDecision:
     """A governance decision to be verified."""
+
     decision_id: str
     action: str
     context: Dict[str, Any]
@@ -59,6 +61,7 @@ class GovernanceDecision:
 @dataclass
 class ExecutiveResult:
     """Result from Executive agent proposal."""
+
     proposal_id: str
     action: str
     rationale: str
@@ -71,6 +74,7 @@ class ExecutiveResult:
 @dataclass
 class LegislativeRules:
     """Rules extracted by Legislative agent."""
+
     rule_set_id: str
     explicit_rules: List[str]
     implicit_constraints: List[str]
@@ -82,6 +86,7 @@ class LegislativeRules:
 @dataclass
 class JudicialValidation:
     """Validation result from Judicial agent."""
+
     validation_id: str
     is_valid: bool
     rule_compliance: Dict[str, bool]
@@ -95,6 +100,7 @@ class JudicialValidation:
 @dataclass
 class VerificationResult:
     """Complete verification result."""
+
     verification_id: str
     valid: bool
     executive_result: ExecutiveResult
@@ -127,10 +133,7 @@ class ExecutiveAgent:
 
         logger.info(f"Initialized ExecutiveAgent: {self.agent_id}")
 
-    async def propose(
-        self,
-        decision: GovernanceDecision
-    ) -> ExecutiveResult:
+    async def propose(self, decision: GovernanceDecision) -> ExecutiveResult:
         """
         Generate an action proposal.
 
@@ -161,13 +164,14 @@ class ExecutiveAgent:
             estimated_impact=impact,
         )
 
-        logger.debug(f"Executive proposal: {proposal_id} for decision {decision.decision_id}")
         return result
 
     async def _generate_rationale(self, decision: GovernanceDecision) -> str:
         """Generate rationale for the proposal."""
-        return f"Proposed action '{decision.action}' based on context analysis. " \
-               f"This action aligns with governance objectives."
+        return (
+            f"Proposed action '{decision.action}' based on context analysis. "
+            f"This action aligns with governance objectives."
+        )
 
     async def _estimate_resources(self, decision: GovernanceDecision) -> List[str]:
         """Estimate resources needed for the action."""
@@ -213,10 +217,7 @@ class LegislativeAgent:
 
         logger.info(f"Initialized LegislativeAgent: {self.agent_id}")
 
-    async def extract_rules(
-        self,
-        decision: GovernanceDecision
-    ) -> LegislativeRules:
+    async def extract_rules(self, decision: GovernanceDecision) -> LegislativeRules:
         """
         Extract rules and constraints for a decision.
 
@@ -249,13 +250,9 @@ class LegislativeAgent:
             precedent_requirements=precedents,
         )
 
-        logger.debug(f"Legislative rules: {rule_set_id} for decision {decision.decision_id}")
         return rules
 
-    async def _extract_explicit_rules(
-        self,
-        decision: GovernanceDecision
-    ) -> List[str]:
+    async def _extract_explicit_rules(self, decision: GovernanceDecision) -> List[str]:
         """Extract explicit rules from decision context."""
         rules = []
 
@@ -269,10 +266,7 @@ class LegislativeAgent:
 
         return rules
 
-    async def _extract_implicit_constraints(
-        self,
-        decision: GovernanceDecision
-    ) -> List[str]:
+    async def _extract_implicit_constraints(self, decision: GovernanceDecision) -> List[str]:
         """Identify implicit constraints from action type."""
         constraints = []
 
@@ -287,18 +281,12 @@ class LegislativeAgent:
 
         return constraints
 
-    async def _map_constitutional_requirements(
-        self,
-        decision: GovernanceDecision
-    ) -> List[str]:
+    async def _map_constitutional_requirements(self, decision: GovernanceDecision) -> List[str]:
         """Map applicable constitutional requirements."""
         # All actions must comply with constitutional principles
         return self._constitutional_principles.copy()
 
-    async def _find_precedent_requirements(
-        self,
-        decision: GovernanceDecision
-    ) -> List[str]:
+    async def _find_precedent_requirements(self, decision: GovernanceDecision) -> List[str]:
         """Find requirements from precedent decisions."""
         # In production, would query precedent database
         return ["Follow established decision patterns"]
@@ -326,9 +314,7 @@ class JudicialAgent:
         logger.info(f"Initialized JudicialAgent: {self.agent_id}")
 
     async def validate(
-        self,
-        executive_result: ExecutiveResult,
-        legislative_rules: LegislativeRules
+        self, executive_result: ExecutiveResult, legislative_rules: LegislativeRules
     ) -> JudicialValidation:
         """
         Validate a proposal against rules.
@@ -351,32 +337,21 @@ class JudicialAgent:
 
         # Check explicit rules
         for rule in legislative_rules.explicit_rules:
-            compliant = await self._check_rule_compliance(
-                executive_result,
-                rule,
-                "explicit"
-            )
+            compliant = await self._check_rule_compliance(executive_result, rule, "explicit")
             rule_compliance[rule] = compliant
             if not compliant:
                 violations.append(f"Explicit rule violation: {rule}")
 
         # Check implicit constraints
         for constraint in legislative_rules.implicit_constraints:
-            compliant = await self._check_rule_compliance(
-                executive_result,
-                constraint,
-                "implicit"
-            )
+            compliant = await self._check_rule_compliance(executive_result, constraint, "implicit")
             rule_compliance[constraint] = compliant
             if not compliant:
                 violations.append(f"Implicit constraint violation: {constraint}")
 
         # Check constitutional requirements
         for requirement in legislative_rules.constitutional_requirements:
-            compliant = await self._check_constitutional_compliance(
-                executive_result,
-                requirement
-            )
+            compliant = await self._check_constitutional_compliance(executive_result, requirement)
             rule_compliance[requirement] = compliant
             if not compliant:
                 violations.append(f"Constitutional violation: {requirement}")
@@ -398,16 +373,12 @@ class JudicialAgent:
         )
 
         logger.debug(
-            f"Judicial validation: {validation_id}, valid={is_valid}, "
-            f"violations={len(violations)}"
+            f"Judicial validation: {validation_id}, valid={is_valid}, violations={len(violations)}"
         )
         return validation
 
     async def _check_rule_compliance(
-        self,
-        result: ExecutiveResult,
-        rule: str,
-        rule_type: str
+        self, result: ExecutiveResult, rule: str, rule_type: str
     ) -> bool:
         """Check if proposal complies with a specific rule."""
         # In production, would use semantic analysis or formal methods
@@ -423,9 +394,7 @@ class JudicialAgent:
         return True
 
     async def _check_constitutional_compliance(
-        self,
-        result: ExecutiveResult,
-        requirement: str
+        self, result: ExecutiveResult, requirement: str
     ) -> bool:
         """Check constitutional compliance."""
         # Constitutional requirements are strict
@@ -441,10 +410,7 @@ class JudicialAgent:
 
         return True
 
-    async def _generate_remediations(
-        self,
-        violations: List[str]
-    ) -> List[str]:
+    async def _generate_remediations(self, violations: List[str]) -> List[str]:
         """Generate remediation suggestions for violations."""
         remediations = []
 
@@ -472,11 +438,7 @@ class MACIVerificationPipeline:
     - Integration with Z3 SMT solver for additional verification
     """
 
-    def __init__(
-        self,
-        z3_enabled: bool = True,
-        saga_enabled: bool = True
-    ):
+    def __init__(self, z3_enabled: bool = True, saga_enabled: bool = True):
         """
         Initialize the MACI Verification Pipeline.
 
@@ -499,15 +461,9 @@ class MACIVerificationPipeline:
             "z3_invocations": 0,
         }
 
-        logger.info(
-            f"Initialized MACIVerificationPipeline "
-            f"z3={z3_enabled}, saga={saga_enabled}"
-        )
+        logger.info(f"Initialized MACIVerificationPipeline z3={z3_enabled}, saga={saga_enabled}")
 
-    async def verify_governance_decision(
-        self,
-        decision: GovernanceDecision
-    ) -> VerificationResult:
+    async def verify_governance_decision(self, decision: GovernanceDecision) -> VerificationResult:
         """
         Verify a governance decision through the MACI pipeline.
 
@@ -525,6 +481,7 @@ class MACIVerificationPipeline:
             VerificationResult with complete analysis
         """
         import time
+
         start_time = time.perf_counter()
 
         self._verification_count += 1
@@ -538,8 +495,7 @@ class MACIVerificationPipeline:
 
         # Phase 3: Judicial validation (Gödel bypass - cross-validation)
         judicial_validation = await self.judicial_agent.validate(
-            executive_result,
-            legislative_rules
+            executive_result, legislative_rules
         )
 
         # Phase 4: Optional Z3 formal verification
@@ -547,10 +503,7 @@ class MACIVerificationPipeline:
         proof_trace = None
 
         if self.z3_enabled and judicial_validation.is_valid:
-            z3_result = await self._z3_verify(
-                executive_result,
-                legislative_rules
-            )
+            z3_result = await self._z3_verify(executive_result, legislative_rules)
             self._stats["z3_invocations"] += 1
 
             if not z3_result["sat"]:
@@ -588,9 +541,7 @@ class MACIVerificationPipeline:
         return result
 
     async def _z3_verify(
-        self,
-        executive_result: ExecutiveResult,
-        legislative_rules: LegislativeRules
+        self, executive_result: ExecutiveResult, legislative_rules: LegislativeRules
     ) -> Dict[str, Any]:
         """
         Perform Z3 SMT verification.
@@ -611,7 +562,7 @@ class MACIVerificationPipeline:
                 "action": executive_result.action,
                 "verified": True,
                 "constraints_satisfied": len(legislative_rules.explicit_rules),
-            }
+            },
         }
 
     def get_stats(self) -> Dict[str, Any]:

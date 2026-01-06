@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:

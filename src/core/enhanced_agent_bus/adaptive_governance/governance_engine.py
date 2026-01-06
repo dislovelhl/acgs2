@@ -424,9 +424,7 @@ class AdaptiveGovernanceEngine:
         else:
             return ImpactLevel.NEGLIGIBLE
 
-    def _generate_reasoning(
-        self, action_allowed: bool, features, threshold: float
-    ) -> str:
+    def _generate_reasoning(self, action_allowed: bool, features, threshold: float) -> str:
         """Generate human-readable reasoning for the decision."""
         action_word = "ALLOWED" if action_allowed else "BLOCKED"
 
@@ -485,7 +483,6 @@ class AdaptiveGovernanceEngine:
     ) -> None:
         """Store feedback event using the feedback handler for persistent storage."""
         if not FEEDBACK_HANDLER_AVAILABLE or self._feedback_handler is None:
-            logger.debug("Feedback handler not available, skipping persistent storage")
             return
 
         try:

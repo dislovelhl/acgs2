@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class TransactionState(Enum):
     """States of a Saga transaction."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMMITTED = "committed"
@@ -43,6 +44,7 @@ class TransactionState(Enum):
 
 class OperationType(Enum):
     """Types of operations in a transaction."""
+
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"
@@ -54,6 +56,7 @@ class OperationType(Enum):
 @dataclass
 class CompensableOperation:
     """An operation that can be compensated (undone)."""
+
     operation_id: str
     operation_type: OperationType
     forward_action: Callable[[JSONValue], Awaitable[JSONValue]]
@@ -74,6 +77,7 @@ class CompensableOperation:
 @dataclass
 class OperationResult:
     """Result of executing an operation."""
+
     operation_id: str
     success: bool
     result: JSONValue
@@ -87,6 +91,7 @@ class OperationResult:
 @dataclass
 class SagaTransaction:
     """A Saga transaction with compensable operations."""
+
     transaction_id: str
     operations: List[CompensableOperation]
     state: TransactionState = TransactionState.PENDING
@@ -125,20 +130,18 @@ class TransactionCoordinator:
         logger.info("Initialized SagaLLM Transaction Coordinator")
 
     async def begin_transaction(
-        self,
-        operations: List[CompensableOperation],
-        timeout_seconds: float = 300.0
+        self, operations: List[CompensableOperation], timeout_seconds: float = 300.0
     ) -> SagaTransaction:
         """Begin a new Saga transaction."""
         transaction = SagaTransaction(
-            transaction_id="",
-            operations=operations,
-            timeout_seconds=timeout_seconds
+            transaction_id="", operations=operations, timeout_seconds=timeout_seconds
         )
 
         self.active_transactions[transaction.transaction_id] = transaction
 
-        logger.info(f"Began transaction {transaction.transaction_id} with {len(operations)} operations")
+        logger.info(
+            f"Began transaction {transaction.transaction_id} with {len(operations)} operations"
+        )
         return transaction
 
     async def execute_transaction(self, transaction: SagaTransaction) -> Tuple[bool, str]:
@@ -164,7 +167,10 @@ class TransactionCoordinator:
                     transaction.state = TransactionState.FAILED
                     transaction.failed_operation = operation.operation_id
                     await self._compensate_transaction(transaction)
-                    return False, f"Dependencies not satisfied for operation {operation.operation_id}"
+                    return (
+                        False,
+                        f"Dependencies not satisfied for operation {operation.operation_id}",
+                    )
 
                 # Execute operation
                 result = await self._execute_operation(operation)
@@ -195,7 +201,7 @@ class TransactionCoordinator:
                 # Execute forward action
                 result = await asyncio.wait_for(
                     operation.forward_action(operation.forward_data),
-                    timeout=operation.timeout_seconds
+                    timeout=operation.timeout_seconds,
                 )
 
                 execution_time = (time.time() - start_time) * 1000
@@ -206,7 +212,7 @@ class TransactionCoordinator:
                     result=result,
                     error=None,
                     execution_time_ms=execution_time,
-                    timestamp=time.time()
+                    timestamp=time.time(),
                 )
 
             except asyncio.TimeoutError:
@@ -217,9 +223,9 @@ class TransactionCoordinator:
                         result=None,
                         error=f"Operation timed out after {operation.timeout_seconds}s",
                         execution_time_ms=(time.time() - start_time) * 1000,
-                        timestamp=time.time()
+                        timestamp=time.time(),
                     )
-                await asyncio.sleep(0.1 * (2 ** attempt))  # Exponential backoff
+                await asyncio.sleep(0.1 * (2**attempt))  # Exponential backoff
 
             except Exception as e:
                 if attempt == operation.retry_count:
@@ -229,9 +235,9 @@ class TransactionCoordinator:
                         result=None,
                         error=str(e),
                         execution_time_ms=(time.time() - start_time) * 1000,
-                        timestamp=time.time()
+                        timestamp=time.time(),
                     )
-                await asyncio.sleep(0.1 * (2 ** attempt))
+                await asyncio.sleep(0.1 * (2**attempt))
 
         # Should never reach here
         return OperationResult(
@@ -240,20 +246,17 @@ class TransactionCoordinator:
             result=None,
             error="Unexpected execution error",
             execution_time_ms=(time.time() - start_time) * 1000,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
     async def _check_dependencies(
-        self,
-        operation: CompensableOperation,
-        transaction: SagaTransaction
+        self, operation: CompensableOperation, transaction: SagaTransaction
     ) -> bool:
         """Check if operation dependencies are satisfied."""
         for dep_id in operation.depends_on:
             # Check if dependency operation was executed successfully
             dep_result = next(
-                (r for r in transaction.executed_operations if r.operation_id == dep_id),
-                None
+                (r for r in transaction.executed_operations if r.operation_id == dep_id), None
             )
             if not dep_result or not dep_result.success:
                 return False
@@ -266,16 +269,17 @@ class TransactionCoordinator:
         logger.warning(f"Compensating transaction {transaction.transaction_id}")
 
         # Reverse order (LIFO) for compensation
-        successful_operations = [
-            op for op in transaction.executed_operations
-            if op.success
-        ]
+        successful_operations = [op for op in transaction.executed_operations if op.success]
 
         for operation_result in reversed(successful_operations):
             # Find the original operation
             operation = next(
-                (op for op in transaction.operations if op.operation_id == operation_result.operation_id),
-                None
+                (
+                    op
+                    for op in transaction.operations
+                    if op.operation_id == operation_result.operation_id
+                ),
+                None,
             )
 
             if operation:
@@ -291,12 +295,14 @@ class TransactionCoordinator:
                 compensation_result = await self._execute_compensation(operation, operation_result)
 
                 # Record compensation
-                transaction.compensation_log.append({
-                    "operation_id": operation.operation_id,
-                    "compensated_at": time.time(),
-                    "result": compensation_result,
-                    "original_result": operation_result.result
-                })
+                transaction.compensation_log.append(
+                    {
+                        "operation_id": operation.operation_id,
+                        "compensated_at": time.time(),
+                        "result": compensation_result,
+                        "original_result": operation_result.result,
+                    }
+                )
 
                 # Mark operation as compensated
                 operation_result.compensated = True
@@ -309,9 +315,7 @@ class TransactionCoordinator:
                 await asyncio.sleep(1)
 
     async def _execute_compensation(
-        self,
-        operation: CompensableOperation,
-        operation_result: OperationResult
+        self, operation: CompensableOperation, operation_result: OperationResult
     ) -> JSONValue:
         """Execute the compensation action for an operation."""
         try:
@@ -319,12 +323,11 @@ class TransactionCoordinator:
             compensation_input = {
                 "original_data": operation.compensate_data,
                 "forward_result": operation_result.result,
-                "execution_timestamp": operation_result.timestamp
+                "execution_timestamp": operation_result.timestamp,
             }
 
             result = await asyncio.wait_for(
-                operation.compensate_action(compensation_input),
-                timeout=operation.timeout_seconds
+                operation.compensate_action(compensation_input), timeout=operation.timeout_seconds
             )
 
             logger.info(f"Successfully compensated operation {operation.operation_id}")
@@ -347,9 +350,8 @@ class TransactionCoordinator:
 
     async def get_transaction_status(self, transaction_id: str) -> Optional[JSONDict]:
         """Get the status of a transaction."""
-        transaction = (
-            self.active_transactions.get(transaction_id) or
-            next((t for t in self.completed_transactions if t.transaction_id == transaction_id), None)
+        transaction = self.active_transactions.get(transaction_id) or next(
+            (t for t in self.completed_transactions if t.transaction_id == transaction_id), None
         )
 
         if not transaction:
@@ -363,7 +365,7 @@ class TransactionCoordinator:
             "executed_count": len(transaction.executed_operations),
             "failed_operation": transaction.failed_operation,
             "compensations_count": len(transaction.compensation_log),
-            "constitutional_hash": transaction.constitutional_hash
+            "constitutional_hash": transaction.constitutional_hash,
         }
 
     def get_system_status(self) -> JSONDict:
@@ -375,7 +377,7 @@ class TransactionCoordinator:
             "constitutional_hash": CONSTITUTIONAL_HASH,
             "total_operations_processed": sum(
                 len(t.executed_operations) for t in self.completed_transactions
-            )
+            ),
         }
 
 
@@ -383,9 +385,7 @@ class ConstitutionalOperationFactory:
     """Factory for creating constitutional compensable operations."""
 
     @staticmethod
-    def create_policy_operation(
-        policy_data: JSONDict
-    ) -> CompensableOperation:
+    def create_policy_operation(policy_data: JSONDict) -> CompensableOperation:
         """Create a compensable policy creation operation."""
 
         async def create_policy(data: JSONValue) -> JSONDict:
@@ -406,13 +406,11 @@ class ConstitutionalOperationFactory:
             compensate_action=delete_policy,
             forward_data=policy_data,
             compensate_data={"policy_id": None},  # Will be filled after creation
-            timeout_seconds=60.0
+            timeout_seconds=60.0,
         )
 
     @staticmethod
-    def create_execution_operation(
-        execution_data: JSONDict
-    ) -> CompensableOperation:
+    def create_execution_operation(execution_data: JSONDict) -> CompensableOperation:
         """Create a compensable execution operation."""
 
         async def execute_action(data: JSONValue) -> JSONDict:
@@ -423,7 +421,9 @@ class ConstitutionalOperationFactory:
         async def rollback_execution(data: JSONDict) -> JSONDict:
             # Compensation: rollback the execution
             original_data = data.get("original_data", {})
-            execution_id = original_data.get("execution_id") if isinstance(original_data, dict) else None
+            execution_id = (
+                original_data.get("execution_id") if isinstance(original_data, dict) else None
+            )
             return {"execution_id": execution_id, "rolled_back": True}
 
         return CompensableOperation(
@@ -433,13 +433,11 @@ class ConstitutionalOperationFactory:
             compensate_action=rollback_execution,
             forward_data=execution_data,
             compensate_data={"execution_id": None},  # Will be filled after execution
-            timeout_seconds=30.0
+            timeout_seconds=30.0,
         )
 
     @staticmethod
-    def create_validation_operation(
-        validation_data: JSONDict
-    ) -> CompensableOperation:
+    def create_validation_operation(validation_data: JSONDict) -> CompensableOperation:
         """Create a compensable validation operation."""
 
         async def validate_policy(data: JSONValue) -> JSONDict:
@@ -450,7 +448,9 @@ class ConstitutionalOperationFactory:
         async def invalidate_validation(data: JSONDict) -> JSONDict:
             # Compensation: invalidate the validation
             original_data = data.get("original_data", {})
-            validation_id = original_data.get("validation_id") if isinstance(original_data, dict) else None
+            validation_id = (
+                original_data.get("validation_id") if isinstance(original_data, dict) else None
+            )
             return {"validation_id": validation_id, "invalidated": True}
 
         return CompensableOperation(
@@ -460,7 +460,7 @@ class ConstitutionalOperationFactory:
             compensate_action=invalidate_validation,
             forward_data=validation_data,
             compensate_data={"validation_id": None},  # Will be filled after validation
-            timeout_seconds=45.0
+            timeout_seconds=45.0,
         )
 
 
@@ -477,9 +477,7 @@ class SagaLLMOrchestrator:
         self.operation_factory = ConstitutionalOperationFactory()
 
     async def create_policy_transaction(
-        self,
-        policy_data: JSONDict,
-        validation_required: bool = True
+        self, policy_data: JSONDict, validation_required: bool = True
     ) -> Tuple[bool, str, Optional[str]]:
         """
         Create a policy with validation and automatic compensation.
@@ -495,10 +493,9 @@ class SagaLLMOrchestrator:
 
         # Validation operation (depends on creation)
         if validation_required:
-            validate_op = self.operation_factory.create_validation_operation({
-                "policy_data": policy_data,
-                "validation_type": "constitutional_compliance"
-            })
+            validate_op = self.operation_factory.create_validation_operation(
+                {"policy_data": policy_data, "validation_type": "constitutional_compliance"}
+            )
             validate_op.depends_on = [create_op.operation_id]
             operations.append(validate_op)
 
@@ -510,9 +507,7 @@ class SagaLLMOrchestrator:
         return success, message, transaction_id
 
     async def execute_governance_action(
-        self,
-        action_data: JSONDict,
-        requires_validation: bool = True
+        self, action_data: JSONDict, requires_validation: bool = True
     ) -> Tuple[bool, str, Optional[str]]:
         """
         Execute a governance action with compensation guarantees.
@@ -528,10 +523,9 @@ class SagaLLMOrchestrator:
 
         # Validation operation if required
         if requires_validation:
-            validate_op = self.operation_factory.create_validation_operation({
-                "action_data": action_data,
-                "validation_type": "governance_compliance"
-            })
+            validate_op = self.operation_factory.create_validation_operation(
+                {"action_data": action_data, "validation_type": "governance_compliance"}
+            )
             validate_op.depends_on = [execute_op.operation_id]
             operations.append(validate_op)
 
@@ -553,5 +547,5 @@ class SagaLLMOrchestrator:
             **coordinator_status,
             "orchestrator_type": "SagaLLM",
             "compensation_enabled": True,
-            "constitutional_compliance": True
+            "constitutional_compliance": True,
         }

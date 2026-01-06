@@ -247,83 +247,47 @@ Based on DEPLOYMENT_FAILURE_SCENARIOS.md analysis, we recommend:
 
 From TODO_CATALOG.md, these TODOs create error conditions that lack documentation:
 
-#### CRITICAL Security TODOs
+#### RESOLVED Security TODOs
 
 **1. CORS Configuration (compliance_docs)**
-- **TODO:** Configure CORS based on environment
-- **Current Error:** Allows all origins (security vulnerability)
-- **Missing Documentation:**
-  - What error occurs in production with wildcard CORS?
-  - How to detect CORS misconfigurations?
-  - How to properly configure CORS per environment?
+- **Status:** RESOLVED
+- **Resolution:** Environment-based CORS configuration implemented using centralized `get_cors_config()`.
 
 **2. Frontend Authentication (hitl_approvals)**
-- **TODO:** Get approver_id from auth
-- **Current Error:** Hardcoded "current_user" allows impersonation
-- **Missing Documentation:**
-  - What error should occur when auth is missing?
-  - How to detect authentication bypass attempts?
-  - How to validate user identity on backend?
+- **Status:** RESOLVED
+- **Resolution:** Integrated with authentication context to retrieve actual user ID.
 
 **3. OPA Role Verification (approval_chain_engine)**
-- **TODO:** Add role verification via OPA
-- **Current Error:** Simplified role checking, no OPA validation
-- **Missing Documentation:**
-  - What error occurs when role verification fails?
-  - How to handle OPA unavailable during role check?
-  - Fallback behavior when OPA unreachable?
+- **Status:** RESOLVED
+- **Resolution:** Implemented OPA-based role verification for approval decisions.
 
-#### CRITICAL Data Integration TODOs
+#### RESOLVED Data Integration TODOs
 
 **4. Audit Ledger KPI Integration**
-- **TODO:** Integrate with audit_ledger for real metrics
-- **Current Error:** Returns mock data, no real metrics
-- **Missing Documentation:**
-  - Error when audit ledger unavailable?
-  - Error when metrics calculation fails?
-  - How to detect mock vs real data?
+- **Status:** RESOLVED
+- **Resolution:** Integrated with `AuditLedger` to calculate real compliance metrics.
 
 **5. Audit Ledger Trend Integration**
-- **TODO:** Integrate with audit_ledger for real trend data
-- **Current Error:** Returns synthetic trend data
-- **Missing Documentation:**
-  - Error when trend calculation fails?
-  - Error when historical data missing?
-  - How to validate trend data accuracy?
+- **Status:** RESOLVED
+- **Resolution:** Integrated with `AuditLedger` for real historical trend data.
 
 **6. Audit Log Fetching**
-- **TODO:** Implement actual log fetching from audit ledger
-- **Current Error:** Returns empty list, no logs
-- **Missing Documentation:**
-  - Error when log fetching fails?
-  - Error when audit database unavailable?
-  - How to handle pagination errors?
+- **Status:** RESOLVED
+- **Resolution:** Implemented actual log fetching from `AuditLedger` in report generation tasks.
 
-#### HIGH Priority TODOs
+#### RESOLVED High Priority TODOs
 
 **7. Alembic Migrations (hitl_approvals)**
-- **TODO:** Use Alembic for migrations in production
-- **Current Error:** Uses create_all(), no migration tracking
-- **Missing Documentation:**
-  - Error when schema mismatch?
-  - Error when migration fails?
-  - How to rollback failed migrations?
+- **Status:** RESOLVED
+- **Resolution:** Transitioned to Alembic for production database migration management.
 
 **8. Webhook Test Delivery**
-- **TODO:** Integrate with WebhookDeliveryEngine
-- **Current Error:** Returns mock test response
-- **Missing Documentation:**
-  - Error when test delivery fails?
-  - Error when WebhookDeliveryEngine unavailable?
-  - How to validate webhook connectivity?
+- **Status:** RESOLVED
+- **Resolution:** Integrated with `WebhookDeliveryEngine` for actual test delivery.
 
 **9. Dynamic Chain Resolution**
-- **TODO:** Implement dynamic chain resolution via OPA
-- **Current Error:** Simple priority matching with fallback
-- **Missing Documentation:**
-  - Error when no chain matches?
-  - Error when OPA chain resolution fails?
-  - Fallback chain selection errors?
+- **Status:** RESOLVED
+- **Resolution:** Implemented dynamic approval chain resolution using OPA policies.
 
 **10. Config Validator Placeholder**
 - **Note:** config_validator.py marks "TODO" as forbidden placeholder (not actual TODO)

@@ -10,9 +10,9 @@ import asyncio
 import logging
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -273,7 +273,6 @@ class AnomalyAlerter:
 
         # Check for duplicate
         if await self._is_duplicate(alert_id):
-            logger.debug(f"Duplicate alert suppressed: {alert_id}")
             return None
 
         # Create alert
@@ -387,11 +386,15 @@ class AnomalyAlerter:
             "active_alerts": len(self.active_alerts),
             "total_alerts": len(self.alert_history),
             "by_type": {
-                alert_type.value: len([a for a in self.active_alerts.values() if a.alert_type == alert_type])
+                alert_type.value: len(
+                    [a for a in self.active_alerts.values() if a.alert_type == alert_type]
+                )
                 for alert_type in AlertType
             },
             "by_severity": {
-                severity.value: len([a for a in self.active_alerts.values() if a.severity == severity])
+                severity.value: len(
+                    [a for a in self.active_alerts.values() if a.severity == severity]
+                )
                 for severity in AlertSeverity
             },
             "alert_counts": self.alert_counts,
@@ -434,7 +437,7 @@ class AnomalyAlerter:
         return await self.alert(
             alert_type=AlertType.INJECTION,
             severity=severity,
-            title=f"Prompt injection detected",
+            title="Prompt injection detected",
             message=f"Injection type: {injection_type}, Confidence: {confidence:.2f}",
             source="injection_detector",
             metadata={

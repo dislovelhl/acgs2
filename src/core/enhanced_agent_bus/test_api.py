@@ -2,7 +2,6 @@
 Basic API tests for development environment
 """
 
-
 import httpx
 import pytest
 

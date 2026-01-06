@@ -221,9 +221,11 @@ class PerformanceProfiler:
         metrics.throughput_rps = metrics.successful_operations / metrics.duration_seconds
 
         if metrics.latencies:
-            metrics.p50_latency_ms, metrics.p95_latency_ms, metrics.p99_latency_ms = (
-                self.calculate_percentiles(metrics.latencies)
-            )
+            (
+                metrics.p50_latency_ms,
+                metrics.p95_latency_ms,
+                metrics.p99_latency_ms,
+            ) = self.calculate_percentiles(metrics.latencies)
             metrics.mean_latency_ms = sum(metrics.latencies) / len(metrics.latencies)
             metrics.min_latency_ms = min(metrics.latencies)
             metrics.max_latency_ms = max(metrics.latencies)
@@ -314,9 +316,11 @@ class PerformanceProfiler:
         metrics.throughput_rps = metrics.successful_operations / metrics.duration_seconds
 
         if metrics.latencies:
-            metrics.p50_latency_ms, metrics.p95_latency_ms, metrics.p99_latency_ms = (
-                self.calculate_percentiles(metrics.latencies)
-            )
+            (
+                metrics.p50_latency_ms,
+                metrics.p95_latency_ms,
+                metrics.p99_latency_ms,
+            ) = self.calculate_percentiles(metrics.latencies)
             metrics.mean_latency_ms = sum(metrics.latencies) / len(metrics.latencies)
             metrics.min_latency_ms = min(metrics.latencies)
             metrics.max_latency_ms = max(metrics.latencies)

@@ -13,13 +13,13 @@ rules:
   - id: acgs-sql-injection-string-format
     message: |
       Potential SQL injection vulnerability detected.
-      
+
       String formatting in SQL queries allows attackers to inject malicious SQL.
       Use parameterized queries instead.
-      
+
       Bad:
         cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
-      
+
       Good:
         cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
     severity: ERROR
@@ -49,13 +49,13 @@ rules:
   - id: acgs-command-injection-subprocess
     message: |
       Potential command injection vulnerability.
-      
+
       Using shell=True with subprocess or string concatenation in commands
       allows attackers to inject malicious commands.
-      
+
       Bad:
         subprocess.run(f"ls {user_input}", shell=True)
-      
+
       Good:
         subprocess.run(["ls", user_input])
     severity: ERROR
@@ -83,10 +83,10 @@ rules:
   - id: acgs-code-injection-eval
     message: |
       Use of eval() detected - potential code injection vulnerability.
-      
+
       eval() and exec() execute arbitrary code and should never be used
       with untrusted input.
-      
+
       Alternatives:
         - Use json.loads() for JSON data
         - Use ast.literal_eval() for simple Python literals
@@ -191,7 +191,7 @@ rules:
   - id: acgs-hardcoded-bearer-token
     message: |
       Hardcoded Bearer token detected.
-      
+
       Authentication tokens must never be hardcoded.
     severity: ERROR
     languages: [python]
@@ -218,10 +218,10 @@ rules:
   - id: acgs-unsafe-pickle-load
     message: |
       Unsafe deserialization using pickle detected.
-      
+
       pickle.loads() can execute arbitrary code during deserialization.
       Never use pickle with untrusted data.
-      
+
       Alternatives:
         - Use json.loads() for JSON data
         - Use Protocol Buffers or MessagePack
@@ -250,9 +250,9 @@ rules:
   - id: acgs-unsafe-yaml-load
     message: |
       Unsafe YAML deserialization detected.
-      
+
       yaml.load() without SafeLoader can execute arbitrary Python code.
-      
+
       Fix: Use yaml.safe_load() instead
     severity: ERROR
     languages: [python]
@@ -281,10 +281,10 @@ rules:
   - id: acgs-weak-hash-md5
     message: |
       MD5 hash algorithm detected.
-      
+
       MD5 is cryptographically broken and unsuitable for security purposes.
       Use SHA-256 or SHA-3 for cryptographic hashing.
-      
+
       Fix: Use hashlib.sha256() or hashlib.sha3_256()
     severity: ERROR
     languages: [python]
@@ -309,10 +309,10 @@ rules:
   - id: acgs-weak-hash-sha1
     message: |
       SHA-1 hash algorithm detected.
-      
+
       SHA-1 is cryptographically weak and should not be used for security.
       Use SHA-256 or SHA-3 for cryptographic hashing.
-      
+
       Fix: Use hashlib.sha256() or hashlib.sha3_256()
     severity: ERROR
     languages: [python]
@@ -375,10 +375,10 @@ rules:
   - id: acgs-jwt-no-verification
     message: |
       JWT decoded without signature verification.
-      
+
       Disabling signature verification allows attackers to forge tokens.
       Always verify JWT signatures.
-      
+
       Fix: jwt.decode(token, key, algorithms=["HS256"])
     severity: ERROR
     languages: [python]
@@ -405,10 +405,10 @@ rules:
   - id: acgs-path-traversal-risk
     message: |
       Potential path traversal vulnerability.
-      
+
       User-controlled file paths can be manipulated to access
       unauthorized files using ../ sequences.
-      
+
       Mitigations:
         - Validate paths against an allowed list
         - Use os.path.realpath() and check prefix
@@ -449,10 +449,10 @@ rules:
   - id: acgs-fastapi-missing-pydantic-validation
     message: |
       FastAPI POST/PUT endpoint accepting raw string input.
-      
+
       Use Pydantic models for input validation to prevent injection
       and ensure data integrity.
-      
+
       Fix: Define a Pydantic model and use it as the parameter type
     severity: WARNING
     languages: [python]
@@ -520,7 +520,7 @@ rules:
   - id: acgs-sensitive-data-logging
     message: |
       Potential logging of sensitive data detected.
-      
+
       Avoid logging passwords, tokens, API keys, or PII.
       Redact sensitive information before logging.
     severity: WARNING

@@ -107,13 +107,15 @@ def build_issue_created_template(
             if len(description) > max_description_length
             else description
         )
-        blocks.append({
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": truncated_description,
-            },
-        })
+        blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": truncated_description,
+                },
+            }
+        )
 
     # Build metadata context
     metadata_parts = [f"*Issue ID:* `{issue_id}`"]
@@ -124,33 +126,37 @@ def build_issue_created_template(
     if assignee:
         metadata_parts.append(f"*Assignee:* {assignee}")
 
-    blocks.append({
-        "type": "context",
-        "elements": [
-            {
-                "type": "mrkdwn",
-                "text": " | ".join(metadata_parts),
-            }
-        ],
-    })
+    blocks.append(
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": " | ".join(metadata_parts),
+                }
+            ],
+        }
+    )
 
     # Add action button if URL provided
     if url:
-        blocks.append({
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "View in Linear",
-                        "emoji": True,
-                    },
-                    "url": url,
-                    "style": "primary",
-                }
-            ],
-        })
+        blocks.append(
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View in Linear",
+                            "emoji": True,
+                        },
+                        "url": url,
+                        "style": "primary",
+                    }
+                ],
+            }
+        )
 
     return blocks
 
@@ -224,20 +230,22 @@ def build_status_changed_template(
 
     # Add action button if URL provided
     if url:
-        blocks.append({
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "View in Linear",
-                        "emoji": True,
-                    },
-                    "url": url,
-                }
-            ],
-        })
+        blocks.append(
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View in Linear",
+                            "emoji": True,
+                        },
+                        "url": url,
+                    }
+                ],
+            }
+        )
 
     return blocks
 
@@ -321,20 +329,22 @@ def build_comment_added_template(
 
     # Add action button if URL provided
     if url:
-        blocks.append({
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "View in Linear",
-                        "emoji": True,
-                    },
-                    "url": url,
-                }
-            ],
-        })
+        blocks.append(
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View in Linear",
+                            "emoji": True,
+                        },
+                        "url": url,
+                    }
+                ],
+            }
+        )
 
     return blocks
 
@@ -376,9 +386,7 @@ def build_issue_assigned_template(
     """
     # Determine if this is a reassignment
     assignment_text = (
-        f"`{previous_assignee}` → `{assignee}`"
-        if previous_assignee
-        else f"`{assignee}`"
+        f"`{previous_assignee}` → `{assignee}`" if previous_assignee else f"`{assignee}`"
     )
 
     blocks: List[Dict[str, Any]] = [
@@ -403,8 +411,7 @@ def build_issue_assigned_template(
                 {
                     "type": "mrkdwn",
                     "text": (
-                        f"*Issue ID:* `{issue_id}`"
-                        + (f" | *Status:* {status}" if status else "")
+                        f"*Issue ID:* `{issue_id}`" + (f" | *Status:* {status}" if status else "")
                     ),
                 }
             ],
@@ -413,20 +420,22 @@ def build_issue_assigned_template(
 
     # Add action button if URL provided
     if url:
-        blocks.append({
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "View in Linear",
-                        "emoji": True,
-                    },
-                    "url": url,
-                }
-            ],
-        })
+        blocks.append(
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View in Linear",
+                            "emoji": True,
+                        },
+                        "url": url,
+                    }
+                ],
+            }
+        )
 
     return blocks
 
@@ -491,8 +500,7 @@ def build_priority_changed_template(
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f"*{title}*\n\n"
-                    f"{old_emoji} `{old_priority}` → {new_emoji} `{new_priority}`"
+                    f"*{title}*\n\n{old_emoji} `{old_priority}` → {new_emoji} `{new_priority}`"
                 ),
             },
         },
@@ -512,20 +520,22 @@ def build_priority_changed_template(
 
     # Add action button if URL provided
     if url:
-        blocks.append({
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "View in Linear",
-                        "emoji": True,
-                    },
-                    "url": url,
-                }
-            ],
-        })
+        blocks.append(
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View in Linear",
+                            "emoji": True,
+                        },
+                        "url": url,
+                    }
+                ],
+            }
+        )
 
     return blocks
 
@@ -586,9 +596,7 @@ def get_issue_assigned_fallback(title: str, assignee: str) -> str:
     return f"Linear issue assigned: {title} → {assignee}"
 
 
-def get_priority_changed_fallback(
-    title: str, old_priority: str, new_priority: str
-) -> str:
+def get_priority_changed_fallback(title: str, old_priority: str, new_priority: str) -> str:
     """
     Get fallback text for priority changed notification.
 

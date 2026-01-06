@@ -36,9 +36,9 @@ import httpx
 from pydantic import Field, SecretStr, field_validator, model_validator
 
 # Import exceptions from centralized exceptions module
-from exceptions.auth import AuthenticationError
-from exceptions.delivery import DeliveryError
-from exceptions.integration import RateLimitError
+from ..exceptions.auth import AuthenticationError
+from ..exceptions.delivery import DeliveryError
+from ..exceptions.integration import RateLimitError
 
 # Import base integration classes and models
 from .base import (
@@ -186,8 +186,8 @@ class SplunkAdapter(BaseIntegration):
 
         # Check batch metrics
         metrics = adapter.metrics
-        print(f"Batches sent: {metrics['batches_sent']}")
-        print(f"Events via batch: {metrics['batch_events_total']}")
+        logger.info(f"Batches sent: {metrics['batches_sent']}")
+        logger.info(f"Events via batch: {metrics['batch_events_total']}")
 
     Features:
         - Native HEC batch processing (newline-delimited JSON format)
@@ -281,7 +281,6 @@ class SplunkAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating authentication success/failure
         """
-        logger.debug(f"Authenticating with Splunk HEC at {self.splunk_credentials.hec_url}")
 
         try:
             client = await self.get_http_client()
@@ -372,7 +371,6 @@ class SplunkAdapter(BaseIntegration):
         Returns:
             IntegrationResult with validation status and any issues found
         """
-        logger.debug(f"Validating Splunk integration '{self.name}'")
 
         validation_issues: List[str] = []
 
@@ -494,7 +492,6 @@ class SplunkAdapter(BaseIntegration):
             DeliveryError: If delivery fails after retries
             RateLimitError: If rate limited by Splunk
         """
-        logger.debug(f"Sending event {event.event_id} to Splunk")
 
         try:
             client = await self.get_http_client()
@@ -530,7 +527,7 @@ class SplunkAdapter(BaseIntegration):
                 splunk_code = response_data.get("code", 0)
                 if splunk_code == 0:
                     ack_id = response_data.get("ackId")
-                    logger.debug(f"Event {event.event_id} sent to Splunk, ack: {ack_id}")
+
                     return IntegrationResult(
                         success=True,
                         integration_name=self.name,
@@ -736,8 +733,6 @@ class SplunkAdapter(BaseIntegration):
         if not events:
             return []
 
-        logger.debug(f"Sending batch of {len(events)} events to Splunk HEC")
-
         try:
             client = await self.get_http_client()
 
@@ -776,7 +771,7 @@ class SplunkAdapter(BaseIntegration):
             # Handle success
             if response.status_code == 200 and response_data.get("code") == 0:
                 # All events succeeded
-                logger.debug(f"Batch of {len(events)} events sent to Splunk successfully")
+
                 return [
                     IntegrationResult(
                         success=True,
@@ -880,7 +875,6 @@ class SplunkAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating connection status
         """
-        logger.debug(f"Testing Splunk connection for '{self.name}'")
 
         try:
             client = await self.get_http_client()

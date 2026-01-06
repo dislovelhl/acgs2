@@ -294,25 +294,25 @@ def run_standalone_tests():
     """Run tests standalone without pytest for quick verification."""
     client = TestClient(app)
 
-    print("=" * 60)
-    print("E2E Test: Template Upload to Download Flow")
-    print("=" * 60)
+    # print("=" * 60)  # DEBUG_CLEANUP
+    # print("E2E Test: Template Upload to Download Flow")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
 
     # Test 1: Health check
-    print("\n[1/7] Checking API health...")
+    # print("\n[1/7] Checking API health...")  # DEBUG_CLEANUP
     resp = client.get("/health/ready")
     assert resp.status_code == 200, f"Health check failed: {resp.text}"
-    print("      API is healthy")
+    # print("      API is healthy")  # DEBUG_CLEANUP
 
     # Test 2: Get initial template count
-    print("\n[2/7] Getting initial template list...")
+    # print("\n[2/7] Getting initial template list...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/templates")
     assert resp.status_code == 200
     initial_count = resp.json()["meta"]["total_items"]
-    print(f"      Found {initial_count} existing templates")
+    # print(f"      Found {initial_count} existing templates")  # DEBUG_CLEANUP
 
     # Test 3: Upload template
-    print("\n[3/7] Uploading test template...")
+    # print("\n[3/7] Uploading test template...")  # DEBUG_CLEANUP
     file_content = json.dumps(TEST_TEMPLATE_CONTENT, indent=2)
     files = {"file": ("e2e_test.json", io.BytesIO(file_content.encode()), "application/json")}
     data = {
@@ -324,41 +324,41 @@ def run_standalone_tests():
     assert resp.status_code == 201, f"Upload failed: {resp.text}"
     template_id = resp.json()["id"]
     uploaded_content = resp.json()["content"]
-    print(f"      Template uploaded with ID: {template_id}")
+    # print(f"      Template uploaded with ID: {template_id}")  # DEBUG_CLEANUP
 
     # Test 4: Verify in listing
-    print("\n[4/7] Verifying template appears in listing...")
+    # print("\n[4/7] Verifying template appears in listing...")  # DEBUG_CLEANUP
     resp = client.get("/api/v1/templates")
     assert resp.status_code == 200
     new_count = resp.json()["meta"]["total_items"]
     assert new_count > initial_count, "Template count did not increase"
     template_ids = [t["id"] for t in resp.json()["items"]]
     assert template_id in template_ids, "Template not found in listing"
-    print(f"      Template found in listing (count: {initial_count} -> {new_count})")
+    # print(f"      Template found in listing (count: {initial_count} -> {new_count})")  # DEBUG_CLEANUP
 
     # Test 5: Download template
-    print("\n[5/7] Downloading template...")
+    # print("\n[5/7] Downloading template...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}/download")
     assert resp.status_code == 200
     download_data = resp.json()
     assert download_data["content"] == uploaded_content, "Content mismatch"
-    print("      Download successful, content matches")
+    # print("      Download successful, content matches")  # DEBUG_CLEANUP
 
     # Test 6: Verify download count
-    print("\n[6/7] Verifying download count incremented...")
+    # print("\n[6/7] Verifying download count incremented...")  # DEBUG_CLEANUP
     assert download_data["downloads"] == 1, "Download count not incremented"
-    print("      Download count: 1")
+    # print("      Download count: 1")  # DEBUG_CLEANUP
 
     # Test 7: Verify count persisted
-    print("\n[7/7] Verifying count persisted in template record...")
+    # print("\n[7/7] Verifying count persisted in template record...")  # DEBUG_CLEANUP
     resp = client.get(f"/api/v1/templates/{template_id}")
     assert resp.status_code == 200
     assert resp.json()["downloads"] == 1, "Download count not persisted"
-    print("      Count verified in template record")
+    # print("      Count verified in template record")  # DEBUG_CLEANUP
 
-    print("\n" + "=" * 60)
-    print("ALL E2E TESTS PASSED!")
-    print("=" * 60)
+    # print("\n" + "=" * 60)  # DEBUG_CLEANUP
+    # print("ALL E2E TESTS PASSED!")  # DEBUG_CLEANUP
+    # print("=" * 60)  # DEBUG_CLEANUP
 
     return True
 
@@ -368,8 +368,8 @@ if __name__ == "__main__":
         success = run_standalone_tests()
         sys.exit(0 if success else 1)
     except AssertionError as e:
-        print(f"\nTEST FAILED: {e}")
+        # print(f"\nTEST FAILED: {e}")  # DEBUG_CLEANUP
         sys.exit(1)
     except Exception as e:
-        print(f"\nERROR: {e}")
+        # print(f"\nERROR: {e}")  # DEBUG_CLEANUP
         sys.exit(1)

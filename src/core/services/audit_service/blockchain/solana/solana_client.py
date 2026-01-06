@@ -60,7 +60,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
 class SolanaClient:
     """Solana 区块链客户端 - 支持 Mock 和 Live 模式"""
 
@@ -121,6 +120,24 @@ class SolanaClient:
         if not self.rpc_urls:
             self.rpc_urls = [self.network_config.get("rpc_url", "https://api.devnet.solana.com")]
 
+        # Security hardening: Validate RPC URLs (RPC-Racer mitigation)
+        validated_urls = []
+        for url in self.rpc_urls:
+            if not url.startswith("https://"):
+                logger.warning(
+                    f"[{CONSTITUTIONAL_HASH}] Insecure RPC URL detected: {url}. "
+                    "Only HTTPS is allowed for production audit anchoring."
+                )
+                if self.live and self.network == "mainnet-beta":
+                    logger.error(f"[{CONSTITUTIONAL_HASH}] Blocking insecure RPC in mainnet: {url}")
+                    continue
+            validated_urls.append(url)
+
+        if not validated_urls:
+            raise ValueError(f"[{CONSTITUTIONAL_HASH}] No valid/secure RPC URLs provided")
+
+        self.rpc_urls = validated_urls
+
         self.rpc_clients: List[AsyncClient] = []
         self.current_rpc_index = 0
         self.failover_count = 0
@@ -158,7 +175,6 @@ class SolanaClient:
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Wallet loaded from environment variable")
                     return True
             except Exception as e:
-                logger.debug(f"Failed to load wallet from env: {e}")
 
         # 2. 从文件加载
         wallet_path = self.config.get("wallet_path")

@@ -13,7 +13,7 @@ This module provides:
     - Performance optimization with orjson serialization
 
 Usage:
-    from src.core.shared.logging_config import configure_logging, get_logger
+    from src.core.shared.acgs_logging_config import configure_logging, get_logger
 
     # Initialize at application startup (ONCE, before any logging)
     configure_logging(service_name="api_gateway")
@@ -76,7 +76,6 @@ except ImportError:
     TracerProvider = None  # type: ignore[assignment]
     Resource = None  # type: ignore[assignment]
     FastAPIInstrumentor = None  # type: ignore[assignment]
-
 
 # Module-level state
 _configured: bool = False

@@ -1,8 +1,8 @@
 # CI Migration Guide (v2.3.0)
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`  
-> **From**: .gitlab-ci.yml, Jenkinsfile, scattered workflows  
-> **To**: [.github/workflows/acgs2-ci-cd.yml](.github/workflows/acgs2-ci-cd.yml) + Dependabot  
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **From**: .gitlab-ci.yml, Jenkinsfile, scattered workflows
+> **To**: [.github/workflows/acgs2-ci-cd.yml](.github/workflows/acgs2-ci-cd.yml) + Dependabot
 > **Status**: Complete Phase 3.6
 
 ## Migration Steps

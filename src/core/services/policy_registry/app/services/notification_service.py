@@ -98,7 +98,7 @@ class NotificationService:
             await self.kafka_producer.send_and_wait(
                 self.kafka_topic, message, key=notification["policy_id"].encode("utf-8")
             )
-            logger.debug(f"Sent policy update to Kafka: {notification['policy_id']}")
+
         except Exception as e:
             logger.error(f"Kafka send failed: {e}")
 
@@ -119,12 +119,10 @@ class NotificationService:
     def register_websocket_connection(self, queue: asyncio.Queue):
         """Register a WebSocket connection for notifications"""
         self.websocket_connections.add(queue)
-        logger.debug(f"WebSocket connection registered, total: {len(self.websocket_connections)}")
 
     def unregister_websocket_connection(self, queue: asyncio.Queue):
         """Unregister a WebSocket connection"""
         self.websocket_connections.discard(queue)
-        logger.debug(f"WebSocket connection unregistered, total: {len(self.websocket_connections)}")
 
     async def broadcast_health_status(self, status: Dict[str, Any]):
         """Broadcast health status to all connections"""

@@ -17,7 +17,7 @@ Updated existing acgs2-infra for production TLS/mTLS on OPA, Kafka (Bitnami), Re
 
 ## Docker-compose integration
 Local: PLAINTEXT (localhost:9092/6379/8181)
-Prod: 
+Prod:
 ```
 KAFKA_BOOTSTRAP_SERVERS=kafka.acgs2.svc.cluster.local:9093
 KAFKA_SECURITY_PROTOCOL=SSL

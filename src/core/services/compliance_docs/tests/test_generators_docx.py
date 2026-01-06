@@ -18,16 +18,16 @@ from unittest.mock import patch
 
 import pytest
 from docx import Document
-from generators.docx_generator import (
-    ComplianceDOCXGenerator,
+from src.core.services.compliance_docs.src.generators.docx_generator import (
     ComplianceDOCXStyles,
+    DOCXGenerator,
     DOCXTableBuilder,
     _ensure_output_dir,
     _get_output_path,
     generate_docx,
     generate_docx_to_buffer,
 )
-from models.base import ComplianceFramework
+from src.core.services.compliance_docs.src.models.base import ComplianceFramework
 
 
 class TestComplianceDOCXStyles:
@@ -205,23 +205,23 @@ class TestDOCXTableBuilder:
         builder._set_table_borders(table)
 
 
-class TestComplianceDOCXGenerator:
-    """Tests for ComplianceDOCXGenerator class."""
+class TestDOCXGenerator:
+    """Tests for DOCXGenerator class."""
 
     def test_generator_initialization(self):
         """Test DOCX generator initialization."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         assert generator is not None
         assert generator.orientation == "portrait"
 
     def test_generator_initialization_landscape(self):
         """Test DOCX generator with landscape orientation."""
-        generator = ComplianceDOCXGenerator(orientation="landscape")
+        generator = DOCXGenerator(orientation="landscape")
         assert generator.orientation == "landscape"
 
     def test_create_document(self):
         """Test creating a new document."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         doc = generator._create_document()
         assert doc is not None
         assert generator._styles is not None
@@ -229,7 +229,7 @@ class TestComplianceDOCXGenerator:
 
     def test_create_document_landscape(self):
         """Test creating document with landscape orientation."""
-        generator = ComplianceDOCXGenerator(orientation="landscape")
+        generator = DOCXGenerator(orientation="landscape")
         doc = generator._create_document()
         assert doc is not None
         # Check that orientation was set (width should be greater than height)
@@ -238,7 +238,7 @@ class TestComplianceDOCXGenerator:
 
     def test_add_section(self):
         """Test adding a section to the document."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator._create_document()
         initial_paragraphs = len(generator._document.paragraphs)
         generator._add_section("Test Section")
@@ -247,7 +247,7 @@ class TestComplianceDOCXGenerator:
 
     def test_add_section_with_content(self):
         """Test adding a section with content."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator._create_document()
         generator._add_section("Test Section", content="Test content")
         paragraphs = [p.text for p in generator._document.paragraphs]
@@ -255,7 +255,7 @@ class TestComplianceDOCXGenerator:
 
     def test_add_paragraph(self):
         """Test adding a paragraph to the document."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator._create_document()
         generator._add_paragraph("Test paragraph content")
         paragraphs = [p.text for p in generator._document.paragraphs]
@@ -263,14 +263,14 @@ class TestComplianceDOCXGenerator:
 
     def test_add_paragraph_bold(self):
         """Test adding a bold paragraph."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator._create_document()
         generator._add_paragraph("Bold text", bold=True)
         assert len(generator._document.paragraphs) > 0
 
     def test_add_bullet_list(self):
         """Test adding a bullet list to the document."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator._create_document()
         items = ["Item 1", "Item 2", "Item 3"]
         generator._add_bullet_list(items)
@@ -280,7 +280,7 @@ class TestComplianceDOCXGenerator:
 
     def test_add_numbered_list(self):
         """Test adding a numbered list to the document."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator._create_document()
         items = ["Step 1", "Step 2", "Step 3"]
         generator._add_numbered_list(items)
@@ -290,7 +290,7 @@ class TestComplianceDOCXGenerator:
 
     def test_add_page_break(self):
         """Test adding a page break to the document."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator._create_document()
         # Should not raise an error
         generator._add_page_break()
@@ -302,7 +302,7 @@ class TestDOCXGeneratorSOC2:
     def test_generate_soc2_report(self, tmp_path, sample_soc2_report_data):
         """Test generating a SOC 2 DOCX report."""
         output_path = tmp_path / "soc2_test.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_soc2_report(sample_soc2_report_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -311,7 +311,7 @@ class TestDOCXGeneratorSOC2:
     def test_generate_soc2_report_opens_correctly(self, tmp_path, sample_soc2_report_data):
         """Test that generated SOC 2 DOCX can be opened."""
         output_path = tmp_path / "soc2_test.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator.generate_soc2_report(sample_soc2_report_data, output_path)
         # Try to open the document
         doc = Document(str(output_path))
@@ -320,7 +320,7 @@ class TestDOCXGeneratorSOC2:
 
     def test_generate_soc2_report_default_path(self, sample_soc2_report_data):
         """Test generating SOC 2 report with default output path."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_soc2_report(sample_soc2_report_data)
         assert result.exists()
         assert "soc2_report" in result.name
@@ -340,7 +340,7 @@ class TestDOCXGeneratorSOC2:
             },
         }
         output_path = tmp_path / "soc2_sys_desc.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_soc2_report(data, output_path)
         assert result.exists()
 
@@ -358,7 +358,7 @@ class TestDOCXGeneratorSOC2:
             ],
         }
         output_path = tmp_path / "soc2_criteria.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_soc2_report(data, output_path)
         assert result.exists()
 
@@ -369,7 +369,7 @@ class TestDOCXGeneratorISO27001:
     def test_generate_iso27001_report(self, tmp_path, sample_iso27001_report_data):
         """Test generating an ISO 27001 DOCX report."""
         output_path = tmp_path / "iso27001_test.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_iso27001_report(sample_iso27001_report_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -378,7 +378,7 @@ class TestDOCXGeneratorISO27001:
     def test_generate_iso27001_report_opens_correctly(self, tmp_path, sample_iso27001_report_data):
         """Test that generated ISO 27001 DOCX can be opened."""
         output_path = tmp_path / "iso27001_test.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator.generate_iso27001_report(sample_iso27001_report_data, output_path)
         doc = Document(str(output_path))
         assert doc is not None
@@ -400,7 +400,7 @@ class TestDOCXGeneratorISO27001:
             },
         }
         output_path = tmp_path / "iso27001_soa.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_iso27001_report(data, output_path)
         assert result.exists()
 
@@ -419,7 +419,7 @@ class TestDOCXGeneratorISO27001:
             ],
         }
         output_path = tmp_path / "iso27001_themes.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_iso27001_report(data, output_path)
         assert result.exists()
 
@@ -430,7 +430,7 @@ class TestDOCXGeneratorGDPR:
     def test_generate_gdpr_report(self, tmp_path, sample_gdpr_report_data):
         """Test generating a GDPR DOCX report."""
         output_path = tmp_path / "gdpr_test.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_gdpr_report(sample_gdpr_report_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -439,7 +439,7 @@ class TestDOCXGeneratorGDPR:
     def test_generate_gdpr_report_opens_correctly(self, tmp_path, sample_gdpr_report_data):
         """Test that generated GDPR DOCX can be opened."""
         output_path = tmp_path / "gdpr_test.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator.generate_gdpr_report(sample_gdpr_report_data, output_path)
         doc = Document(str(output_path))
         assert doc is not None
@@ -459,7 +459,7 @@ class TestDOCXGeneratorGDPR:
             },
         }
         output_path = tmp_path / "gdpr_controller.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_gdpr_report(data, output_path)
         assert result.exists()
 
@@ -477,7 +477,7 @@ class TestDOCXGeneratorGDPR:
             ],
         }
         output_path = tmp_path / "gdpr_flows.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_gdpr_report(data, output_path)
         assert result.exists()
 
@@ -491,7 +491,7 @@ class TestDOCXGeneratorGDPR:
             ],
         }
         output_path = tmp_path / "gdpr_security.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_gdpr_report(data, output_path)
         assert result.exists()
 
@@ -502,7 +502,7 @@ class TestDOCXGeneratorEUAIAct:
     def test_generate_euaiact_report(self, tmp_path, sample_euaiact_report_data):
         """Test generating an EU AI Act DOCX report."""
         output_path = tmp_path / "euaiact_test.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_euaiact_report(sample_euaiact_report_data, output_path)
         assert result == output_path
         assert output_path.exists()
@@ -511,7 +511,7 @@ class TestDOCXGeneratorEUAIAct:
     def test_generate_euaiact_report_opens_correctly(self, tmp_path, sample_euaiact_report_data):
         """Test that generated EU AI Act DOCX can be opened."""
         output_path = tmp_path / "euaiact_test.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         generator.generate_euaiact_report(sample_euaiact_report_data, output_path)
         doc = Document(str(output_path))
         assert doc is not None
@@ -534,7 +534,7 @@ class TestDOCXGeneratorEUAIAct:
             ],
         }
         output_path = tmp_path / "euaiact_risk.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_euaiact_report(data, output_path)
         assert result.exists()
 
@@ -553,7 +553,7 @@ class TestDOCXGeneratorEUAIAct:
             ],
         }
         output_path = tmp_path / "euaiact_conformity.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_euaiact_report(data, output_path)
         assert result.exists()
 
@@ -570,7 +570,7 @@ class TestDOCXGeneratorEUAIAct:
             ],
         }
         output_path = tmp_path / "euaiact_tech_doc.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_euaiact_report(data, output_path)
         assert result.exists()
 
@@ -585,7 +585,7 @@ class TestDOCXGeneratorEUAIAct:
             },
         }
         output_path = tmp_path / "euaiact_qms.docx"
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator.generate_euaiact_report(data, output_path)
         assert result.exists()
 
@@ -785,20 +785,20 @@ class TestDateFormatting:
 
     def test_format_date_with_string(self):
         """Test formatting a date string."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator._format_date("2024-06-15")
         assert result == "2024-06-15"
 
     def test_format_date_with_datetime(self):
         """Test formatting a datetime object."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         dt = datetime(2024, 6, 15, tzinfo=timezone.utc)
         result = generator._format_date(dt)
         assert result == "2024-06-15"
 
     def test_format_date_with_none(self):
         """Test formatting None returns N/A."""
-        generator = ComplianceDOCXGenerator()
+        generator = DOCXGenerator()
         result = generator._format_date(None)
         assert result == "N/A"
 

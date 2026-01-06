@@ -6,25 +6,49 @@ import json
 import pickle
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import mlflow
 import mlflow.sklearn
 import numpy as np
 import pandas as pd
 import structlog
-from evidently import ColumnMapping
-from evidently.metrics import DataDriftTable
-from evidently.report import Report
+
+try:
+    from evidently.report import Report
+except ImportError:
+    from evidently.legacy.report.report import Report
+
+try:
+    from evidently.metrics import DataDriftTable
+except ImportError:
+    from evidently.legacy.metrics.data_drift.data_drift_table import DataDriftTable
+
+try:
+    from evidently import ColumnMapping
+except ImportError:
+    from evidently.legacy.pipeline.column_mapping import ColumnMapping
 from river import tree
 from sklearn.ensemble import RandomForestClassifier
 
 # Internal imports
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from src.core.shared.types import JSONDict, JSONValue, MetadataDict, ModelID, SupportsCache
 except ImportError:
+    from typing import Any, Dict, Protocol
+
     JSONDict = Dict[str, Any]
     JSONValue = Any
+    MetadataDict = Dict[str, Any]
+    ModelID = str
+
+    class SupportsCache(Protocol):  # type: ignore[no-redef]
+        def get(self, key: str) -> Optional[Any]:
+            ...
+
+        def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+            ...
+
 
 from .models import (
     ABTest,
@@ -47,9 +71,9 @@ class MLGovernanceEngine:
 
     def __init__(
         self,
-        redis_client=None,
+        redis_client: Optional[SupportsCache] = None,
         mlflow_tracking_uri: str = "sqlite:///mlflow.db",
-        model_dir: str = "/tmp/ml_models"
+        model_dir: str = "/tmp/ml_models",
     ):
         """
         Initialize the ML governance engine
@@ -67,17 +91,13 @@ class MLGovernanceEngine:
         mlflow.set_tracking_uri(mlflow_tracking_uri)
 
         # Model storage
-        self.models: Dict[str, Any] = {}
-        self.online_learners: Dict[str, Any] = {}
+        self.models: Dict[str, RandomForestClassifier] = {}
+        self.online_learners: Dict[str, tree.HoeffdingTreeClassifier] = {}
         self.active_versions: Dict[ModelType, str] = {}
         self.ab_tests: Dict[str, ABTest] = {}
 
         # Metrics tracking
-        self.metrics = {
-            "predictions": 0,
-            "feedback_received": 0,
-            "drift_checks": 0
-        }
+        self.metrics = {"predictions": 0, "feedback_received": 0, "drift_checks": 0}
 
         # Initialize with baseline models
         self._initialize_baseline_models()
@@ -88,10 +108,7 @@ class MLGovernanceEngine:
 
         # Create baseline Random Forest model
         baseline_model = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=10,
-            random_state=42,
-            n_jobs=-1
+            n_estimators=100, max_depth=10, random_state=42, n_jobs=-1
         )
 
         # Create baseline online learner (River)
@@ -109,7 +126,7 @@ class MLGovernanceEngine:
                 model_type=ModelType.RANDOM_FOREST,
                 status=ModelStatus.ACTIVE,
                 training_samples=len(X),
-                created_at=datetime.now(timezone.utc)
+                created_at=datetime.now(timezone.utc),
             )
 
             self._save_model("baseline-v1.0", baseline_model, model_version)
@@ -119,7 +136,9 @@ class MLGovernanceEngine:
         self.online_learners["online-v1.0"] = online_learner
         self.active_versions[ModelType.ONLINE_LEARNER] = "online-v1.0"
 
-    def _generate_synthetic_training_data(self, n_samples: int) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+    def _generate_synthetic_training_data(
+        self, n_samples: int
+    ) -> Optional[Tuple[np.ndarray, np.ndarray]]:
         """Generate synthetic training data for model initialization"""
         try:
             np.random.seed(42)
@@ -152,26 +171,28 @@ class MLGovernanceEngine:
                     decision = GovernanceDecision.MONITOR
 
                 # Convert to feature vector
-                feature_vector = np.array([
-                    intent_confidence,
-                    1.0 if intent_class == "helpful" else 0.0,
-                    1.0 if intent_class == "harmful" else 0.0,
-                    content_length / 1000.0,
-                    np.random.random(),  # has_urls
-                    np.random.random(),  # has_email
-                    np.random.random(),  # has_code
-                    risk_score,  # toxicity_score
-                    0.5,  # user_history_score
-                    time_of_day / 24.0,
-                    day_of_week / 7.0,
-                    1.0 if is_business_hours else 0.0,
-                    np.random.randint(0, 5),  # policy_match_count
-                    np.random.randint(0, 2),  # policy_deny_count
-                    np.random.randint(2, 8),  # policy_allow_count
-                    risk_score,  # risk_level
-                    np.random.randint(0, 3),  # compliance_flags
-                    risk_score  # sensitivity_score
-                ])
+                feature_vector = np.array(
+                    [
+                        intent_confidence,
+                        1.0 if intent_class == "helpful" else 0.0,
+                        1.0 if intent_class == "harmful" else 0.0,
+                        content_length / 1000.0,
+                        np.random.random(),  # has_urls
+                        np.random.random(),  # has_email
+                        np.random.random(),  # has_code
+                        risk_score,  # toxicity_score
+                        0.5,  # user_history_score
+                        time_of_day / 24.0,
+                        day_of_week / 7.0,
+                        1.0 if is_business_hours else 0.0,
+                        np.random.randint(0, 5),  # policy_match_count
+                        np.random.randint(0, 2),  # policy_deny_count
+                        np.random.randint(2, 8),  # policy_allow_count
+                        risk_score,  # risk_level
+                        np.random.randint(0, 3),  # compliance_flags
+                        risk_score,  # sensitivity_score
+                    ]
+                )
 
                 features.append(feature_vector)
                 labels.append(decision.value)
@@ -187,9 +208,7 @@ class MLGovernanceEngine:
             return None
 
     async def predict(
-        self,
-        request: GovernanceRequest,
-        use_ab_test: bool = False
+        self, request: GovernanceRequest, use_ab_test: bool = False
     ) -> GovernanceResponse:
         """
         Make governance prediction using ML models
@@ -227,7 +246,7 @@ class MLGovernanceEngine:
                 reasoning=reasoning,
                 model_version=model_version,
                 features=features,
-                processing_time_ms=processing_time
+                processing_time_ms=processing_time,
             )
 
             # Log prediction for potential feedback
@@ -239,17 +258,13 @@ class MLGovernanceEngine:
                 decision=decision.value,
                 confidence=confidence,
                 model_version=model_version,
-                processing_time_ms=processing_time
+                processing_time_ms=processing_time,
             )
 
             return response
 
         except Exception as e:
-            logger.error(
-                "Prediction failed",
-                request_id=request.request_id,
-                error=str(e)
-            )
+            logger.error("Prediction failed", request_id=request.request_id, error=str(e))
             # Fallback to conservative decision
             return GovernanceResponse(
                 request_id=request.request_id,
@@ -258,7 +273,7 @@ class MLGovernanceEngine:
                 reasoning="Prediction failed, using conservative fallback",
                 model_version="fallback",
                 features=self._extract_features(request),
-                processing_time_ms=(datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                processing_time_ms=(datetime.now(timezone.utc) - start_time).total_seconds() * 1000,
             )
 
     async def submit_feedback(self, feedback: FeedbackSubmission) -> bool:
@@ -285,17 +300,13 @@ class MLGovernanceEngine:
                 "Feedback submitted",
                 request_id=feedback.request_id,
                 feedback_type=feedback.feedback_type.value,
-                user_id=feedback.user_id
+                user_id=feedback.user_id,
             )
 
             return True
 
         except Exception as e:
-            logger.error(
-                "Feedback submission failed",
-                request_id=feedback.request_id,
-                error=str(e)
-            )
+            logger.error("Feedback submission failed", request_id=feedback.request_id, error=str(e))
             return False
 
     async def check_drift(self, model_version: str) -> Optional[DriftDetectionResult]:
@@ -318,7 +329,7 @@ class MLGovernanceEngine:
                     drift_detected=False,
                     drift_score=0.0,
                     threshold=0.1,
-                    details={"reason": "Insufficient data for drift detection"}
+                    details={"reason": "Insufficient data for drift detection"},
                 )
 
             # Configure drift detection
@@ -326,11 +337,15 @@ class MLGovernanceEngine:
                 target="decision",
                 prediction="prediction",
                 numerical_features=["confidence", "feature_0", "feature_1"],
-                categorical_features=[]
+                categorical_features=[],
             )
 
             report = Report(metrics=[DataDriftTable()])
-            report.run(reference_data=reference_data, current_data=current_data, column_mapping=column_mapping)
+            report.run(
+                reference_data=reference_data,
+                current_data=current_data,
+                column_mapping=column_mapping,
+            )
 
             # Extract drift score (simplified)
             drift_score = 0.0  # Would extract from report
@@ -343,16 +358,14 @@ class MLGovernanceEngine:
                 drift_detected=drift_detected,
                 drift_score=drift_score,
                 threshold=0.1,
-                details={"report": "drift_analysis_report"}  # Would include actual report
+                details={"report": "drift_analysis_report"},  # Would include actual report
             )
 
             self.metrics["drift_checks"] += 1
 
             if drift_detected:
                 logger.warning(
-                    "Model drift detected",
-                    model_version=model_version,
-                    drift_score=drift_score
+                    "Model drift detected", model_version=model_version, drift_score=drift_score
                 )
 
             return result
@@ -387,7 +400,7 @@ class MLGovernanceEngine:
             policy_allow_count=context.get("policy_allows", 0),
             risk_level=context.get("risk_level", "medium"),
             compliance_flags=context.get("compliance_flags", []),
-            sensitivity_score=context.get("sensitivity_score", 0.0)
+            sensitivity_score=context.get("sensitivity_score", 0.0),
         )
 
     def _select_model(self, use_ab_test: bool = False) -> Tuple[str, bool]:
@@ -397,7 +410,9 @@ class MLGovernanceEngine:
             for ab_test in self.ab_tests.values():
                 if ab_test.status == "active":
                     # Simple random selection based on traffic split
-                    if np.random.random() < ab_test.traffic_split:
+                    import secrets
+
+                    if secrets.SystemRandom().random() < ab_test.traffic_split:
                         return ab_test.candidate_version, True
                     else:
                         return ab_test.champion_version, True
@@ -407,10 +422,7 @@ class MLGovernanceEngine:
         return model_version, False
 
     async def _make_prediction(
-        self,
-        features: FeatureVector,
-        model_version: str,
-        request: GovernanceRequest
+        self, features: FeatureVector, model_version: str, request: GovernanceRequest
     ) -> Tuple[GovernanceDecision, float, str]:
         """Make prediction using specified model version"""
         try:
@@ -422,7 +434,11 @@ class MLGovernanceEngine:
 
             if not model:
                 # Fallback decision
-                return GovernanceDecision.MONITOR, 0.5, "Using conservative fallback due to model unavailability"
+                return (
+                    GovernanceDecision.MONITOR,
+                    0.5,
+                    "Using conservative fallback due to model unavailability",
+                )
 
             # Convert features to array
             X = features.to_numpy_array().reshape(1, -1)
@@ -447,10 +463,7 @@ class MLGovernanceEngine:
             return GovernanceDecision.MONITOR, 0.5, f"Prediction error: {str(e)}"
 
     def _generate_reasoning(
-        self,
-        features: FeatureVector,
-        decision: GovernanceDecision,
-        confidence: float
+        self, features: FeatureVector, decision: GovernanceDecision, confidence: float
     ) -> str:
         """Generate human-readable reasoning for the decision"""
         reasons = []
@@ -477,7 +490,7 @@ class MLGovernanceEngine:
 
         return reasoning
 
-    async def _store_feedback(self, feedback: FeedbackSubmission):
+    async def _store_feedback(self, feedback: FeedbackSubmission) -> None:
         """Store feedback for batch retraining"""
         # Store in Redis for immediate access
         if self.redis:
@@ -485,12 +498,12 @@ class MLGovernanceEngine:
             await self.redis.set(
                 feedback_key,
                 feedback.json(),
-                ex=86400 * 30  # 30 days
+                ex=86400 * 30,  # 30 days
             )
 
         # Would also store in database for long-term analysis
 
-    async def _update_online_learners(self, feedback: FeedbackSubmission):
+    async def _update_online_learners(self, feedback: FeedbackSubmission) -> None:
         """Update online learners with new feedback"""
         try:
             # Get the original prediction
@@ -504,7 +517,7 @@ class MLGovernanceEngine:
 
             # Update online learners
             for learner_name, learner in self.online_learners.items():
-                if hasattr(learner, 'learn_one'):
+                if hasattr(learner, "learn_one"):
                     # River-style online learning
                     learner.learn_one(features, correct_decision.value)
 
@@ -523,20 +536,17 @@ class MLGovernanceEngine:
         return None
 
     async def _log_prediction(
-        self,
-        request: GovernanceRequest,
-        response: GovernanceResponse,
-        is_ab_test: bool
-    ):
+        self, request: GovernanceRequest, response: GovernanceResponse, is_ab_test: bool
+    ) -> None:
         """Log prediction for feedback and analysis"""
         prediction_data: JSONDict = {
             "request_id": request.request_id,
-            "features": response.features.dict(),
+            "features": response.features.model_dump(),
             "decision": response.decision.value,
             "confidence": response.confidence,
             "model_version": response.model_version,
             "ab_test": is_ab_test,
-            "timestamp": response.timestamp.isoformat()
+            "timestamp": response.timestamp.isoformat(),
         }
 
         if self.redis:
@@ -544,14 +554,16 @@ class MLGovernanceEngine:
             await self.redis.set(
                 prediction_key,
                 json.dumps(prediction_data),
-                ex=86400 * 7  # 7 days
+                ex=86400 * 7,  # 7 days
             )
 
-    def _save_model(self, version_id: str, model: Any, metadata: ModelVersion):
+    def _save_model(
+        self, version_id: str, model: RandomForestClassifier, metadata: ModelVersion
+    ) -> None:
         """Save trained model"""
         try:
             model_path = self.model_dir / f"{version_id}.pkl"
-            with open(model_path, 'wb') as f:
+            with open(model_path, "wb") as f:
                 pickle.dump(model, f)
 
             self.models[version_id] = model
@@ -574,3 +586,7 @@ class MLGovernanceEngine:
         # This would query recent predictions from database/cache
         # For now, return None (drift detection disabled)
         return None
+
+
+# Global engine instance
+ml_engine = MLGovernanceEngine()

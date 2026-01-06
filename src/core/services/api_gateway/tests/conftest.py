@@ -7,8 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
-
-from src.core.shared.logging import init_service_logging
+from src.core.shared.acgs_logging import init_service_logging
 
 # Initialize test logging
 init_service_logging("api-gateway-test", level="WARNING", json_format=False)

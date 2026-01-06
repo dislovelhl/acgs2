@@ -20,7 +20,7 @@ from enhanced_agent_bus.models import AgentMessage, MessageType, MessagePriority
 
 async def high_risk_operation():
     bus = get_agent_bus()
-    
+
     # 注册具有特定能力的代理
     await bus.register_agent(
         agent_id="admin_agent",
@@ -46,7 +46,7 @@ async def high_risk_operation():
 
     # 发送消息
     result = await bus.send_message(message)
-    
+
     # 检查是否进入审议
     if message.impact_score >= 0.8:
         print(f"消息已进入审议队列。影响分数: {message.impact_score}")

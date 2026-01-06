@@ -10,7 +10,6 @@ Production resilience testing with complex failure modes
 
 import asyncio
 import logging
-import random
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -144,7 +143,9 @@ class AdvancedChaosEngine:
 
     async def _inject_dependency_failure(self, blast_radius: str) -> Dict:
         """Inject dependency failure (Redis/Kafka/OPA)."""
-        dependency = random.choice(["redis", "kafka", "opa"])
+        import secrets
+
+        dependency = secrets.choice(["redis", "kafka", "opa"])
         experiment = ChaosExperiment(
             name=f"{dependency}_failure",
             target_service=dependency,
@@ -353,15 +354,16 @@ async def run_production_chaos_suites():
     successful = sum(1 for r in results if r.get("success", False))
     total = len(results)
 
-    print("
+    logger.debug()
     logger.info("=" * 40)
     logger.info(f"Scenarios Run: {total}")
     logger.info(f"Successful: {successful}")
-    logger.info(f"Success Rate: {successful/total*100:.1f}%"    print()
+    logger.info(f"Success Rate: {successful / total * 100:.1f}%")
+    logger.debug()
 
     for result in results:
         status = "✅" if result.get("success", False) else "❌"
-    logger.info(f"{status} {result['scenario']}")
+        logger.info(f"{status} {result['scenario']}")
 
     return results
 

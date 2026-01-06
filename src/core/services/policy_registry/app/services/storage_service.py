@@ -22,7 +22,6 @@ try:
     S3_AVAILABLE = True
 except ImportError:
     S3_AVAILABLE = False
-    logger.debug("boto3 not installed, S3 storage unavailable")
 
 
 class StorageService:
@@ -171,7 +170,7 @@ class StorageService:
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "")
             if error_code == "NoSuchKey":
-                logger.debug(f"Bundle {bundle_id} not found in S3")
+                logger.warning(f"S3 key not found for {bundle_id}")
             else:
                 logger.warning(f"S3 download failed for {bundle_id}: {e}")
             return None

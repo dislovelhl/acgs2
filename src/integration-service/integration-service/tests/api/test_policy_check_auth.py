@@ -124,9 +124,7 @@ class TestValidatePoliciesAuthentication:
         assert audit_ctx["user_id"] == "test-user-123"
         assert audit_ctx["tenant_id"] == "test-tenant-456"
 
-    def test_validate_with_admin_user(
-        self, test_client: TestClient, admin_auth_headers: dict
-    ):
+    def test_validate_with_admin_user(self, test_client: TestClient, admin_auth_headers: dict):
         """Verify validation works with admin user credentials."""
         response = test_client.post(
             "/api/policy/validate",
@@ -259,9 +257,7 @@ class TestListPoliciesAuthentication:
         assert data["audit_context"]["user_id"] == "admin-user-789"
         assert data["audit_context"]["tenant_id"] == "admin-tenant-000"
 
-    def test_list_with_resource_type_filter(
-        self, test_client: TestClient, auth_headers: dict
-    ):
+    def test_list_with_resource_type_filter(self, test_client: TestClient, auth_headers: dict):
         """Verify list policies with resource_type filter and authentication."""
         response = test_client.get(
             "/api/policy/policies?resource_type=kubernetes", headers=auth_headers
@@ -278,13 +274,9 @@ class TestListPoliciesAuthentication:
         # Verify audit context is present
         assert data["audit_context"]["user_id"] == "test-user-123"
 
-    def test_list_with_enabled_only_filter(
-        self, test_client: TestClient, auth_headers: dict
-    ):
+    def test_list_with_enabled_only_filter(self, test_client: TestClient, auth_headers: dict):
         """Verify list policies with enabled_only filter and authentication."""
-        response = test_client.get(
-            "/api/policy/policies?enabled_only=true", headers=auth_headers
-        )
+        response = test_client.get("/api/policy/policies?enabled_only=true", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
 
@@ -332,9 +324,7 @@ class TestGetPolicyAuthentication:
 
     def test_get_with_valid_auth_succeeds(self, test_client: TestClient, auth_headers: dict):
         """Verify get policy endpoint accepts valid JWT tokens."""
-        response = test_client.get(
-            "/api/policy/policies/acgs2-security-001", headers=auth_headers
-        )
+        response = test_client.get("/api/policy/policies/acgs2-security-001", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "policy" in data
@@ -342,9 +332,7 @@ class TestGetPolicyAuthentication:
 
     def test_get_includes_audit_context(self, test_client: TestClient, auth_headers: dict):
         """Verify get policy response includes authenticated user audit context."""
-        response = test_client.get(
-            "/api/policy/policies/acgs2-security-001", headers=auth_headers
-        )
+        response = test_client.get("/api/policy/policies/acgs2-security-001", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
 
@@ -384,9 +372,7 @@ class TestGetPolicyAuthentication:
         assert "detail" in data
         assert "Policy not found" in data["detail"]
 
-    def test_get_all_demo_policies_with_auth(
-        self, test_client: TestClient, auth_headers: dict
-    ):
+    def test_get_all_demo_policies_with_auth(self, test_client: TestClient, auth_headers: dict):
         """Verify all demo policies can be retrieved with authentication."""
         demo_policy_ids = [
             "acgs2-security-001",
@@ -398,9 +384,7 @@ class TestGetPolicyAuthentication:
         ]
 
         for policy_id in demo_policy_ids:
-            response = test_client.get(
-                f"/api/policy/policies/{policy_id}", headers=auth_headers
-            )
+            response = test_client.get(f"/api/policy/policies/{policy_id}", headers=auth_headers)
             assert response.status_code == 200
             data = response.json()
             assert data["policy"]["id"] == policy_id
@@ -514,9 +498,7 @@ class TestCrossEndpointAuthentication:
             assert response.status_code == 401, f"{method} {url} should require authentication"
             assert "detail" in response.json()
 
-    def test_same_token_works_across_endpoints(
-        self, test_client: TestClient, auth_headers: dict
-    ):
+    def test_same_token_works_across_endpoints(self, test_client: TestClient, auth_headers: dict):
         """Verify the same JWT token works across all policy endpoints."""
         # Validate endpoint
         response1 = test_client.post(
@@ -531,9 +513,7 @@ class TestCrossEndpointAuthentication:
         assert response2.status_code == 200
 
         # Get policy endpoint
-        response3 = test_client.get(
-            "/api/policy/policies/acgs2-security-001", headers=auth_headers
-        )
+        response3 = test_client.get("/api/policy/policies/acgs2-security-001", headers=auth_headers)
         assert response3.status_code == 200
 
         # Health endpoint
@@ -641,9 +621,7 @@ class TestAuditContextValidation:
         # All request IDs should be unique
         assert len(request_ids) == 5
 
-    def test_timestamp_is_valid_iso_format(
-        self, test_client: TestClient, auth_headers: dict
-    ):
+    def test_timestamp_is_valid_iso_format(self, test_client: TestClient, auth_headers: dict):
         """Verify audit context timestamp is in valid ISO format."""
         from datetime import datetime
 

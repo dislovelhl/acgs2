@@ -237,7 +237,6 @@ class HmacAuthHandler(WebhookAuthHandler):
                 error_message="Signature verification failed",
             )
 
-        logger.debug("HMAC signature verified successfully")
         return AuthResult.success(
             auth_type=self.auth_type,
             principal="hmac_verified",

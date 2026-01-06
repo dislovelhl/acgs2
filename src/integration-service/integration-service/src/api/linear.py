@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/integrations", tags=["Linear Integration"])
 
-
 # ============================================================================
 # Response Models
 # ============================================================================
@@ -36,9 +35,7 @@ class LinearSyncStatus(BaseModel):
     """Linear integration sync status."""
 
     configured: bool = Field(..., description="Whether Linear integration is configured")
-    linear_connected: bool = Field(
-        ..., description="Whether connection to Linear API is healthy"
-    )
+    linear_connected: bool = Field(..., description="Whether connection to Linear API is healthy")
     github_sync_enabled: bool = Field(..., description="Whether GitHub sync is enabled")
     gitlab_sync_enabled: bool = Field(..., description="Whether GitLab sync is enabled")
     slack_notifications_enabled: bool = Field(
@@ -53,12 +50,8 @@ class LinearSyncStatus(BaseModel):
 class ManualSyncRequest(BaseModel):
     """Request to trigger manual sync."""
 
-    issue_id: Optional[str] = Field(
-        None, description="Specific Linear issue ID to sync (optional)"
-    )
-    force: bool = Field(
-        default=False, description="Force sync even if recently synced"
-    )
+    issue_id: Optional[str] = Field(None, description="Specific Linear issue ID to sync (optional)")
+    force: bool = Field(default=False, description="Force sync even if recently synced")
     sync_to_github: bool = Field(default=True, description="Sync to GitHub")
     sync_to_gitlab: bool = Field(default=True, description="Sync to GitLab")
     notify_slack: bool = Field(default=True, description="Send Slack notifications")
@@ -84,7 +77,6 @@ _sync_stats = {
     "failed_syncs": 0,
     "last_sync_at": None,
 }
-
 
 # ============================================================================
 # Endpoints
@@ -209,9 +201,29 @@ async def perform_manual_sync(
                 github_manager = get_github_sync_manager()
                 async with github_manager:
                     logger.info(f"Syncing to GitHub: {sync_id}")
-                    # TODO: Implement actual sync logic
-                    # For now, just log that sync would happen
-                    logger.info(f"GitHub sync completed for {sync_id}")
+
+                    # Parse sync_id to extract Linear issue information
+                    # sync_id format: linear_issue_id or linear_issue_id:repo_owner/repo_name
+                    sync_parts = sync_id.split(":")
+                    linear_issue_id = sync_parts[0]
+
+                    # Perform actual sync
+                    github_issue = await github_manager.sync_linear_to_github(
+                        linear_issue_id=linear_issue_id,
+                        repo_owner="ACGS-Project",
+                        repo_name="ACGS-2",
+                        create_if_missing=True,
+                    )
+
+                    if github_issue:
+                        logger.info(
+                            f"GitHub sync completed for {sync_id} -> Issue #{github_issue.number}"
+                        )
+                        _sync_stats["successful_syncs"] += 1
+                    else:
+                        logger.warning(f"GitHub sync returned no issue for {sync_id}")
+                        _sync_stats["failed_syncs"] += 1
+
             except Exception as e:
                 logger.error(f"GitHub sync failed for {sync_id}: {e}", exc_info=True)
                 _sync_stats["failed_syncs"] += 1
@@ -222,9 +234,27 @@ async def perform_manual_sync(
                 gitlab_manager = get_gitlab_sync_manager()
                 async with gitlab_manager:
                     logger.info(f"Syncing to GitLab: {sync_id}")
-                    # TODO: Implement actual sync logic
-                    # For now, just log that sync would happen
-                    logger.info(f"GitLab sync completed for {sync_id}")
+
+                    # Parse sync_id to extract Linear issue information
+                    sync_parts = sync_id.split(":")
+                    linear_issue_id = sync_parts[0]
+
+                    # Perform actual sync
+                    gitlab_issue = await gitlab_manager.sync_linear_to_gitlab(
+                        linear_issue_id=linear_issue_id,
+                        project_id="acgs2/acgs2-integration",
+                        create_if_missing=True,
+                    )
+
+                    if gitlab_issue:
+                        logger.info(
+                            f"GitLab sync completed for {sync_id} -> Issue #{gitlab_issue.iid}"
+                        )
+                        _sync_stats["successful_syncs"] += 1
+                    else:
+                        logger.warning(f"GitLab sync returned no issue for {sync_id}")
+                        _sync_stats["failed_syncs"] += 1
+
             except Exception as e:
                 logger.error(f"GitLab sync failed for {sync_id}: {e}", exc_info=True)
                 _sync_stats["failed_syncs"] += 1
@@ -237,9 +267,33 @@ async def perform_manual_sync(
                 notifier = get_slack_notifier()
                 async with notifier:
                     logger.info(f"Sending Slack notification for {sync_id}")
-                    # TODO: Implement actual notification
-                    # For now, just log that notification would be sent
-                    logger.info(f"Slack notification sent for {sync_id}")
+
+                    # Parse sync_id to extract Linear issue information
+                    sync_parts = sync_id.split(":")
+                    linear_issue_id = sync_parts[0]
+
+                    # Extract notification details (can be enhanced to get real issue details if needed)
+                    issue_title = f"Issue {linear_issue_id}"
+                    issue_description = "Issue synchronized from Linear"
+                    issue_url = f"https://linear.app/issue/{linear_issue_id}"
+
+                    # Send actual notification
+                    success = await notifier.post_issue_created(
+                        issue_id=linear_issue_id,
+                        title=issue_title,
+                        description=issue_description,
+                        assignee=None,
+                        status="Synced",
+                        priority="medium",
+                        url=issue_url,
+                        channel=None,
+                    )
+
+                    if success:
+                        logger.info(f"Slack notification sent successfully for {sync_id}")
+                    else:
+                        logger.warning(f"Slack notification skipped (not configured) for {sync_id}")
+
             except Exception as e:
                 logger.error(f"Slack notification failed for {sync_id}: {e}", exc_info=True)
                 # Don't increment failed_syncs for notification failures
@@ -292,8 +346,7 @@ async def trigger_manual_sync(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=(
-                    "Linear integration is not configured. "
-                    "Set LINEAR_API_KEY environment variable."
+                    "Linear integration is not configured. Set LINEAR_API_KEY environment variable."
                 ),
             )
     except Exception as e:

@@ -31,7 +31,7 @@ Example:
         l2_count=100,
     )
     result = await warmer.warm_cache()
-    print(f"Warmed {result.keys_warmed} keys in {result.duration_seconds:.2f}s")
+
 """
 
 import asyncio
@@ -40,7 +40,13 @@ import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
+
+try:
+    from src.core.shared.types import JSONDict, JSONValue
+except ImportError:
+    JSONValue = Any
+    JSONDict = Dict[str, Any]
 
 # Constitutional Hash for governance validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -93,7 +99,7 @@ class WarmingResult:
     l2_keys: int = 0
     duration_seconds: float = 0.0
     error_message: Optional[str] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: JSONDict = field(default_factory=dict)
 
     @property
     def success(self) -> bool:
@@ -289,7 +295,7 @@ class CacheWarmer:
     async def warm_cache(
         self,
         source_keys: Optional[List[str]] = None,
-        key_loader: Optional[Callable[[str], Any]] = None,
+        key_loader: Optional[Callable[[str], Union[JSONValue, Any]]] = None,
     ) -> WarmingResult:
         """
         Warm the cache with rate limiting.
@@ -526,8 +532,7 @@ class CacheWarmer:
                     else:
                         result.keys_failed += 1
 
-                except Exception as e:
-                    logger.debug(f"[{CONSTITUTIONAL_HASH}] Failed to warm key '{key}': {e}")
+                except Exception:
                     result.keys_failed += 1
 
                 processed += 1
@@ -563,7 +568,7 @@ class CacheWarmer:
         key: str,
         cache_manager: Any,
         key_loader: Optional[Callable[[str], Any]],
-    ) -> Optional[Any]:
+    ) -> Optional[JSONValue]:
         """
         Load value for a key during warming.
 
@@ -608,8 +613,7 @@ class CacheWarmer:
                 if retries < self.config.max_retries:
                     await asyncio.sleep(self.config.retry_delay)
 
-            except Exception as e:
-                logger.debug(f"Key load error for '{key}': {e}")
+            except Exception:
                 retries += 1
                 if retries < self.config.max_retries:
                     await asyncio.sleep(self.config.retry_delay)
@@ -672,7 +676,7 @@ class CacheWarmer:
 
     def __repr__(self) -> str:
         """String representation."""
-        return f"CacheWarmer(rate_limit={self.config.rate_limit}, " f"status={self._status.value})"
+        return f"CacheWarmer(rate_limit={self.config.rate_limit}, status={self._status.value})"
 
 
 # -----------------------------------------------------------------------------

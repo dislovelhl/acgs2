@@ -6,7 +6,8 @@ Shared utilities for integrating tenant isolation across ACGS-2 services.
 """
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, Optional
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -14,7 +15,6 @@ except ImportError:
     JSONValue = Any
 
 import httpx
-
 from src.core.shared.config import get_config
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ class TenantClient:
         try:
             response = await self.client.get(f"{self.service_url}/tenants/{tenant_id}")
             response.raise_for_status()
-            return response.json()["data"] # Assuming the API returns data under a "data" key
+            return response.json()["data"]  # Assuming the API returns data under a "data" key
         except httpx.HTTPError as e:
             logger.error(f"Failed to fetch tenant {tenant_id}: {e}")
             raise TenantNotFoundError(f"Tenant {tenant_id} not found or service error: {e}") from e
@@ -53,9 +53,11 @@ class TenantClient:
                 f"{self.service_url}/tenants/{tenant_id}/quotas/check", params=params
             )
             response.raise_for_status()
-            return response.json()["data"] # Assuming the API returns data under a "data" key
+            return response.json()["data"]  # Assuming the API returns data under a "data" key
         except httpx.HTTPError as e:
-            logger.error(f"Failed to check quota for tenant {tenant_id}, resource {resource_type}: {e}")
+            logger.error(
+                f"Failed to check quota for tenant {tenant_id}, resource {resource_type}: {e}"
+            )
             raise QuotaExceededError(f"Quota check failed for {resource_type}: {e}") from e
 
     async def consume_quota(self, tenant_id: str, resource_type: str, amount: int = 1) -> None:

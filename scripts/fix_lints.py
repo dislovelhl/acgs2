@@ -32,7 +32,7 @@ def fix_b904():
             if "raise " in line and " from " not in line:
                 # Find the exception variable name from preceding lines if possible
                 # Usually it's in the 'except Exception as e:' line
-                exc_name = "e" # default
+                exc_name = "e"  # default
                 # Search backwards for 'except ... as ...:'
                 for i in range(row - 1, max(-1, row - 10), -1):
                     match = re.search(r"except\s+.*?\s+as\s+(\w+)\s*:", lines[i])
@@ -47,11 +47,12 @@ def fix_b904():
                 else:
                     # More complex case, just append ' from e' if it's a simple raise
                     if re.match(r"^\s*raise\s+\w+\(.*\)\s*$", line):
-                         lines[row] = line + f" from {exc_name}"
+                        lines[row] = line + f" from {exc_name}"
 
         new_content = "\n".join(lines) + ("\n" if content.endswith("\n") else "")
         file_path.write_text(new_content)
         print(f"Fixed B904 in {path}")
+
 
 if __name__ == "__main__":
     fix_b904()

@@ -17,8 +17,6 @@ from pathlib import Path
 # Add integration-service/src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from pydantic import SecretStr
-
 from integrations import (
     EventSeverity,
     IntegrationEvent,
@@ -27,6 +25,7 @@ from integrations import (
     ServiceNowAdapter,
     ServiceNowCredentials,
 )
+from pydantic import SecretStr
 
 
 def create_test_events(count: int = 3) -> list[IntegrationEvent]:
@@ -34,11 +33,11 @@ def create_test_events(count: int = 3) -> list[IntegrationEvent]:
     events = []
     for i in range(count):
         event = IntegrationEvent(
-            event_id=f"test-event-{i+1}",
+            event_id=f"test-event-{i + 1}",
             event_type="policy_violation",
             severity=EventSeverity.MEDIUM,
-            title=f"Test Event {i+1}",
-            description=f"This is test event {i+1} for batch processing verification",
+            title=f"Test Event {i + 1}",
+            description=f"This is test event {i + 1} for batch processing verification",
             source="verification_script",
             timestamp=datetime.now(timezone.utc),
         )
@@ -112,9 +111,7 @@ async def verify_servicenow_batch_fallback():
 
     # Check that send_events_batch method exists
     print("\n1. Checking ServiceNowAdapter has send_events_batch method...")
-    assert hasattr(
-        adapter, "send_events_batch"
-    ), "ServiceNowAdapter missing send_events_batch"
+    assert hasattr(adapter, "send_events_batch"), "ServiceNowAdapter missing send_events_batch"
     print("   ✓ send_events_batch method exists")
 
     # Check that _do_send_events_batch is not overridden

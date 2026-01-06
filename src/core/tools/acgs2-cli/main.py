@@ -130,6 +130,5 @@ cli.add_command(policy)
 cli.add_command(playground)
 cli.add_command(tenant)
 
-
 if __name__ == "__main__":
     cli()

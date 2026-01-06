@@ -5,7 +5,6 @@ Integration tests for SDPC Phase 3 Evolutionary Loop
 from unittest.mock import AsyncMock
 
 import pytest
-
 from src.core.enhanced_agent_bus.deliberation_layer.intent_classifier import IntentType
 from src.core.enhanced_agent_bus.message_processor import MessageProcessor
 from src.core.enhanced_agent_bus.models import AgentMessage, MessageType

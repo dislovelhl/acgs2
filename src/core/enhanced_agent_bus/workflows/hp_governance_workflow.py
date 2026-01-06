@@ -14,6 +14,7 @@ from .workflow_base import CONSTITUTIONAL_HASH, WorkflowDefinition
 
 logger = logging.getLogger(__name__)
 
+
 class HighPerformanceGovernanceWorkflow(WorkflowDefinition[Dict[str, Any], Dict[str, Any]]):
     """
     Advanced governance workflow integrating breakthrough Phase 2 components.
@@ -37,21 +38,13 @@ class HighPerformanceGovernanceWorkflow(WorkflowDefinition[Dict[str, Any], Dict[
         saga = SagaTransaction()
 
         # Define steps
-        saga.add_step(
-            "maci_authorize",
-            self._maci_authorize_step,
-            self._maci_rollback_step
-        )
+        saga.add_step("maci_authorize", self._maci_authorize_step, self._maci_rollback_step)
         saga.add_step(
             "constitutional_validation",
             self._validate_step,
-            None # No compensation needed for read-only validation
+            None,  # No compensation needed for read-only validation
         )
-        saga.add_step(
-            "governance_execution",
-            self._execute_step,
-            self._rollback_execution_step
-        )
+        saga.add_step("governance_execution", self._execute_step, self._rollback_execution_step)
 
         # Execute saga
         try:
@@ -60,15 +53,11 @@ class HighPerformanceGovernanceWorkflow(WorkflowDefinition[Dict[str, Any], Dict[
                 "status": "success",
                 "transaction_id": saga.transaction_id,
                 "result": result,
-                "constitutional_hash": CONSTITUTIONAL_HASH
+                "constitutional_hash": CONSTITUTIONAL_HASH,
             }
         except Exception as e:
             logger.error(f"Governance workflow failed: {e}")
-            return {
-                "status": "failed",
-                "error": str(e),
-                "transaction_id": saga.transaction_id
-            }
+            return {"status": "failed", "error": str(e), "transaction_id": saga.transaction_id}
 
     async def _maci_authorize_step(self, **kwargs) -> Any:
         input_data = kwargs.get("input_data", {})

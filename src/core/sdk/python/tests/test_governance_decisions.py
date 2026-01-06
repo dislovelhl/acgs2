@@ -11,9 +11,6 @@ Comprehensive test coverage for GovernanceService including:
 - All decision branches and paths
 """
 
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
 
 import pytest
 
@@ -27,7 +24,6 @@ from acgs2_sdk.models import (
     SubmitApprovalDecision,
 )
 from acgs2_sdk.services.governance import GovernanceService
-
 
 # =============================================================================
 # Approval Request Creation Tests

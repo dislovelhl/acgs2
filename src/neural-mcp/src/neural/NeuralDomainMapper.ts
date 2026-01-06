@@ -1,6 +1,4 @@
-import { getLogger } from '../../../sdk/typescript/src/utils/logger';
-const logger = getLogger('NeuralDomainMapper');
-
+// Logger imported below
 
 /**
  * Neural Domain Mapper - GNN-style Domain Relationship Mapping
@@ -18,17 +16,14 @@ const logger = getLogger('NeuralDomainMapper');
  * @since 2024-12-01
  */
 
+import { EventEmitter } from "events";
 import type {
   Pattern,
-  TrainingData,
-  Prediction,
-  Adaptation,
-  AgenticHookContext,
-  PerformanceMetric,
   PatternStore,
+  Prediction,
+  TrainingData,
   TrainingState,
 } from "../types.js";
-import { EventEmitter } from "events";
 import logger from "../utils/logger.js";
 
 // ===== Core Types =====
@@ -461,6 +456,34 @@ export class NeuralDomainMapper extends EventEmitter {
       this.graph.edges.set(edgeId, edge);
     }
 
+    // Create edges from metadata dependencies (implicit relationships)
+    for (const [nodeId, node] of this.graph.nodes) {
+      const dependencies = node.metadata.dependencies || [];
+      for (const depId of dependencies) {
+        // Only create edge if target node exists and edge doesn't already exist
+        if (this.graph.nodes.has(depId)) {
+          const edgeId = `${nodeId}->${depId}`;
+          if (!this.graph.edges.has(edgeId)) {
+            const edge: DomainEdge = {
+              source: nodeId,
+              target: depId,
+              weight: 0.7, // Lower weight for implicit dependencies
+              type: "dependency",
+              features: [0.7, 0.5, 0.8, 0.6], // Implicit dependency features
+              metadata: {
+                frequency: 1,
+                latency: 50, // Faster for implicit deps
+                reliability: 0.95,
+                bandwidth: 100,
+                direction: "unidirectional",
+              },
+            };
+            this.graph.edges.set(edgeId, edge);
+          }
+        }
+      }
+    }
+
     // Update graph metadata
     this.graph.metadata.totalNodes = this.graph.nodes.size;
     this.graph.metadata.totalEdges = this.graph.edges.size;
@@ -744,21 +767,58 @@ export class NeuralDomainMapper extends EventEmitter {
     if (!node) return 0;
 
     const connectedDomains = this.getConnectedDomains(domainId);
+    if (connectedDomains.length === 0) return 0.5;
 
-    // Analyze naming similarity (simplified semantic analysis)
-    let semanticScore = 0;
+    let totalSemanticScore = 0;
+
     for (const connectedDomain of connectedDomains) {
-      const nameSimilarity = this.calculateNameSimilarity(
-        node.name,
-        connectedDomain.name
+      // Enhanced semantic analysis with multiple factors
+      const nameSimilarity = this.calculateNameSimilarity(node.name, connectedDomain.name);
+      const typeSimilarity = node.type === connectedDomain.type ? 1.0 : 0.3;
+
+      // Consider functional dependencies overlap
+      const functionalOverlap = this.calculateFunctionalOverlap(node, connectedDomain);
+
+      // Consider metadata similarity (size, stability, complexity)
+      const metadataSimilarity = this.calculateMetadataSimilarity(node.metadata, connectedDomain.metadata);
+
+      // Weighted combination: name(0.2) + type(0.2) + functional(0.4) + metadata(0.2)
+      const semanticScore = (
+        nameSimilarity * 0.2 +
+        typeSimilarity * 0.2 +
+        functionalOverlap * 0.4 +
+        metadataSimilarity * 0.2
       );
-      const typeSimilarity = node.type === connectedDomain.type ? 1 : 0.5;
-      semanticScore += (nameSimilarity + typeSimilarity) / 2;
+
+      totalSemanticScore += semanticScore;
     }
 
-    return connectedDomains.length > 0
-      ? semanticScore / connectedDomains.length
-      : 0.5;
+    return totalSemanticScore / connectedDomains.length;
+  }
+
+  private calculateFunctionalOverlap(domain1: DomainNode, domain2: DomainNode): number {
+    const deps1 = new Set(domain1.metadata.dependencies || []);
+    const deps2 = new Set(domain2.metadata.dependencies || []);
+
+    if (deps1.size === 0 && deps2.size === 0) return 0.5; // Neutral if no dependencies
+
+    const intersection = new Set([...deps1].filter(x => deps2.has(x)));
+    const union = new Set([...deps1, ...deps2]);
+
+    return union.size > 0 ? intersection.size / union.size : 0;
+  }
+
+  private calculateMetadataSimilarity(meta1: DomainNode['metadata'], meta2: DomainNode['metadata']): number {
+    const sizeDiff = Math.abs(meta1.size - meta2.size) / Math.max(meta1.size, meta2.size);
+    const complexityDiff = Math.abs(meta1.complexity - meta2.complexity);
+    const stabilityDiff = Math.abs(meta1.stability - meta2.stability);
+
+    // Normalize and combine (lower difference = higher similarity)
+    const sizeSimilarity = 1 - Math.min(sizeDiff, 1);
+    const complexitySimilarity = 1 - Math.min(complexityDiff, 1);
+    const stabilitySimilarity = 1 - Math.min(stabilityDiff, 1);
+
+    return (sizeSimilarity + complexitySimilarity + stabilitySimilarity) / 3;
   }
 
   /**
@@ -809,12 +869,21 @@ export class NeuralDomainMapper extends EventEmitter {
       impact: number;
     }> = [];
 
-    // Build dependency graph
+    // Build dependency graph (includes all edge types that represent coupling)
+    const dependencyEdgeTypes = new Set([
+      "dependency",
+      "data-flow",
+      "communication",
+      "composition",
+      "aggregation",
+      "inheritance",
+    ]);
+
     for (const [nodeId] of this.graph.nodes) {
       const dependencies: string[] = [];
 
       for (const edge of this.graph.edges.values()) {
-        if (edge.source === nodeId && edge.type === "dependency") {
+        if (edge.source === nodeId && dependencyEdgeTypes.has(edge.type)) {
           dependencies.push(edge.target);
         }
       }
@@ -1149,7 +1218,7 @@ export class NeuralDomainMapper extends EventEmitter {
         }
 
         // Early stopping
-          logger.info(`Early stopping at epoch ${epoch}`;
+        if (
           this.trainingConfig.earlyStoping.enabled &&
           patienceCounter >= this.trainingConfig.earlyStoping.patience
         ) {
@@ -1512,8 +1581,10 @@ export class NeuralDomainMapper extends EventEmitter {
     let totalLoss = 0;
 
     for (let i = 0; i < predictions.length; i++) {
-      const pred = predictions[i];
-      const target = Array.isArray(targets[i]) ? targets[i] : [targets[i]];
+      const pred = predictions[i] as number[];
+      const target = Array.isArray(targets[i])
+        ? (targets[i] as number[])
+        : [targets[i] as number];
 
       // Mean squared error
       for (let j = 0; j < Math.min(pred.length, target.length); j++) {
@@ -1532,8 +1603,10 @@ export class NeuralDomainMapper extends EventEmitter {
     let correct = 0;
 
     for (let i = 0; i < predictions.length; i++) {
-      const pred = predictions[i];
-      const target = Array.isArray(targets[i]) ? targets[i] : [targets[i]];
+      const pred = predictions[i] as number[];
+      const target = Array.isArray(targets[i])
+        ? (targets[i] as number[])
+        : [targets[i] as number];
 
       // Simple threshold-based accuracy for regression
       let sampleCorrect = true;
@@ -1557,8 +1630,10 @@ export class NeuralDomainMapper extends EventEmitter {
     const gradients: number[][] = [];
 
     for (let i = 0; i < predictions.length; i++) {
-      const pred = predictions[i];
-      const target = Array.isArray(targets[i]) ? targets[i] : [targets[i]];
+      const pred = predictions[i] as number[];
+      const target = Array.isArray(targets[i])
+        ? (targets[i] as number[])
+        : [targets[i] as number];
       const sampleGradients: number[] = [];
 
       for (let j = 0; j < pred.length; j++) {
@@ -1754,6 +1829,13 @@ export class NeuralDomainMapper extends EventEmitter {
   }
 
   /**
+   * Get the current domain graph
+   */
+  public getCurrentGraph(): DomainGraph {
+    return this.graph;
+  }
+
+  /**
    * Export model state for persistence
    */
   public exportModel(): {
@@ -1896,8 +1978,100 @@ export class NeuralDomainMapper extends EventEmitter {
     cohesionAnalysis: CohesionAnalysis,
     dependencyAnalysis: DependencyAnalysis
   ): Promise<void> {
-    // Implementation would analyze highly coupled domains for merge opportunities
-    // This is a stub - real implementation would analyze cohesion and dependency patterns
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+    // Track adjacency on critical paths (merging adjacent nodes can reduce cross-domain hops)
+    const criticalAdjacency = new Set<string>();
+    for (const path of dependencyAnalysis.criticalPaths) {
+      for (let i = 0; i < path.path.length - 1; i++) {
+        const a = path.path[i];
+        const b = path.path[i + 1];
+        criticalAdjacency.add(`${a}|${b}`);
+        criticalAdjacency.add(`${b}|${a}`);
+      }
+    }
+
+    const nodeIds = Array.from(this.graph.nodes.keys());
+    const candidates: Array<{
+      a: string;
+      b: string;
+      confidence: number;
+      metrics: BoundaryOptimization["proposals"][number]["metrics"];
+    }> = [];
+
+    for (let i = 0; i < nodeIds.length; i++) {
+      for (let j = i + 1; j < nodeIds.length; j++) {
+        const a = nodeIds[i];
+        const b = nodeIds[j];
+
+        const nodeA = this.graph.nodes.get(a);
+        const nodeB = this.graph.nodes.get(b);
+        if (!nodeA || !nodeB) continue;
+
+        // Coupling score based on edge weights between the pair
+        let coupling = 0;
+        let edgeCount = 0;
+        for (const edge of this.graph.edges.values()) {
+          const matchesPair =
+            (edge.source === a && edge.target === b) ||
+            (edge.source === b && edge.target === a);
+          if (!matchesPair) continue;
+
+          edgeCount++;
+          const relationshipWeight = edge.type === "dependency" ? 1.0 : 0.7;
+          coupling += edge.weight * relationshipWeight;
+        }
+
+        if (edgeCount === 0) continue;
+
+        const couplingNorm = clamp01(coupling / 4); // normalize to 0..1
+        const typeMatch = nodeA.type === nodeB.type ? 1 : 0.4;
+        const onCriticalPath = criticalAdjacency.has(`${a}|${b}`) ? 1 : 0;
+
+        const scoreA = cohesionAnalysis.domainScores.get(a) ?? 0.5;
+        const scoreB = cohesionAnalysis.domainScores.get(b) ?? 0.5;
+        const avgScore = (scoreA + scoreB) / 2;
+
+        // Heuristic benefit metrics
+        const cohesionImprovement = clamp01((0.7 - avgScore) * 0.5 + couplingNorm * 0.2);
+        const couplingReduction = clamp01(couplingNorm * 0.7);
+        const performanceImpact = clamp01(couplingNorm * 0.3);
+        const maintainabilityImpact = clamp01(0.1 + 0.2 * typeMatch + 0.2 * onCriticalPath);
+
+        const confidence = clamp01(
+          0.45 * couplingNorm + 0.35 * typeMatch + 0.2 * onCriticalPath
+        );
+
+        // Only propose merges when there is strong evidence of tight coupling
+        if (confidence < 0.6) continue;
+
+        candidates.push({
+          a,
+          b,
+          confidence,
+          metrics: {
+            cohesionImprovement,
+            couplingReduction,
+            performanceImpact,
+            maintainabilityImpact,
+          },
+        });
+      }
+    }
+
+    // Add top merge candidates (cap to avoid flooding)
+    candidates
+      .sort((x, y) => y.confidence - x.confidence)
+      .slice(0, 8)
+      .forEach((c) => {
+        proposals.push({
+          id: `merge_${c.a}_${c.b}`,
+          type: "merge",
+          domains: [c.a, c.b],
+          metrics: c.metrics,
+          confidence: c.confidence,
+        });
+      });
   }
 
   private async generateSplitProposals(
@@ -1905,8 +2079,48 @@ export class NeuralDomainMapper extends EventEmitter {
     cohesionAnalysis: CohesionAnalysis,
     dependencyAnalysis: DependencyAnalysis
   ): Promise<void> {
-    // Implementation would identify large, low-cohesion domains for splitting
-    // This is a stub - real implementation would analyze domain complexity
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+    // Split candidates are large/complex domains with low cohesion.
+    // (We cannot infer internal sub-structure here, so we emit guidance-level proposals.)
+    for (const [domainId, score] of cohesionAnalysis.domainScores.entries()) {
+      const node = this.graph.nodes.get(domainId);
+      if (!node) continue;
+
+      const size = node.metadata.size || 1;
+      const complexity = node.metadata.complexity || 0.5;
+      const depCount = node.metadata.dependencies?.length || 0;
+
+      // Conservative thresholding: only suggest splitting "big enough" domains
+      if (score >= 0.55) continue;
+      if (size < 10 && complexity < 0.8 && depCount < 5) continue;
+
+      const cohesionImprovement = clamp01((0.65 - score) * 0.8);
+      const couplingReduction = clamp01(depCount / 10);
+      const performanceImpact = clamp01(0.05);
+      const maintainabilityImpact = clamp01(0.2 + complexity * 0.4);
+
+      const confidence = clamp01(
+        (0.65 - score) * 0.6 +
+          Math.min(size / 20, 1) * 0.2 +
+          complexity * 0.2
+      );
+
+      if (confidence < 0.55) continue;
+
+      proposals.push({
+        id: `split_${domainId}`,
+        type: "split",
+        domains: [domainId],
+        metrics: {
+          cohesionImprovement,
+          couplingReduction,
+          performanceImpact,
+          maintainabilityImpact,
+        },
+        confidence,
+      });
+    }
   }
 
   private async generateRelocationProposals(
@@ -1914,8 +2128,87 @@ export class NeuralDomainMapper extends EventEmitter {
     cohesionAnalysis: CohesionAnalysis,
     dependencyAnalysis: DependencyAnalysis
   ): Promise<void> {
-    // Implementation would suggest moving functionality between domains
-    // This is a stub - real implementation would analyze misplaced functionality
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+    const candidates: Array<{
+      domainId: string;
+      targetId: string;
+      confidence: number;
+      metrics: BoundaryOptimization["proposals"][number]["metrics"];
+    }> = [];
+
+    for (const [domainId, score] of cohesionAnalysis.domainScores.entries()) {
+      const node = this.graph.nodes.get(domainId);
+      if (!node) continue;
+
+      // Relocation is most relevant for integration/technical domains with weak cohesion.
+      if (score >= 0.55) continue;
+      if (node.type !== "integration" && node.type !== "technical") continue;
+
+      // Find strongest neighbor by coupling weight
+      const neighbors = this.getConnectedDomains(domainId);
+      if (neighbors.length === 0) continue;
+
+      let totalCoupling = 0;
+      let bestCoupling = 0;
+      let bestNeighbor: DomainNode | undefined;
+
+      for (const n of neighbors) {
+        let coupling = 0;
+        for (const edge of this.graph.edges.values()) {
+          const matchesPair =
+            (edge.source === domainId && edge.target === n.id) ||
+            (edge.source === n.id && edge.target === domainId);
+          if (!matchesPair) continue;
+          coupling += edge.weight * (edge.type === "dependency" ? 1 : 0.7);
+        }
+        totalCoupling += coupling;
+        if (coupling > bestCoupling) {
+          bestCoupling = coupling;
+          bestNeighbor = n;
+        }
+      }
+
+      if (!bestNeighbor || totalCoupling <= 0) continue;
+
+      const dominance = bestCoupling / totalCoupling;
+      if (dominance < 0.6) continue; // only if one neighbor dominates dependencies
+
+      const cohesionImprovement = clamp01((0.6 - score) * 0.4);
+      const couplingReduction = clamp01(dominance * 0.4);
+      const performanceImpact = clamp01(dominance * 0.2);
+      const maintainabilityImpact = clamp01(0.15 + dominance * 0.25);
+
+      const confidence = clamp01(
+        0.5 * dominance + 0.3 * (0.6 - score) + 0.2 * (bestNeighbor.type === node.type ? 0.6 : 1)
+      );
+
+      candidates.push({
+        domainId,
+        targetId: bestNeighbor.id,
+        confidence,
+        metrics: {
+          cohesionImprovement,
+          couplingReduction,
+          performanceImpact,
+          maintainabilityImpact,
+        },
+      });
+    }
+
+    candidates
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 6)
+      .forEach((c) => {
+        if (c.confidence < 0.55) return;
+        proposals.push({
+          id: `relocate_${c.domainId}_to_${c.targetId}`,
+          type: "relocate",
+          domains: [c.domainId, c.targetId],
+          metrics: c.metrics,
+          confidence: c.confidence,
+        });
+      });
   }
 
   private async generateAbstractionProposals(
@@ -1923,14 +2216,92 @@ export class NeuralDomainMapper extends EventEmitter {
     cohesionAnalysis: CohesionAnalysis,
     dependencyAnalysis: DependencyAnalysis
   ): Promise<void> {
-    // Implementation would identify common patterns for abstraction
-    // This is a stub - real implementation would detect repeated patterns
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+    // Identify hubs (high fan-in) and critical-path hotspots.
+    const inDegree = new Map<string, number>();
+    for (const nodeId of this.graph.nodes.keys()) {
+      inDegree.set(nodeId, 0);
+    }
+    for (const deps of dependencyAnalysis.graph.values()) {
+      for (const dep of deps) {
+        inDegree.set(dep, (inDegree.get(dep) || 0) + 1);
+      }
+    }
+
+    const criticalCounts = new Map<string, number>();
+    for (const path of dependencyAnalysis.criticalPaths) {
+      for (const nodeId of path.path) {
+        criticalCounts.set(nodeId, (criticalCounts.get(nodeId) || 0) + 1);
+      }
+    }
+
+    const candidates: Array<{
+      domainId: string;
+      confidence: number;
+      metrics: BoundaryOptimization["proposals"][number]["metrics"];
+    }> = [];
+
+    for (const [domainId, deg] of inDegree.entries()) {
+      const hot = criticalCounts.get(domainId) || 0;
+      if (deg < 3 && hot < 2) continue;
+
+      const couplingReduction = clamp01(deg / 8);
+      const cohesionImprovement = clamp01(0.1 + (hot > 0 ? 0.1 : 0));
+      const performanceImpact = clamp01(0.1 + couplingReduction * 0.2);
+      const maintainabilityImpact = clamp01(0.25 + couplingReduction * 0.35);
+
+      const confidence = clamp01(
+        0.5 * clamp01(deg / 6) + 0.3 * clamp01(hot / 3) + 0.2
+      );
+
+      candidates.push({
+        domainId,
+        confidence,
+        metrics: {
+          cohesionImprovement,
+          couplingReduction,
+          performanceImpact,
+          maintainabilityImpact,
+        },
+      });
+    }
+
+    candidates
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 6)
+      .forEach((c) => {
+        if (c.confidence < 0.55) return;
+        proposals.push({
+          id: `abstract_${c.domainId}`,
+          type: "abstract",
+          domains: [c.domainId],
+          metrics: c.metrics,
+          confidence: c.confidence,
+        });
+      });
   }
 
   private calculateOptimizationScore(
     proposals: BoundaryOptimization["proposals"]
   ): number {
-    return proposals.reduce((score, p) => score + p.confidence * 0.1, 0);
+    if (proposals.length === 0) return 0;
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+    const avg = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
+
+    const scores = proposals.map((p) => {
+      const m = p.metrics;
+      const benefit = avg([
+        clamp01(m.cohesionImprovement),
+        clamp01(m.couplingReduction),
+        clamp01(m.performanceImpact),
+        clamp01(m.maintainabilityImpact),
+      ]);
+      return clamp01(p.confidence) * benefit;
+    });
+
+    return clamp01(avg(scores));
   }
 
   private determinePriority(

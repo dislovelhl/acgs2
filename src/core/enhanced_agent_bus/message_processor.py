@@ -7,7 +7,8 @@ import logging
 import re
 import time
 from contextlib import nullcontext
-from typing import Any, Callable, Dict, List, Optional, Coroutine, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -36,6 +37,7 @@ try:
     from .utils import LRUCache
     from .validators import ValidationResult
 except (ImportError, ValueError):
+    from config import BusConfiguration  # type: ignore  # type: ignore
     from imports import (
         CIRCUIT_BREAKER_ENABLED,  # type: ignore
         METERING_AVAILABLE,
@@ -54,8 +56,6 @@ except (ImportError, ValueError):
     from runtime_security import get_runtime_security_scanner  # type: ignore
     from utils import LRUCache  # type: ignore
     from validators import ValidationResult  # type: ignore
-
-    from config import BusConfiguration  # type: ignore  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -153,12 +153,20 @@ class MessageProcessor:
                     IntentType,
                 )
                 from src.core.enhanced_agent_bus.sdpc.ampo_engine import AMPOEngine  # type: ignore
-                from src.core.enhanced_agent_bus.sdpc.asc_verifier import ASCVerifier  # type: ignore
+                from src.core.enhanced_agent_bus.sdpc.asc_verifier import (
+                    ASCVerifier,  # type: ignore
+                )
                 from src.core.enhanced_agent_bus.sdpc.evolution_controller import (
                     EvolutionController,
-                )  # type: ignore
-                from src.core.enhanced_agent_bus.sdpc.graph_check import GraphCheckVerifier  # type: ignore
-                from src.core.enhanced_agent_bus.sdpc.pacar_verifier import PACARVerifier  # type: ignore
+                )
+
+                # type: ignore
+                from src.core.enhanced_agent_bus.sdpc.graph_check import (
+                    GraphCheckVerifier,  # type: ignore
+                )
+                from src.core.enhanced_agent_bus.sdpc.pacar_verifier import (
+                    PACARVerifier,  # type: ignore
+                )
 
         self.config = kwargs.get("config") or BusConfiguration.from_environment()
         self.intent_classifier = IntentClassifier(config=self.config)
@@ -242,7 +250,7 @@ class MessageProcessor:
                 tenant_id=msg.tenant_id,
                 agent_id=msg.from_agent,
                 constitutional_hash=msg.constitutional_hash,
-                context={"priority": msg.priority.value, "message_type": msg.message_type.value}
+                context={"priority": msg.priority.value, "message_type": msg.message_type.value},
             )
 
             if security_res.blocked:
@@ -252,8 +260,8 @@ class MessageProcessor:
                     errors=[security_res.block_reason],
                     metadata={
                         "rejection_reason": "security_block",
-                        "security_events": [e.to_dict() for e in security_res.events]
-                    }
+                        "security_events": [e.to_dict() for e in security_res.events],
+                    },
                 )
 
         ckey = f"{hashlib.sha256(str(msg.content).encode()).hexdigest()[:16]}:{msg.constitutional_hash}"
@@ -355,14 +363,18 @@ class MessageProcessor:
         return self._opa_client
 
     def register_handler(
-        self, message_type: MessageType, handler: Callable[[AgentMessage], Coroutine[Any, Any, Optional[AgentMessage]]]
+        self,
+        message_type: MessageType,
+        handler: Callable[[AgentMessage], Coroutine[Any, Any, Optional[AgentMessage]]],
     ) -> None:
         if message_type not in self._handlers:
             self._handlers[message_type] = []
         self._handlers[message_type].append(handler)
 
     def unregister_handler(
-        self, message_type: MessageType, handler: Callable[[AgentMessage], Coroutine[Any, Any, Optional[AgentMessage]]]
+        self,
+        message_type: MessageType,
+        handler: Callable[[AgentMessage], Coroutine[Any, Any, Optional[AgentMessage]]],
     ) -> bool:
         if message_type in self._handlers and handler in self._handlers[message_type]:
             self._handlers[message_type].remove(handler)

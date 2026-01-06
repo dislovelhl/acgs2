@@ -113,24 +113,18 @@ class OPAClient:
             True if OPA is healthy and responding, False otherwise
         """
         try:
-            response = self.session.get(
-                f"{self.base_url}/health", timeout=self.timeout
-            )
+            response = self.session.get(f"{self.base_url}/health", timeout=self.timeout)
             is_healthy = response.status_code == 200
             if is_healthy:
                 logger.debug("OPA health check passed")
             else:
-                logger.warning(
-                    f"OPA health check failed with status {response.status_code}"
-                )
+                logger.warning(f"OPA health check failed with status {response.status_code}")
             return is_healthy
         except requests.exceptions.RequestException as e:
             logger.error(f"OPA health check failed: {e}")
             return False
 
-    def evaluate_policy(
-        self, policy_path: str, input_data: dict, use_cache: bool = False
-    ) -> dict:
+    def evaluate_policy(self, policy_path: str, input_data: dict, use_cache: bool = False) -> dict:
         """
         Evaluate a policy with input data, with optional caching and retry logic.
 
@@ -172,9 +166,7 @@ class OPAClient:
         # Execute with retry logic
         def _query() -> dict:
             try:
-                response = self.session.post(
-                    url, json=payload, timeout=self.timeout
-                )
+                response = self.session.post(url, json=payload, timeout=self.timeout)
                 response.raise_for_status()
                 result = response.json()
 
@@ -193,9 +185,7 @@ class OPAClient:
 
             except requests.exceptions.Timeout as e:
                 logger.error(f"OPA request timed out after {self.timeout}s: {e}")
-                raise OPATimeoutError(
-                    f"OPA request timed out after {self.timeout} seconds"
-                ) from e
+                raise OPATimeoutError(f"OPA request timed out after {self.timeout} seconds") from e
 
             except requests.exceptions.HTTPError as e:
                 logger.error(
@@ -203,8 +193,7 @@ class OPAClient:
                     f"{e.response.status_code} - {e.response.text}"
                 )
                 raise OPAPolicyError(
-                    f"Policy evaluation failed: {e.response.status_code} - "
-                    f"{e.response.text}"
+                    f"Policy evaluation failed: {e.response.status_code} - " f"{e.response.text}"
                 ) from e
 
             except requests.exceptions.RequestException as e:
@@ -214,9 +203,7 @@ class OPAClient:
         # Retry with exponential backoff
         return self._retry_with_backoff(_query)
 
-    def evaluate_policies_batch(
-        self, evaluations: list[tuple[str, dict]]
-    ) -> list[dict]:
+    def evaluate_policies_batch(self, evaluations: list[tuple[str, dict]]) -> list[dict]:
         """
         Batch evaluate multiple policies in sequence.
 
@@ -264,9 +251,7 @@ class OPAClient:
         self._cache.clear()
         logger.debug(f"Cleared {cache_size} cached policy evaluations")
 
-    def _retry_with_backoff(
-        self, func: Callable[[], Any], *args: Any, **kwargs: Any
-    ) -> Any:
+    def _retry_with_backoff(self, func: Callable[[], Any], *args: Any, **kwargs: Any) -> Any:
         """
         Retry a function with exponential backoff.
 
@@ -297,9 +282,7 @@ class OPAClient:
                     )
                     time.sleep(delay)
                 else:
-                    logger.error(
-                        f"All {self.max_retries} retry attempts exhausted for OPA request"
-                    )
+                    logger.error(f"All {self.max_retries} retry attempts exhausted for OPA request")
 
         # If we get here, all retries failed
         raise last_exception  # type: ignore

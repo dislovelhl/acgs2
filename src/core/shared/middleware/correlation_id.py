@@ -33,16 +33,15 @@ Usage:
 import uuid
 from typing import Any, Callable, Optional
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
-
-from src.core.shared.logging_config import (
+from src.core.shared.acgs_logging_config import (
     bind_correlation_id,
     clear_correlation_context,
     get_current_trace_id,
     get_logger,
 )
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 # Header name for correlation ID (follows common conventions)
 CORRELATION_ID_HEADER = "X-Request-ID"

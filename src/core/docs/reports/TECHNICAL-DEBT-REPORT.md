@@ -1,8 +1,8 @@
 # ACGS-2 Technical Debt Report (Post Phase 3.6)
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`  
-> **Version**: 2.3.0  
-> **Debt Reduced**: 15% LOC, refactors complete  
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.3.0
+> **Debt Reduced**: 15% LOC, refactors complete
 > **Generated**: 2025-12-31
 
 ## Executive Summary

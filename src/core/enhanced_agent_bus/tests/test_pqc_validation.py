@@ -19,9 +19,9 @@ import base64
 import hashlib
 import os
 import sys
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Ensure proper module path resolution for isolated testing
 _current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,17 +30,17 @@ if _parent_dir not in sys.path:
     sys.path.insert(0, _parent_dir)
 
 try:
-    from ..models import AgentMessage, CONSTITUTIONAL_HASH, MessageType, Priority, MessageStatus
+    from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
     from ..validation_strategies import (
-        PQCValidationStrategy,
         CompositeValidationStrategy,
+        PQCValidationStrategy,
         StaticHashValidationStrategy,
     )
 except ImportError:
-    from models import AgentMessage, CONSTITUTIONAL_HASH, MessageType, Priority, MessageStatus
+    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
     from validation_strategies import (
-        PQCValidationStrategy,
         CompositeValidationStrategy,
+        PQCValidationStrategy,
         StaticHashValidationStrategy,
     )
 
@@ -75,7 +75,9 @@ class TestPQCValidationStrategy:
     """Tests for PQCValidationStrategy."""
 
     @pytest.mark.asyncio
-    async def test_pqc_validation_without_signature_uses_fallback(self, pqc_validator, sample_agent_message):
+    async def test_pqc_validation_without_signature_uses_fallback(
+        self, pqc_validator, sample_agent_message
+    ):
         """Test that PQC validation falls back to static hash when no signature present."""
         # Message without PQC signature
         is_valid, error = await pqc_validator.validate(sample_agent_message)
@@ -109,7 +111,10 @@ class TestPQCValidationStrategy:
     @pytest.mark.asyncio
     async def test_pqc_validation_unavailable_fallback(self, sample_agent_message):
         """Test PQC validation when validator is not available."""
-        with patch('quantum_research.post_quantum_crypto.ConstitutionalHashValidator', side_effect=ImportError):
+        with patch(
+            "quantum_research.post_quantum_crypto.ConstitutionalHashValidator",
+            side_effect=ImportError,
+        ):
             validator = PQCValidationStrategy()
 
             is_valid, error = await validator.validate(sample_agent_message)
@@ -151,7 +156,7 @@ class TestCompositeValidationStrategyPQC:
         # Mock the PQC validator to fail
         for strategy in composite._strategies:
             if isinstance(strategy, PQCValidationStrategy):
-                with patch.object(strategy, 'validate', return_value=(False, "PQC failed")):
+                with patch.object(strategy, "validate", return_value=(False, "PQC failed")):
                     is_valid, error = await composite.validate(sample_agent_message)
                     assert is_valid is False
                     assert "PQC:" in error
@@ -289,7 +294,9 @@ class TestPQCSecurityProperties:
         message.pqc_public_key = "test_public_key"
 
         # Mock the underlying validator
-        with patch('quantum_research.post_quantum_crypto.ConstitutionalHashValidator') as mock_class:
+        with patch(
+            "quantum_research.post_quantum_crypto.ConstitutionalHashValidator"
+        ) as mock_class:
             mock_validator = AsyncMock()
             mock_validator.verify_governance_decision.return_value = True
             mock_class.return_value = mock_validator

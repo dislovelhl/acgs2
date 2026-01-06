@@ -5,6 +5,14 @@ Constitutional Hash: cdd01ef066bc6cf2
 Configuration models and utilities for multi-tenant isolation.
 """
 
+from .tenant_config import (
+    TenantConfig,
+    TenantQuotaConfig,
+    TenantQuotaRegistry,
+    create_tenant_config,
+    get_default_tenant_quotas,
+    get_tenant_quota_registry,
+)
 from .unified import (
     AuditSettings,
     AWSSettings,
@@ -22,14 +30,6 @@ from .unified import (
     VotingSettings,
     get_settings,
     settings,
-)
-from .tenant_config import (
-    TenantConfig,
-    TenantQuotaConfig,
-    TenantQuotaRegistry,
-    create_tenant_config,
-    get_default_tenant_quotas,
-    get_tenant_quota_registry,
 )
 
 __all__ = [

@@ -1,7 +1,37 @@
 repos:
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
     hooks:
-      - id: detect-secrets
-        args: ["--baseline", ".secrets.baseline"]
-        exclude: .*/tests/.*|.*\.ipynb|.*\.md
+    -   id: trailing-whitespace
+        exclude: ^\.auto-claude/
+    -   id: end-of-file-fixer
+        exclude: ^\.auto-claude/
+    -   id: check-yaml
+        exclude: ^\.auto-claude/
+    -   id: check-added-large-files
+    -   id: check-json
+        exclude: ^\.auto-claude/
+    -   id: check-merge-conflict
+
+-   repo: local
+    hooks:
+    -   id: no-debug-statements-python
+        name: Block Python debug statements
+        entry: 'print\('
+        language: pygrep
+        exclude: '(^tests/|^examples/|^scripts/|conftest\.py|verify_.*\.py$|setup\.py$|\.md$|cleanup_.*\.py$|^\.auto-claude/)'
+        types: [python]
+
+    -   id: no-debug-statements-ts
+        name: Block TypeScript/JS debug statements
+        entry: 'console\.log\('
+        language: pygrep
+        exclude: '(^tests/|.*\.test\.ts$|.*\.spec\.ts$|\.md$|^\.auto-claude/)'
+        types: [javascript, ts, tsx]
+
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+    -   id: ruff
+        args: [ --fix, --exit-non-zero-on-fix ]
+    -   id: ruff-format

@@ -30,6 +30,7 @@ class SagaStatus(Enum):
 @dataclass
 class SagaStep:
     """A step in a Saga transaction."""
+
     name: str
     action: Callable[..., Awaitable[Any]]
     compensation: Optional[Callable[..., Awaitable[None]]] = None
@@ -52,7 +53,12 @@ class SagaTransaction:
         self.status = SagaStatus.PENDING
         self._completed_steps: List[SagaStep] = []
 
-    def add_step(self, name: str, action: Callable[..., Awaitable[Any]], compensation: Optional[Callable[..., Awaitable[None]]] = None) -> "SagaTransaction":
+    def add_step(
+        self,
+        name: str,
+        action: Callable[..., Awaitable[Any]],
+        compensation: Optional[Callable[..., Awaitable[None]]] = None,
+    ) -> "SagaTransaction":
         """Add a step to the transaction."""
         self.steps.append(SagaStep(name=name, action=action, compensation=compensation))
         return self
@@ -69,7 +75,6 @@ class SagaTransaction:
 
         for step in self.steps:
             step.status = SagaStatus.RUNNING
-            logger.debug(f"[{CONSTITUTIONAL_HASH}] Executing step: {step.name}")
 
             try:
                 # Execute step action, passing results from previous steps if needed
@@ -92,20 +97,25 @@ class SagaTransaction:
     async def _compensate(self):
         """Compensate completed steps in reverse order (LIFO)."""
         self.status = SagaStatus.COMPENSATING
-        logger.warning(f"[{CONSTITUTIONAL_HASH}] Starting compensation for transaction: {self.transaction_id}")
+        logger.warning(
+            f"[{CONSTITUTIONAL_HASH}] Starting compensation for transaction: {self.transaction_id}"
+        )
 
         for step in reversed(self._completed_steps):
             if step.compensation:
-                logger.debug(f"[{CONSTITUTIONAL_HASH}] Compensating step: {step.name}")
+
                 try:
                     await step.compensation(step.result)
                 except Exception as e:
-                    logger.error(f"[{CONSTITUTIONAL_HASH}] Compensation for step {step.name} failed: {e}")
+                    logger.error(
+                        f"[{CONSTITUTIONAL_HASH}] Compensation for step {step.name} failed: {e}"
+                    )
                     # In a real system, we might retry or escalate to manual intervention
             else:
-                logger.debug(f"[{CONSTITUTIONAL_HASH}] No compensation for step: {step.name}")
 
-        logger.info(f"[{CONSTITUTIONAL_HASH}] Compensation completed for transaction: {self.transaction_id}")
+        logger.info(
+            f"[{CONSTITUTIONAL_HASH}] Compensation completed for transaction: {self.transaction_id}"
+        )
 
 class ConstitutionalSaga(SagaTransaction):
     """

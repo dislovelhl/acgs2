@@ -250,7 +250,7 @@ async def generate_report(request: ReportGenerateRequest) -> ReportGenerateRespo
         logger.error("Celery task not available for report generation")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Report generation service temporarily unavailable. " "Please try again later.",
+            detail="Report generation service temporarily unavailable. Please try again later.",
         )
 
     try:
@@ -271,7 +271,7 @@ async def generate_report(request: ReportGenerateRequest) -> ReportGenerateRespo
         task_result = generate_task.delay(**task_kwargs)
 
         logger.info(
-            "Report generation task submitted: task_id=%s, framework=%s, " "format=%s, tenant=%s",
+            "Report generation task submitted: task_id=%s, framework=%s, format=%s, tenant=%s",
             task_result.id,
             request.framework.value,
             request.format.value,

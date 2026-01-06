@@ -3,28 +3,54 @@ Unit tests for hardened RBAC middleware.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+import sys
+from unittest.mock import MagicMock
+
 import pytest
 from fastapi import HTTPException
-from unittest.mock import MagicMock
-import sys
 
 # Mock JWT library availability for one of the tests if needed,
 # but here we test the hardened RBACMiddleware implementation.
 
+
 def test_rbac_middleware_dev_secret_in_production(monkeypatch):
     """Verify that 'dev-secret' is forbidden in production."""
-    from pydantic import SecretStr
     from unittest.mock import patch
 
-    with patch("shared.config.settings") as mock_settings:
+    from pydantic import SecretStr
+
+    # Fix the patch path to match how it's imported in rbac.py
+    with patch("src.core.shared.config.settings") as mock_settings:
         mock_settings.env = "production"
         # Ensure raw_secret in RBACConfig.__init__ sees the SecretStr
         mock_settings.security.jwt_secret = SecretStr("dev-secret")
         mock_settings.security.jwt_algorithm = "HS256"
 
-        with pytest.raises(ValueError, match="Insecure JWT_SECRET 'dev-secret' is forbidden in production"):
+        with pytest.raises(
+            ValueError, match="Insecure JWT_SECRET 'dev-secret' is forbidden in production"
+        ):
             from src.core.services.policy_registry.app.middleware.rbac import RBACMiddleware
+
             RBACMiddleware(MagicMock())
+
+
+def test_rbac_middleware_short_secret_in_production(monkeypatch):
+    """Verify that short secrets are forbidden in production."""
+    from unittest.mock import patch
+
+    from pydantic import SecretStr
+
+    with patch("src.core.shared.config.settings") as mock_settings:
+        mock_settings.env = "production"
+        # Secret shorter than 32 characters
+        mock_settings.security.jwt_secret = SecretStr("short-secret")
+        mock_settings.security.jwt_algorithm = "HS256"
+
+        with pytest.raises(ValueError, match="JWT_SECRET must be at least 32 characters"):
+            from src.core.services.policy_registry.app.middleware.rbac import RBACMiddleware
+
+            RBACMiddleware(MagicMock())
+
 
 def test_rbac_token_validation_no_jwt_library(monkeypatch):
     """Verify that token validation fails if JWT library is missing."""
@@ -34,6 +60,7 @@ def test_rbac_token_validation_no_jwt_library(monkeypatch):
     # Mock settings for successful initialization
     mock_settings = MagicMock()
     mock_settings.env = "development"
+    # Valid secret to pass initialization
     mock_settings.security.jwt_secret = SecretStr("valid-secret-at-least-thirty-two-chars-long")
     monkeypatch.setattr(rbac_module, "settings", mock_settings)
 
@@ -41,6 +68,7 @@ def test_rbac_token_validation_no_jwt_library(monkeypatch):
     monkeypatch.setattr(rbac_module, "JWT_AVAILABLE", False)
 
     from src.core.services.policy_registry.app.middleware.rbac import RBACMiddleware
+
     app = MagicMock()
     middleware = RBACMiddleware(app)
 

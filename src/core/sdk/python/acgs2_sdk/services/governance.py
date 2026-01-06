@@ -4,13 +4,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any
 
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
-    JSONValue = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]  # type: ignore[misc]
-    JSONDict = Dict[str, JSONValue]  # type: ignore[misc]
+    JSONValue = Any
+    JSONDict = dict[str, Any]
 
 from acgs2_sdk.constants import CONSTITUTIONAL_HASH, GOVERNANCE_ENDPOINT
 from acgs2_sdk.models import (

@@ -32,11 +32,9 @@ from app.notifications.retry import RetryableNotificationSender
 
 logger = logging.getLogger(__name__)
 
-
 # =============================================================================
 # Notification Manager
 # =============================================================================
-
 
 class NotificationManager:
     """
@@ -171,7 +169,7 @@ class NotificationManager:
             provider = self._providers.get(channel.lower())
 
             if not provider:
-                logger.debug(f"Provider not available for channel: {channel}")
+
                 results[channel] = NotificationResult(
                     status=NotificationStatus.INVALID_CONFIG,
                     provider=channel,
@@ -252,10 +250,8 @@ class NotificationManager:
             },
         }
 
-
 # Global notification manager instance
 _notification_manager: Optional[NotificationManager] = None
-
 
 def get_notification_manager() -> NotificationManager:
     """
@@ -269,7 +265,6 @@ def get_notification_manager() -> NotificationManager:
         _notification_manager = NotificationManager()
     return _notification_manager
 
-
 async def initialize_notification_manager() -> NotificationManager:
     """
     Initialize and return the global NotificationManager.
@@ -281,7 +276,6 @@ async def initialize_notification_manager() -> NotificationManager:
     await manager.initialize()
     return manager
 
-
 def reset_notification_manager() -> None:
     """
     Reset the global NotificationManager instance.
@@ -291,30 +285,25 @@ def reset_notification_manager() -> None:
     global _notification_manager
     _notification_manager = None
 
-
 class ApprovalEngineError(Exception):
     """Base exception for approval engine errors."""
 
     pass
-
 
 class ApprovalNotFoundError(ApprovalEngineError):
     """Raised when an approval request is not found."""
 
     pass
 
-
 class ChainNotFoundError(ApprovalEngineError):
     """Raised when an approval chain is not found."""
 
     pass
 
-
 class ApprovalStateError(ApprovalEngineError):
     """Raised when an operation is invalid for the current state."""
 
     pass
-
 
 class ApprovalEngine:
     """
@@ -930,7 +919,7 @@ class ApprovalEngine:
             is_escalation: Whether this is an escalation notification
         """
         if not self._notification_callback:
-            logger.debug(f"No notification callback configured for request {request.request_id}")
+
             return
 
         approvers = self.get_current_approvers(request)
@@ -968,8 +957,7 @@ class ApprovalEngine:
         try:
             await self._notification_callback(payload)
             logger.info(
-                f"Notification sent for request {request.request_id} "
-                f"to {len(approvers)} approvers"
+                f"Notification sent for request {request.request_id} to {len(approvers)} approvers"
             )
         except Exception as e:
             logger.error(f"Failed to send notification for {request.request_id}: {e}")
@@ -1018,7 +1006,6 @@ class ApprovalEngine:
             except Exception as e:
                 logger.error(f"Failed to record audit event: {e}")
         else:
-            logger.debug(f"Audit event recorded (no callback): {event.event_type}")
 
     # =========================================================================
     # Statistics and Monitoring
@@ -1066,10 +1053,8 @@ class ApprovalEngine:
         """
         return self._decision_history.get(request_id, [])
 
-
 # Global engine instance (singleton pattern)
 _approval_engine: Optional[ApprovalEngine] = None
-
 
 def get_approval_engine() -> ApprovalEngine:
     """
@@ -1082,7 +1067,6 @@ def get_approval_engine() -> ApprovalEngine:
     if _approval_engine is None:
         _approval_engine = ApprovalEngine()
     return _approval_engine
-
 
 async def initialize_approval_engine(
     wire_notifications: bool = True,
@@ -1144,7 +1128,6 @@ async def initialize_approval_engine(
     )
 
     return _approval_engine
-
 
 def reset_approval_engine() -> None:
     """

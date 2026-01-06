@@ -37,12 +37,12 @@ Usage:
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List, Tuple
-try:
-    from src.core.shared.types import JSONDict, JSONValue
-except ImportError:
-    JSONDict = Dict[str, Any]
-    JSONValue = Any
+from typing import TYPE_CHECKING, Any, List, Optional
+
+from src.core.shared.types import JSONDict
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -111,9 +111,8 @@ class JITProvisioner:
         )
 
         if result.created:
-            print(f"New user created: {result.user['email']}")
+
         else:
-            print(f"Existing user updated: {result.user['email']}")
 
     Attributes:
         auto_provision_enabled: Whether to allow automatic user creation.
@@ -124,8 +123,8 @@ class JITProvisioner:
     def __init__(
         self,
         auto_provision_enabled: bool = True,
-        default_roles: Optional[list[str]] = None,
-        allowed_domains: Optional[list[str]] = None,
+        default_roles: Optional[List[str]] = None,
+        allowed_domains: Optional[List[str]] = None,
     ) -> None:
         """Initialize the JIT provisioner.
 
@@ -217,10 +216,10 @@ class JITProvisioner:
         sso_provider: str = "oidc",
         idp_user_id: Optional[str] = None,
         provider_id: Optional[str] = None,
-        roles: Optional[list[str]] = None,
+        roles: Optional[List[str]] = None,
         name_id: Optional[str] = None,
         session_index: Optional[str] = None,
-        session: Optional[Any] = None,
+        session: Optional["AsyncSession"] = None,
     ) -> ProvisioningResult:
         """Get existing user or create a new one from SSO authentication.
 
@@ -298,13 +297,13 @@ class JITProvisioner:
 
     async def _provision_with_orm(
         self,
-        session: Any,
+        session: "AsyncSession",
         email: str,
         name: Optional[str],
         sso_provider: str,
         idp_user_id: Optional[str],
         provider_id: Optional[str],
-        roles: Optional[list[str]],
+        roles: Optional[List[str]],
         name_id: Optional[str],
         session_index: Optional[str],
     ) -> ProvisioningResult:
@@ -326,7 +325,6 @@ class JITProvisioner:
         """
         # Import here to avoid circular dependencies
         from sqlalchemy import select
-
         from src.core.shared.models.user import SSOProviderType, User
 
         # Look up existing user by email
@@ -538,7 +536,6 @@ class JITProvisioner:
             ProvisioningError: If user not found.
         """
         from sqlalchemy import select
-
         from src.core.shared.models.user import User
 
         stmt = select(User).where(User.id == user_id)
@@ -583,7 +580,6 @@ class JITProvisioner:
             ProvisioningError: If user not found.
         """
         from sqlalchemy import select
-
         from src.core.shared.models.user import User
 
         stmt = select(User).where(User.id == user_id)

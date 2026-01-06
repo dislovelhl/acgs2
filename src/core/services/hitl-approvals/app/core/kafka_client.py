@@ -44,7 +44,6 @@ except ImportError:
         "Install with: pip install aiokafka"
     )
 
-
 # =============================================================================
 # Topic Definitions
 # =============================================================================
@@ -194,7 +193,6 @@ class HITLEvent:
 from typing import Any
 
 EventHandler = Callable[[HITLEvent], Coroutine[Any, Any, None]]
-
 
 # =============================================================================
 # Kafka Client Exceptions

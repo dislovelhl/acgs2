@@ -13,12 +13,12 @@ import sys
 from pathlib import Path
 from typing import Optional, Protocol
 
-# Add acgs2-core/shared to path for type imports
-shared_path = Path(__file__).parent.parent.parent.parent.parent / "shared"
-if str(shared_path) not in sys.path:
-    sys.path.insert(0, str(shared_path))
+# Add acgs2-core to path for shared modules
+core_path = Path(__file__).parent.parent.parent.parent.parent
+if str(core_path) not in sys.path:
+    sys.path.insert(0, str(core_path))
 
-from types import JSONDict
+from shared.types import JSONDict
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,6 @@ class VaultTransitOperations:
             "allow_plaintext_backup": allow_plaintext_backup,
         }
         await self._http_client.request("POST", path, data=data)
-        logger.debug(f"Created Transit key: {key_name} type={key_type}")
 
     async def sign(
         self,

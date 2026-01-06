@@ -30,7 +30,6 @@ from src.api.linear_webhooks import (
 )
 from src.integrations.linear.webhook_auth import verify_linear_signature_sync
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -313,13 +312,11 @@ class TestLinearWebhookSignatureVerification:
             # Should be rejected
             assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_verify_linear_signature_sync_valid(
-        self, sample_issue_webhook_payload, webhook_secret
-    ):
+    def test_verify_linear_signature_sync_valid(self, sample_issue_webhook_payload, webhook_secret):
         """Test synchronous signature verification with valid signature."""
-        payload_bytes = json.dumps(
-            sample_issue_webhook_payload, separators=(",", ":")
-        ).encode("utf-8")
+        payload_bytes = json.dumps(sample_issue_webhook_payload, separators=(",", ":")).encode(
+            "utf-8"
+        )
         signature = compute_linear_signature(sample_issue_webhook_payload, webhook_secret)
 
         result = verify_linear_signature_sync(payload_bytes, signature, webhook_secret)
@@ -330,13 +327,11 @@ class TestLinearWebhookSignatureVerification:
         self, sample_issue_webhook_payload, webhook_secret
     ):
         """Test synchronous signature verification with invalid signature."""
-        payload_bytes = json.dumps(
-            sample_issue_webhook_payload, separators=(",", ":")
-        ).encode("utf-8")
-
-        result = verify_linear_signature_sync(
-            payload_bytes, "invalid-signature", webhook_secret
+        payload_bytes = json.dumps(sample_issue_webhook_payload, separators=(",", ":")).encode(
+            "utf-8"
         )
+
+        result = verify_linear_signature_sync(payload_bytes, "invalid-signature", webhook_secret)
 
         assert result is False
 
@@ -469,9 +464,7 @@ class TestLinearWebhookPayloadParsing:
             assert data["queued"] is False
 
     @pytest.mark.asyncio
-    async def test_unknown_webhook_type(
-        self, client, webhook_secret, mock_linear_config
-    ):
+    async def test_unknown_webhook_type(self, client, webhook_secret, mock_linear_config):
         """Test handling of unknown webhook type."""
         with patch(
             "src.integrations.linear.webhook_auth.get_linear_config",
@@ -581,9 +574,9 @@ class TestLinearWebhookStatusEndpoint:
     async def test_get_webhook_status_empty(self, client, mock_linear_config):
         """Test getting webhook status when no events have been received."""
         with patch(
-                "src.integrations.linear.webhook_auth.is_linear_webhook_configured",
-                return_value=True,
-            ):
+            "src.integrations.linear.webhook_auth.is_linear_webhook_configured",
+            return_value=True,
+        ):
             response = client.get("/webhooks/linear/status")
 
             assert response.status_code == status.HTTP_200_OK
@@ -672,9 +665,7 @@ class TestLinearWebhookTestEndpoint:
     """Tests for webhook test endpoint (without signature verification)."""
 
     @pytest.mark.asyncio
-    async def test_test_endpoint_without_signature(
-        self, client, sample_issue_webhook_payload
-    ):
+    async def test_test_endpoint_without_signature(self, client, sample_issue_webhook_payload):
         """Test that test endpoint accepts webhooks without signature."""
         response = client.post(
             "/webhooks/linear/test",

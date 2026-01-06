@@ -108,9 +108,7 @@ class VoteSession:
         # Prevent duplicate votes from same agent
         existing_agents = {v.agent_id for v in self.votes}
         if vote.agent_id in existing_agents:
-            logger.warning(
-                f"Duplicate vote from {vote.agent_id} for session {self.session_id}"
-            )
+            logger.warning(f"Duplicate vote from {vote.agent_id} for session {self.session_id}")
             return False
 
         # Apply agent weight if configured
@@ -329,7 +327,6 @@ class EventDrivenVoteCollector:
         channel = f"{self.channel_prefix}:{message_id}"
         if self.pubsub:
             await self.pubsub.subscribe(channel)
-            logger.debug(f"Subscribed to vote channel: {channel}")
 
         # Store session in Redis for persistence
         if self.redis_client:
@@ -403,13 +400,10 @@ class EventDrivenVoteCollector:
             try:
                 channel = f"{self.channel_prefix}:{message_id}"
                 await self.redis_client.publish(channel, json.dumps(vote.to_dict()))
-                logger.debug(f"Vote published to {channel} by {agent_id}")
 
                 # Also store in hash for persistence
                 votes_key = f"{self.channel_prefix}:votes:{message_id}"
-                await self.redis_client.hset(
-                    votes_key, agent_id, json.dumps(vote.to_dict())
-                )
+                await self.redis_client.hset(votes_key, agent_id, json.dumps(vote.to_dict()))
                 await self.redis_client.expire(votes_key, 86400)  # 24h expiry
 
                 return True
@@ -581,9 +575,7 @@ class EventDrivenVoteCollector:
 
         if self.redis_client:
             try:
-                await self.redis_client.hdel(
-                    f"{self.channel_prefix}:sessions", session_id
-                )
+                await self.redis_client.hdel(f"{self.channel_prefix}:sessions", session_id)
             except Exception as e:
                 logger.warning(f"Failed to remove session from Redis: {e}")
 

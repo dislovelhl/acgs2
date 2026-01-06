@@ -19,7 +19,7 @@ from pydantic import (
     model_validator,
 )
 
-from ..types import ValidatorValue
+from ..integration_types import ValidatorValue
 
 
 class AuthType(str, Enum):

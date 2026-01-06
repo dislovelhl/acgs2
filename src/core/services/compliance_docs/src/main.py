@@ -19,6 +19,7 @@ if str(core_path) not in sys.path:
 
 from src.core.shared.security import SecurityHeadersConfig, SecurityHeadersMiddleware
 from src.core.shared.security.cors_config import get_cors_config
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

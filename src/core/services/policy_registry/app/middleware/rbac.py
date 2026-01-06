@@ -23,9 +23,8 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
 
 from fastapi import Depends, HTTPException, Request, status
-
-from src.core.shared.config import settings
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from src.core.shared.config import settings
 
 logger = logging.getLogger(__name__)
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -263,7 +262,9 @@ class RBACConfig:
         rate_limits: Optional[Dict[Role, int]] = None,  # requests per minute
         env: Optional[str] = None,
     ):
-        self.env = env or (settings.env if hasattr(settings, "env") else os.environ.get("APP_ENV", "development"))
+        self.env = env or (
+            settings.env if hasattr(settings, "env") else os.environ.get("APP_ENV", "development")
+        )
         self.development_mode = self.env == "development"
 
         # Load from settings if not provided
@@ -271,10 +272,16 @@ class RBACConfig:
             self.jwt_secret = jwt_secret
         else:
             raw_secret = settings.security.jwt_secret
-            self.jwt_secret = raw_secret.get_secret_value() if hasattr(raw_secret, "get_secret_value") else raw_secret
+            self.jwt_secret = (
+                raw_secret.get_secret_value()
+                if hasattr(raw_secret, "get_secret_value")
+                else raw_secret
+            )
 
         self.jwt_algorithm = jwt_algorithm or settings.security.jwt_algorithm
-        self.jwt_issuer = jwt_issuer or (settings.security.jwt_issuer if hasattr(settings.security, "jwt_issuer") else jwt_issuer)
+        self.jwt_issuer = jwt_issuer or (
+            settings.security.jwt_issuer if hasattr(settings.security, "jwt_issuer") else jwt_issuer
+        )
 
         self.verify_signature = verify_signature
         self.verify_expiration = verify_expiration
@@ -303,9 +310,8 @@ class RBACConfig:
 
         # Check secret strength
         if self.jwt_secret and len(self.jwt_secret) < 32 and not self.development_mode:
-            logger.error("SECURITY WARNING: JWT_SECRET is too short (min 32 chars recommended)")
-            # In production, we might want to be even stricter
-            # raise ValueError("JWT_SECRET must be at least 32 characters")
+            logger.critical("PRODUCTION_SECURITY_VIOLATION: JWT_SECRET is too short!")
+            raise ValueError("JWT_SECRET must be at least 32 characters in production")
 
         self.jwt_algorithm = jwt_algorithm
         self.jwt_issuer = jwt_issuer
@@ -752,7 +758,6 @@ require_permission = rbac.require_permission
 require_role = rbac.require_role
 require_tenant_access = rbac.require_tenant_access
 get_claims = rbac.get_claims
-
 
 __all__ = [
     "CONSTITUTIONAL_HASH",

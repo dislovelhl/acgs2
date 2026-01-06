@@ -1,7 +1,6 @@
 """Tests for OIDC handler."""
 
 import pytest
-
 from src.core.shared.auth.oidc_handler import (
     OIDCConfigurationError,
     OIDCHandler,
@@ -16,7 +15,7 @@ def test_oidc_handler_initialization():
     handler = OIDCHandler()
     assert handler is not None
     assert handler.list_providers() == []
-    print("OK")
+    # print("OK")  # DEBUG_CLEANUP
 
 
 def test_oidc_provider_config():

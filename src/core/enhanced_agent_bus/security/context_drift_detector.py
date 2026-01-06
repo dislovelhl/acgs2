@@ -77,7 +77,7 @@ class AgentProfile:
             return 0.0
         mean = self.get_mean_impact()
         variance = sum((x - mean) ** 2 for x in self.impact_scores) / len(self.impact_scores)
-        return variance ** 0.5
+        return variance**0.5
 
     def get_request_rate(self, window_seconds: int = 60) -> float:
         """Calculate requests per second in the last window."""

@@ -35,7 +35,7 @@ graph LR
     AL -->|Merkle Root| BC{Blockchain Adapter}
     BC -->|Tx| Solana[Solana Ledger]
     BC -->|Tx| Arweave[Arweave Permaweb]
-    
+
     Proof(ZKP Client) -->|Verify| AL
 ```
 

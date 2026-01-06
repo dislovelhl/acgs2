@@ -27,6 +27,7 @@ AUTHLIB_AVAILABLE = False
 try:
     from authlib.integrations.httpx_client import AsyncOAuth2Client
     from authlib.jose import JsonWebKey, jwt
+
     AUTHLIB_AVAILABLE = True
 except ImportError:
     logger.warning(
@@ -38,6 +39,7 @@ except ImportError:
 HTTPX_AVAILABLE = False
 try:
     import httpx
+
     HTTPX_AVAILABLE = True
 except ImportError:
     pass
@@ -177,9 +179,11 @@ class OIDCRelyingParty:
     def _generate_pkce(self) -> tuple[str, str]:
         """Generate PKCE code verifier and challenge."""
         verifier = secrets.token_urlsafe(32)
-        challenge = base64.urlsafe_b64encode(
-            hashlib.sha256(verifier.encode()).digest()
-        ).rstrip(b"=").decode()
+        challenge = (
+            base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
+            .rstrip(b"=")
+            .decode()
+        )
         return verifier, challenge
 
     async def create_auth_request(

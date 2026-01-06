@@ -17,7 +17,6 @@ import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from app.services.compiler_service import CompilerService
 
 # Constitutional hash constant

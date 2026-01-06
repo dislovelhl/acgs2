@@ -334,8 +334,6 @@ class UsageMeteringService:
                 agg.total_operations += event.units
                 agg.total_tokens += event.tokens_processed
 
-        logger.debug(f"Flushed {len(events_to_flush)} events to aggregations")
-
     def get_metrics(self) -> Dict[str, Any]:
         """Get service metrics for monitoring."""
         return {

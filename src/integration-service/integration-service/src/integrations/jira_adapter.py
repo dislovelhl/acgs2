@@ -22,9 +22,9 @@ import httpx
 from pydantic import Field, SecretStr, field_validator, model_validator
 
 # Import exceptions from centralized exceptions module
-from exceptions.auth import AuthenticationError
-from exceptions.delivery import DeliveryError
-from exceptions.integration import RateLimitError
+from ..exceptions.auth import AuthenticationError
+from ..exceptions.delivery import DeliveryError
+from ..exceptions.integration import RateLimitError
 
 # Import base integration classes and models
 from .base import (
@@ -262,8 +262,7 @@ class JiraAdapter(BaseIntegration):
 
         # Basic auth with username:api_token
         credentials = (
-            f"{self.jira_credentials.username}:"
-            f"{self.jira_credentials.api_token.get_secret_value()}"
+            f"{self.jira_credentials.username}:{self.jira_credentials.api_token.get_secret_value()}"
         )
         encoded = base64.b64encode(credentials.encode()).decode()
 
@@ -282,7 +281,6 @@ class JiraAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating authentication success/failure
         """
-        logger.debug(f"Authenticating with Jira for '{self.name}'")
 
         try:
             client = await self.get_http_client()
@@ -300,7 +298,7 @@ class JiraAdapter(BaseIntegration):
                 account_id = user_data.get("accountId") or user_data.get("key")
                 display_name = user_data.get("displayName", "Unknown")
                 logger.info(
-                    f"Jira authentication successful for '{self.name}' " f"(user: {display_name})"
+                    f"Jira authentication successful for '{self.name}' (user: {display_name})"
                 )
                 return IntegrationResult(
                     success=True,
@@ -372,7 +370,6 @@ class JiraAdapter(BaseIntegration):
         Returns:
             IntegrationResult with validation status and any issues found
         """
-        logger.debug(f"Validating Jira integration '{self.name}'")
 
         validation_issues: List[str] = []
 
@@ -380,9 +377,7 @@ class JiraAdapter(BaseIntegration):
             client = await self.get_http_client()
 
             # Validate project exists and get project ID
-            project_url = (
-                f"{self._get_api_base_url()}/project/" f"{self.jira_credentials.project_key}"
-            )
+            project_url = f"{self._get_api_base_url()}/project/{self.jira_credentials.project_key}"
 
             project_response = await client.get(
                 project_url,
@@ -392,7 +387,7 @@ class JiraAdapter(BaseIntegration):
             if project_response.status_code == 200:
                 project_data = project_response.json()
                 self._project_id = project_data.get("id")
-                logger.debug(f"Project '{self.jira_credentials.project_key}' found")
+
             elif project_response.status_code == 401:
                 validation_issues.append("Authentication failed - invalid credentials")
                 return IntegrationResult(
@@ -463,7 +458,7 @@ class JiraAdapter(BaseIntegration):
             if priorities_response.status_code == 200:
                 priorities = priorities_response.json()
                 self._priority_ids = {p.get("name", "").lower(): p.get("id") for p in priorities}
-                logger.debug(f"Available priorities: {list(self._priority_ids.keys())}")
+
             else:
                 logger.warning("Could not fetch priority list")
 
@@ -509,7 +504,6 @@ class JiraAdapter(BaseIntegration):
             DeliveryError: If ticket creation fails
             RateLimitError: If rate limited by Jira
         """
-        logger.debug(f"Creating Jira ticket for event {event.event_id}")
 
         try:
             client = await self.get_http_client()
@@ -868,7 +862,6 @@ class JiraAdapter(BaseIntegration):
         Returns:
             IntegrationResult indicating connection status
         """
-        logger.debug(f"Testing Jira connection for '{self.name}'")
 
         try:
             client = await self.get_http_client()
@@ -885,7 +878,7 @@ class JiraAdapter(BaseIntegration):
                     version = server_info.get("version", "unknown")
                     deployment = server_info.get("deploymentType", "unknown")
                     logger.debug(
-                        f"Jira server reachable: version={version}, " f"deployment={deployment}"
+                        f"Jira server reachable: version={version}, deployment={deployment}"
                     )
                 except json.JSONDecodeError:
                     pass
@@ -943,8 +936,6 @@ class JiraAdapter(BaseIntegration):
         """
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
-
-        logger.debug(f"Fetching Jira issue {issue_key}")
 
         try:
             client = await self.get_http_client()
@@ -1007,8 +998,6 @@ class JiraAdapter(BaseIntegration):
         """
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
-
-        logger.debug(f"Adding comment to Jira issue {issue_key}")
 
         try:
             client = await self.get_http_client()

@@ -18,12 +18,14 @@ Endpoints:
 """
 
 import logging
-from typing import Any, Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Query
+from starlette.requests import Request as StarletteRequest
+
+FastAPIRequest = StarletteRequest
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from pydantic import BaseModel, Field
-
 from src.core.shared.auth import OIDCHandler, SAMLHandler
 from src.core.shared.auth.oidc_handler import (
     OIDCAuthenticationError,
@@ -49,6 +51,7 @@ from src.core.shared.auth.saml_handler import (
     SAMLValidationError,
 )
 from src.core.shared.config import settings
+from src.core.shared.types import JSONDict
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -155,7 +158,7 @@ def _register_default_providers(handler: OIDCHandler) -> None:
     )
 
 
-def get_saml_handler(request: Request) -> SAMLHandler:
+def get_saml_handler(req: FastAPIRequest) -> SAMLHandler:
     """Get or create the SAML handler singleton.
 
     Args:
@@ -171,7 +174,7 @@ def get_saml_handler(request: Request) -> SAMLHandler:
 
     if _saml_handler is None:
         # Construct SP configuration with absolute URLs
-        base_url = str(request.base_url).rstrip("/")
+        base_url = str(req.base_url).rstrip("/")
 
         sp_config = SAMLSPConfig(
             entity_id=settings.sso.saml_entity_id or f"{base_url}/sso/saml/metadata",
@@ -266,7 +269,7 @@ class SSOUserInfoResponse(BaseModel):
     name: Optional[str] = Field(None, description="User's full name")
     given_name: Optional[str] = Field(None, description="User's first name")
     family_name: Optional[str] = Field(None, description="User's last name")
-    groups: list[str] = Field(default_factory=list, description="Group memberships")
+    groups: List[str] = Field(default_factory=list, description="Group memberships")
 
 
 class SSOProviderInfo(BaseModel):
@@ -293,7 +296,7 @@ class SAMLUserInfoResponse(BaseModel):
     name: Optional[str] = Field(None, description="User's full name")
     given_name: Optional[str] = Field(None, description="User's first name")
     family_name: Optional[str] = Field(None, description="User's last name")
-    groups: list[str] = Field(default_factory=list, description="Group memberships")
+    groups: List[str] = Field(default_factory=list, description="Group memberships")
     session_index: Optional[str] = Field(None, description="Session index for logout")
 
 
@@ -313,7 +316,7 @@ class SAMLSLSRequest(BaseModel):
 
 
 # Exception handlers for SSO errors
-async def handle_sso_error(request: Request, exc: Exception) -> JSONResponse:
+async def handle_sso_error(req: FastAPIRequest, exc: Exception) -> JSONResponse:
     """Handle SSO-related exceptions with proper error responses.
 
     Args:
@@ -328,7 +331,7 @@ async def handle_sso_error(request: Request, exc: Exception) -> JSONResponse:
         extra={
             "error_type": type(exc).__name__,
             "error": str(exc),
-            "path": request.url.path,
+            "path": req.url.path,
             "constitutional_hash": CONSTITUTIONAL_HASH,
         },
     )
@@ -380,7 +383,7 @@ async def list_oidc_providers(
 
 @router.get("/oidc/login")
 async def oidc_login(
-    request: Request,
+    req: FastAPIRequest,
     provider: str = Query(..., description="OIDC provider name (e.g., google, azure, okta)"),
     redirect_uri: Optional[str] = Query(
         None, description="Custom redirect URI after authentication"
@@ -411,7 +414,7 @@ async def oidc_login(
         )
 
     # Construct callback URL
-    callback_url = redirect_uri or str(request.url_for("oidc_callback"))
+    callback_url = redirect_uri or str(req.url_for("oidc_callback"))
 
     try:
         # Initiate login and get authorization URL
@@ -421,9 +424,9 @@ async def oidc_login(
         )
 
         # Store state in session for validation on callback
-        request.session["oidc_state"] = state
-        request.session["oidc_provider"] = provider
-        request.session["oidc_callback_url"] = callback_url
+        req.session["oidc_state"] = state
+        req.session["oidc_provider"] = provider
+        req.session["oidc_callback_url"] = callback_url
 
         logger.info(
             "OIDC login initiated",
@@ -468,13 +471,13 @@ async def oidc_login(
 
 @router.get("/oidc/callback", response_model=SSOUserInfoResponse)
 async def oidc_callback(
-    request: Request,
+    req: FastAPIRequest,
     code: str = Query(..., description="Authorization code from IdP"),
     state: str = Query(..., description="State parameter for CSRF validation"),
     error: Optional[str] = Query(None, description="Error from IdP"),
     error_description: Optional[str] = Query(None, description="Error description from IdP"),
     handler: OIDCHandler = Depends(get_oidc_handler),  # noqa: B008
-) -> dict[str, Any]:
+) -> JSONDict:
     """Handle OIDC callback after IdP authentication.
 
     This endpoint processes the authorization code from the IdP,
@@ -510,9 +513,9 @@ async def oidc_callback(
         )
 
     # Validate state from session
-    stored_state = request.session.get("oidc_state")
-    stored_provider = request.session.get("oidc_provider")
-    stored_callback_url = request.session.get("oidc_callback_url")
+    stored_state = req.session.get("oidc_state")
+    stored_provider = req.session.get("oidc_provider")
+    stored_callback_url = req.session.get("oidc_callback_url")
 
     if not stored_state or stored_state != state:
         logger.warning(
@@ -544,9 +547,9 @@ async def oidc_callback(
         )
 
         # Clear SSO session data after successful authentication
-        request.session.pop("oidc_state", None)
-        request.session.pop("oidc_provider", None)
-        request.session.pop("oidc_callback_url", None)
+        req.session.pop("oidc_state", None)
+        req.session.pop("oidc_provider", None)
+        req.session.pop("oidc_callback_url", None)
 
         # JIT Provisioning: Create or update user in database
         # Get default role as a list (provisioner expects list of roles)
@@ -574,7 +577,7 @@ async def oidc_callback(
         )
 
         # Store user info in session with provisioned user data
-        request.session["user"] = {
+        req.session["user"] = {
             "id": provisioning_result.user.get("id"),
             "sub": user_info.sub,
             "email": provisioning_result.user.get("email"),
@@ -699,7 +702,7 @@ async def oidc_callback(
 
 @router.post("/oidc/logout", response_model=SSOLogoutResponse)
 async def oidc_logout(
-    request: Request,
+    req: FastAPIRequest,
     handler: OIDCHandler = Depends(get_oidc_handler),  # noqa: B008
 ) -> SSOLogoutResponse:
     """OIDC logout endpoint.
@@ -714,7 +717,7 @@ async def oidc_logout(
     Returns:
         Logout response with optional redirect URL to IdP
     """
-    user = request.session.get("user")
+    user = req.session.get("user")
     provider_name = user.get("provider") if user else None
     redirect_url = None
 
@@ -723,7 +726,7 @@ async def oidc_logout(
             # Get IdP logout URL
             redirect_url = await handler.logout(
                 provider_name=provider_name,
-                post_logout_redirect_uri=str(request.base_url),
+                post_logout_redirect_uri=str(req.base_url),
             )
         except Exception as e:
             logger.warning(
@@ -736,7 +739,7 @@ async def oidc_logout(
             )
 
     # Clear local session
-    request.session.clear()
+    req.session.clear()
 
     logger.info(
         "OIDC logout completed",
@@ -755,13 +758,13 @@ async def oidc_logout(
 
 
 @router.get("/session")
-async def get_session_info(request: Request) -> dict[str, Any]:
+async def get_session_info(req: FastAPIRequest) -> JSONDict:
     """Get current session information.
 
     Returns:
         Current session state including user information if authenticated
     """
-    user = request.session.get("user")
+    user = req.session.get("user")
 
     if not user:
         return {
@@ -785,7 +788,7 @@ async def get_session_info(request: Request) -> dict[str, Any]:
 
 @router.get("/saml/metadata")
 async def saml_metadata(
-    request: Request,
+    req: FastAPIRequest,
     handler: SAMLHandler = Depends(get_saml_handler),  # noqa: B008
 ) -> Response:
     """Get SAML Service Provider (SP) metadata.
@@ -838,7 +841,7 @@ async def saml_metadata(
 
 @router.get("/saml/providers", response_model=list[SSOProviderInfo])
 async def list_saml_providers(
-    request: Request,
+    req: FastAPIRequest,
     handler: SAMLHandler = Depends(get_saml_handler),  # noqa: B008
 ) -> list[SSOProviderInfo]:
     """List available SAML Identity Providers.
@@ -852,7 +855,7 @@ async def list_saml_providers(
 
 @router.get("/saml/login")
 async def saml_login(
-    request: Request,
+    req: FastAPIRequest,
     provider: str = Query(..., description="SAML IdP name (e.g., okta, azure, default)"),
     relay_state: Optional[str] = Query(None, description="URL to redirect to after authentication"),
     force_authn: bool = Query(False, description="Force re-authentication"),
@@ -893,9 +896,9 @@ async def saml_login(
         )
 
         # Store request ID in session for validation on ACS callback
-        request.session["saml_request_id"] = request_id
-        request.session["saml_provider"] = provider
-        request.session["saml_relay_state"] = relay_state
+        req.session["saml_request_id"] = request_id
+        req.session["saml_provider"] = provider
+        req.session["saml_relay_state"] = relay_state
 
         logger.info(
             "SAML login initiated",
@@ -939,7 +942,7 @@ async def saml_login(
         ) from e
 
     except SAMLError as e:
-        logger.error(
+        logger.exception(
             "SAML login error",
             extra={
                 "provider": provider,
@@ -955,11 +958,11 @@ async def saml_login(
 
 @router.post("/saml/acs", response_model=SAMLUserInfoResponse)
 async def saml_acs(
-    request: Request,
+    req: FastAPIRequest,
     SAMLResponse: str = Form(..., description="Base64-encoded SAML response"),
     RelayState: Optional[str] = Form(None, description="Relay state for redirect"),
     handler: SAMLHandler = Depends(get_saml_handler),  # noqa: B008
-) -> dict[str, Any]:
+) -> JSONDict:
     """SAML Assertion Consumer Service (ACS) endpoint.
 
     This endpoint receives SAML responses from the IdP after user
@@ -983,8 +986,8 @@ async def saml_acs(
         HTTPException: If SAML validation fails or authentication error
     """
     # Get stored request ID from session (for SP-initiated SSO)
-    stored_request_id = request.session.get("saml_request_id")
-    stored_provider = request.session.get("saml_provider")
+    stored_request_id = req.session.get("saml_request_id")
+    stored_provider = req.session.get("saml_provider")
 
     try:
         # Process the SAML response
@@ -995,9 +998,9 @@ async def saml_acs(
         )
 
         # Clear SAML session data after successful authentication
-        request.session.pop("saml_request_id", None)
-        request.session.pop("saml_provider", None)
-        request.session.pop("saml_relay_state", None)
+        req.session.pop("saml_request_id", None)
+        req.session.pop("saml_provider", None)
+        req.session.pop("saml_relay_state", None)
 
         # JIT Provisioning: Create or update user in database
         # Get default role as a list (provisioner expects list of roles)
@@ -1028,7 +1031,7 @@ async def saml_acs(
         )
 
         # Store user info in session with provisioned user data
-        request.session["user"] = {
+        req.session["user"] = {
             "id": provisioning_result.user.get("id"),
             "sub": user_info.name_id,
             "email": provisioning_result.user.get("email"),
@@ -1172,7 +1175,7 @@ async def saml_acs(
 @router.get("/saml/sls")
 @router.post("/saml/sls")
 async def saml_sls(
-    request: Request,
+    req: FastAPIRequest,
     SAMLResponse: Optional[str] = Query(None, description="Base64-encoded SAML logout response"),
     SAMLRequest: Optional[str] = Query(None, description="Base64-encoded SAML logout request"),
     RelayState: Optional[str] = Query(None, description="Relay state for redirect"),
@@ -1194,7 +1197,7 @@ async def saml_sls(
     Returns:
         Logout response with status
     """
-    user = request.session.get("user")
+    user = req.session.get("user")
     provider_name = user.get("provider") if user else None
 
     # Handle logout response (after we initiated logout)
@@ -1206,7 +1209,7 @@ async def saml_sls(
             )
 
             if success:
-                request.session.clear()
+                req.session.clear()
                 logger.info(
                     "SAML logout response processed successfully",
                     extra={
@@ -1228,7 +1231,7 @@ async def saml_sls(
                     },
                 )
                 # Still clear local session
-                request.session.clear()
+                req.session.clear()
                 return SSOLogoutResponse(
                     success=False,
                     message="Logout may not be complete at identity provider",
@@ -1245,7 +1248,7 @@ async def saml_sls(
                 },
             )
             # Still clear local session on error
-            request.session.clear()
+            req.session.clear()
             return SSOLogoutResponse(
                 success=False,
                 message="Error processing logout response",
@@ -1256,7 +1259,7 @@ async def saml_sls(
     if SAMLRequest:
         # For now, just clear the session and acknowledge
         # A full implementation would parse the request and send a response
-        request.session.clear()
+        req.session.clear()
         logger.info(
             "SAML IdP-initiated logout processed",
             extra={
@@ -1271,7 +1274,7 @@ async def saml_sls(
         )
 
     # No SAML message - just clear session
-    request.session.clear()
+    req.session.clear()
     logger.info(
         "SAML local logout completed",
         extra={
@@ -1288,7 +1291,7 @@ async def saml_sls(
 
 @router.post("/saml/logout", response_model=SSOLogoutResponse)
 async def saml_logout(
-    request: Request,
+    req: FastAPIRequest,
     handler: SAMLHandler = Depends(get_saml_handler),  # noqa: B008
 ) -> SSOLogoutResponse:
     """Initiate SAML SP-initiated logout.
@@ -1304,7 +1307,7 @@ async def saml_logout(
     Returns:
         Logout response with optional redirect URL to IdP
     """
-    user = request.session.get("user")
+    user = req.session.get("user")
     if not user:
         return SSOLogoutResponse(
             success=True,
@@ -1324,7 +1327,7 @@ async def saml_logout(
                 idp_name=provider_name,
                 name_id=name_id,
                 session_index=session_index,
-                relay_state=str(request.base_url),
+                relay_state=str(req.base_url),
             )
         except SAMLError as e:
             logger.warning(
@@ -1346,7 +1349,7 @@ async def saml_logout(
             )
 
     # Clear local session
-    request.session.clear()
+    req.session.clear()
 
     logger.info(
         "SAML logout initiated",

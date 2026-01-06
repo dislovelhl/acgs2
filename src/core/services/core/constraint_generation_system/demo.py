@@ -35,7 +35,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 async def demo_python_generation():
     """演示Python代码生成"""
     logger.info("Starting Python code generation demo", extra={"demo_type": "python_generation"})
@@ -79,7 +78,6 @@ async def demo_python_generation():
         logger.info("Generated tests preview", extra={"test_preview": test_preview, "test_length": len(result.tests)})
 
     logger.info("\n" + "=" * 50 + "\n")
-
 
 async def demo_javascript_generation():
     """演示JavaScript代码生成"""
@@ -125,7 +123,6 @@ async def demo_javascript_generation():
 
     logger.info("\n" + "=" * 50 + "\n")
 
-
 async def demo_language_constraints():
     """演示语言约束"""
     logger.info("=== 语言约束演示 ===")
@@ -142,10 +139,8 @@ async def demo_language_constraints():
     logger.info(f"  缩进大小: {lang_constraints['indent_size']}")
     logger.info(f"  最大行长: {lang_constraints['max_line_length']}")
     logger.info(f"  文件扩展名: {lang_constraints['file_extension']}")
-        print()
 
     logger.info("=" * 50 + "\n")
-
 
 async def demo_unit_test_generation():
     """演示单元测试生成"""
@@ -184,7 +179,6 @@ class MathUtils:
     logger.info(tests)
 
     logger.info("\n" + "=" * 50 + "\n")
-
 
 async def demo_quality_scoring():
     """演示质量评分"""
@@ -227,7 +221,6 @@ def sort(arr):return sorted(arr)  # 没有文档，没有错误处理
 
     logger.info("\n" + "=" * 50 + "\n")
 
-
 async def demo_system_stats():
     """演示系统统计"""
     logger.info("=== 系统统计演示 ===")
@@ -252,7 +245,6 @@ async def demo_system_stats():
     logger.info(f"  约束更新次数: {stats['constraint_updates']}")
 
     logger.info("\n" + "=" * 50 + "\n")
-
 
 async def main():
     """主演示函数"""
@@ -304,7 +296,6 @@ async def main():
         import traceback
 
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     asyncio.run(main())

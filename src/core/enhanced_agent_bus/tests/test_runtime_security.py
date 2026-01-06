@@ -6,7 +6,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 from datetime import datetime
 
 import pytest
-
 from src.core.enhanced_agent_bus.runtime_security import (
     CONSTITUTIONAL_HASH,
     RuntimeSecurityConfig,

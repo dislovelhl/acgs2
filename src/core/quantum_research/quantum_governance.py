@@ -7,7 +7,6 @@ risk assessment, and constitutional AI decision-making.
 """
 
 import math
-import random
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -264,7 +263,9 @@ class QuantumAnnealingOptimizer(QuantumInspiredOptimizer):
         delta = new_value - current_value
         acceptance_prob = math.exp(-delta / (self.temperature * 0.1))  # Lower effective temperature
 
-        return random.random() < acceptance_prob
+        import secrets
+
+        return secrets.SystemRandom().random() < acceptance_prob
 
     def _reinforce_solution(self, state: QuantumState, best_solution: np.ndarray) -> QuantumState:
         """Reinforce the quantum state towards the best solution"""
