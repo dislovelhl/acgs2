@@ -1,0 +1,9 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "performance_optimizations",
+  "ideaId": "perf-005",
+  "rationale": "Bundle size directly impacts Time to Interactive (TTI) and Largest Contentful Paint (LCP). recharts is among the largest dependencies in the dashboard bundle. The charts used are relatively simple (line charts with confidence intervals, bar charts) and don't require the full feature set of recharts.",
+  "category": "performance",
+  "performanceCategory": "bundle_size",
+  "impact": "medium"
+}

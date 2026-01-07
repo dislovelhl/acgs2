@@ -1,0 +1,25 @@
+{
+  "file_path": "analytics-dashboard/package.json",
+  "main_branch_history": [],
+  "task_views": {
+    "052-replace-recharts-with-lightweight-chart-library": {
+      "task_id": "052-replace-recharts-with-lightweight-chart-library",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "{\n  \"name\": \"@acgs/analytics-dashboard\",\n  \"version\": \"1.0.0\",\n  \"description\": \"ACGS-2 Advanced Analytics and Insights Dashboard\",\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"tsc && vite build\",\n    \"build:analyze\": \"vite build --mode analyze\",\n    \"preview\": \"vite preview\",\n    \"lint\": \"eslint src --ext ts,tsx\",\n    \"typecheck\": \"tsc --noEmit\",\n    \"test\": \"vitest run\",\n    \"test:watch\": \"vitest\",\n    \"test:coverage\": \"vitest run --coverage\",\n    \"test:ui\": \"vitest --ui\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\",\n    \"react-router-dom\": \"^6.20.0\",\n    \"lucide-react\": \"^0.294.0\",\n    \"react-grid-layout\": \"^1.4.4\",\n    \"@visx/shape\": \"^3.3.0\",\n    \"@visx/scale\": \"^3.3.0\",\n    \"@visx/axis\": \"^3.3.0\",\n    \"@visx/tooltip\": \"^3.3.0\",\n    \"@visx/gradient\": \"^3.3.0\",\n    \"@visx/responsive\": \"^3.3.0\"\n  },\n  \"devDependencies\": {\n    \"@testing-library/dom\": \"^9.3.3\",\n    \"@testing-library/jest-dom\": \"^6.1.6\",\n    \"@testing-library/react\": \"^14.1.2\",\n    \"@testing-library/user-event\": \"^14.5.2\",\n    \"@types/node\": \"^20.10.0\",\n    \"@types/react\": \"^18.2.0\",\n    \"@types/react-dom\": \"^18.2.0\",\n    \"@types/react-grid-layout\": \"^1.3.5\",\n    \"@vitejs/plugin-react\": \"^4.2.0\",\n    \"@vitest/coverage-v8\": \"^1.1.0\",\n    \"@vitest/ui\": \"^1.1.0\",\n    \"autoprefixer\": \"^10.4.16\",\n    \"jsdom\": \"^23.0.1\",\n    \"msw\": \"^2.0.11\",\n    \"postcss\": \"^8.4.32\",\n    \"tailwindcss\": \"^3.3.6\",\n    \"typescript\": \"^5.3.0\",\n    \"vite\": \"^5.0.0\",\n    \"vitest\": \"^1.1.0\"\n  },\n  \"keywords\": [\n    \"acgs\",\n    \"analytics\",\n    \"dashboard\",\n    \"constitutional-ai\",\n    \"insights\"\n  ]\n}\n",
+        "timestamp": "2026-01-04T05:36:13.611399"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "052-replace-recharts-with-lightweight-chart-library",
+        "description": "Replace recharts (~500KB unparsed, ~150KB gzipped) with a lightweight charting library like visx (~40KB) or uPlot (~30KB) to reduce bundle size and improve dashboard performance. Used in PredictionWidget (analytics-dashboard) and MetricsChart (observability dashboard).",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T19:36:23.175346",
+  "last_updated": "2026-01-04T05:36:13.632169"
+}

@@ -1,0 +1,14 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "ui_ux_improvements",
+  "ideaId": "uiux-003",
+  "rationale": "Currently when refreshing widgets, if data already exists, the widget content is replaced with a loading skeleton. This causes unnecessary visual disruption and hides valuable information the user may want to reference during the refresh.",
+  "category": "ui_ux",
+  "uiuxCategory": "usability",
+  "affectedFiles": [
+    "InsightWidget.tsx",
+    "AnomalyWidget.tsx",
+    "PredictionWidget.tsx"
+  ],
+  "problemSolved": "The widgets check 'loadingState === 'loading' && !data' to show skeleton, but during refresh when data exists, users see the spinning refresh icon only. However, if an error occurred and they retry, they see the skeleton again instead of the error state with loading indicator."
+}

@@ -1,0 +1,25 @@
+{
+  "file_path": "claude-flow/src/services/taskService.ts",
+  "main_branch_history": [],
+  "task_views": {
+    "059-add-jsdoc-coverage-for-claude-flow-typescript-serv": {
+      "task_id": "059-add-jsdoc-coverage-for-claude-flow-typescript-serv",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "import { spawn } from \"child_process\";\nimport path from \"path\";\n\nexport interface TaskOrchestrationOptions {\n  task: string;\n  strategy: string;\n  priority: string;\n}\n\nexport interface TaskOrchestrationResult {\n  success: boolean;\n  taskId?: string;\n  workflowId?: string;\n  error?: string;\n}\n\nexport async function orchestrateTask(\n  options: TaskOrchestrationOptions\n): Promise<TaskOrchestrationResult> {\n  try {\n    // Path to the Python orchestrator script\n    let orchestratorPath = path.join(__dirname, \"taskOrchestrator.py\");\n    if (!require(\"fs\").existsSync(orchestratorPath)) {\n      // Try the src path from dist\n      orchestratorPath = path.join(\n        __dirname,\n        \"../../src/services/taskOrchestrator.py\"\n      );\n    }\n\n    // Prepare arguments for the Python script\n    const args = [\n      orchestratorPath,\n      options.task,\n      options.strategy,\n      options.priority,\n    ];\n\n    // Spawn the Python process\n    const result = await runPythonScript(args);\n\n    if (result.success) {\n      return {\n        success: true,\n        taskId: result.taskId,\n        workflowId: result.workflowId,\n      };\n    } else {\n      return {\n        success: false,\n        error: result.error,\n      };\n    }\n  } catch (error) {\n    return {\n      success: false,\n      error: error instanceof Error ? error.message : \"Unknown error occurred\",\n    };\n  }\n}\n\nasync function runPythonScript(args: string[]): Promise<any> {\n  return new Promise((resolve, reject) => {\n    const pythonProcess = spawn(\"python3\", args, {\n      stdio: [\"pipe\", \"pipe\", \"pipe\"],\n      cwd: path.dirname(args[0]),\n    });\n\n    let stdout = \"\";\n    let stderr = \"\";\n\n    pythonProcess.stdout.on(\"data\", (data) => {\n      stdout += data.toString();\n    });\n\n    pythonProcess.stderr.on(\"data\", (data) => {\n      stderr += data.toString();\n    });\n\n    pythonProcess.on(\"close\", (code) => {\n      if (code === 0) {\n        try {\n          const result = JSON.parse(stdout.trim());\n          resolve(result);\n        } catch (e) {\n          reject(new Error(`Failed to parse Python output: ${stdout}`));\n        }\n      } else {\n        reject(new Error(`Python script failed with code ${code}: ${stderr}`));\n      }\n    });\n\n    pythonProcess.on(\"error\", (error) => {\n      reject(error);\n    });\n  });\n}\n",
+        "timestamp": "2026-01-04T05:35:52.969195"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "Add JSDoc coverage for claude-flow TypeScript service public exports",
+        "description": "Add comprehensive JSDoc documentation to the 45 exported functions/classes across 17 TypeScript files in the claude-flow CLI tool to improve API documentation for enterprise users",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-04T05:35:52.969202",
+  "last_updated": "2026-01-04T05:35:52.972813"
+}

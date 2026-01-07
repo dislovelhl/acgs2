@@ -1,0 +1,477 @@
+{
+  "integrations_researched": [
+    {
+      "name": "Linear",
+      "type": "service",
+      "description": "Linear is a modern project management tool with GraphQL API for issue tracking, project management, and workflow automation",
+      "verified_package": {
+        "name": "@linear/sdk",
+        "language": "TypeScript/JavaScript",
+        "install_command": "npm install @linear/sdk",
+        "python_alternative": {
+          "name": "gql",
+          "install_command": "pip install gql[all]",
+          "note": "Linear doesn't have an official Python SDK - use GraphQL client library"
+        },
+        "version": ">=8.0.0",
+        "verified": false,
+        "verification_status": "NEEDS_WEB_VERIFICATION",
+        "verification_note": "Package name is based on public knowledge of Linear SDK. Actual version and current API should be verified via npm/Linear docs"
+      },
+      "api_patterns": {
+        "api_type": "GraphQL",
+        "base_url": "https://api.linear.app/graphql",
+        "authentication": "OAuth 2.0 or API Key (Bearer token)",
+        "imports_typescript": [
+          "import { LinearClient } from '@linear/sdk'"
+        ],
+        "imports_python": [
+          "from gql import gql, Client",
+          "from gql.transport.requests import RequestsHTTPTransport"
+        ],
+        "initialization_typescript": "const linearClient = new LinearClient({ apiKey: process.env.LINEAR_API_KEY })",
+        "initialization_python": "# GraphQL client setup\ntransport = RequestsHTTPTransport(\n    url='https://api.linear.app/graphql',\n    headers={'Authorization': f'Bearer {api_key}'}\n)\nclient = Client(transport=transport, fetch_schema_from_transport=True)",
+        "key_operations": [
+          "issues.create()",
+          "issues.update()",
+          "issues.fetch()",
+          "projects.fetch()",
+          "teams.fetch()",
+          "webhooks.create()",
+          "comments.create()"
+        ],
+        "graphql_queries_examples": {
+          "fetch_issues": "query Issues($filter: IssueFilter) {\n  issues(filter: $filter) {\n    nodes {\n      id\n      title\n      description\n      state {\n        name\n      }\n      assignee {\n        name\n      }\n      createdAt\n      updatedAt\n    }\n  }\n}",
+          "create_issue": "mutation IssueCreate($input: IssueCreateInput!) {\n  issueCreate(input: $input) {\n    success\n    issue {\n      id\n      title\n    }\n  }\n}",
+          "update_issue": "mutation IssueUpdate($id: String!, $input: IssueUpdateInput!) {\n  issueUpdate(id: $id, input: $input) {\n    success\n    issue {\n      id\n      title\n    }\n  }\n}"
+        },
+        "verified_against": "Public knowledge of Linear API structure",
+        "verification_status": "NEEDS_OFFICIAL_DOCS_VERIFICATION"
+      },
+      "configuration": {
+        "env_vars": [
+          "LINEAR_API_KEY",
+          "LINEAR_WEBHOOK_SECRET",
+          "LINEAR_OAUTH_CLIENT_ID",
+          "LINEAR_OAUTH_CLIENT_SECRET",
+          "LINEAR_OAUTH_REDIRECT_URI"
+        ],
+        "config_files": [],
+        "dependencies": {
+          "python": [
+            "gql[all]>=3.4.0",
+            "httpx>=0.27.0",
+            "pydantic>=2.12.0"
+          ],
+          "typescript": [
+            "@linear/sdk",
+            "graphql"
+          ]
+        },
+        "rate_limits": {
+          "note": "Linear API has rate limiting",
+          "estimated_limits": "Needs verification from Linear API docs",
+          "verification_required": true
+        }
+      },
+      "authentication": {
+        "methods": [
+          "API Key (Personal Access Token)",
+          "OAuth 2.0"
+        ],
+        "oauth_flow": {
+          "authorization_url": "https://linear.app/oauth/authorize",
+          "token_url": "https://api.linear.app/oauth/token",
+          "scopes": [
+            "read",
+            "write",
+            "issues:create",
+            "admin"
+          ],
+          "verification_status": "NEEDS_VERIFICATION"
+        },
+        "api_key_setup": {
+          "location": "Linear Settings > API > Personal API Keys",
+          "header_format": "Authorization: Bearer {api_key}"
+        }
+      },
+      "webhooks": {
+        "supported": true,
+        "webhook_url_setup": "https://linear.app/settings/api/webhooks",
+        "events": [
+          "Issue",
+          "Comment",
+          "Project",
+          "Cycle",
+          "Label"
+        ],
+        "event_types": [
+          "create",
+          "update",
+          "remove"
+        ],
+        "signature_verification": {
+          "header": "Linear-Signature",
+          "algorithm": "HMAC-SHA256",
+          "verification_required": true
+        },
+        "payload_format": "JSON",
+        "verification_status": "NEEDS_VERIFICATION"
+      },
+      "data_sync_capabilities": {
+        "import_methods": [
+          "GraphQL API bulk import",
+          "CSV import (via Linear UI)",
+          "Migration tools (Linear provides migration from Jira, GitHub, etc.)"
+        ],
+        "export_methods": [
+          "GraphQL API queries",
+          "CSV export (via Linear UI)",
+          "Webhook subscriptions for real-time sync"
+        ],
+        "sync_patterns": {
+          "polling": "GraphQL queries with pagination and filtering by updatedAt",
+          "webhooks": "Real-time event-driven sync",
+          "batch_import": "Bulk mutations via GraphQL"
+        },
+        "pagination": {
+          "method": "Cursor-based pagination",
+          "fields": ["first", "after", "last", "before"]
+        }
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "cloud_service": true,
+        "self_hosted_option": false,
+        "regional_availability": "Global SaaS"
+      },
+      "migration_support": {
+        "official_migration_tools": [
+          "Linear Importer (from Jira)",
+          "Linear Importer (from GitHub Issues)",
+          "Linear Importer (from Asana)",
+          "CSV Import"
+        ],
+        "migration_guides": [
+          "https://linear.app/switch/migration-guide",
+          "https://linear.app/switch/pilot-guide",
+          "https://linear.app/switch/pitch-guide"
+        ],
+        "verification_status": "MENTIONED_IN_REQUIREMENTS"
+      },
+      "integration_pattern_for_acgs2": {
+        "adapter_class": "LinearAdapter",
+        "base_class": "BaseIntegration",
+        "file_location": "integration-service/src/integrations/linear_adapter.py",
+        "pattern": "Similar to existing jira_adapter.py and servicenow_adapter.py",
+        "required_methods": [
+          "test_connection()",
+          "create_issue()",
+          "update_issue()",
+          "fetch_issue()",
+          "sync_issues()",
+          "handle_webhook()"
+        ],
+        "circuit_breaker": {
+          "required": true,
+          "pattern": "Use tenacity for retry logic with exponential backoff"
+        },
+        "caching": {
+          "required": true,
+          "backend": "Redis (already in requirements.txt)"
+        }
+      },
+      "gotchas": [
+        "Linear uses GraphQL exclusively - no REST API available",
+        "Rate limiting is enforced - need to implement backoff strategy",
+        "Webhook signature verification is critical for security",
+        "Linear's data model uses UUIDs for all entities",
+        "Pagination is cursor-based, not offset-based",
+        "Some queries require specific scopes in OAuth",
+        "Linear's GraphQL schema can change - need to handle schema updates",
+        "Batch operations have size limits (needs verification)",
+        "Linear times are in UTC ISO 8601 format",
+        "Python SDK doesn't exist officially - need to use generic GraphQL client"
+      ],
+      "research_sources": [
+        "Public knowledge of Linear API structure",
+        "Linear migration guide URLs from requirements.json",
+        "Existing ACGS-2 integration patterns (jira_adapter.py, servicenow_adapter.py)",
+        "Common GraphQL API patterns"
+      ],
+      "verification_needed": [
+        "Current Linear SDK version and API stability",
+        "Exact rate limit values and headers",
+        "Complete list of webhook event types",
+        "OAuth scope permissions matrix",
+        "GraphQL schema documentation URL",
+        "Batch operation limits",
+        "Error response formats",
+        "Webhook retry behavior"
+      ]
+    },
+    {
+      "name": "GraphQL Client (Python)",
+      "type": "library",
+      "description": "GraphQL client library for Python to interact with Linear's GraphQL API",
+      "verified_package": {
+        "name": "gql",
+        "install_command": "pip install gql[all]",
+        "version": ">=3.4.0",
+        "verified": false,
+        "verification_status": "STANDARD_PACKAGE_NEEDS_VERSION_CHECK"
+      },
+      "api_patterns": {
+        "imports": [
+          "from gql import gql, Client",
+          "from gql.transport.requests import RequestsHTTPTransport",
+          "from gql.transport.aiohttp import AIOHTTPTransport"
+        ],
+        "initialization": "transport = AIOHTTPTransport(url='https://api.linear.app/graphql', headers={'Authorization': f'Bearer {token}'})\nclient = Client(transport=transport, fetch_schema_from_transport=True)",
+        "key_functions": [
+          "client.execute(query)",
+          "client.subscribe(subscription)",
+          "client.execute_async(query)"
+        ],
+        "verified_against": "PyPI package documentation"
+      },
+      "configuration": {
+        "env_vars": [],
+        "dependencies": [
+          "requests>=2.28.0",
+          "aiohttp>=3.8.0",
+          "graphql-core>=3.2.0"
+        ]
+      },
+      "infrastructure": {
+        "requires_docker": false
+      },
+      "gotchas": [
+        "Must install with [all] extras for async support",
+        "Schema introspection can be slow on first connection",
+        "Need to handle GraphQL-specific errors (distinct from HTTP errors)"
+      ],
+      "research_sources": [
+        "PyPI documentation pattern",
+        "Common GraphQL client usage"
+      ]
+    },
+    {
+      "name": "HTTPX",
+      "type": "library",
+      "description": "Async HTTP client already in project dependencies",
+      "verified_package": {
+        "name": "httpx",
+        "install_command": "pip install httpx>=0.27.0",
+        "version": ">=0.27.0",
+        "verified": true,
+        "verification_status": "ALREADY_IN_PROJECT"
+      },
+      "api_patterns": {
+        "imports": [
+          "import httpx"
+        ],
+        "initialization": "async with httpx.AsyncClient() as client:\n    response = await client.get('https://api.linear.app/graphql')",
+        "key_functions": [
+          "client.get()",
+          "client.post()",
+          "client.request()"
+        ],
+        "verified_against": "Project requirements.txt"
+      },
+      "configuration": {
+        "env_vars": [],
+        "dependencies": []
+      },
+      "note": "Already present in integration-service/requirements.txt",
+      "research_sources": [
+        "integration-service/requirements.txt"
+      ]
+    },
+    {
+      "name": "Tenacity",
+      "type": "library",
+      "description": "Retry library with exponential backoff - already in project",
+      "verified_package": {
+        "name": "tenacity",
+        "install_command": "pip install tenacity>=8.2.3",
+        "version": ">=8.2.3",
+        "verified": true,
+        "verification_status": "ALREADY_IN_PROJECT"
+      },
+      "api_patterns": {
+        "imports": [
+          "from tenacity import retry, stop_after_attempt, wait_exponential"
+        ],
+        "initialization": "@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))\nasync def api_call():\n    pass",
+        "verified_against": "Project requirements.txt"
+      },
+      "note": "Already present in integration-service/requirements.txt for retry logic",
+      "research_sources": [
+        "integration-service/requirements.txt"
+      ]
+    },
+    {
+      "name": "Redis",
+      "type": "infrastructure",
+      "description": "Caching layer already configured in project",
+      "verified_package": {
+        "name": "redis",
+        "install_command": "pip install redis>=7.1.0",
+        "version": ">=7.1.0",
+        "verified": true,
+        "verification_status": "ALREADY_IN_PROJECT"
+      },
+      "api_patterns": {
+        "imports": [
+          "import redis.asyncio as redis"
+        ],
+        "initialization": "redis_client = await redis.from_url('redis://localhost:6379')",
+        "verified_against": "Project requirements.txt"
+      },
+      "infrastructure": {
+        "requires_docker": true,
+        "docker_image": "redis:7-alpine",
+        "ports": [6379],
+        "volumes": ["/data"]
+      },
+      "note": "Already present in integration-service/requirements.txt for circuit breaker state and caching",
+      "research_sources": [
+        "integration-service/requirements.txt"
+      ]
+    }
+  ],
+  "unverified_claims": [
+    {
+      "claim": "Linear SDK version and exact package name for Python",
+      "reason": "Linear doesn't provide official Python SDK - must use GraphQL client library. TypeScript SDK exists as @linear/sdk but version needs verification.",
+      "risk_level": "low",
+      "mitigation": "Use well-established gql library for Python GraphQL queries. Pattern already established in existing integrations."
+    },
+    {
+      "claim": "Linear API rate limits and exact values",
+      "reason": "Unable to access Linear API documentation to verify exact rate limit numbers",
+      "risk_level": "medium",
+      "mitigation": "Implement exponential backoff and respect rate limit headers. Use circuit breaker pattern already in project."
+    },
+    {
+      "claim": "Complete webhook event types and payload structure",
+      "reason": "Unable to access Linear webhook documentation for complete event schema",
+      "risk_level": "medium",
+      "mitigation": "Start with common events (Issue create/update/delete) and expand based on actual webhook payloads during testing."
+    },
+    {
+      "claim": "OAuth scopes and permissions matrix",
+      "reason": "Unable to verify complete OAuth scope list from Linear documentation",
+      "risk_level": "low",
+      "mitigation": "Start with basic 'read' and 'write' scopes. Can be refined based on actual Linear OAuth setup during implementation."
+    },
+    {
+      "claim": "GraphQL query size and batch operation limits",
+      "reason": "Unable to verify exact limits from Linear documentation",
+      "risk_level": "medium",
+      "mitigation": "Implement pagination for all queries and start with conservative batch sizes (e.g., 50-100 items). Monitor for errors and adjust."
+    }
+  ],
+  "recommendations": [
+    "Use gql library with async support (gql[all]) for Python GraphQL client - this is the standard approach for GraphQL APIs in Python",
+    "Follow existing integration patterns in jira_adapter.py and servicenow_adapter.py for consistency",
+    "Implement webhook signature verification using Linear-Signature header for security",
+    "Use Redis caching (already configured) to minimize API calls and respect rate limits",
+    "Implement circuit breaker pattern with tenacity (already in dependencies) for resilience",
+    "Start with API key authentication for simplicity, add OAuth 2.0 support later if needed",
+    "Use cursor-based pagination for all Linear API queries to handle large datasets",
+    "Implement comprehensive error handling for GraphQL-specific errors vs HTTP errors",
+    "Add Linear API rate limit headers monitoring and implement adaptive backoff",
+    "Create adapter following ACGS-2 BaseIntegration pattern for consistency",
+    "Verify Linear API documentation at https://developers.linear.app/docs when web access is available",
+    "Test migration workflow with small dataset before full production rollout",
+    "Implement idempotency for sync operations to handle retries safely",
+    "Add monitoring and metrics for Linear integration using existing ACGS-2 observability stack"
+  ],
+  "implementation_priorities": [
+    {
+      "priority": 1,
+      "task": "Verify Linear API documentation and SDK versions",
+      "reason": "Foundation for all implementation work"
+    },
+    {
+      "priority": 2,
+      "task": "Create LinearAdapter class following existing integration patterns",
+      "reason": "Core integration implementation"
+    },
+    {
+      "priority": 3,
+      "task": "Implement GraphQL client setup with authentication",
+      "reason": "Required for API communication"
+    },
+    {
+      "priority": 4,
+      "task": "Implement basic CRUD operations (create, read, update issues)",
+      "reason": "Core functionality for data sync"
+    },
+    {
+      "priority": 5,
+      "task": "Add webhook endpoint and signature verification",
+      "reason": "Enable real-time sync"
+    },
+    {
+      "priority": 6,
+      "task": "Implement sync logic with pagination and rate limiting",
+      "reason": "Production-ready data synchronization"
+    },
+    {
+      "priority": 7,
+      "task": "Add comprehensive error handling and circuit breaker",
+      "reason": "Resilience and reliability"
+    },
+    {
+      "priority": 8,
+      "task": "Create migration support for different user scenarios (explore, pilot, full migration)",
+      "reason": "Address requirements for different user journeys"
+    }
+  ],
+  "existing_project_assets": {
+    "integration_service": {
+      "path": "integration-service/",
+      "relevant_files": [
+        "src/integrations/base.py",
+        "src/integrations/jira_adapter.py",
+        "src/integrations/servicenow_adapter.py",
+        "src/webhooks/"
+      ],
+      "patterns_to_follow": [
+        "BaseIntegration abstract class",
+        "Circuit breaker with Redis state",
+        "Retry logic with tenacity",
+        "Webhook signature verification",
+        "Event transformation and formatting"
+      ]
+    },
+    "dependencies_already_available": [
+      "FastAPI for webhook endpoints",
+      "Pydantic for data validation",
+      "HTTPX for async HTTP",
+      "Redis for caching and circuit breaker state",
+      "Tenacity for retry logic",
+      "PyJWT for token handling"
+    ]
+  },
+  "context7_status": {
+    "attempted": true,
+    "libraries_searched": ["linear api", "linear sdk"],
+    "status": "rate_limited",
+    "note": "Context7 MCP was rate limited during research. Linear API documentation should be verified via web when access is restored."
+  },
+  "next_steps_for_architect": [
+    "Review Linear API documentation at https://developers.linear.app/docs to validate assumptions",
+    "Define exact data model mapping between Linear entities and ACGS-2 data structures",
+    "Design sync strategy (polling vs webhooks vs hybrid)",
+    "Create sequence diagrams for each user scenario (explore, pilot, migrate)",
+    "Define error handling and rollback strategies",
+    "Plan testing approach for webhook handling and data consistency"
+  ],
+  "created_at": "2026-01-03T06:30:00Z",
+  "research_agent_version": "1.0.0",
+  "verification_status": "PARTIAL - Needs web access to Linear documentation for complete verification"
+}

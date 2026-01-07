@@ -1,0 +1,28 @@
+{
+  "task_description": "Administrative task: Set up teams in Linear workspace - no code changes required",
+  "task_type": "administrative",
+  "scoped_services": [],
+  "files_to_modify": [],
+  "files_to_reference": [],
+  "patterns": {
+    "administrative_task_pattern": "This is a Linear workspace onboarding task that operates entirely within Linear's platform. No codebase modifications are needed."
+  },
+  "existing_implementations": {
+    "description": "Not applicable - this task does not involve the ACGS2 codebase",
+    "relevant_files": []
+  },
+  "linear_documentation_links": {
+    "workspaces": "https://linear.app/docs/workspaces",
+    "teams": "https://linear.app/docs/teams",
+    "invite_members": "https://linear.app/docs/invite-members",
+    "settings": "http://linear.app/settings/members"
+  },
+  "task_completion_options": [
+    "Mark Linear issue XN-2 as complete if teams are already configured",
+    "Follow Linear documentation to set up teams if needed",
+    "Invite team members via Linear settings if needed",
+    "Close as not applicable if this is a solo project"
+  ],
+  "created_at": "2026-01-03T16:19:04.447684",
+  "updated_at": "2026-01-03T21:30:00.000000"
+}

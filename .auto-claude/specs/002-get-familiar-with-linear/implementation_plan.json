@@ -1,0 +1,80 @@
+{
+  "feature": "get-familiar-with-linear",
+  "spec_name": "get-familiar-with-linear",
+  "workflow_type": "simple",
+  "total_phases": 1,
+  "recommended_workers": 1,
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Complete Learning Resources",
+      "description": "Review Linear onboarding materials and document completion",
+      "depends_on": [],
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Review Linear onboarding resources and create completion summary",
+          "service": "documentation",
+          "status": "completed",
+          "files_to_create": [
+            ".auto-claude/specs/002-get-familiar-with-linear/completion-notes.md"
+          ],
+          "files_to_modify": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "run": "Check completion-notes.md exists with summary of Linear concepts"
+          },
+          "notes": "Successfully reviewed Linear onboarding resources and created comprehensive completion notes covering: Linear's core philosophy, issue management workflow, project organization (teams/projects/cycles), integration capabilities, keyboard-first approach, and best practices for mid-size teams. Selected 'Startups & Mid-size Companies' setup guide as most appropriate. Documented key learnings and next steps for applying Linear to project management.",
+          "updated_at": "2026-01-03T21:14:52.107497+00:00"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-01-03T00:00:00Z",
+    "complexity": "simple",
+    "estimated_sessions": 1,
+    "task_type": "learning",
+    "linear_issue": "XN-1"
+  },
+  "last_updated": "2026-01-03T21:18:30.866130+00:00",
+  "qa_signoff": {
+    "status": "approved",
+    "qa_session": 0,
+    "issues_found": [
+      {
+        "description": "None - All success criteria met. Comprehensive completion notes created (166 lines, 30 sections) covering Linear onboarding materials. Setup guide documented (Startups & Mid-size Companies). Linear issue XN-1 marked complete. Content quality exceeds expectations with practical insights and next steps."
+      }
+    ],
+    "tests_passed": {},
+    "timestamp": "2026-01-03T21:18:30.866123+00:00",
+    "ready_for_qa_revalidation": false
+  },
+  "status": "done",
+  "planStatus": "completed",
+  "qa_iteration_history": [
+    {
+      "iteration": 1,
+      "status": "approved",
+      "timestamp": "2026-01-03T21:18:30.691091+00:00",
+      "issues": [],
+      "duration_seconds": 203.56
+    },
+    {
+      "iteration": 1,
+      "status": "approved",
+      "timestamp": "2026-01-03T21:19:19.431768+00:00",
+      "issues": [],
+      "duration_seconds": 238.11
+    }
+  ],
+  "qa_stats": {
+    "total_iterations": 2,
+    "last_iteration": 1,
+    "last_status": "approved",
+    "issues_by_type": {}
+  },
+  "updated_at": "2026-01-04T05:41:09.519Z",
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T05:39:22.293Z"
+}

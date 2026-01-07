@@ -1,0 +1,52 @@
+{
+  "performance": [
+    {
+      "id": "perf-003",
+      "type": "performance",
+      "title": "Optimize Dead Letter Queue with Deque Operations",
+      "description": "Replace List operations with collections.deque in the webhook delivery DeadLetterQueue for O(1) removals.",
+      "rationale": "Currently using List.pop(0) which is O(n). At scale, this becomes a performance bottleneck for failed delivery management.",
+      "affected_files": ["src/integration-service/integration-service/src/webhooks/delivery.py"],
+      "estimated_effort": "small",
+      "status": "draft",
+      "created_at": "2026-01-03T15:45:00.000Z"
+    },
+    {
+      "id": "perf-004",
+      "type": "performance",
+      "title": "Implement HTTP Client Connection Pooling",
+      "description": "Configure explicit connection limits and pooling for httpx.AsyncClient in SIEM adapters and webhook engine.",
+      "rationale": "Reduces connection establishment overhead and prevents resource exhaustion under high load.",
+      "affected_files": ["src/integration-service/integration-service/src/integrations/base.py"],
+      "estimated_effort": "medium",
+      "status": "draft",
+      "created_at": "2026-01-03T15:45:00.000Z"
+    },
+    {
+      "id": "perf-005",
+      "type": "performance",
+      "title": "Replace Recharts with Lightweight Chart Library",
+      "description": "Evaluate and migrate from Recharts to a smaller library like visx or uPlot to reduce dashboard bundle size.",
+      "rationale": "Recharts adds significant weight to the frontend bundle. A lighter alternative improves initial load time and responsiveness.",
+      "affected_files": ["src/frontend/analytics-dashboard/package.json"],
+      "estimated_effort": "medium",
+      "status": "draft",
+      "created_at": "2026-01-03T15:45:00.000Z"
+    },
+    {
+      "id": "perf-006",
+      "type": "performance",
+      "title": "Optimize Kafka Consumer Batch Processing",
+      "description": "Implement batch message fetching and processing in the Kafka event consumer to improve overall throughput.",
+      "rationale": "Processing events one-by-one is less efficient than batch processing, especially for high-volume governance streams.",
+      "affected_files": ["src/integration-service/integration-service/src/consumers/event_consumer.py"],
+      "estimated_effort": "medium",
+      "status": "draft",
+      "created_at": "2026-01-04T10:00:00.000Z"
+    }
+  ],
+  "metadata": {
+    "generated_at": "2026-01-04T10:00:00.000Z",
+    "total_ideas": 4
+  }
+}

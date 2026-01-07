@@ -1,0 +1,29 @@
+{
+  "compliance": [
+    {
+      "id": "comp-001",
+      "type": "compliance",
+      "title": "Implement EU AI Act Policy Templates",
+      "description": "Create a library of Rego policy templates that align with the requirements of the EU AI Act (e.g., transparency, risk assessment, human oversight).",
+      "rationale": "As a governance platform, providing pre-built templates for major regulatory frameworks like the EU AI Act adds significant value for enterprise customers.",
+      "affected_files": ["src/core/services/policy_registry/policies/**"],
+      "estimated_effort": "medium",
+      "status": "draft",
+      "created_at": "2026-01-04T10:00:00.000Z"
+    },
+    {
+      "id": "comp-002",
+      "type": "compliance",
+      "title": "Automate SOC2 Compliance Reporting",
+      "description": "Develop a service that aggregates audit logs and governance decisions to generate automated SOC2 compliance reports for auditors.",
+      "rationale": "SOC2 compliance is a mandatory requirement for most enterprise software. Automating the report generation process reduces the burden on compliance teams.",
+      "estimated_effort": "large",
+      "status": "draft",
+      "created_at": "2026-01-04T10:00:00.000Z"
+    }
+  ],
+  "metadata": {
+    "generated_at": "2026-01-04T10:00:00.000Z",
+    "total_ideas": 2
+  }
+}

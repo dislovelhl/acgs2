@@ -1,0 +1,50 @@
+{
+  "documentation": [
+    {
+      "id": "doc-001",
+      "type": "documentation",
+      "title": "Add READMEs for Core Services",
+      "description": "Create comprehensive README files for the integration-service and analytics-dashboard, including setup instructions and API documentation.",
+      "rationale": "Essential for developer onboarding and maintaining the services at scale.",
+      "estimated_effort": "medium",
+      "status": "draft",
+      "created_at": "2026-01-03T15:45:00.000Z"
+    },
+    {
+      "id": "doc-003",
+      "type": "documentation",
+      "title": "Document Error Codes and Troubleshooting",
+      "description": "Create a centralized TROUBLESHOOTING.md guide that documents common error codes and their resolutions.",
+      "rationale": "Reduces support burden and helps operators resolve production issues faster.",
+      "affected_files": ["docs/TROUBLESHOOTING.md"],
+      "estimated_effort": "medium",
+      "status": "draft",
+      "created_at": "2026-01-03T15:45:00.000Z"
+    },
+    {
+      "id": "doc-004",
+      "type": "documentation",
+      "title": "Create End-to-End Governance Workflow Examples",
+      "description": "Develop a tutorial showing a complete policy lifecycle from creation to enforcement and audit logging.",
+      "rationale": "Practical examples help developers understand how to integrate the platform into their own workflows.",
+      "estimated_effort": "large",
+      "status": "draft",
+      "created_at": "2026-01-03T15:45:00.000Z"
+    },
+    {
+      "id": "doc-006",
+      "type": "documentation",
+      "title": "Add Architecture Diagrams to Documentation",
+      "description": "Create C4 or Mermaid diagrams for all major services and their interactions.",
+      "rationale": "Visualizations improve high-level understanding of system design and data flows.",
+      "affected_files": ["docs/architecture/**"],
+      "estimated_effort": "medium",
+      "status": "draft",
+      "created_at": "2026-01-04T10:00:00.000Z"
+    }
+  ],
+  "metadata": {
+    "generated_at": "2026-01-04T10:00:00.000Z",
+    "total_ideas": 4
+  }
+}

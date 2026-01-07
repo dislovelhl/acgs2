@@ -1,0 +1,9 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "code_quality",
+  "ideaId": "cq-004",
+  "rationale": "Type annotations provide documentation, enable IDE support, and catch bugs early. Using 'Any' everywhere negates these benefits and can lead to runtime TypeErrors that would have been caught by static analysis. High 'Any' usage often indicates rushed development or unclear data structures.",
+  "category": "refactoring",
+  "codeQualitySeverity": "minor",
+  "priority": "medium"
+}

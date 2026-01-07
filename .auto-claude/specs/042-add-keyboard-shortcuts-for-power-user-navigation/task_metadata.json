@@ -1,0 +1,13 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "ui_ux_improvements",
+  "ideaId": "uiux-005",
+  "rationale": "Enterprise users often prefer keyboard shortcuts for efficiency. The query interface supports Enter to submit (via form), but lacks other shortcuts. Power users managing governance dashboards would benefit from quick keyboard access to refresh and clear actions.",
+  "category": "ui_ux",
+  "uiuxCategory": "interaction",
+  "affectedFiles": [
+    "QueryInterface.tsx",
+    "App.tsx"
+  ],
+  "problemSolved": "The QueryInterface form submits on Enter (standard form behavior), but there's no keyboard shortcut to clear the query (must click the X button), no global shortcuts for refreshing widgets, and no keyboard shortcut hints visible in the UI."
+}

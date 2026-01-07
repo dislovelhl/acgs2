@@ -1,0 +1,25 @@
+{
+  "file_path": "claude-flow/src/config/schema.ts",
+  "main_branch_history": [],
+  "task_views": {
+    "059-add-jsdoc-coverage-for-claude-flow-typescript-serv": {
+      "task_id": "059-add-jsdoc-coverage-for-claude-flow-typescript-serv",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "import { z } from \"zod\";\n\nexport const environmentSchema = z.enum([\n  \"development\",\n  \"staging\",\n  \"production\",\n  \"test\",\n  \"ci\",\n]);\n\nexport const configSchema = z\n  .object({\n    ENVIRONMENT: environmentSchema.default(\"development\"),\n    TENANT_ID: z.string().default(\"acgs-dev\"),\n    REDIS_URL: z.string().url().default(\"redis://localhost:6379/0\"),\n    REDIS_PASSWORD: z.string().optional(),\n    KAFKA_BOOTSTRAP: z.string().optional(),\n    KAFKA_PASSWORD: z.string().optional(),\n    AGENT_BUS_URL: z.string().url().default(\"http://localhost:8000\"),\n    OPA_URL: z.string().url().default(\"http://localhost:8181\"),\n    HITL_APPROVALS_PORT: z.coerce.number().int().positive().default(8003),\n    HITL_APPROVALS_URL: z.string().url().default(\"http://localhost:8003\"),\n    LOG_LEVEL: z.enum([\"DEBUG\", \"INFO\", \"WARN\", \"ERROR\"]).default(\"INFO\"),\n    DEBUG: z.coerce.boolean().default(false),\n    RELOAD: z.coerce.boolean().default(false),\n    CONSTITUTIONAL_HASH: z.string().length(16).default(\"cdd01ef066bc6cf2\"),\n  })\n  .refine(\n    (data) => {\n      if (data.ENVIRONMENT === \"production\" && data.DEBUG === true) {\n        return false;\n      }\n      return true;\n    },\n    {\n      message: \"DEBUG mode cannot be enabled in production\",\n      path: [\"DEBUG\"],\n    }\n  );\n\nexport type Config = z.infer<typeof configSchema>;\n",
+        "timestamp": "2026-01-04T05:35:52.969195"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "Add JSDoc coverage for claude-flow TypeScript service public exports",
+        "description": "Add comprehensive JSDoc documentation to the 45 exported functions/classes across 17 TypeScript files in the claude-flow CLI tool to improve API documentation for enterprise users",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-04T05:35:53.036904",
+  "last_updated": "2026-01-04T05:35:53.045673"
+}

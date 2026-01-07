@@ -1,0 +1,28 @@
+{
+  "file_path": "integration-service/src/models/__init__.py",
+  "main_branch_history": [],
+  "task_views": {
+    "003-import-your-data": {
+      "task_id": "003-import-your-data",
+      "branch_point": {
+        "commit_hash": "cc53a509f89115bbb36940c140031e6159320791",
+        "content": "",
+        "timestamp": "2026-01-03T17:00:00.287145"
+      },
+      "worktree_state": {
+        "content": "\"\"\"Models package for integration service.\"\"\"\n\nfrom .import_models import (\n    DuplicateHandling,\n    ImportListResponse,\n    ImportOptions,\n    ImportProgress,\n    ImportRequest,\n    ImportResponse,\n    ImportStatus,\n    ImportedItem,\n    PreviewItem,\n    PreviewResponse,\n    SourceConfig,\n    SourceType,\n)\n\n__all__ = [\n    \"DuplicateHandling\",\n    \"ImportListResponse\",\n    \"ImportOptions\",\n    \"ImportProgress\",\n    \"ImportRequest\",\n    \"ImportResponse\",\n    \"ImportStatus\",\n    \"ImportedItem\",\n    \"PreviewItem\",\n    \"PreviewResponse\",\n    \"SourceConfig\",\n    \"SourceType\",\n]\n",
+        "last_modified": "2026-01-03T19:09:00.298527"
+      },
+      "task_intent": {
+        "title": "003-import-your-data",
+        "description": "",
+        "from_plan": false
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T16:23:45.511141",
+  "last_updated": "2026-01-03T17:00:00.301698"
+}

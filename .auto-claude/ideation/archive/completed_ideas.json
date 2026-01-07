@@ -1,0 +1,114 @@
+[
+  {
+    "id": "ci-001",
+    "type": "code_improvements",
+    "title": "Add useAnomalies Hook to Analytics Dashboard",
+    "description": "Verified: src/frontend/analytics-dashboard/src/hooks/useAnomalies.ts exists and follows UseDataResult pattern.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "ci-002",
+    "type": "code_improvements",
+    "title": "Add ComplianceWidget to Analytics Dashboard",
+    "description": "Verified: src/frontend/analytics-dashboard/src/components/widgets/ComplianceWidget.tsx exists.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "ci-003",
+    "type": "code_improvements",
+    "title": "Add DataDog Integration Adapter",
+    "description": "Verified: src/integration-service/integration-service/src/integrations/datadog_adapter.py exists.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "ci-004",
+    "type": "code_improvements",
+    "title": "Add PagerDuty Integration Adapter for Incident Management",
+    "description": "Verified: src/integration-service/integration-service/src/integrations/pagerduty_adapter.py exists.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "ci-005",
+    "type": "code_improvements",
+    "title": "Add Batch Event Processing to BaseIntegration",
+    "description": "Verified: src/integration-service/integration-service/src/integrations/base.py has send_events_batch implementation.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "sec-001",
+    "type": "security_hardening",
+    "title": "Fix Wildcard CORS Configuration in Production Services",
+    "description": "Verified: src/integration-service/integration-service/src/main.py has environment-aware CORS logic.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "sec-002",
+    "type": "security_hardening",
+    "title": "Add Authentication to Policy Validation API Endpoints",
+    "description": "Verified: src/integration-service/integration-service/src/api/policy_check.py uses authentication dependencies.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "sec-003",
+    "type": "security_hardening",
+    "title": "Harden Development Mode JWT Fallback Behavior",
+    "description": "Verified: src/core/services/policy_registry/app/middleware/rbac.py has strict JWT secret checks for production.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "sec-004",
+    "type": "security_hardening",
+    "title": "Add Security Headers Middleware to FastAPI Services",
+    "description": "Verified: src/integration-service/integration-service/src/main.py applies SecurityHeadersMiddleware.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "perf-002",
+    "type": "performance_optimizations",
+    "title": "Cache Drift Detection Report Results",
+    "description": "Verified: src/adaptive-learning/adaptive-learning-engine/src/monitoring/drift_detector.py implements caching.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "cq-002",
+    "type": "code_quality",
+    "title": "Extract Duplicated LoadingState and API Config in Analytics Dashboard Widgets",
+    "description": "Verified: Analytics dashboard uses shared lib for configuration and types.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "cq-003",
+    "type": "code_quality",
+    "title": "Consolidate Exception Classes in Integration Service",
+    "description": "Verified: Integration service uses centralized exceptions module.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "doc-002",
+    "type": "documentation_gaps",
+    "title": "Add JSDoc coverage for claude-flow TypeScript service public exports",
+    "description": "Verified: src/claude-flow/claude-flow/src/commands/swarm.ts has extensive JSDoc.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  },
+  {
+    "id": "doc-005",
+    "type": "documentation_gaps",
+    "title": "Add inline documentation for adaptive learning engine algorithms",
+    "description": "Verified: src/adaptive-learning/adaptive-learning-engine/src/models/online_learner.py has extensive documentation.",
+    "status": "completed",
+    "completed_at": "2026-01-03T15:45:00.000Z"
+  }
+]

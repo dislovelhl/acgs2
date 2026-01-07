@@ -1,0 +1,25 @@
+{
+  "file_path": "./examples/04-end-to-end-governance-workflow/policies/hitl_approval_test.rego",
+  "main_branch_history": [],
+  "task_views": {
+    "061-create-end-to-end-governance-workflow-examples-wit": {
+      "task_id": "061-create-end-to-end-governance-workflow-examples-wit",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "",
+        "timestamp": "2026-01-04T05:35:49.744738"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "061-create-end-to-end-governance-workflow-examples-wit",
+        "description": "Create comprehensive examples demonstrating complete governance workflows from policy creation through enforcement to audit logging, targeting Enterprise DevOps/MLOps engineers deploying AI systems. The examples will show: defining constitutional policies, enforcing them on agent actions, handling HITL approvals, and auditing decisions.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T19:36:07.422716",
+  "last_updated": "2026-01-04T05:35:49.815292"
+}

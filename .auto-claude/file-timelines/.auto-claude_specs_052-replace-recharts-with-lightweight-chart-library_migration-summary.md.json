@@ -1,0 +1,25 @@
+{
+  "file_path": ".auto-claude/specs/052-replace-recharts-with-lightweight-chart-library/migration-summary.md",
+  "main_branch_history": [],
+  "task_views": {
+    "052-replace-recharts-with-lightweight-chart-library": {
+      "task_id": "052-replace-recharts-with-lightweight-chart-library",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "",
+        "timestamp": "2026-01-04T05:36:13.611399"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "052-replace-recharts-with-lightweight-chart-library",
+        "description": "Replace recharts (~500KB unparsed, ~150KB gzipped) with a lightweight charting library like visx (~40KB) or uPlot (~30KB) to reduce bundle size and improve dashboard performance. Used in PredictionWidget (analytics-dashboard) and MetricsChart (observability dashboard).",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T19:36:23.203174",
+  "last_updated": "2026-01-04T05:36:13.627523"
+}

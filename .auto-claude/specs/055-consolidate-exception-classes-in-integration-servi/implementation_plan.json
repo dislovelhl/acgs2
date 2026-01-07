@@ -1,0 +1,336 @@
+{
+  "feature": "Consolidate Exception Classes in Integration Service",
+  "description": "The integration-service has exception classes scattered across 5+ modules with similar patterns: WebhookAuthError, IntegrationError, WebhookDeliveryError, ConfigValidationError, WebhookRetryError, RetryableError, NonRetryableError. Many of these share the same structure (message, error_code, status_code, details) but are defined independently.",
+  "created_at": "2026-01-03T21:27:53.017Z",
+  "updated_at": "2026-01-04T10:38:56.801Z",
+  "status": "done",
+  "planStatus": "completed",
+  "workflow_type": "development",
+  "spec_file": "spec.md",
+  "phases": [
+    {
+      "phase_id": "phase_1",
+      "phase_name": "Analysis and Design",
+      "description": "Analyze existing exception classes and design unified exception hierarchy",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "title": "Document current exception classes",
+          "description": "Create comprehensive documentation of all existing exception classes, their attributes, and usage patterns across webhooks/retry.py, webhooks/auth.py, webhooks/delivery.py, integrations/base.py, and config/validation.py",
+          "status": "completed",
+          "files_to_modify": [],
+          "estimated_duration_minutes": 30,
+          "notes": "Completed during initial analysis. Found 20+ exception classes across 5 modules with overlapping attributes like message, error_code, status_code, and details."
+        },
+        {
+          "subtask_id": "1.2",
+          "title": "Design unified exception hierarchy",
+          "description": "Design a base exception class with common attributes (message, error_code, status_code, details) and specialized subclasses for different error categories (authentication, validation, delivery, retry, connection)",
+          "status": "pending",
+          "files_to_modify": [],
+          "estimated_duration_minutes": 45,
+          "notes": "Should include: BaseIntegrationServiceError, AuthenticationError, ValidationError, DeliveryError, RetryError, ConnectionError, ConfigurationError"
+        },
+        {
+          "subtask_id": "1.3",
+          "title": "Plan migration strategy",
+          "description": "Create detailed migration plan ensuring backward compatibility and minimal breaking changes. Identify which exceptions can be merged and which need to remain distinct.",
+          "status": "pending",
+          "files_to_modify": [],
+          "estimated_duration_minutes": 30,
+          "notes": "Need to maintain backward compatibility by keeping old exception names as aliases initially"
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_2",
+      "phase_name": "Create Unified Exception Module",
+      "description": "Create new centralized exception module with unified exception hierarchy",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "title": "Create exceptions module structure",
+          "description": "Create integration-service/src/exceptions/__init__.py and integration-service/src/exceptions/base.py with the base exception class and common functionality",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/exceptions/__init__.py",
+            "integration-service/src/exceptions/base.py"
+          ],
+          "estimated_duration_minutes": 60,
+          "notes": "Base exception should include: message, error_code, status_code, details, retry_after, and utility methods like to_dict()"
+        },
+        {
+          "subtask_id": "2.2",
+          "title": "Implement authentication exceptions",
+          "description": "Create integration-service/src/exceptions/auth.py with authentication-related exceptions consolidating WebhookAuthError and its subclasses from webhooks/auth.py",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/exceptions/auth.py"
+          ],
+          "estimated_duration_minutes": 45,
+          "notes": "Should include: AuthenticationError, InvalidSignatureError, InvalidApiKeyError, InvalidBearerTokenError, TokenExpiredError, SignatureTimestampError, MissingAuthHeaderError"
+        },
+        {
+          "subtask_id": "2.3",
+          "title": "Implement retry exceptions",
+          "description": "Create integration-service/src/exceptions/retry.py with retry-related exceptions consolidating RetryableError, NonRetryableError, and WebhookRetryError from webhooks/retry.py",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/exceptions/retry.py"
+          ],
+          "estimated_duration_minutes": 45,
+          "notes": "Should include: RetryError, RetryableError, NonRetryableError with proper handling of attempts, last_error, and retry_after"
+        },
+        {
+          "subtask_id": "2.4",
+          "title": "Implement delivery exceptions",
+          "description": "Create integration-service/src/exceptions/delivery.py with delivery-related exceptions consolidating WebhookDeliveryError and its subclasses from webhooks/delivery.py",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/exceptions/delivery.py"
+          ],
+          "estimated_duration_minutes": 45,
+          "notes": "Should include: DeliveryError, TimeoutError, ConnectionError with delivery_id tracking"
+        },
+        {
+          "subtask_id": "2.5",
+          "title": "Implement validation exceptions",
+          "description": "Create integration-service/src/exceptions/validation.py with validation-related exceptions consolidating ConfigValidationError from config/validation.py and ValidationError from integrations/base.py",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/exceptions/validation.py"
+          ],
+          "estimated_duration_minutes": 30,
+          "notes": "Should include: ValidationError, ConfigValidationError with field tracking"
+        },
+        {
+          "subtask_id": "2.6",
+          "title": "Implement integration exceptions",
+          "description": "Create integration-service/src/exceptions/integration.py with integration-specific exceptions consolidating IntegrationError and its subclasses from integrations/base.py",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/exceptions/integration.py"
+          ],
+          "estimated_duration_minutes": 45,
+          "notes": "Should include: IntegrationError, RateLimitError with integration_name tracking"
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_3",
+      "phase_name": "Update Existing Modules",
+      "description": "Update existing modules to use the new unified exception hierarchy",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "title": "Update webhooks/retry.py",
+          "description": "Replace local exception definitions in webhooks/retry.py with imports from new exceptions module. Add backward compatibility aliases.",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/webhooks/retry.py"
+          ],
+          "estimated_duration_minutes": 45,
+          "notes": "Import from exceptions.retry instead of defining locally. Keep old names as aliases for backward compatibility."
+        },
+        {
+          "subtask_id": "3.2",
+          "title": "Update webhooks/auth.py",
+          "description": "Replace local exception definitions in webhooks/auth.py with imports from new exceptions module. Add backward compatibility aliases.",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/webhooks/auth.py"
+          ],
+          "estimated_duration_minutes": 45,
+          "notes": "Import from exceptions.auth instead of defining locally. Keep old names as aliases for backward compatibility."
+        },
+        {
+          "subtask_id": "3.3",
+          "title": "Update webhooks/delivery.py",
+          "description": "Replace local exception definitions in webhooks/delivery.py with imports from new exceptions module. Add backward compatibility aliases.",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/webhooks/delivery.py"
+          ],
+          "estimated_duration_minutes": 45,
+          "notes": "Import from exceptions.delivery instead of defining locally. Keep old names as aliases for backward compatibility."
+        },
+        {
+          "subtask_id": "3.4",
+          "title": "Update integrations/base.py",
+          "description": "Replace local exception definitions in integrations/base.py with imports from new exceptions module. Add backward compatibility aliases.",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/integrations/base.py"
+          ],
+          "estimated_duration_minutes": 45,
+          "notes": "Import from exceptions.integration instead of defining locally. Keep old names as aliases for backward compatibility."
+        },
+        {
+          "subtask_id": "3.5",
+          "title": "Update config/validation.py",
+          "description": "Replace local exception definitions in config/validation.py with imports from new exceptions module. Add backward compatibility aliases.",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/config/validation.py"
+          ],
+          "estimated_duration_minutes": 30,
+          "notes": "Import from exceptions.validation instead of defining locally. Keep old names as aliases for backward compatibility."
+        },
+        {
+          "subtask_id": "3.6",
+          "title": "Update other integration adapters",
+          "description": "Update integration adapter modules (jira_adapter.py, servicenow_adapter.py, sentinel_adapter.py, splunk_adapter.py) to use new exception imports",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/integrations/jira_adapter.py",
+            "integration-service/src/integrations/servicenow_adapter.py",
+            "integration-service/src/integrations/sentinel_adapter.py",
+            "integration-service/src/integrations/splunk_adapter.py"
+          ],
+          "estimated_duration_minutes": 60,
+          "notes": "Update all imports to use new exceptions module"
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_4",
+      "phase_name": "Update Tests",
+      "description": "Update test files to use new exception classes and ensure all tests pass",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "title": "Update webhook tests",
+          "description": "Update test files in integration-service/tests/webhooks/ to import and use new exception classes",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/tests/webhooks/test_auth.py",
+            "integration-service/tests/webhooks/test_delivery.py"
+          ],
+          "estimated_duration_minutes": 60,
+          "notes": "Update imports and ensure all exception assertions use correct exception classes"
+        },
+        {
+          "subtask_id": "4.2",
+          "title": "Update integration tests",
+          "description": "Update test files in integration-service/tests/integrations/ to import and use new exception classes",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/tests/integrations/test_jira.py",
+            "integration-service/tests/integrations/test_servicenow.py",
+            "integration-service/tests/integrations/test_sentinel.py",
+            "integration-service/tests/integrations/test_splunk.py"
+          ],
+          "estimated_duration_minutes": 60,
+          "notes": "Update imports and ensure all exception assertions use correct exception classes"
+        },
+        {
+          "subtask_id": "4.3",
+          "title": "Run test suite and fix failures",
+          "description": "Run the complete integration-service test suite and fix any failures related to exception changes",
+          "status": "pending",
+          "files_to_modify": [],
+          "estimated_duration_minutes": 45,
+          "notes": "Use pytest to run tests and ensure 100% pass rate"
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_5",
+      "phase_name": "Documentation and Cleanup",
+      "description": "Update documentation and clean up deprecated code",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "title": "Create exception documentation",
+          "description": "Create integration-service/src/exceptions/README.md documenting the new exception hierarchy, usage patterns, and migration guide",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/exceptions/README.md"
+          ],
+          "estimated_duration_minutes": 60,
+          "notes": "Include exception hierarchy diagram, usage examples, and best practices"
+        },
+        {
+          "subtask_id": "5.2",
+          "title": "Add deprecation warnings",
+          "description": "Add deprecation warnings to old exception aliases to guide developers toward using the new exception classes directly",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/webhooks/retry.py",
+            "integration-service/src/webhooks/auth.py",
+            "integration-service/src/webhooks/delivery.py",
+            "integration-service/src/integrations/base.py",
+            "integration-service/src/config/validation.py"
+          ],
+          "estimated_duration_minutes": 30,
+          "notes": "Use warnings.warn() with DeprecationWarning category"
+        },
+        {
+          "subtask_id": "5.3",
+          "title": "Update main module exports",
+          "description": "Update integration-service/src/__init__.py to export the new exception classes for easy importing",
+          "status": "pending",
+          "files_to_modify": [
+            "integration-service/src/__init__.py"
+          ],
+          "estimated_duration_minutes": 15,
+          "notes": "Make exceptions easily importable from integration_service.exceptions"
+        },
+        {
+          "subtask_id": "5.4",
+          "title": "Code review and quality check",
+          "description": "Perform final code review to ensure consistency, proper error messages, and adherence to Python exception best practices",
+          "status": "pending",
+          "files_to_modify": [],
+          "estimated_duration_minutes": 45,
+          "notes": "Check for proper exception chaining, informative error messages, and consistent attribute naming"
+        }
+      ]
+    }
+  ],
+  "services_involved": [
+    "integration-service"
+  ],
+  "total_estimated_duration_minutes": 945,
+  "qa_checklist": [
+    "All existing exception types have been consolidated into the new hierarchy",
+    "Backward compatibility is maintained through aliases",
+    "All tests pass with the new exception structure",
+    "Exception attributes (message, error_code, status_code, details) are consistently used",
+    "Documentation clearly explains the new exception hierarchy",
+    "Deprecation warnings guide developers to new exception classes",
+    "Exception chaining is properly implemented (using 'from' keyword)",
+    "Error messages are informative and consistent",
+    "No duplicate exception definitions exist across modules",
+    "Integration adapters correctly use new exception classes"
+  ],
+  "final_acceptance": [
+    "Single source of truth for exception definitions in integration-service/src/exceptions/",
+    "Reduced code duplication by consolidating 20+ scattered exception classes",
+    "Improved consistency with standardized exception attributes",
+    "Backward compatibility maintained for existing code",
+    "100% test pass rate",
+    "Clear documentation for developers"
+  ],
+  "risks_and_mitigations": [
+    {
+      "risk": "Breaking changes to existing code that catches specific exception types",
+      "mitigation": "Maintain backward compatibility through aliases and thorough testing"
+    },
+    {
+      "risk": "Missed exception usage in complex error handling logic",
+      "mitigation": "Use comprehensive grep searches and run full test suite"
+    },
+    {
+      "risk": "Exception attribute mismatches causing runtime errors",
+      "mitigation": "Design base exception class with all common attributes and use type hints"
+    }
+  ],
+  "notes": [
+    "The consolidation focuses on creating a clear, maintainable exception hierarchy while preserving existing behavior",
+    "Backward compatibility is crucial to avoid breaking existing integrations",
+    "The new structure follows Python exception best practices and PEP 8 guidelines",
+    "Future exception additions should follow the established hierarchy pattern"
+  ],
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T10:35:56.535Z"
+}

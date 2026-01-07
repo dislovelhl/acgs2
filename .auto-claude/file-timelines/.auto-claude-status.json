@@ -1,0 +1,148 @@
+{
+  "file_path": ".auto-claude-status",
+  "main_branch_history": [],
+  "task_views": {
+    "002-get-familiar-with-linear": {
+      "task_id": "002-get-familiar-with-linear",
+      "branch_point": {
+        "commit_hash": "cc53a509f89115bbb36940c140031e6159320791",
+        "content": "{\n  \"active\": true,\n  \"spec\": \"027-increase-test-coverage-to-80\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 10,\n    \"total\": 30,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"Governance Path Tests (90% Target)\",\n    \"id\": null,\n    \"total\": 3\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 404,\n    \"started_at\": \"2026-01-03T08:54:17.949972\"\n  },\n  \"last_update\": \"2026-01-03T11:20:14.615972\"\n}",
+        "timestamp": "2026-01-03T16:22:59.038104"
+      },
+      "worktree_state": {
+        "content": "{\n  \"active\": true,\n  \"spec\": \"002-get-familiar-with-linear\",\n  \"state\": \"complete\",\n  \"subtasks\": {\n    \"completed\": 1,\n    \"total\": 1,\n    \"in_progress\": 0,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"\",\n    \"id\": 0,\n    \"total\": 0\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 0,\n    \"started_at\": \"2026-01-03T16:22:42.496694\"\n  },\n  \"last_update\": \"2026-01-03T16:22:42.497663\"\n}",
+        "last_modified": "2026-01-03T16:22:59.048607"
+      },
+      "task_intent": {
+        "title": "002-get-familiar-with-linear",
+        "description": "",
+        "from_plan": false
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    },
+    "004-set-up-your-teams": {
+      "task_id": "004-set-up-your-teams",
+      "branch_point": {
+        "commit_hash": "cc53a509f89115bbb36940c140031e6159320791",
+        "content": "{\n  \"active\": true,\n  \"spec\": \"027-increase-test-coverage-to-80\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 10,\n    \"total\": 30,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"Governance Path Tests (90% Target)\",\n    \"id\": null,\n    \"total\": 3\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 404,\n    \"started_at\": \"2026-01-03T08:54:17.949972\"\n  },\n  \"last_update\": \"2026-01-03T11:20:14.615972\"\n}",
+        "timestamp": "2026-01-03T16:34:59.668236"
+      },
+      "worktree_state": {
+        "content": "{\n  \"active\": true,\n  \"spec\": \"004-set-up-your-teams\",\n  \"state\": \"paused\",\n  \"subtasks\": {\n    \"completed\": 3,\n    \"total\": 5,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"Workspace Verification\",\n    \"id\": null,\n    \"total\": 1\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 5,\n    \"started_at\": \"2026-01-03T16:23:44.976197\"\n  },\n  \"last_update\": \"2026-01-03T16:34:43.837790\"\n}",
+        "last_modified": "2026-01-03T16:34:59.678433"
+      },
+      "task_intent": {
+        "title": "004-set-up-your-teams",
+        "description": "",
+        "from_plan": false
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    },
+    "003-import-your-data": {
+      "task_id": "003-import-your-data",
+      "branch_point": {
+        "commit_hash": "cc53a509f89115bbb36940c140031e6159320791",
+        "content": "{\n  \"active\": true,\n  \"spec\": \"027-increase-test-coverage-to-80\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 10,\n    \"total\": 30,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"Governance Path Tests (90% Target)\",\n    \"id\": null,\n    \"total\": 3\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 404,\n    \"started_at\": \"2026-01-03T08:54:17.949972\"\n  },\n  \"last_update\": \"2026-01-03T11:20:14.615972\"\n}",
+        "timestamp": "2026-01-03T17:00:00.287145"
+      },
+      "worktree_state": {
+        "content": "{\n  \"active\": true,\n  \"spec\": \"003-import-your-data\",\n  \"state\": \"complete\",\n  \"subtasks\": {\n    \"completed\": 20,\n    \"total\": 20,\n    \"in_progress\": 0,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"End-to-End Integration Testing\",\n    \"id\": null,\n    \"total\": 4\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 11,\n    \"started_at\": \"2026-01-03T17:00:00.336045\"\n  },\n  \"last_update\": \"2026-01-03T17:38:30.682853\"\n}",
+        "last_modified": "2026-01-03T19:09:00.296254"
+      },
+      "task_intent": {
+        "title": "003-import-your-data",
+        "description": "",
+        "from_plan": false
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    },
+    "001-connect-your-tools": {
+      "task_id": "001-connect-your-tools",
+      "branch_point": {
+        "commit_hash": "cc53a509f89115bbb36940c140031e6159320791",
+        "content": "{\n  \"active\": true,\n  \"spec\": \"027-increase-test-coverage-to-80\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 10,\n    \"total\": 30,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"Governance Path Tests (90% Target)\",\n    \"id\": null,\n    \"total\": 3\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 404,\n    \"started_at\": \"2026-01-03T08:54:17.949972\"\n  },\n  \"last_update\": \"2026-01-03T11:20:14.615972\"\n}",
+        "timestamp": "2026-01-03T17:00:01.335551"
+      },
+      "worktree_state": {
+        "content": "{\n  \"active\": true,\n  \"spec\": \"001-connect-your-tools\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 7,\n    \"total\": 33,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"\",\n    \"id\": 0,\n    \"total\": 0\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 9,\n    \"started_at\": \"2026-01-03T16:25:24.181161\"\n  },\n  \"last_update\": \"2026-01-03T16:57:15.831809\"\n}",
+        "last_modified": "2026-01-03T17:00:01.390728"
+      },
+      "task_intent": {
+        "title": "001-connect-your-tools",
+        "description": "Implement Linear integration into the ACGS2 integration-service to enable bidirectional synchronization between Linear issues and external tools (GitHub, GitLab, Slack). This will make Linear the source of truth for product development workflows by automatically syncing issue states, comments, and metadata across platforms.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    },
+    "033-add-useanomalies-hook-to-analytics-dashboard": {
+      "task_id": "033-add-useanomalies-hook-to-analytics-dashboard",
+      "branch_point": {
+        "commit_hash": "4a99fe22e8e0087919301b1aa185d4e2c6da716c",
+        "content": "{\n  \"active\": true,\n  \"spec\": \"002-get-familiar-with-linear\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 0,\n    \"total\": 1,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"Complete Learning Resources\",\n    \"id\": 1,\n    \"total\": 1\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 1,\n    \"started_at\": \"2026-01-03T16:13:04.781362\"\n  },\n  \"last_update\": \"2026-01-03T16:13:04.783585\"\n}",
+        "timestamp": "2026-01-03T18:32:21.773146"
+      },
+      "worktree_state": {
+        "content": "{\n  \"active\": true,\n  \"spec\": \"033-add-useanomalies-hook-to-analytics-dashboard\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 0,\n    \"total\": 0,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"\",\n    \"id\": 0,\n    \"total\": 0\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 34,\n    \"started_at\": \"2026-01-03T17:24:04.274620\"\n  },\n  \"last_update\": \"2026-01-03T18:14:23.261674\"\n}",
+        "last_modified": "2026-01-03T18:36:09.853661"
+      },
+      "task_intent": {
+        "title": "033-add-useanomalies-hook-to-analytics-dashboard",
+        "description": "Extract the anomaly fetching logic from AnomalyWidget.tsx into a reusable useAnomalies hook following the existing UseDataResult<T> pattern established in acgs2-observability/monitoring/dashboard/src/hooks/useDashboard.ts. This enables anomaly data to be consumed by other components without duplicating fetch logic.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    },
+    "054-extract-duplicated-loadingstate-and-api-config-in-": {
+      "task_id": "054-extract-duplicated-loadingstate-and-api-config-in-",
+      "branch_point": {
+        "commit_hash": "4a99fe22e8e0087919301b1aa185d4e2c6da716c",
+        "content": "{\n  \"active\": true,\n  \"spec\": \"002-get-familiar-with-linear\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 0,\n    \"total\": 1,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"Complete Learning Resources\",\n    \"id\": 1,\n    \"total\": 1\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 1,\n    \"started_at\": \"2026-01-03T16:13:04.781362\"\n  },\n  \"last_update\": \"2026-01-03T16:13:04.783585\"\n}",
+        "timestamp": "2026-01-03T18:35:24.567548"
+      },
+      "worktree_state": {
+        "content": "{\n  \"active\": true,\n  \"spec\": \"054-extract-duplicated-loadingstate-and-api-config-in-\",\n  \"state\": \"complete\",\n  \"subtasks\": {\n    \"completed\": 19,\n    \"total\": 19,\n    \"in_progress\": 0,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"\",\n    \"id\": 0,\n    \"total\": 0\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 0,\n    \"started_at\": \"2026-01-03T18:35:24.641338\"\n  },\n  \"last_update\": \"2026-01-03T18:35:24.642137\"\n}",
+        "last_modified": "2026-01-03T19:10:12.016387"
+      },
+      "task_intent": {
+        "title": "054-extract-duplicated-loadingstate-and-api-config-in-",
+        "description": "The analytics-dashboard has 4 widget components (PredictionWidget, AnomalyWidget, InsightWidget, QueryInterface) that each independently define the same LoadingState type and API_BASE_URL constant. This pattern is repeated across 7+ files when including tests, leading to maintenance burden and potential inconsistencies.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    },
+    "049-cache-drift-detection-report-results": {
+      "task_id": "049-cache-drift-detection-report-results",
+      "branch_point": {
+        "commit_hash": "4a99fe22e8e0087919301b1aa185d4e2c6da716c",
+        "content": "{\n  \"active\": true,\n  \"spec\": \"002-get-familiar-with-linear\",\n  \"state\": \"building\",\n  \"subtasks\": {\n    \"completed\": 0,\n    \"total\": 1,\n    \"in_progress\": 1,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"Complete Learning Resources\",\n    \"id\": 1,\n    \"total\": 1\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 1,\n    \"started_at\": \"2026-01-03T16:13:04.781362\"\n  },\n  \"last_update\": \"2026-01-03T16:13:04.783585\"\n}",
+        "timestamp": "2026-01-03T19:07:33.686648"
+      },
+      "worktree_state": {
+        "content": "{\n  \"active\": true,\n  \"spec\": \"049-cache-drift-detection-report-results\",\n  \"state\": \"complete\",\n  \"subtasks\": {\n    \"completed\": 24,\n    \"total\": 24,\n    \"in_progress\": 0,\n    \"failed\": 0\n  },\n  \"phase\": {\n    \"current\": \"\",\n    \"id\": 0,\n    \"total\": 0\n  },\n  \"workers\": {\n    \"active\": 0,\n    \"max\": 1\n  },\n  \"session\": {\n    \"number\": 0,\n    \"started_at\": \"2026-01-03T19:07:33.735322\"\n  },\n  \"last_update\": \"2026-01-03T19:07:33.737591\"\n}",
+        "last_modified": "2026-01-03T19:08:21.369587"
+      },
+      "task_intent": {
+        "title": "049-cache-drift-detection-report-results",
+        "description": "The DriftDetector.check_drift() method creates a new Evidently Report object and runs full statistical analysis on every call. The _to_dataframe method also performs DataFrame conversion repeatedly from the same deque data without caching. This optimization adds intelligent caching to reduce CPU overhead in high-traffic scenarios (10,000+ RPS).",
+        "from_plan": true
+      },
+      "commits_behind_main": 11,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T16:22:42.478581",
+  "last_updated": "2026-01-03T19:07:33.691996"
+}

@@ -1,0 +1,282 @@
+{
+  "feature": "Add Contextual Help Tooltips to Dashboard Widget Controls",
+  "description": "Add informative tooltips to widget control buttons that explain their functionality, especially for the Lock/Unlock and Reset Layout features.",
+  "created_at": "2026-01-03T21:27:50.782Z",
+  "updated_at": "2026-01-04T10:39:03.137Z",
+  "status": "done",
+  "planStatus": "completed",
+  "workflow_type": "development",
+  "services_involved": [
+    "analytics-dashboard"
+  ],
+  "phases": [
+    {
+      "phase": 1,
+      "title": "Component Development",
+      "description": "Create reusable Tooltip component for contextual help",
+      "subtasks": [
+        {
+          "id": "1.1",
+          "title": "Create Tooltip component",
+          "description": "Build a reusable Tooltip component using Tailwind CSS with proper accessibility attributes (ARIA), hover interactions, and positioning logic. Support multiple positions (top, bottom, left, right) and optional delays.",
+          "status": "completed",
+          "files_to_modify": [],
+          "files_to_create": [
+            "analytics-dashboard/src/components/common/Tooltip.tsx"
+          ],
+          "estimated_time": "30 minutes",
+          "dependencies": [],
+          "notes": "Created reusable Tooltip component with TypeScript, Tailwind CSS, proper ARIA attributes (role=\"tooltip\", aria-describedby), positioning logic for all four directions (top, bottom, left, right), hover/focus interactions with configurable delays, and comprehensive JSDoc documentation.",
+          "updated_at": "2026-01-04T05:42:17.740611+00:00"
+        },
+        {
+          "id": "1.2",
+          "title": "Create Tooltip component tests",
+          "description": "Write comprehensive unit tests for the Tooltip component covering rendering, positioning, accessibility, hover interactions, and edge cases.",
+          "status": "completed",
+          "files_to_modify": [],
+          "files_to_create": [
+            "analytics-dashboard/src/components/common/__tests__/Tooltip.test.tsx"
+          ],
+          "estimated_time": "20 minutes",
+          "dependencies": [
+            "1.1"
+          ],
+          "notes": "Created comprehensive unit tests for the Tooltip component covering all requirements: rendering with various content types, all four positioning options (top, bottom, left, right), accessibility features (ARIA attributes, keyboard focus/blur support, unique IDs), hover interactions with configurable delays, disabled state, and edge cases including cleanup, rapid interactions, and multiple children. Tests use vitest, @testing-library/react, and @testing-library/user-event following the codebase's established testing patterns.",
+          "updated_at": "2026-01-04T05:44:55.083379+00:00"
+        },
+        {
+          "id": "1.3",
+          "title": "Export Tooltip from common components index",
+          "description": "Add Tooltip export to the common components index file for easier imports throughout the application.",
+          "status": "completed",
+          "files_to_modify": [],
+          "files_to_create": [
+            "analytics-dashboard/src/components/common/index.ts"
+          ],
+          "estimated_time": "5 minutes",
+          "dependencies": [
+            "1.1"
+          ],
+          "notes": "Created index.ts export file for common components. Exports Tooltip component and its TypeScript types (TooltipProps, TooltipPosition) following established codebase patterns. Enables convenient imports: import { Tooltip } from '@/components/common'. Committed: 8081a291b",
+          "updated_at": "2026-01-04T05:47:10.034225+00:00"
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "title": "Dashboard Integration",
+      "description": "Integrate tooltips into DashboardGrid controls",
+      "subtasks": [
+        {
+          "id": "2.1",
+          "title": "Add tooltip to Lock/Unlock button",
+          "description": "Wrap the Lock/Unlock button with Tooltip component. Provide contextual help explaining: when locked, widgets cannot be moved or resized; when unlocked, widgets can be freely rearranged. Include keyboard shortcut info if applicable.",
+          "status": "completed",
+          "files_to_modify": [
+            "analytics-dashboard/src/layouts/DashboardGrid.tsx"
+          ],
+          "files_to_create": [],
+          "estimated_time": "15 minutes",
+          "dependencies": [
+            "1.1"
+          ],
+          "notes": "Successfully wrapped Lock/Unlock button with Tooltip component. Tooltip provides contextual help explaining locked state (widgets cannot be moved/resized) and unlocked state (widgets can be freely rearranged). Positioned at bottom for optimal UX. All accessibility attributes maintained.",
+          "updated_at": "2026-01-04T05:48:59.821498+00:00"
+        },
+        {
+          "id": "2.2",
+          "title": "Add tooltip to Reset Layout button",
+          "description": "Wrap the Reset Layout button with Tooltip component. Provide contextual help explaining that this will restore all widgets to their default positions and sizes, and that custom arrangements will be lost.",
+          "status": "completed",
+          "files_to_modify": [
+            "analytics-dashboard/src/layouts/DashboardGrid.tsx"
+          ],
+          "files_to_create": [],
+          "estimated_time": "15 minutes",
+          "dependencies": [
+            "1.1"
+          ],
+          "notes": "Successfully wrapped Reset Layout button with Tooltip component. The tooltip explains that clicking will restore widgets to default positions/sizes and warns that custom arrangements will be lost. Implementation follows the same pattern as the Lock/Unlock button tooltip.",
+          "updated_at": "2026-01-04T05:50:09.074135+00:00"
+        },
+        {
+          "id": "2.3",
+          "title": "Enhance drag handle hint with tooltip",
+          "description": "Add a tooltip to the 'Drag widgets to rearrange' hint that provides more detailed information about the drag-and-drop functionality, including how to resize widgets and that changes are automatically saved.",
+          "status": "pending",
+          "files_to_modify": [
+            "analytics-dashboard/src/layouts/DashboardGrid.tsx"
+          ],
+          "files_to_create": [],
+          "estimated_time": "15 minutes",
+          "dependencies": [
+            "1.1"
+          ]
+        },
+        {
+          "id": "2.4",
+          "title": "Add tooltips to individual widget drag handles",
+          "description": "Enhance the per-widget drag handles with tooltips explaining how to drag to move and resize using corner/edge handles. Make tooltip content dynamic based on widget name.",
+          "status": "pending",
+          "files_to_modify": [
+            "analytics-dashboard/src/layouts/DashboardGrid.tsx"
+          ],
+          "files_to_create": [],
+          "estimated_time": "15 minutes",
+          "dependencies": [
+            "1.1"
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "title": "Testing & Validation",
+      "description": "Test tooltip integration and update existing tests",
+      "subtasks": [
+        {
+          "id": "3.1",
+          "title": "Update DashboardGrid tests",
+          "description": "Update existing DashboardGrid tests to account for new Tooltip components. Add new tests verifying tooltips appear on hover and contain expected help text.",
+          "status": "pending",
+          "files_to_modify": [
+            "analytics-dashboard/src/layouts/__tests__/DashboardGrid.test.tsx"
+          ],
+          "files_to_create": [],
+          "estimated_time": "20 minutes",
+          "dependencies": [
+            "2.1",
+            "2.2",
+            "2.3",
+            "2.4"
+          ]
+        },
+        {
+          "id": "3.2",
+          "title": "Run all tests and fix issues",
+          "description": "Execute the full test suite (npm run test) to ensure no regressions. Fix any failing tests and verify tooltip functionality works as expected.",
+          "status": "pending",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "estimated_time": "15 minutes",
+          "dependencies": [
+            "3.1"
+          ]
+        },
+        {
+          "id": "3.3",
+          "title": "Manual testing in browser",
+          "description": "Start the dev server and manually verify tooltips appear correctly on all controls, have appropriate timing, don't interfere with interactions, and are accessible via keyboard navigation.",
+          "status": "pending",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "estimated_time": "20 minutes",
+          "dependencies": [
+            "3.2"
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "title": "Documentation & Polish",
+      "description": "Document the new tooltip system and ensure code quality",
+      "subtasks": [
+        {
+          "id": "4.1",
+          "title": "Add JSDoc comments to Tooltip component",
+          "description": "Ensure Tooltip component has comprehensive JSDoc documentation including usage examples, prop descriptions, and accessibility notes.",
+          "status": "pending",
+          "files_to_modify": [
+            "analytics-dashboard/src/components/common/Tooltip.tsx"
+          ],
+          "files_to_create": [],
+          "estimated_time": "10 minutes",
+          "dependencies": [
+            "1.1"
+          ]
+        },
+        {
+          "id": "4.2",
+          "title": "Run linter and fix issues",
+          "description": "Run ESLint (npm run lint) on modified files and fix any linting issues or warnings.",
+          "status": "pending",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "estimated_time": "10 minutes",
+          "dependencies": [
+            "2.1",
+            "2.2",
+            "2.3",
+            "2.4",
+            "4.1"
+          ]
+        },
+        {
+          "id": "4.3",
+          "title": "Run TypeScript type checking",
+          "description": "Execute TypeScript compiler (npm run typecheck) to ensure no type errors exist in the new code.",
+          "status": "pending",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "estimated_time": "5 minutes",
+          "dependencies": [
+            "4.2"
+          ]
+        }
+      ]
+    }
+  ],
+  "final_acceptance": [
+    {
+      "criteria": "Tooltip component is reusable and accessible",
+      "verification": "Component has proper ARIA attributes, keyboard navigation support, and can be imported from common components"
+    },
+    {
+      "criteria": "All dashboard controls have informative tooltips",
+      "verification": "Lock/Unlock, Reset Layout, and Drag handles all show contextual help on hover"
+    },
+    {
+      "criteria": "Tooltips don't interfere with user interactions",
+      "verification": "Tooltips appear/disappear smoothly, don't block clicks, and have appropriate delays"
+    },
+    {
+      "criteria": "All tests pass",
+      "verification": "npm run test completes successfully with new tooltip tests"
+    },
+    {
+      "criteria": "No TypeScript or linting errors",
+      "verification": "npm run typecheck and npm run lint complete without errors"
+    },
+    {
+      "criteria": "Tooltips are accessible via keyboard",
+      "verification": "Tooltips appear when controls receive focus via Tab key navigation"
+    }
+  ],
+  "spec_file": "spec.md",
+  "technical_notes": [
+    "Using Tailwind CSS for tooltip styling to match existing design system",
+    "Tooltips use CSS positioning with absolute/relative layout",
+    "Component supports multiple positions (top, bottom, left, right) for flexibility",
+    "Accessibility implemented via role='tooltip' and aria-describedby attributes",
+    "Hover delay prevents tooltips from appearing too quickly during quick mouse movements",
+    "DashboardGrid already has basic title attributes which will be enhanced with richer tooltip content"
+  ],
+  "risks_and_mitigations": [
+    {
+      "risk": "Tooltips might interfere with drag interactions",
+      "mitigation": "Use appropriate delays and hide tooltips during drag operations"
+    },
+    {
+      "risk": "Tooltip positioning might be incorrect near screen edges",
+      "mitigation": "Implement boundary detection and automatic position adjustment"
+    },
+    {
+      "risk": "Accessibility issues with screen readers",
+      "mitigation": "Use proper ARIA attributes and test with screen readers"
+    }
+  ],
+  "last_updated": "2026-01-04T05:50:09.074146+00:00",
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T10:36:25.727Z"
+}

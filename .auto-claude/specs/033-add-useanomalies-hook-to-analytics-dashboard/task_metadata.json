@@ -1,0 +1,14 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "code_improvements",
+  "ideaId": "ci-001",
+  "rationale": "The widget pattern in analytics-dashboard embeds data fetching directly in components. The observability dashboard has a mature hook pattern (useHealthStatus, useMetrics, useAlerts) that returns {data, loading, error, refetch}. Applying this pattern to analytics-dashboard creates consistency and enables hook reuse.",
+  "category": "feature",
+  "estimatedEffort": "trivial",
+  "complexity": "trivial",
+  "affectedFiles": [
+    "analytics-dashboard/src/hooks/useAnomalies.ts",
+    "analytics-dashboard/src/hooks/index.ts",
+    "analytics-dashboard/src/components/widgets/AnomalyWidget.tsx"
+  ]
+}

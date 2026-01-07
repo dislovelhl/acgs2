@@ -1,0 +1,319 @@
+{
+  "feature": "Add inline documentation for adaptive learning engine algorithms",
+  "description": "The adaptive-learning-engine contains sophisticated ML algorithms (River online learning, Evidently drift detection, MLflow model registry) but many core algorithm files lack inline explanations. Files like drift_detector.py, online_learner.py, and bounds_checker.py implement complex safety-critical logic without explaining the mathematical foundations or decision rationale.",
+  "created_at": "2026-01-03T21:27:54.211Z",
+  "updated_at": "2026-01-04T10:38:45.398Z",
+  "status": "done",
+  "planStatus": "completed",
+  "phases": [
+    {
+      "phase_id": "1",
+      "phase_name": "Document drift_detector.py - Statistical foundations and algorithms",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "description": "Add inline documentation for Evidently drift detection algorithms (K-S test, PSI, chi-squared)",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/monitoring/drift_detector.py"
+          ],
+          "notes": "Explain the statistical tests used by Evidently (Kolmogorov-Smirnov test, Population Stability Index, Chi-squared test) and their mathematical foundations. Document why drift_threshold=0.2 is chosen as default PSI threshold."
+        },
+        {
+          "subtask_id": "1.2",
+          "description": "Document the drift scoring methodology and threshold calculations",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/monitoring/drift_detector.py"
+          ],
+          "notes": "Add inline comments in check_drift() and _parse_drift_report() explaining how drift_score is calculated as share of drifted columns, how dataset-level drift is determined from column-level drift, and why drift_share_threshold=0.5 is used."
+        },
+        {
+          "subtask_id": "1.3",
+          "description": "Document reference vs current window sizing and statistical validity",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/monitoring/drift_detector.py"
+          ],
+          "notes": "Explain the rationale for reference_window_size=1000 and current_window_size=100, the statistical power considerations, and the min_samples_for_drift=10 minimum requirement for valid statistical tests."
+        },
+        {
+          "subtask_id": "1.4",
+          "description": "Document the circuit breaker pattern for consecutive drift detection",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/monitoring/drift_detector.py"
+          ],
+          "notes": "Add inline documentation in _trigger_alert() explaining why consecutive_drift_count >= 3 triggers critical severity, and how this prevents spurious alerts while ensuring real drift is escalated."
+        }
+      ]
+    },
+    {
+      "phase_id": "2",
+      "phase_name": "Document online_learner.py - River ML and progressive validation",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "description": "Document River's progressive validation paradigm and theoretical foundation",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/online_learner.py"
+          ],
+          "notes": "Add comprehensive inline documentation explaining River's predict-then-learn paradigm (Prequential evaluation), why this simulates production reality, and how it differs from batch learning with train/test splits. Reference academic papers on online learning."
+        },
+        {
+          "subtask_id": "2.2",
+          "description": "Document the online learning algorithms (Logistic Regression, Perceptron, PA Classifier)",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/online_learner.py"
+          ],
+          "notes": "In _build_pipeline(), add inline comments explaining: (1) SGD optimization for logistic regression and its incremental weight updates, (2) Perceptron's mistake-driven learning, (3) Passive-Aggressive classifier's margin-based updates and the meaning of C parameter, (4) why StandardScaler is used in the pipeline for feature normalization in online setting."
+        },
+        {
+          "subtask_id": "2.3",
+          "description": "Document cold start strategy and warming phase transitions",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/online_learner.py"
+          ],
+          "notes": "Add inline documentation in predict_one() and _update_state() explaining: (1) why DEFAULT_PREDICTION=0 (deny) during cold start is the safe choice for governance, (2) why min_training_samples=1000 is needed before ACTIVE state (statistical stability), (3) DEFAULT_CONFIDENCE=0.5 rationale (maximum uncertainty)."
+        },
+        {
+          "subtask_id": "2.4",
+          "description": "Document time-weighted learning and sample_weight approximation",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/online_learner.py"
+          ],
+          "notes": "In learn_one(), add detailed inline comments explaining: (1) why time_decay_factor=0.99 is used for exponential decay, (2) how sample_weight is approximated (multiple learns for weight>1, probabilistic learning for weight<1), (3) the theoretical basis for weighting recent samples more heavily in non-stationary environments."
+        },
+        {
+          "subtask_id": "2.5",
+          "description": "Document rolling accuracy metrics and their statistical interpretation",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/online_learner.py"
+          ],
+          "notes": "Add inline documentation explaining: (1) why rolling_window_size=100 balances responsiveness vs. stability, (2) the difference between cumulative accuracy (overall model health) and rolling accuracy (recent performance for drift detection), (3) how metrics.Rolling() implements a sliding window."
+        }
+      ]
+    },
+    {
+      "phase_id": "3",
+      "phase_name": "Document bounds_checker.py - Safety-critical circuit breaker logic",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "description": "Document the safety circuit breaker pattern and failure modes",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/safety/bounds_checker.py"
+          ],
+          "notes": "Add comprehensive inline documentation explaining: (1) the circuit breaker pattern from reliability engineering and how it prevents cascading failures, (2) the state transitions (OK → WARNING → CRITICAL/PAUSED), (3) why this is critical for ML safety in governance applications."
+        },
+        {
+          "subtask_id": "3.2",
+          "description": "Document accuracy threshold selection and domain-specific rationale",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/safety/bounds_checker.py"
+          ],
+          "notes": "In check_model() and check_accuracy(), add inline comments explaining: (1) why accuracy_threshold=0.85 is chosen for governance (balance of precision/recall in safety-critical context), (2) how this threshold relates to false positives/negatives in governance decisions, (3) why absolute threshold matters more than relative improvement for safety."
+        },
+        {
+          "subtask_id": "3.3",
+          "description": "Document degradation detection algorithm and rationale",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/safety/bounds_checker.py"
+          ],
+          "notes": "Add inline documentation in _handle_failure() explaining: (1) why degradation_threshold=0.05 (5% accuracy drop) triggers failure, (2) how this detects sudden performance regression vs. gradual drift, (3) the mathematical calculation of accuracy_drop = previous - current and why this direction matters."
+        },
+        {
+          "subtask_id": "3.4",
+          "description": "Document consecutive failures logic and auto-pause mechanism",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/safety/bounds_checker.py"
+          ],
+          "notes": "Add inline comments in _handle_failure() and _pause_learning() explaining: (1) why consecutive_failures_limit=3 provides confirmation without excessive delays, (2) the escalation from WARNING to CRITICAL severity, (3) how enable_auto_pause prevents bad model updates from degrading production, (4) when manual intervention (force_resume) is appropriate."
+        },
+        {
+          "subtask_id": "3.5",
+          "description": "Document cold start skip logic and min_samples rationale",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/safety/bounds_checker.py"
+          ],
+          "notes": "In check_model(), document why min_samples_for_check=100 is used: (1) statistical significance requires sufficient sample size for accuracy estimation, (2) why safety checks are skipped during cold start (no meaningful accuracy yet), (3) how this coordinates with OnlineLearner's min_training_samples."
+        }
+      ]
+    },
+    {
+      "phase_id": "4",
+      "phase_name": "Document model_manager.py - Zero-downtime model swapping",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "description": "Document atomic reference swap pattern for zero-downtime deployment",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/model_manager.py"
+          ],
+          "notes": "In swap_model(), add inline comments explaining: (1) how atomic reference updates work (single assignment is atomic in Python/CPython GIL), (2) why this enables zero-downtime swaps (in-flight requests complete with old model, new requests get new model), (3) how async locks prevent race conditions during swap."
+        },
+        {
+          "subtask_id": "4.2",
+          "description": "Document version history and rollback safety mechanisms",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/model_manager.py"
+          ],
+          "notes": "Add inline documentation in _add_to_history() and rollback_to_version() explaining: (1) why MAX_VERSION_HISTORY=10 balances memory vs. rollback capability, (2) the champion/challenger pattern for A/B testing, (3) why models are kept in memory (instant rollback without reload), (4) version monotonicity for audit trails."
+        },
+        {
+          "subtask_id": "4.3",
+          "description": "Document validation callback integration and safety guarantees",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/model_manager.py"
+          ],
+          "notes": "In swap_with_safety_check(), document: (1) how validation_callback enables integration with SafetyBoundsChecker, (2) why validation happens before the swap (prevent bad model from entering production), (3) the reject-on-failure strategy and its importance for ML safety."
+        }
+      ]
+    },
+    {
+      "phase_id": "5",
+      "phase_name": "Document mlflow_client.py - Model registry and fallback resilience",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "description": "Document MLflow model lifecycle stages and their governance meaning",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/registry/mlflow_client.py"
+          ],
+          "notes": "Add inline documentation explaining: (1) the MLflow stage transitions (None → Staging → Production → Archived), (2) how champion/challenger aliases map to production governance patterns, (3) why archive_existing_versions=True prevents multiple production models (single source of truth)."
+        },
+        {
+          "subtask_id": "5.2",
+          "description": "Document local fallback strategy and degraded mode operation",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/registry/mlflow_client.py"
+          ],
+          "notes": "In register_model() and the fallback methods, add inline comments explaining: (1) why local fallback ensures resilience when MLflow is down (graceful degradation), (2) the RegistryStatus.DEGRADED state and its implications, (3) the retry queue pattern for eventual consistency when MLflow recovers, (4) why pickle is used for model serialization."
+        },
+        {
+          "subtask_id": "5.3",
+          "description": "Document metadata logging strategy and versioning",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/registry/mlflow_client.py"
+          ],
+          "notes": "In _register_with_mlflow(), document: (1) why accuracy, drift_score, and sample_count are logged as metrics (queryable, plottable), (2) why algorithm and learning_rate are params (configuration tracking), (3) the ModelMetadata dataclass structure and its role in reproducibility, (4) how this enables model lineage tracking."
+        }
+      ]
+    },
+    {
+      "phase_id": "6",
+      "phase_name": "Add algorithmic overview documentation and cross-file integration notes",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "6.1",
+          "description": "Add module-level algorithm overview to drift_detector.py",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/monitoring/drift_detector.py"
+          ],
+          "notes": "Expand the module docstring to include: (1) overview of statistical drift detection methods (PSI, K-S, chi-squared), (2) references to Evidently documentation and academic papers on concept drift, (3) when to use drift detection vs. retraining schedules, (4) typical PSI threshold interpretations (0.1=small shift, 0.2=moderate, 0.25+=severe)."
+        },
+        {
+          "subtask_id": "6.2",
+          "description": "Add module-level online learning overview to online_learner.py",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/models/online_learner.py"
+          ],
+          "notes": "Expand the module docstring to include: (1) introduction to online/incremental learning vs. batch learning, (2) references to River documentation and seminal papers (Gama et al. on streaming ML), (3) tradeoffs of online learning (memory efficiency, adaptability vs. potentially lower accuracy), (4) governance-specific rationale for online learning (evolving policies, continuous feedback)."
+        },
+        {
+          "subtask_id": "6.3",
+          "description": "Add module-level safety engineering overview to bounds_checker.py",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/safety/bounds_checker.py"
+          ],
+          "notes": "Expand the module docstring to include: (1) ML safety engineering principles for high-stakes applications, (2) circuit breaker pattern references (Michael Nygard's Release It!), (3) why governance is safety-critical (incorrect decisions impact users/organizations), (4) comparison to other ML safety approaches (canary deployments, shadow mode, etc.)."
+        },
+        {
+          "subtask_id": "6.4",
+          "description": "Add integration flow documentation showing how components work together",
+          "status": "pending",
+          "files_to_modify": [
+            "adaptive-learning-engine/src/monitoring/drift_detector.py",
+            "adaptive-learning-engine/src/models/online_learner.py",
+            "adaptive-learning-engine/src/safety/bounds_checker.py"
+          ],
+          "notes": "Add inline documentation showing the typical integration flow: (1) OnlineLearner makes predictions and learns incrementally, (2) DriftDetector monitors for distribution shift, (3) SafetyBoundsChecker validates model before ModelManager swaps it in, (4) MLflowRegistry persists for audit and rollback. Include example code snippets in docstrings."
+        }
+      ]
+    },
+    {
+      "phase_id": "7",
+      "phase_name": "Testing and validation",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "7.1",
+          "description": "Review all added documentation for technical accuracy",
+          "status": "pending",
+          "files_to_modify": [],
+          "notes": "Verify that: (1) statistical formulas are correct, (2) threshold explanations match implementation, (3) algorithm descriptions align with River/Evidently behavior, (4) references to papers/docs are accurate."
+        },
+        {
+          "subtask_id": "7.2",
+          "description": "Ensure documentation clarity for contributors and auditors",
+          "status": "pending",
+          "files_to_modify": [],
+          "notes": "Review documentation from the perspective of: (1) new contributor understanding the codebase, (2) security auditor verifying safety properties, (3) ML engineer debugging unexpected behavior. Ensure inline comments answer 'why' not just 'what'."
+        },
+        {
+          "subtask_id": "7.3",
+          "description": "Run existing tests to ensure no behavioral changes",
+          "status": "pending",
+          "files_to_modify": [],
+          "notes": "Run pytest on adaptive-learning-engine/tests/ to verify that adding documentation didn't accidentally modify any logic. All tests should pass with no changes to test expectations."
+        }
+      ]
+    }
+  ],
+  "workflow_type": "development",
+  "services_involved": [
+    "adaptive-learning-engine"
+  ],
+  "final_acceptance": [
+    "All inline documentation added to drift_detector.py explaining statistical tests and thresholds",
+    "All inline documentation added to online_learner.py explaining River algorithms and progressive validation",
+    "All inline documentation added to bounds_checker.py explaining safety circuit breaker logic",
+    "Module-level overviews expanded with algorithm foundations and references",
+    "Integration flow documented showing how components work together",
+    "All existing tests pass without modification"
+  ],
+  "spec_file": "spec.md",
+  "qa_signoff": {
+    "status": "pending",
+    "tests_passed": "N/A - documentation only",
+    "issues": "None",
+    "signed_off_by": null,
+    "signed_off_at": null
+  },
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T10:35:45.377Z"
+}

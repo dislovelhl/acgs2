@@ -1,0 +1,14 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "code_improvements",
+  "ideaId": "ci-002",
+  "rationale": "The analytics-dashboard has 3 widgets (Anomaly, Insight, Prediction) following an identical pattern. The SDK already has ComplianceService with ComplianceResult data. Adding a ComplianceWidget completes the governance analytics coverage using proven patterns.",
+  "category": "feature",
+  "estimatedEffort": "small",
+  "complexity": "small",
+  "affectedFiles": [
+    "analytics-dashboard/src/components/widgets/ComplianceWidget.tsx",
+    "analytics-dashboard/src/components/widgets/index.ts",
+    "analytics-dashboard/src/layouts/DashboardGrid.tsx"
+  ]
+}

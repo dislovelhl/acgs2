@@ -1,0 +1,9 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "code_quality",
+  "ideaId": "cq-003",
+  "rationale": "Fragmented exception hierarchies make error handling inconsistent and harder to maintain. A unified exception structure improves error handling consistency, makes it easier to implement cross-cutting concerns like logging and monitoring, and reduces code duplication.",
+  "category": "refactoring",
+  "codeQualitySeverity": "minor",
+  "priority": "medium"
+}

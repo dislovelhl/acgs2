@@ -1,0 +1,9 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "code_quality",
+  "ideaId": "cq-005",
+  "rationale": "Large files violate Single Responsibility Principle and increase merge conflict probability. The adapter files contain credentials handling, API communication, event formatting, rate limiting, and error handling - each of which could be a separate module. Smaller modules improve testability and enable parallel development.",
+  "category": "refactoring",
+  "codeQualitySeverity": "major",
+  "priority": "high"
+}

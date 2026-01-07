@@ -1,0 +1,25 @@
+{
+  "file_path": "acgs2-core/enhanced_agent_bus/workflows/hp_governance_workflow.py",
+  "main_branch_history": [],
+  "task_views": {
+    "056-reduce-excessive-any-type-usage-in-python-codebase": {
+      "task_id": "056-reduce-excessive-any-type-usage-in-python-codebase",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "\"\"\"\nACGS-2 Enhanced Agent Bus - High-Performance Governance Workflow\nConstitutional Hash: cdd01ef066bc6cf2\n\nIntegrates SagaLLM transactions and MACI enforcement into a unified workflow.\n\"\"\"\n\nimport logging\nfrom typing import Any, Dict, Optional\n\nfrom ..maci_enforcement import MACIAction, MACIEnforcer\nfrom ..verification.saga_transaction import SagaTransaction\nfrom .workflow_base import CONSTITUTIONAL_HASH, WorkflowDefinition\n\nlogger = logging.getLogger(__name__)\n\nclass HighPerformanceGovernanceWorkflow(WorkflowDefinition[Dict[str, Any], Dict[str, Any]]):\n    \"\"\"\n    Advanced governance workflow integrating breakthrough Phase 2 components.\n\n    Constitutional Hash: cdd01ef066bc6cf2\n    \"\"\"\n\n    def __init__(self, enforcer: Optional[MACIEnforcer] = None):\n        super().__init__()\n        self.enforcer = enforcer or MACIEnforcer()\n\n    @property\n    def name(self) -> str:\n        return \"high_performance_governance\"\n\n    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:\n        \"\"\"Run the governance transaction.\"\"\"\n        logger.info(f\"[{CONSTITUTIONAL_HASH}] Running high-performance governance workflow\")\n\n        # Initialize Saga transaction\n        saga = SagaTransaction()\n\n        # Define steps\n        saga.add_step(\n            \"maci_authorize\",\n            self._maci_authorize_step,\n            self._maci_rollback_step\n        )\n        saga.add_step(\n            \"constitutional_validation\",\n            self._validate_step,\n            None # No compensation needed for read-only validation\n        )\n        saga.add_step(\n            \"governance_execution\",\n            self._execute_step,\n            self._rollback_execution_step\n        )\n\n        # Execute saga\n        try:\n            result = await saga.execute(input_data=input_data)\n            return {\n                \"status\": \"success\",\n                \"transaction_id\": saga.transaction_id,\n                \"result\": result,\n                \"constitutional_hash\": CONSTITUTIONAL_HASH\n            }\n        except Exception as e:\n            logger.error(f\"Governance workflow failed: {e}\")\n            return {\n                \"status\": \"failed\",\n                \"error\": str(e),\n                \"transaction_id\": saga.transaction_id\n            }\n\n    async def _maci_authorize_step(self, **kwargs) -> Any:\n        input_data = kwargs.get(\"input_data\", {})\n        agent_id = input_data.get(\"agent_id\", \"unknown\")\n\n        # Use MACI Enforcer\n        res = await self.enforcer.validate_action(agent_id, MACIAction.PROPOSE)\n        if not res.is_valid:\n            raise PermissionError(f\"MACI Authorization failed: {res.error_message}\")\n        return {\"authorized\": True, \"agent_id\": agent_id}\n\n    async def _maci_rollback_step(self, result: Any) -> None:\n        logger.info(f\"Rolling back MACI authorization for agent {result.get('agent_id')}\")\n\n    async def _validate_step(self, **kwargs) -> Any:\n        # Placeholder for deep constitutional validation\n        return {\"validated\": True}\n\n    async def _execute_step(self, **kwargs) -> Any:\n        # Placeholder for actual governance execution\n        return {\"executed\": True}\n\n    async def _rollback_execution_step(self, result: Any) -> None:\n        logger.warning(\"Rolling back governance execution\")\n",
+        "timestamp": "2026-01-04T05:35:58.374613"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "056-reduce-excessive-any-type-usage-in-python-codebase",
+        "description": "Found 373 occurrences of ': Any' type annotations across 120+ Python files, with high concentrations in integration-service (16 occurrences), acgs2-core/breakthrough (79 occurrences), and acgs2-core/enhanced_agent_bus (50+ occurrences). Excessive use of 'Any' defeats the purpose of type hints and can mask type-related bugs.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T19:36:18.320146",
+  "last_updated": "2026-01-04T05:35:58.611859"
+}

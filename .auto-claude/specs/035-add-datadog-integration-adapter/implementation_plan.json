@@ -1,0 +1,411 @@
+{
+  "feature": "Add DataDog Integration Adapter",
+  "description": "Implement a DataDogAdapter following the BaseIntegration pattern to send governance events to DataDog's Log Management API. Uses existing adapter infrastructure including retry logic, credential management, and event formatting.",
+  "created_at": "2026-01-03T21:27:49.863Z",
+  "updated_at": "2026-01-07T10:56:57.674Z",
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "workflow_type": "development",
+  "services_involved": [
+    "integration-service"
+  ],
+  "spec_file": "spec.md",
+  "phases": [
+    {
+      "phase_id": "phase_1",
+      "phase_name": "Research & Design",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "title": "Research DataDog Logs API",
+          "description": "Study DataDog Logs API documentation to understand authentication, endpoint structure, request/response format, rate limits, and error codes",
+          "status": "not_started",
+          "dependencies": [],
+          "estimated_time": "30 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "1.2",
+          "title": "Analyze existing adapters",
+          "description": "Review Splunk, Sentinel, Jira, and ServiceNow adapters to understand implementation patterns, error handling, and testing approaches",
+          "status": "not_started",
+          "dependencies": [],
+          "estimated_time": "20 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "1.3",
+          "title": "Design DataDog adapter interface",
+          "description": "Design DataDogCredentials model and plan adapter implementation including authentication method, event formatting, and error handling",
+          "status": "not_started",
+          "dependencies": [
+            "1.1",
+            "1.2"
+          ],
+          "estimated_time": "15 minutes",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_2",
+      "phase_name": "Core Adapter Implementation",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "title": "Create datadog_adapter.py file",
+          "description": "Create integration-service/src/integrations/datadog_adapter.py with module docstring and imports from base",
+          "status": "not_started",
+          "dependencies": [
+            "1.3"
+          ],
+          "estimated_time": "10 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.2",
+          "title": "Implement DataDogCredentials class",
+          "description": "Create DataDogCredentials model with fields for API key, site (US/EU), service name, tags, and validation logic",
+          "status": "not_started",
+          "dependencies": [
+            "2.1"
+          ],
+          "estimated_time": "30 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.3",
+          "title": "Implement DataDogAdapter skeleton",
+          "description": "Create DataDogAdapter class extending BaseIntegration with constructor and helper methods",
+          "status": "not_started",
+          "dependencies": [
+            "2.2"
+          ],
+          "estimated_time": "20 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.4",
+          "title": "Implement _do_authenticate method",
+          "description": "Implement authentication by validating API key with DataDog validate endpoint",
+          "status": "not_started",
+          "dependencies": [
+            "2.3"
+          ],
+          "estimated_time": "40 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.5",
+          "title": "Implement _do_validate method",
+          "description": "Implement configuration validation by sending a test log entry and verifying acceptance",
+          "status": "not_started",
+          "dependencies": [
+            "2.4"
+          ],
+          "estimated_time": "40 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.6",
+          "title": "Implement _format_event_for_datadog method",
+          "description": "Create event formatting method that converts IntegrationEvent to DataDog log format with proper field mapping",
+          "status": "not_started",
+          "dependencies": [
+            "2.3"
+          ],
+          "estimated_time": "45 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.7",
+          "title": "Implement _do_send_event method",
+          "description": "Implement event delivery to DataDog Logs API with proper error handling, rate limit detection, and retry logic",
+          "status": "not_started",
+          "dependencies": [
+            "2.6"
+          ],
+          "estimated_time": "50 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.8",
+          "title": "Implement _do_test_connection method",
+          "description": "Implement lightweight connection test to verify DataDog API is reachable",
+          "status": "not_started",
+          "dependencies": [
+            "2.4"
+          ],
+          "estimated_time": "30 minutes",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_3",
+      "phase_name": "Enhanced Features",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "title": "Add severity mapping",
+          "description": "Implement severity mapping from EventSeverity to DataDog log levels (error, warn, info, debug)",
+          "status": "not_started",
+          "dependencies": [
+            "2.6"
+          ],
+          "estimated_time": "15 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.2",
+          "title": "Add batch event support",
+          "description": "Implement send_events_batch method for efficient bulk event submission to DataDog",
+          "status": "not_started",
+          "dependencies": [
+            "2.7"
+          ],
+          "estimated_time": "45 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.3",
+          "title": "Add DataDog-specific error handling",
+          "description": "Implement detailed error handling for DataDog-specific error codes and API responses",
+          "status": "not_started",
+          "dependencies": [
+            "2.7"
+          ],
+          "estimated_time": "30 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.4",
+          "title": "Add comprehensive logging",
+          "description": "Add debug, info, and error logging throughout the adapter for observability",
+          "status": "not_started",
+          "dependencies": [
+            "2.8"
+          ],
+          "estimated_time": "20 minutes",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_4",
+      "phase_name": "Testing",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "title": "Create test file structure",
+          "description": "Create integration-service/tests/integrations/test_datadog.py with fixtures and basic structure",
+          "status": "not_started",
+          "dependencies": [
+            "2.8"
+          ],
+          "estimated_time": "15 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.2",
+          "title": "Write credentials validation tests",
+          "description": "Test DataDogCredentials validation including valid/invalid API keys, site selection, and field validation",
+          "status": "not_started",
+          "dependencies": [
+            "4.1"
+          ],
+          "estimated_time": "30 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.3",
+          "title": "Write authentication tests",
+          "description": "Test authentication flow including success, invalid API key, network errors, and timeout scenarios",
+          "status": "not_started",
+          "dependencies": [
+            "4.2"
+          ],
+          "estimated_time": "40 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.4",
+          "title": "Write event formatting tests",
+          "description": "Test event formatting ensures proper field mapping, severity conversion, and metadata handling",
+          "status": "not_started",
+          "dependencies": [
+            "4.3"
+          ],
+          "estimated_time": "35 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.5",
+          "title": "Write event delivery tests",
+          "description": "Test event delivery including success, rate limiting, authentication failures, and network errors",
+          "status": "not_started",
+          "dependencies": [
+            "4.4"
+          ],
+          "estimated_time": "45 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.6",
+          "title": "Write batch delivery tests",
+          "description": "Test batch event submission for multiple events with success and failure scenarios",
+          "status": "not_started",
+          "dependencies": [
+            "4.5"
+          ],
+          "estimated_time": "35 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.7",
+          "title": "Write connection test cases",
+          "description": "Test connection testing functionality for various network and availability scenarios",
+          "status": "not_started",
+          "dependencies": [
+            "4.6"
+          ],
+          "estimated_time": "25 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.8",
+          "title": "Run test suite and verify coverage",
+          "description": "Run pytest with coverage reporting and ensure >90% code coverage for the adapter",
+          "status": "not_started",
+          "dependencies": [
+            "4.7"
+          ],
+          "estimated_time": "20 minutes",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_5",
+      "phase_name": "Integration & Documentation",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "title": "Update __init__.py exports",
+          "description": "Add DataDogAdapter, DataDogCredentials, and DataDogSite to integration-service/src/integrations/__init__.py",
+          "status": "not_started",
+          "dependencies": [
+            "3.4"
+          ],
+          "estimated_time": "10 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.2",
+          "title": "Add docstrings and type hints",
+          "description": "Ensure all methods have comprehensive docstrings and proper type annotations",
+          "status": "not_started",
+          "dependencies": [
+            "5.1"
+          ],
+          "estimated_time": "25 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.3",
+          "title": "Add usage examples",
+          "description": "Add usage examples in module docstring showing typical DataDog adapter setup and usage",
+          "status": "not_started",
+          "dependencies": [
+            "5.2"
+          ],
+          "estimated_time": "15 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.4",
+          "title": "Run code quality checks",
+          "description": "Run ruff, black, and mypy to ensure code quality and formatting standards",
+          "status": "not_started",
+          "dependencies": [
+            "5.3"
+          ],
+          "estimated_time": "15 minutes",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_6",
+      "phase_name": "QA & Validation",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "6.1",
+          "title": "Manual integration testing",
+          "description": "Manually test the adapter with a real or mocked DataDog account to verify end-to-end functionality",
+          "status": "not_started",
+          "dependencies": [
+            "5.4"
+          ],
+          "estimated_time": "30 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.2",
+          "title": "Verify error handling",
+          "description": "Test various error scenarios to ensure graceful degradation and proper error messages",
+          "status": "not_started",
+          "dependencies": [
+            "6.1"
+          ],
+          "estimated_time": "20 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.3",
+          "title": "Performance testing",
+          "description": "Test adapter performance with various batch sizes and event rates",
+          "status": "not_started",
+          "dependencies": [
+            "6.2"
+          ],
+          "estimated_time": "25 minutes",
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.4",
+          "title": "Final review and cleanup",
+          "description": "Review all code, remove debug statements, ensure consistency with other adapters",
+          "status": "not_started",
+          "dependencies": [
+            "6.3"
+          ],
+          "estimated_time": "20 minutes",
+          "notes": ""
+        }
+      ]
+    }
+  ],
+  "total_estimated_time": "12 hours",
+  "completion_percentage": 0,
+  "qa_status": {
+    "status": "pending",
+    "tests_passed": "",
+    "issues": ""
+  },
+  "final_acceptance": [
+    "DataDog adapter successfully sends events to DataDog Logs API",
+    "All tests pass with >90% code coverage",
+    "Code passes ruff, black, and mypy checks",
+    "Adapter follows existing patterns from Splunk, Sentinel, Jira, ServiceNow",
+    "Comprehensive error handling for authentication, rate limits, and network failures",
+    "Batch event submission works efficiently"
+  ],
+  "recoveryNote": "Task recovered from stuck state at 2026-01-07T10:56:57.674Z"
+}

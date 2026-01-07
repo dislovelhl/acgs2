@@ -1,0 +1,12 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "ui_ux_improvements",
+  "ideaId": "uiux-001",
+  "rationale": "Keyboard users and screen reader users must tab through the entire header before reaching the main content. A skip link is a fundamental accessibility requirement that improves navigation efficiency for users who rely on keyboard navigation.",
+  "category": "ui_ux",
+  "uiuxCategory": "accessibility",
+  "affectedFiles": [
+    "App.tsx"
+  ],
+  "problemSolved": "The App.tsx component has a header and main section but no mechanism for keyboard users to skip the header. Users must tab through all header elements before reaching the dashboard widgets."
+}

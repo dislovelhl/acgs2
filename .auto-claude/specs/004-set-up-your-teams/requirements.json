@@ -1,0 +1,4 @@
+{
+  "task_description": "# Set up your teams\n\n**Linear Issue:** [XN-2](https://linear.app/xn-gmqr38alogxt2a/issue/XN-2/set-up-your-teams)\n**Priority:** No priority\n**Status:** Todo\n\n\n## Description\n\nThis workspace is a container for your organization’s work. \n\n* [Learn more about Workspaces](https://linear.app/docs/workspaces)\n  How to configure settings and workflows \n\nTeams are how you organize people and work in Linear.\n\n* [Learn about Teams](https://linear.app/docs/teams)\n  How to structure teams and configure workflows\n\nTeams are made of members with defined roles (Admin, Member, Guest).\n\n* [Learn more about Members](https://linear.app/docs/invite-members)\n  Add your team and assign roles\n\n---\n\nReady to add your team? Invite via CSV or a unique link in [settings](http://linear.app/settings/members).\n",
+  "workflow_type": "feature"
+}

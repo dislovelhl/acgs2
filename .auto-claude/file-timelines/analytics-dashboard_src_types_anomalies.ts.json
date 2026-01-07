@@ -1,0 +1,28 @@
+{
+  "file_path": "analytics-dashboard/src/types/anomalies.ts",
+  "main_branch_history": [],
+  "task_views": {
+    "033-add-useanomalies-hook-to-analytics-dashboard": {
+      "task_id": "033-add-useanomalies-hook-to-analytics-dashboard",
+      "branch_point": {
+        "commit_hash": "4a99fe22e8e0087919301b1aa185d4e2c6da716c",
+        "content": "",
+        "timestamp": "2026-01-03T18:32:21.773146"
+      },
+      "worktree_state": {
+        "content": "/**\n * Anomaly Detection Type Definitions\n *\n * Type definitions for anomaly detection data structures used across\n * the analytics dashboard for detecting unusual patterns in governance metrics.\n */\n\n/**\n * Anomaly data structure from the API\n *\n * Represents a single detected anomaly with severity scoring,\n * affected metrics, and descriptive information.\n */\nexport interface AnomalyItem {\n  /** Unique identifier for the anomaly */\n  anomaly_id: string;\n\n  /** ISO timestamp when the anomaly was detected */\n  timestamp: string;\n\n  /** Severity score as a decimal between 0 and 1 */\n  severity_score: number;\n\n  /** Human-readable severity classification */\n  severity_label: \"critical\" | \"high\" | \"medium\" | \"low\";\n\n  /** Metrics that were affected by this anomaly with their values */\n  affected_metrics: Record<string, number | string>;\n\n  /** Detailed description of the anomaly */\n  description: string;\n}\n\n/**\n * Anomalies response from the API\n *\n * Contains the complete response from the anomaly detection endpoint\n * including analysis metadata and detected anomalies.\n */\nexport interface AnomaliesResponse {\n  /** ISO timestamp when the analysis was performed */\n  analysis_timestamp: string;\n\n  /** Total number of records that were analyzed */\n  total_records_analyzed: number;\n\n  /** Count of anomalies detected in the analysis */\n  anomalies_detected: number;\n\n  /** Contamination rate used by the anomaly detection model */\n  contamination_rate: number;\n\n  /** Array of detected anomalies */\n  anomalies: AnomalyItem[];\n\n  /** Whether the anomaly detection model has been trained */\n  model_trained: boolean;\n}\n",
+        "last_modified": "2026-01-03T18:36:09.856417"
+      },
+      "task_intent": {
+        "title": "033-add-useanomalies-hook-to-analytics-dashboard",
+        "description": "Extract the anomaly fetching logic from AnomalyWidget.tsx into a reusable useAnomalies hook following the existing UseDataResult<T> pattern established in acgs2-observability/monitoring/dashboard/src/hooks/useDashboard.ts. This enables anomaly data to be consumed by other components without duplicating fetch logic.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T18:32:21.794828",
+  "last_updated": "2026-01-03T18:32:21.797139"
+}

@@ -1,0 +1,8 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "documentation_gaps",
+  "ideaId": "doc-003",
+  "rationale": "Enterprise deployments frequently encounter configuration errors, network issues, and integration failures. The current documentation lacks troubleshooting guidance, making it difficult for operators to diagnose and resolve issues without reading source code. The scattered TODO/FIXME comments indicate known issues that lack documentation.",
+  "category": "documentation",
+  "priority": "high"
+}

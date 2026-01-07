@@ -1,0 +1,16 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "code_improvements",
+  "ideaId": "ci-005",
+  "rationale": "Current adapters send events one at a time via send_event(). Splunk HEC, Sentinel DCR API, and DataDog all support batch ingestion. The BaseIntegration pattern already has metrics tracking (_events_sent, _events_failed) that can be extended for batch operations.",
+  "category": "feature",
+  "estimatedEffort": "large",
+  "complexity": "large",
+  "affectedFiles": [
+    "integration-service/src/integrations/base.py",
+    "integration-service/src/integrations/splunk_adapter.py",
+    "integration-service/src/integrations/sentinel_adapter.py",
+    "integration-service/src/integrations/datadog_adapter.py",
+    "integration-service/tests/integrations/test_base_batch.py"
+  ]
+}

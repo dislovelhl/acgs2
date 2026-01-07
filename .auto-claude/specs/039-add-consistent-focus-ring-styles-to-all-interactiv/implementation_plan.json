@@ -1,0 +1,356 @@
+{
+  "feature": "Add Consistent Focus Ring Styles to All Interactive Elements",
+  "description": "Apply visible and consistent focus indicator styles to all buttons in the dashboard widgets, not just the query input field.",
+  "created_at": "2026-01-03T21:27:50.475Z",
+  "updated_at": "2026-01-04T10:39:09.637Z",
+  "status": "done",
+  "planStatus": "completed",
+  "spec_file": "spec.md",
+  "workflow_type": "development",
+  "services_involved": [],
+  "phases": [
+    {
+      "phase_id": "phase_1",
+      "title": "Analysis and Pattern Definition",
+      "description": "Analyze existing focus styles and define a consistent pattern to be applied across all interactive elements",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "title": "Document current focus style patterns",
+          "description": "Review and document the existing focus styles used in the codebase (e.g., focus:ring-1 vs focus:ring-2, color choices, etc.)",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/QueryInterface.tsx",
+            "acgs2-observability/monitoring/dashboard/src/components/Dashboard.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [],
+          "notes": null
+        },
+        {
+          "subtask_id": "1.2",
+          "title": "Define consistent focus ring pattern",
+          "description": "Establish a consistent focus ring pattern to use across all interactive elements. Pattern should include: focus:outline-none, focus:ring-2, appropriate color (blue/indigo), and optional ring-offset for certain contexts",
+          "status": "pending",
+          "files_involved": [],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.1"
+          ],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_2",
+      "title": "Apply Focus Styles to Analytics Dashboard Widgets",
+      "description": "Add consistent focus ring styles to all buttons and interactive elements in analytics dashboard widgets",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "title": "Add focus styles to InsightWidget buttons",
+          "description": "Add focus ring styles to refresh buttons and retry buttons in InsightWidget component",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/widgets/InsightWidget.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "2.2",
+          "title": "Add focus styles to PredictionWidget buttons",
+          "description": "Add focus ring styles to refresh buttons in PredictionWidget and all its POC variants (visx, uplot, lightweight-charts)",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/widgets/PredictionWidget.tsx",
+            "analytics-dashboard/src/components/widgets/PredictionWidget.visx.poc.tsx",
+            "analytics-dashboard/src/components/widgets/PredictionWidget.uplot.poc.tsx",
+            "analytics-dashboard/src/components/widgets/PredictionWidget.lightweight-charts.poc.tsx"
+          ],
+          "estimated_complexity": "medium",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "2.3",
+          "title": "Add focus styles to AnomalyWidget buttons",
+          "description": "Add focus ring styles to refresh buttons, retry buttons, and severity filter buttons in AnomalyWidget",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/widgets/AnomalyWidget.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "2.4",
+          "title": "Add focus styles to ComplianceWidget buttons",
+          "description": "Add focus ring styles to refresh buttons, retry buttons, and severity filter buttons in ComplianceWidget",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/widgets/ComplianceWidget.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_3",
+      "title": "Apply Focus Styles to Query Interface and Dashboard Controls",
+      "description": "Add consistent focus ring styles to query interface buttons and dashboard layout controls",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "title": "Add focus styles to QueryInterface buttons",
+          "description": "Add focus ring styles to clear button, history toggle button, history item buttons, sample query buttons, try again button, and ask another button in QueryInterface",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/QueryInterface.tsx"
+          ],
+          "estimated_complexity": "medium",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "3.2",
+          "title": "Add focus styles to DashboardGrid controls",
+          "description": "Add focus ring styles to lock/unlock layout button and reset layout button in DashboardGrid",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/layouts/DashboardGrid.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "3.3",
+          "title": "Add focus styles to ImportDataPage button",
+          "description": "Add focus ring styles to help panel button in ImportDataPage",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/pages/ImportDataPage.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_4",
+      "title": "Apply Focus Styles to Import Wizard Components",
+      "description": "Add consistent focus ring styles to all buttons in import wizard components",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "title": "Add focus styles to ImportWizard navigation buttons",
+          "description": "Add focus ring styles to back, cancel, next, and close buttons in ImportWizard",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/ImportWizard/ImportWizard.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "4.2",
+          "title": "Add focus styles to SourceSelectionStep buttons",
+          "description": "Add focus ring styles to tool selection buttons in SourceSelectionStep",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/ImportWizard/SourceSelectionStep.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "4.3",
+          "title": "Add focus styles to ConfigurationStep buttons",
+          "description": "Add focus ring styles to show/hide password buttons and test connection button in ConfigurationStep",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/ImportWizard/ConfigurationStep.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "4.4",
+          "title": "Add focus styles to PreviewStep buttons",
+          "description": "Add focus ring styles to retry button, refresh button, and expandable row buttons in PreviewStep",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/ImportWizard/PreviewStep.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "4.5",
+          "title": "Add focus styles to ProgressStep and HelpPanel buttons",
+          "description": "Add focus ring styles to retry button in ProgressStep and close button in HelpPanel",
+          "status": "pending",
+          "files_involved": [
+            "analytics-dashboard/src/components/ImportWizard/ProgressStep.tsx",
+            "analytics-dashboard/src/components/ImportWizard/HelpPanel.tsx"
+          ],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "1.2"
+          ],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_5",
+      "title": "Testing and Verification",
+      "description": "Test keyboard navigation and verify all interactive elements have visible focus indicators",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "title": "Test keyboard navigation in analytics dashboard",
+          "description": "Use Tab key to navigate through all interactive elements in analytics dashboard and verify focus rings are visible and consistent",
+          "status": "pending",
+          "files_involved": [],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "2.1",
+            "2.2",
+            "2.3",
+            "2.4",
+            "3.1",
+            "3.2",
+            "3.3"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "5.2",
+          "title": "Test keyboard navigation in import wizard",
+          "description": "Use Tab key to navigate through all steps of import wizard and verify focus rings are visible and consistent",
+          "status": "pending",
+          "files_involved": [],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "4.1",
+            "4.2",
+            "4.3",
+            "4.4",
+            "4.5"
+          ],
+          "notes": null
+        },
+        {
+          "subtask_id": "5.3",
+          "title": "Visual regression check",
+          "description": "Verify that focus ring styles don't negatively impact the visual design and maintain consistency across all components",
+          "status": "pending",
+          "files_involved": [],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "5.1",
+            "5.2"
+          ],
+          "notes": null
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_6",
+      "title": "Documentation and Cleanup",
+      "description": "Document the focus ring pattern for future reference",
+      "status": "pending",
+      "subtasks": [
+        {
+          "subtask_id": "6.1",
+          "title": "Create focus style documentation",
+          "description": "Document the standard focus ring pattern to be used for future components in a README or style guide",
+          "status": "pending",
+          "files_involved": [],
+          "estimated_complexity": "low",
+          "dependencies": [
+            "5.3"
+          ],
+          "notes": null
+        }
+      ]
+    }
+  ],
+  "final_acceptance": [
+    "All interactive elements (buttons, links) have visible focus indicators",
+    "Focus styles are consistent across all components using the defined pattern",
+    "Keyboard navigation works smoothly with Tab key through all interactive elements",
+    "Focus rings are clearly visible with sufficient contrast",
+    "No negative visual impact on the existing design",
+    "Focus styles follow accessibility best practices"
+  ],
+  "qa": {
+    "status": "pending",
+    "test_results": null,
+    "issues": null
+  },
+  "metadata": {
+    "focus_style_pattern": {
+      "standard": "focus:outline-none focus:ring-2 focus:ring-blue-500",
+      "with_offset": "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+      "indigo_variant": "focus:outline-none focus:ring-2 focus:ring-indigo-500",
+      "notes": "Use focus:outline-none to remove default outline, focus:ring-2 for consistent ring width, and appropriate color based on context. Add ring-offset-2 for buttons with backgrounds to improve visibility."
+    },
+    "affected_components": [
+      "InsightWidget",
+      "PredictionWidget (all variants)",
+      "AnomalyWidget",
+      "ComplianceWidget",
+      "QueryInterface",
+      "DashboardGrid",
+      "ImportWizard",
+      "SourceSelectionStep",
+      "ConfigurationStep",
+      "PreviewStep",
+      "ProgressStep",
+      "HelpPanel",
+      "ImportDataPage"
+    ],
+    "total_subtasks": 22,
+    "estimated_files_to_modify": 16
+  },
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T10:36:31.088Z"
+}

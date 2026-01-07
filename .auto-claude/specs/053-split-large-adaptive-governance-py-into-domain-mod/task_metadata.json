@@ -1,0 +1,9 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "code_quality",
+  "ideaId": "cq-001",
+  "rationale": "Very large files increase cognitive load, make code reviews harder, and often lead to merge conflicts. Smaller, focused modules are easier to test, maintain, and reason about. The file currently contains at least 5 major classes that could be separate modules.",
+  "category": "refactoring",
+  "codeQualitySeverity": "major",
+  "priority": "high"
+}

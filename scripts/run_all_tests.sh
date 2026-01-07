@@ -43,6 +43,9 @@ run_component_tests() {
         return
     fi
 
+    # Set PYTHONPATH to include src directory for absolute imports
+    export PYTHONPATH="$PROJECT_ROOT/src:$PYTHONPATH"
+
     if (cd "$full_path" && python -m pytest "$test_path" -q --tb=line 2>/dev/null); then
         echo -e "${GREEN}✅ ${component_name}: PASSED${NC}"
         PASSED_COMPONENTS=$((PASSED_COMPONENTS + 1))

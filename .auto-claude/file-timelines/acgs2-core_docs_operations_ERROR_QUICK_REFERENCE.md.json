@@ -1,0 +1,25 @@
+{
+  "file_path": "acgs2-core/docs/operations/ERROR_QUICK_REFERENCE.md",
+  "main_branch_history": [],
+  "task_views": {
+    "060-document-error-codes-and-troubleshooting-for-commo": {
+      "task_id": "060-document-error-codes-and-troubleshooting-for-commo",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "",
+        "timestamp": "2026-01-04T05:35:51.134105"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "060-document-error-codes-and-troubleshooting-for-commo",
+        "description": "The codebase has 13 TODO/FIXME comments across critical files including webhooks.py, approval_chain_engine.py, and config_validator.py. Additionally, there's no centralized documentation for error codes, failure modes, or troubleshooting guides. Users encountering errors have no reference for resolution.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T19:36:08.585384",
+  "last_updated": "2026-01-04T05:35:51.229388"
+}

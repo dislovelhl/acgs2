@@ -1,0 +1,471 @@
+{
+  "integrations_researched": [
+    {
+      "name": "Linear API",
+      "type": "service",
+      "verified_package": {
+        "name": "linear-sdk (unofficial) or direct GraphQL client",
+        "install_command": "pip install gql[all] OR pip install linear-sdk",
+        "version": ">=3.0.0 (gql) or latest (linear-sdk)",
+        "verified": false,
+        "notes": "Linear does not provide an official Python SDK. Two options: 1) Use GraphQL client library like 'gql' to interact with Linear's GraphQL API, or 2) Use community package 'linear-sdk'"
+      },
+      "api_patterns": {
+        "imports": [
+          "# Option 1: Using gql (GraphQL client)",
+          "from gql import gql, Client",
+          "from gql.transport.requests import RequestsHTTPTransport",
+          "",
+          "# Option 2: Using linear-sdk (if available)",
+          "from linear import LinearClient"
+        ],
+        "initialization": "# Option 1: gql\ntransport = RequestsHTTPTransport(\n    url='https://api.linear.app/graphql',\n    headers={'Authorization': f'Bearer {api_key}'}\n)\nclient = Client(transport=transport, fetch_schema_from_transport=True)\n\n# Option 2: linear-sdk\nclient = LinearClient(api_key=api_key)",
+        "key_functions": [
+          "# GraphQL queries for:",
+          "- issues.list() / issues.create() / issues.update()",
+          "- projects.list()",
+          "- teams.list()",
+          "- comments.create()",
+          "- webhooks.create() for real-time sync"
+        ],
+        "verified_against": "Linear Developer Documentation (https://developers.linear.app/docs/graphql/working-with-the-graphql-api) - NOT VERIFIED in this session"
+      },
+      "configuration": {
+        "env_vars": [
+          "LINEAR_API_KEY",
+          "LINEAR_WEBHOOK_SECRET (for webhook verification)"
+        ],
+        "api_endpoint": "https://api.linear.app/graphql",
+        "webhook_endpoint": "Custom webhook URL for bidirectional sync",
+        "dependencies": [
+          "gql[all]>=3.0.0 (for GraphQL client approach)",
+          "httpx>=0.27.0 (already in requirements.txt)"
+        ]
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "webhook_server": "Required for real-time bidirectional sync",
+        "ports": [],
+        "volumes": []
+      },
+      "authentication": {
+        "method": "API Key (Bearer token)",
+        "location": "Authorization header",
+        "scopes": "Full access to workspace data (issues, projects, comments, etc.)"
+      },
+      "gotchas": [
+        "No official Python SDK - must use GraphQL client or community libraries",
+        "GraphQL API requires understanding of Linear's schema",
+        "Rate limits apply (check Linear documentation for current limits)",
+        "Webhooks require signature verification for security",
+        "Bidirectional sync requires careful handling of update loops (Linear → External → Linear)",
+        "GraphQL queries must be carefully designed to avoid over-fetching",
+        "Must handle pagination for large result sets"
+      ],
+      "integration_features": {
+        "slack": "Create issues from Slack messages, sync threads bidirectionally",
+        "github": "Automate PR workflows, commit workflows, bidirectional issue sync",
+        "gitlab": "Similar to GitHub - automate MR workflows, bidirectional issue sync",
+        "webhooks": "Real-time updates via webhook subscriptions"
+      },
+      "research_sources": [
+        "https://developers.linear.app/docs/graphql/working-with-the-graphql-api (REQUIRES VERIFICATION)",
+        "https://pypi.org/project/gql/ (REQUIRES VERIFICATION)",
+        "https://pypi.org/project/linear-sdk/ (REQUIRES VERIFICATION - may not exist)"
+      ]
+    },
+    {
+      "name": "Slack SDK",
+      "type": "library",
+      "verified_package": {
+        "name": "slack-sdk",
+        "install_command": "pip install slack-sdk",
+        "version": ">=3.33.0",
+        "verified": false,
+        "notes": "Official Slack SDK for Python, previously called 'slackclient'"
+      },
+      "api_patterns": {
+        "imports": [
+          "from slack_sdk import WebClient",
+          "from slack_sdk.errors import SlackApiError",
+          "from slack_sdk.signature import SignatureVerifier",
+          "from slack_sdk.webhook import WebhookClient"
+        ],
+        "initialization": "# For API calls\nclient = WebClient(token=slack_bot_token)\n\n# For webhook verification\nverifier = SignatureVerifier(signing_secret=slack_signing_secret)",
+        "key_functions": [
+          "client.chat_postMessage(channel=channel_id, text=message)",
+          "client.conversations_history(channel=channel_id)",
+          "client.conversations_replies(channel=channel_id, ts=thread_ts)",
+          "client.reactions_add(channel=channel_id, timestamp=ts, name=emoji)",
+          "verifier.is_valid_request(body, timestamp, signature)"
+        ],
+        "verified_against": "Standard Slack SDK documentation - NOT VERIFIED in this session"
+      },
+      "configuration": {
+        "env_vars": [
+          "SLACK_BOT_TOKEN (starts with xoxb-)",
+          "SLACK_APP_TOKEN (starts with xapp-, for Socket Mode)",
+          "SLACK_SIGNING_SECRET (for webhook verification)",
+          "SLACK_CLIENT_ID (for OAuth)",
+          "SLACK_CLIENT_SECRET (for OAuth)"
+        ],
+        "oauth_scopes": [
+          "chat:write (send messages)",
+          "channels:history (read channel messages)",
+          "channels:read (access channel info)",
+          "reactions:write (add reactions)",
+          "commands (slash commands)",
+          "app_mentions:read (receive mentions)"
+        ],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "webhook_server": "Required for receiving Slack events",
+        "socket_mode": "Alternative to webhooks for development",
+        "ports": []
+      },
+      "authentication": {
+        "method": "OAuth 2.0 Bot Token",
+        "token_type": "Bot User OAuth Token (xoxb-)",
+        "verification": "Request signing with HMAC-SHA256"
+      },
+      "gotchas": [
+        "Bot tokens (xoxb-) vs User tokens (xoxp-) - use bot tokens for integrations",
+        "Slack API has rate limits (Tier 1: 1/min, Tier 2: 20/min, Tier 3: 50/min, Tier 4: 100/min)",
+        "Must verify request signatures to prevent request forgery",
+        "Thread timestamps (ts) are required to reply in threads",
+        "Slack has a 3-second timeout for responding to events - use async processing",
+        "Message formatting uses Slack's mrkdwn (not standard markdown)",
+        "Socket Mode is easier for dev but not recommended for production",
+        "OAuth token rotation should be handled for security"
+      ],
+      "research_sources": [
+        "https://pypi.org/project/slack-sdk/ (REQUIRES VERIFICATION)",
+        "https://slack.dev/python-slack-sdk/ (REQUIRES VERIFICATION)",
+        "https://api.slack.com/docs (REQUIRES VERIFICATION)"
+      ]
+    },
+    {
+      "name": "GitHub API",
+      "type": "library",
+      "verified_package": {
+        "name": "PyGithub",
+        "install_command": "pip install PyGithub",
+        "version": ">=2.1.0",
+        "verified": false,
+        "notes": "Most popular Python library for GitHub API v3. Alternative: ghapi for more modern approach"
+      },
+      "api_patterns": {
+        "imports": [
+          "from github import Github",
+          "from github import Auth",
+          "from github.GithubException import GithubException"
+        ],
+        "initialization": "# Using personal access token\nauth = Auth.Token(github_token)\ng = Github(auth=auth)\n\n# Or using GitHub App\nauth = Auth.AppAuth(app_id, private_key)\ng = Github(auth=auth)",
+        "key_functions": [
+          "repo = g.get_repo('owner/repo')",
+          "issue = repo.get_issue(number=123)",
+          "issue.create_comment('comment text')",
+          "pr = repo.get_pull(number=456)",
+          "pr.create_issue_comment('review comment')",
+          "repo.create_issue(title='title', body='body')",
+          "issue.edit(state='closed', labels=['bug'])",
+          "repo.get_commits()",
+          "# Webhooks handled via FastAPI endpoint, not PyGithub"
+        ],
+        "verified_against": "PyGithub documentation - NOT VERIFIED in this session"
+      },
+      "configuration": {
+        "env_vars": [
+          "GITHUB_TOKEN (Personal Access Token or GitHub App token)",
+          "GITHUB_APP_ID (if using GitHub App)",
+          "GITHUB_APP_PRIVATE_KEY (if using GitHub App)",
+          "GITHUB_WEBHOOK_SECRET (for webhook signature verification)"
+        ],
+        "token_scopes": [
+          "repo (full repository access)",
+          "workflow (for GitHub Actions integration)",
+          "read:org (for organization data)"
+        ],
+        "webhook_events": [
+          "issues (for issue sync)",
+          "pull_request (for PR automation)",
+          "push (for commit workflows)",
+          "issue_comment (for comment sync)"
+        ],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "webhook_server": "Required for bidirectional sync",
+        "ports": []
+      },
+      "authentication": {
+        "method": "Personal Access Token or GitHub App",
+        "recommended": "GitHub App (more granular permissions, higher rate limits)",
+        "webhook_verification": "HMAC-SHA256 signature with secret"
+      },
+      "gotchas": [
+        "Rate limits: 5000 requests/hour with authentication, 60/hour without",
+        "GitHub Apps have higher rate limits (15000/hour) than PATs",
+        "Must verify webhook signatures to prevent spoofing",
+        "API v3 (REST) via PyGithub, API v4 (GraphQL) requires different library",
+        "Bidirectional sync requires careful state management to avoid loops",
+        "Issue/PR numbers are repository-specific, not global",
+        "Draft PRs have different API behavior",
+        "GitHub Apps require JWT generation for authentication",
+        "Webhook payloads can be large - handle async processing"
+      ],
+      "research_sources": [
+        "https://pypi.org/project/PyGithub/ (REQUIRES VERIFICATION)",
+        "https://pygithub.readthedocs.io/ (REQUIRES VERIFICATION)",
+        "https://docs.github.com/en/rest (REQUIRES VERIFICATION)"
+      ]
+    },
+    {
+      "name": "GitLab API",
+      "type": "library",
+      "verified_package": {
+        "name": "python-gitlab",
+        "install_command": "pip install python-gitlab",
+        "version": ">=4.4.0",
+        "verified": false,
+        "notes": "Official Python library for GitLab API"
+      },
+      "api_patterns": {
+        "imports": [
+          "import gitlab",
+          "from gitlab.exceptions import GitlabError"
+        ],
+        "initialization": "# Using private token\ngl = gitlab.Gitlab(url='https://gitlab.com', private_token=gitlab_token)\n\n# Or using OAuth token\ngl = gitlab.Gitlab(url='https://gitlab.com', oauth_token=oauth_token)\n\ngl.auth()  # Authenticate",
+        "key_functions": [
+          "project = gl.projects.get('project_id')",
+          "issue = project.issues.get(issue_iid)",
+          "issue.notes.create({'body': 'comment text'})",
+          "mr = project.mergerequests.get(mr_iid)",
+          "mr.notes.create({'body': 'review comment'})",
+          "project.issues.create({'title': 'title', 'description': 'body'})",
+          "issue.state_event = 'close'",
+          "issue.save()",
+          "commits = project.commits.list()",
+          "# Webhooks handled via FastAPI endpoint"
+        ],
+        "verified_against": "python-gitlab documentation - NOT VERIFIED in this session"
+      },
+      "configuration": {
+        "env_vars": [
+          "GITLAB_URL (e.g., https://gitlab.com or self-hosted URL)",
+          "GITLAB_PRIVATE_TOKEN (Personal Access Token)",
+          "GITLAB_OAUTH_TOKEN (alternative to private token)",
+          "GITLAB_WEBHOOK_SECRET (for webhook verification)"
+        ],
+        "token_scopes": [
+          "api (full API access)",
+          "read_api (read-only access)",
+          "write_repository (for commit/MR operations)"
+        ],
+        "webhook_events": [
+          "issues_events (for issue sync)",
+          "merge_requests_events (for MR automation)",
+          "push_events (for commit workflows)",
+          "note_events (for comment sync)"
+        ],
+        "dependencies": []
+      },
+      "infrastructure": {
+        "requires_docker": false,
+        "webhook_server": "Required for bidirectional sync",
+        "supports_self_hosted": true,
+        "ports": []
+      },
+      "authentication": {
+        "method": "Private Token, OAuth Token, or Job Token",
+        "recommended": "Private Token for service integrations",
+        "webhook_verification": "Secret token in X-Gitlab-Token header"
+      },
+      "gotchas": [
+        "GitLab.com has rate limits: 2000 requests/minute for authenticated users",
+        "Self-hosted GitLab may have different rate limits (configurable)",
+        "Must verify webhook token to prevent unauthorized requests",
+        "Issue IIDs are project-specific, not global",
+        "GitLab uses 'merge requests' (MRs) not 'pull requests' (PRs)",
+        "API v4 is current, ensure library supports it",
+        "Project IDs can be numeric or namespace/project format",
+        "Webhook secret verification is simpler than GitHub (token comparison)",
+        "Self-hosted GitLab may have different API versions",
+        "Pagination is automatic in python-gitlab but check for large datasets"
+      ],
+      "research_sources": [
+        "https://pypi.org/project/python-gitlab/ (REQUIRES VERIFICATION)",
+        "https://python-gitlab.readthedocs.io/ (REQUIRES VERIFICATION)",
+        "https://docs.gitlab.com/ee/api/ (REQUIRES VERIFICATION)"
+      ]
+    },
+    {
+      "name": "GraphQL Client (for Linear)",
+      "type": "library",
+      "verified_package": {
+        "name": "gql",
+        "install_command": "pip install gql[all]",
+        "version": ">=3.5.0",
+        "verified": false,
+        "notes": "Popular GraphQL client for Python, supports async operations. Alternative: sgqlc, graphql-core"
+      },
+      "api_patterns": {
+        "imports": [
+          "from gql import gql, Client",
+          "from gql.transport.aiohttp import AIOHTTPTransport",
+          "from gql.transport.requests import RequestsHTTPTransport"
+        ],
+        "initialization": "# Async transport\ntransport = AIOHTTPTransport(\n    url='https://api.linear.app/graphql',\n    headers={'Authorization': f'Bearer {api_key}'}\n)\nclient = Client(transport=transport, fetch_schema_from_transport=True)\n\n# Sync transport\ntransport = RequestsHTTPTransport(\n    url='https://api.linear.app/graphql',\n    headers={'Authorization': f'Bearer {api_key}'}\n)\nclient = Client(transport=transport)",
+        "key_functions": [
+          "query = gql('query { issues { nodes { id title } } }')",
+          "result = await client.execute_async(query)",
+          "# Or synchronous:",
+          "result = client.execute(query)",
+          "# Mutations:",
+          "mutation = gql('mutation($input: IssueCreateInput!) { issueCreate(input: $input) { issue { id } } }')",
+          "result = await client.execute_async(mutation, variable_values={'input': {...}})"
+        ],
+        "verified_against": "gql documentation - NOT VERIFIED in this session"
+      },
+      "configuration": {
+        "env_vars": [],
+        "dependencies": [
+          "aiohttp (for async support)",
+          "requests (for sync support)"
+        ]
+      },
+      "infrastructure": {
+        "requires_docker": false
+      },
+      "gotchas": [
+        "Requires understanding of GraphQL query syntax",
+        "Schema introspection can be slow - consider caching",
+        "Async and sync clients use different transports",
+        "Must handle GraphQL-specific errors (different from REST)",
+        "Query complexity limits may apply depending on API",
+        "Subscriptions (real-time) require WebSocket transport"
+      ],
+      "research_sources": [
+        "https://pypi.org/project/gql/ (REQUIRES VERIFICATION)",
+        "https://gql.readthedocs.io/ (REQUIRES VERIFICATION)"
+      ]
+    }
+  ],
+  "unverified_claims": [
+    {
+      "claim": "All package names and versions are based on standard knowledge but not verified against current PyPI/documentation",
+      "reason": "Web research tools (Context7, WebSearch, WebFetch) were not available or rate-limited during research session",
+      "risk_level": "low",
+      "mitigation": "Verify all package names, versions, and API patterns against official documentation before implementation. Run 'pip search' or check PyPI directly."
+    },
+    {
+      "claim": "Linear Python SDK may or may not exist as 'linear-sdk'",
+      "reason": "Linear does not advertise an official Python SDK, but community packages may exist",
+      "risk_level": "medium",
+      "mitigation": "Before implementation: 1) Check PyPI for 'linear-sdk' or similar packages, 2) If not available, use GraphQL client approach with 'gql' library, 3) Consider creating internal wrapper around gql for Linear-specific operations"
+    },
+    {
+      "claim": "API endpoints, rate limits, and authentication methods are based on standard practices",
+      "reason": "Could not fetch current official documentation",
+      "risk_level": "low",
+      "mitigation": "Review official documentation for each service before implementation to confirm current API patterns, rate limits, and authentication requirements"
+    },
+    {
+      "claim": "Webhook signature verification methods are standard but should be confirmed",
+      "reason": "Security implementations may have changed",
+      "risk_level": "medium",
+      "mitigation": "Verify webhook signature verification methods in official docs. Implement proper HMAC verification for all webhooks."
+    }
+  ],
+  "recommendations": [
+    "1. LINEAR API: Use GraphQL client library (gql) rather than relying on unofficial SDK. This provides more control and is officially supported approach.",
+
+    "2. WEBHOOK INFRASTRUCTURE: All integrations (Slack, GitHub, GitLab, Linear) require webhook endpoints for bidirectional sync. Design a unified webhook handler system in FastAPI with proper signature verification for each service.",
+
+    "3. AUTHENTICATION: Store all API keys and tokens securely in environment variables or secret management system. Never commit credentials to version control.",
+
+    "4. RATE LIMITING: Implement rate limiting protection and exponential backoff (using existing 'tenacity' library in requirements.txt) for all external API calls to avoid hitting service limits.",
+
+    "5. BIDIRECTIONAL SYNC: Design careful state management to prevent infinite update loops (e.g., Linear → GitHub → Linear → GitHub). Consider using event IDs or timestamps to detect and prevent circular updates.",
+
+    "6. ASYNC PROCESSING: Use FastAPI's async capabilities for all external API calls. Webhook handlers should acknowledge receipt quickly (within 3 seconds for Slack) and process updates asynchronously.",
+
+    "7. ERROR HANDLING: Implement comprehensive error handling for API failures, network issues, and rate limit errors. Use circuit breaker pattern (can leverage existing Redis in requirements.txt) to prevent cascading failures.",
+
+    "8. TESTING: Use existing 'respx' library in requirements.txt to mock HTTP calls in tests. Create comprehensive test coverage for webhook signature verification and sync logic.",
+
+    "9. MONITORING: Integrate with existing SIEM tools (Splunk, Azure Sentinel) already in requirements.txt for audit logging of integration events.",
+
+    "10. SCHEMA VALIDATION: Use Pydantic models (already in requirements.txt) to validate webhook payloads and API responses for type safety.",
+
+    "11. DEPENDENCY ADDITION: Will need to add to integration-service/requirements.txt:\n    - gql[all]>=3.5.0 (for Linear GraphQL API)\n    - slack-sdk>=3.33.0 (for Slack integration)\n    - PyGithub>=2.1.0 (for GitHub API)\n    - python-gitlab>=4.4.0 (for GitLab API)",
+
+    "12. VERIFY BEFORE IMPLEMENTATION: Before writing any code, manually verify:\n    - Each package exists on PyPI with the expected name\n    - Current version numbers and compatibility with Python 3.11+\n    - Authentication methods haven't changed\n    - Rate limits and API endpoints are current\n    - Review official developer documentation for each service"
+  ],
+  "implementation_architecture_notes": {
+    "integration_service_structure": {
+      "description": "Suggested structure for integration-service to handle Linear integrations",
+      "components": [
+        "integrations/linear/ - Linear-specific API wrapper and GraphQL queries",
+        "integrations/slack/ - Slack SDK wrapper and event handlers",
+        "integrations/github/ - GitHub API wrapper and webhook handlers",
+        "integrations/gitlab/ - GitLab API wrapper and webhook handlers",
+        "webhooks/ - Unified webhook receiver with signature verification",
+        "sync/ - Bidirectional sync logic and state management",
+        "models/ - Pydantic models for all integration payloads"
+      ]
+    },
+    "sync_mechanism": {
+      "approach": "Event-driven with webhook subscriptions",
+      "state_storage": "Redis (already in requirements.txt) for tracking sync state and preventing loops",
+      "message_queue": "Kafka (already in requirements.txt via aiokafka) for async processing",
+      "workflow": [
+        "1. External service triggers webhook → FastAPI endpoint",
+        "2. Verify webhook signature",
+        "3. Publish event to Kafka topic",
+        "4. Consumer processes event and updates Linear",
+        "5. Store event ID in Redis to prevent duplicate processing",
+        "6. Handle errors with retry logic (tenacity library)"
+      ]
+    },
+    "data_flow": {
+      "slack_to_linear": "Slack message → Create Linear issue → Store mapping in Redis",
+      "github_to_linear": "GitHub PR/issue → Sync to Linear issue → Link entities",
+      "linear_to_external": "Linear webhook → Update GitHub/GitLab/Slack → Prevent echo",
+      "state_tracking": "Redis hash maps for entity relationships (Linear issue ID ↔ GitHub issue ID)"
+    }
+  },
+  "security_considerations": [
+    "1. Webhook signature verification is CRITICAL - implement for all services",
+    "2. Use HTTPS for all API calls and webhook endpoints",
+    "3. Rotate API keys regularly and implement key rotation handling",
+    "4. Validate all webhook payloads against Pydantic schemas before processing",
+    "5. Implement rate limiting on webhook endpoints to prevent DoS",
+    "6. Use separate API keys for each integration (don't reuse)",
+    "7. Log all integration events to audit service for compliance",
+    "8. Implement IP whitelisting for webhooks if services support it",
+    "9. Store secrets in environment variables or secret management system (not in code)",
+    "10. Implement least-privilege access (minimal OAuth scopes required)"
+  ],
+  "next_steps_for_spec_phase": [
+    "1. Verify all package names and versions against PyPI",
+    "2. Review official API documentation for each service",
+    "3. Confirm current rate limits and webhook signature methods",
+    "4. Design database schema for tracking sync state and entity mappings",
+    "5. Create detailed API integration specifications for each service",
+    "6. Design error handling and retry strategies",
+    "7. Plan testing strategy including webhook simulation",
+    "8. Document environment variables and configuration requirements"
+  ],
+  "research_limitations": {
+    "note": "This research was conducted without access to real-time web search, Context7 MCP, or web fetch tools due to rate limiting and permission restrictions. All information is based on standard knowledge of these well-established libraries and should be verified against current official documentation before implementation.",
+    "verification_required": true,
+    "confidence_level": "medium-high (based on standard library knowledge, but versions and specific APIs should be verified)"
+  },
+  "created_at": "2026-01-03T00:00:00Z",
+  "research_agent_version": "1.0",
+  "status": "REQUIRES_VERIFICATION"
+}

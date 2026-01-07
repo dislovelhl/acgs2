@@ -1,0 +1,10 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "security_hardening",
+  "ideaId": "sec-003",
+  "rationale": "If APP_ENV is accidentally set to 'development' in production, or if PyJWT fails to import, the system grants full admin access to anyone with any token. This is a catastrophic authentication bypass that could allow complete system compromise.",
+  "category": "security",
+  "securitySeverity": "critical",
+  "impact": "critical",
+  "priority": "urgent"
+}

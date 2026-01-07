@@ -1,0 +1,81 @@
+{
+  "complexity": "standard",
+  "workflow_type": "feature",
+  "confidence": 0.60,
+  "reasoning": "Task description is ambiguous - reads like Linear's marketing page rather than a development task specification. Most likely interpretation: add Linear as an integration destination in the existing integration-service, following established patterns for JIRA/GitHub/GitLab. Requires research for Linear's GraphQL API but scope appears contained to one service. Marked as 'standard' with research phase, not 'complex', as there's no clear indication of cross-platform bidirectional sync complexity. Low confidence due to requirement ambiguity - discovery phase critical to clarify actual scope.",
+
+  "analysis": {
+    "scope": {
+      "estimated_files": 12,
+      "estimated_services": 1,
+      "is_cross_cutting": false,
+      "notes": "CRITICAL: Scope is highly ambiguous. Task description appears to be Linear's feature documentation, not a dev task. Most conservative interpretation: Add Linear client to integration-service following existing patterns (8-12 files: client module, API routes, webhook handlers, models, tests, config). Alternative interpretation could involve cross-platform sync (would be 20+ files, complex). Discovery phase must clarify: (1) Add Linear as integration target? (2) Sync from ACGS2 to Linear? (3) Documentation only?"
+    },
+    "integrations": {
+      "external_services": ["Linear GraphQL API"],
+      "new_dependencies": ["httpx (already exists)", "possible linear-sdk or custom GraphQL client"],
+      "research_needed": true,
+      "notes": "Linear uses GraphQL API (unfamiliar to codebase which primarily uses REST). Need research for: authentication methods (API key vs OAuth), GraphQL schema for issues/projects, webhook payload formats, rate limits, and best practices. Existing GitHub/GitLab integrations provide patterns for issue tracking sync, but GraphQL adds complexity."
+    },
+    "infrastructure": {
+      "docker_changes": false,
+      "database_changes": false,
+      "config_changes": true,
+      "notes": "No Docker changes - integration-service already containerized. No database schema changes expected for basic integration (Redis cache sufficient for webhook deduplication). Config changes required: LINEAR_API_TOKEN, LINEAR_WORKSPACE_ID, LINEAR_WEBHOOK_SECRET (follow existing pattern in .env.example). May need database if implementing persistent sync state tracking (would increase complexity)."
+    },
+    "knowledge": {
+      "patterns_exist": true,
+      "research_required": true,
+      "unfamiliar_tech": ["Linear GraphQL API", "GraphQL client patterns"],
+      "notes": "Strong existing patterns in integration-service: JIRA integration (issue tracking system, similar to Linear), GitHub/GitLab integrations (code platforms), credential encryption, webhook handlers with signature validation, retry logic with tenacity, FastAPI route patterns. Main knowledge gap: GraphQL client usage (codebase uses REST) and Linear-specific API patterns. Research Linear docs: https://linear.app/developers"
+    },
+    "risk": {
+      "level": "medium",
+      "concerns": [
+        "HIGHEST RISK: Scope ambiguity - task description unclear, could be misinterpreted",
+        "API key management and secure storage",
+        "GraphQL query complexity and rate limiting",
+        "Webhook signature validation for security",
+        "Error handling for API failures",
+        "Potential for scope creep if bidirectional sync is implied"
+      ],
+      "notes": "Primary risk is misunderstanding requirements. Task reads like Linear's feature description, not a development specification. Discovery phase MUST clarify exact scope before implementation. If scope is basic Linear integration (send events to Linear), risk is medium with existing patterns. If scope includes bidirectional sync across platforms, complexity would escalate to 'complex' with high risk."
+    }
+  },
+
+  "recommended_phases": [
+    "discovery",
+    "requirements",
+    "research",
+    "context",
+    "spec_writing",
+    "planning",
+    "validation"
+  ],
+
+  "flags": {
+    "needs_research": true,
+    "needs_self_critique": false,
+    "needs_infrastructure_setup": false
+  },
+
+  "validation_recommendations": {
+    "risk_level": "medium",
+    "skip_validation": false,
+    "minimal_mode": false,
+    "test_types_required": ["unit", "integration"],
+    "security_scan_required": true,
+    "staging_deployment_required": false,
+    "reasoning": "External API integration requires unit tests for Linear client logic, integration tests for API communication and webhook handling. Security scan critical for API key storage, credential encryption, and webhook signature validation. Medium risk level assumes basic integration scope - would escalate to 'high' if bidirectional sync is involved. No staging deployment needed as integration-service has existing deployment infrastructure and health checks."
+  },
+
+  "scope_clarification_questions": [
+    "Is the goal to add Linear as an integration destination (send events FROM acgs2 TO Linear)?",
+    "Should this be bidirectional sync (Linear ↔ ACGS2) or one-way (ACGS2 → Linear)?",
+    "Which specific Linear features should be integrated (issues, projects, comments, labels)?",
+    "Should this integrate with existing GitHub/GitLab/JIRA integrations to create a sync hub?",
+    "Is this task just documentation/research about Linear's capabilities, not implementation?"
+  ],
+
+  "created_at": "2026-01-03T08:15:00Z"
+}

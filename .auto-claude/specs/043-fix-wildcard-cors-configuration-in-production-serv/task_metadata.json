@@ -1,0 +1,10 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "security_hardening",
+  "ideaId": "sec-001",
+  "rationale": "Wildcard CORS allows any website to make authenticated requests to these APIs, potentially enabling CSRF attacks and data exfiltration. In enterprise governance systems handling sensitive policy data, this could lead to unauthorized access to constitutional governance decisions and compliance documentation.",
+  "category": "security",
+  "securitySeverity": "high",
+  "impact": "high",
+  "priority": "high"
+}

@@ -1,0 +1,28 @@
+{
+  "file_path": "test_preview_endpoint.sh",
+  "main_branch_history": [],
+  "task_views": {
+    "003-import-your-data": {
+      "task_id": "003-import-your-data",
+      "branch_point": {
+        "commit_hash": "cc53a509f89115bbb36940c140031e6159320791",
+        "content": "",
+        "timestamp": "2026-01-03T17:00:00.287145"
+      },
+      "worktree_state": {
+        "content": "#!/bin/bash\n\n# Test script for import preview endpoint\n# Subtask 1-8: Test preview endpoint returns sample data without committing\n\nset -e\n\necho \"=== Testing Import Preview Endpoint ===\"\necho \"\"\n\n# Check if service is running\necho \"Checking if integration-service is running...\"\nif curl -s http://localhost:8100/ > /dev/null 2>&1; then\n    echo \"\u2713 Integration service is running on port 8100\"\n    SERVICE_URL=\"http://localhost:8100\"\nelse\n    echo \"\u2717 Integration service is not running on port 8100\"\n    echo \"\"\n    echo \"To start the service, run:\"\n    echo \"  ./start_integration_service.sh\"\n    echo \"\"\n    echo \"Or manually:\"\n    echo \"  cd integration-service\"\n    echo \"  python3 -m uvicorn src.main:app --port 8100 --reload\"\n    exit 1\nfi\n\necho \"\"\necho \"Testing preview endpoint at ${SERVICE_URL}/api/imports/preview\"\necho \"\"\n\n# Test with minimal valid request\necho \"Test 1: JIRA preview with minimal config\"\nRESPONSE=$(curl -s -X POST \"${SERVICE_URL}/api/imports/preview\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"source_type\": \"jira\",\n    \"source_config\": {\n      \"project_key\": \"TEST\",\n      \"api_token\": \"test-token\",\n      \"user_email\": \"test@example.com\",\n      \"base_url\": \"https://test.atlassian.net\"\n    }\n  }')\n\necho \"Response:\"\necho \"$RESPONSE\"\necho \"\"\n\n# Check if response contains required fields\nif echo \"$RESPONSE\" | grep -q '\"source_type\"'; then\n    echo \"\u2713 Response contains source_type\"\nelse\n    echo \"\u2717 Response missing source_type\"\n    exit 1\nfi\n\nif echo \"$RESPONSE\" | grep -q '\"preview_items\"'; then\n    echo \"\u2713 Response contains preview_items array\"\nelse\n    echo \"\u2717 Response missing preview_items\"\n    exit 1\nfi\n\necho \"\"\necho \"=== Test Passed ===\"\necho \"\"\necho \"Preview endpoint successfully returns sample data without committing\"\n",
+        "last_modified": "2026-01-03T19:09:00.300537"
+      },
+      "task_intent": {
+        "title": "003-import-your-data",
+        "description": "",
+        "from_plan": false
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T17:00:00.313677",
+  "last_updated": "2026-01-03T17:00:00.315413"
+}

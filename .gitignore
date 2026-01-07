@@ -32,6 +32,9 @@ build/
 *.onnx
 *.onnx.data
 
+# MLflow databases
+mlflow.db
+
 # Coverage
 .coverage
 .coverage.*

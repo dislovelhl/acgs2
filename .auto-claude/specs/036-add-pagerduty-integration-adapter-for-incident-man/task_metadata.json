@@ -1,0 +1,16 @@
+{
+  "sourceType": "ideation",
+  "ideationType": "code_improvements",
+  "ideaId": "ci-004",
+  "rationale": "The integration-service has ticketing adapters (JIRA, ServiceNow) for incident creation. PagerDuty is widely used for incident management. The ticket_mapping.py already has severity mapping infrastructure that can be extended for PagerDuty urgency levels.",
+  "category": "feature",
+  "estimatedEffort": "medium",
+  "complexity": "medium",
+  "affectedFiles": [
+    "integration-service/src/integrations/pagerduty_adapter.py",
+    "integration-service/src/integrations/ticket_mapping.py",
+    "integration-service/src/integrations/__init__.py",
+    "integration-service/src/config/models.py",
+    "integration-service/tests/integrations/test_pagerduty.py"
+  ]
+}

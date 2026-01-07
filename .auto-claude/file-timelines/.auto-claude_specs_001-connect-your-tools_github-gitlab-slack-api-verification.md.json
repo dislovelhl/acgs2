@@ -1,0 +1,25 @@
+{
+  "file_path": ".auto-claude/specs/001-connect-your-tools/github-gitlab-slack-api-verification.md",
+  "main_branch_history": [],
+  "task_views": {
+    "001-connect-your-tools": {
+      "task_id": "001-connect-your-tools",
+      "branch_point": {
+        "commit_hash": "cc53a509f89115bbb36940c140031e6159320791",
+        "content": "",
+        "timestamp": "2026-01-03T17:00:01.335551"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "001-connect-your-tools",
+        "description": "Implement Linear integration into the ACGS2 integration-service to enable bidirectional synchronization between Linear issues and external tools (GitHub, GitLab, Slack). This will make Linear the source of truth for product development workflows by automatically syncing issue states, comments, and metadata across platforms.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T17:00:01.342424",
+  "last_updated": "2026-01-03T17:00:01.345817"
+}

@@ -1,0 +1,429 @@
+{
+  "spec_id": "045-harden-development-mode-jwt-fallback-behavior",
+  "feature": "Harden Development Mode JWT Fallback Behavior",
+  "title": "Harden Development Mode JWT Fallback Behavior",
+  "description": "The RBAC middleware in acgs2-core/services/policy_registry/app/middleware/rbac.py has a development mode fallback that: 1) Uses 'dev-secret' as JWT secret when JWT_SECRET env is not set, 2) Simulates token validation returning SYSTEM_ADMIN privileges when PyJWT is unavailable, 3) Logs warnings but continues operation. This creates risk if development configurations leak to production.",
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "created_at": "2026-01-03T21:27:51.428Z",
+  "updated_at": "2026-01-04T10:36:22.682Z",
+  "workflow_type": "development",
+  "services_involved": [
+    "policy_registry"
+  ],
+  "phases": [
+    {
+      "phase_id": "phase_1",
+      "title": "Analysis and Design",
+      "description": "Analyze current security vulnerabilities and design hardening strategy",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "title": "Document current security vulnerabilities",
+          "description": "Create comprehensive documentation of all security issues in the current implementation, including specific line numbers and attack scenarios",
+          "status": "not_started",
+          "dependencies": [],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "1.2",
+          "title": "Design hardening strategy",
+          "description": "Design a comprehensive hardening strategy including: explicit development mode flag, environment detection, fail-safe mechanisms, improved logging, and validation on startup",
+          "status": "not_started",
+          "dependencies": [
+            "1.1"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_2",
+      "title": "Core Security Hardening",
+      "description": "Implement core security improvements to prevent authentication bypass",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "title": "Add INSECURE_DEV_MODE flag to RBACConfig",
+          "description": "Add explicit INSECURE_DEV_MODE boolean flag to RBACConfig that must be explicitly set to True to enable simulated validation. Default to False. This prevents accidental enabling of insecure mode.",
+          "status": "not_started",
+          "dependencies": [
+            "1.2"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.2",
+          "title": "Implement production environment detection",
+          "description": "Add production environment detection beyond just APP_ENV. Check for: deployment environment variables (K8S, DOCKER, cloud providers), presence of production indicators, file system checks. Create is_production_environment() method.",
+          "status": "not_started",
+          "dependencies": [
+            "2.1"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.3",
+          "title": "Harden PyJWT availability check",
+          "description": "Update validate_token() to fail immediately if PyJWT is not available, even in development mode, unless INSECURE_DEV_MODE is explicitly True. Add critical logging when running without PyJWT.",
+          "status": "not_started",
+          "dependencies": [
+            "2.1",
+            "2.2"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.4",
+          "title": "Add startup configuration validation",
+          "description": "Add validate_configuration() method to RBACConfig that runs on initialization. Check for: production environment with insecure settings, PyJWT availability, JWT_SECRET security. Fail fast with clear error messages.",
+          "status": "not_started",
+          "dependencies": [
+            "2.2",
+            "2.3"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.5",
+          "title": "Improve _simulate_validation security",
+          "description": "Update _simulate_validation() to: require INSECURE_DEV_MODE=True, log CRITICAL level warnings with banner, add timestamp and session tracking, potentially add a delay to discourage production use",
+          "status": "not_started",
+          "dependencies": [
+            "2.1"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.6",
+          "title": "Add JWT_SECRET validation improvements",
+          "description": "Enhance JWT_SECRET validation: check minimum length (32+ chars), forbid common weak values ('dev-secret', 'secret', 'test', etc), add entropy check for production, warn about reused secrets",
+          "status": "not_started",
+          "dependencies": [
+            "2.2"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_3",
+      "title": "Monitoring and Observability",
+      "description": "Add comprehensive logging, metrics, and monitoring for security events",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "title": "Add security event logging",
+          "description": "Implement comprehensive security event logging: log all insecure mode activations, failed validations, configuration warnings. Use structured logging with severity levels.",
+          "status": "not_started",
+          "dependencies": [
+            "2.4"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.2",
+          "title": "Add startup banner for insecure mode",
+          "description": "Add highly visible ASCII art banner that displays on startup when running in INSECURE_DEV_MODE. Include warnings, current configuration, and recommendations.",
+          "status": "not_started",
+          "dependencies": [
+            "2.4",
+            "3.1"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.3",
+          "title": "Add security metrics to get_stats()",
+          "description": "Extend get_stats() to include security metrics: insecure_mode_enabled, pyjwt_available, simulated_validations_count, environment_detected, configuration_warnings",
+          "status": "not_started",
+          "dependencies": [
+            "2.4"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_4",
+      "title": "Testing",
+      "description": "Create comprehensive tests for all security scenarios",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "title": "Create test_rbac_middleware.py",
+          "description": "Create new test file with fixtures and helper functions for testing RBAC middleware",
+          "status": "not_started",
+          "dependencies": [
+            "2.6"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/tests/test_rbac_middleware.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.2",
+          "title": "Test production environment detection",
+          "description": "Write tests for: production environment detection with various env vars, development environment detection, mixed/ambiguous environments",
+          "status": "not_started",
+          "dependencies": [
+            "4.1"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/tests/test_rbac_middleware.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.3",
+          "title": "Test INSECURE_DEV_MODE behavior",
+          "description": "Write tests for: INSECURE_DEV_MODE=False rejects simulated validation, INSECURE_DEV_MODE=True allows it, mode transitions, logging output",
+          "status": "not_started",
+          "dependencies": [
+            "4.1"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/tests/test_rbac_middleware.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.4",
+          "title": "Test PyJWT availability handling",
+          "description": "Write tests for: PyJWT not available in production (should fail), PyJWT not available in dev without INSECURE_DEV_MODE (should fail), PyJWT not available with INSECURE_DEV_MODE (should simulate)",
+          "status": "not_started",
+          "dependencies": [
+            "4.1"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/tests/test_rbac_middleware.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.5",
+          "title": "Test JWT_SECRET validation",
+          "description": "Write tests for: weak secrets rejected in production, dev-secret rejected in production, minimum length enforcement, entropy checks, valid secrets accepted",
+          "status": "not_started",
+          "dependencies": [
+            "4.1"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/tests/test_rbac_middleware.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.6",
+          "title": "Test startup validation failures",
+          "description": "Write tests for: configuration validation catches insecure production configs, fails fast with clear messages, validates all security requirements",
+          "status": "not_started",
+          "dependencies": [
+            "4.1"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/tests/test_rbac_middleware.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.7",
+          "title": "Test security event logging",
+          "description": "Write tests to verify: critical events are logged, log format is correct, security banners appear, metrics are tracked",
+          "status": "not_started",
+          "dependencies": [
+            "4.1"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/tests/test_rbac_middleware.py"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_5",
+      "title": "Documentation and Deployment",
+      "description": "Update documentation and create deployment guides",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "title": "Update RBAC middleware docstrings",
+          "description": "Update all docstrings in rbac.py to document new security features, configuration options, and best practices",
+          "status": "not_started",
+          "dependencies": [
+            "4.7"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/app/middleware/rbac.py"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.2",
+          "title": "Create security configuration guide",
+          "description": "Create comprehensive guide documenting: secure production configuration, development mode usage, environment variables, troubleshooting",
+          "status": "not_started",
+          "dependencies": [
+            "4.7"
+          ],
+          "estimated_effort": "45min",
+          "files_involved": [
+            "./.auto-claude/specs/045-harden-development-mode-jwt-fallback-behavior/SECURITY_CONFIG_GUIDE.md"
+          ],
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.3",
+          "title": "Update environment configuration examples",
+          "description": "Update any .env.example or configuration templates to reflect new security requirements and best practices",
+          "status": "not_started",
+          "dependencies": [
+            "5.2"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [
+            "acgs2-core/services/policy_registry/.env.example"
+          ],
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_6",
+      "title": "Integration and Validation",
+      "description": "Verify all changes work correctly in integration",
+      "status": "not_started",
+      "subtasks": [
+        {
+          "subtask_id": "6.1",
+          "title": "Run all RBAC middleware tests",
+          "description": "Execute complete test suite for RBAC middleware and verify all tests pass",
+          "status": "not_started",
+          "dependencies": [
+            "4.7"
+          ],
+          "estimated_effort": "15min",
+          "files_involved": [],
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.2",
+          "title": "Run full policy registry test suite",
+          "description": "Execute complete test suite for policy registry service to ensure no regressions",
+          "status": "not_started",
+          "dependencies": [
+            "6.1"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [],
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.3",
+          "title": "Manual security validation",
+          "description": "Manually test: production config rejection, development mode warnings, PyJWT failure handling, weak secret rejection",
+          "status": "not_started",
+          "dependencies": [
+            "6.2"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [],
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.4",
+          "title": "Code review and cleanup",
+          "description": "Review all changes for: code quality, security best practices, documentation completeness, test coverage",
+          "status": "not_started",
+          "dependencies": [
+            "6.3"
+          ],
+          "estimated_effort": "30min",
+          "files_involved": [],
+          "notes": ""
+        }
+      ]
+    }
+  ],
+  "total_estimated_effort": "12-15 hours",
+  "final_acceptance": [
+    "All tests pass including new security tests",
+    "Production environment detection works correctly",
+    "INSECURE_DEV_MODE requires explicit opt-in",
+    "PyJWT absence causes failure unless explicitly allowed",
+    "Weak JWT secrets are rejected in production",
+    "Security events are logged at appropriate levels",
+    "Documentation is complete and accurate"
+  ],
+  "spec_file": "spec.md",
+  "qa_signoff": {
+    "status": "pending",
+    "tests_passed": "",
+    "issues": ""
+  },
+  "notes": [
+    "This implementation adds defense-in-depth to prevent authentication bypass vulnerabilities",
+    "The INSECURE_DEV_MODE flag requires explicit opt-in to prevent accidental production exposure",
+    "Production environment detection uses multiple signals beyond just APP_ENV",
+    "All security events are logged at CRITICAL level for visibility",
+    "Comprehensive test coverage ensures security features work as expected"
+  ],
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T10:36:22.682Z"
+}

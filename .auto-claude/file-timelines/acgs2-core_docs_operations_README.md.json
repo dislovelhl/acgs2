@@ -1,0 +1,25 @@
+{
+  "file_path": "acgs2-core/docs/operations/README.md",
+  "main_branch_history": [],
+  "task_views": {
+    "060-document-error-codes-and-troubleshooting-for-commo": {
+      "task_id": "060-document-error-codes-and-troubleshooting-for-commo",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "# Operations Documentation\n\nThis directory contains operational documentation, DevOps procedures, deployment guides, and infrastructure management documents.\n\n## Contents\n\n### Deployment & Infrastructure\n- `DEPLOYMENT_GUIDE.md` - Complete deployment procedures (English)\n- `DEPLOYMENT_GUIDE_CN.md` - Complete deployment procedures (Chinese)\n- `OPERATIONS_AIRGAPPED.md` - Air-gapped environment operations\n\n### DevOps & CI/CD\n- `CI-MIGRATION.md` - CI/CD migration guide and procedures\n- `DEVOPS_ACTION_PLAN.md` - DevOps action plan and roadmap\n- `DEVOPS_QUICK_REFERENCE.md` - DevOps quick reference guide\n- `DEVOPS_REVIEW_2025.md` - 2025 DevOps review and improvements\n- `DEVOPS_REVIEW_INDEX.md` - DevOps review index and navigation\n- `DEVOPS_REVIEW_SUMMARY.txt` - DevOps review summary\n\n### Testing & Quality Assurance\n- `LOAD_TEST_COMPREHENSIVE_REPORT.md` - Comprehensive load testing results\n- `chaos_testing_architecture.md` - Chaos testing architecture and design\n- `chaos_testing_guide.md` - Chaos testing procedures and best practices\n- `CLEANUP_PROCEDURES.md` - Code cleanup procedures and automation\n\n## Organization\n\n### Monitoring & Observability\nLocated in `../monitoring/` subdirectory:\n- `MONITORING_DASHBOARD.md` - Monitoring dashboard configuration\n- `MONITORING_INFRASTRUCTURE.md` - Monitoring infrastructure setup\n- `OBSERVABILITY_ENHANCEMENTS.md` - Observability improvements\n- `PERFORMANCE_OPTIMIZATION_RUNBOOK.md` - Performance optimization procedures\n\n### Istio Service Mesh\nLocated in `../istio/` subdirectory:\n- `gateway_mtls.yaml` - Istio gateway with mutual TLS configuration\n\n## Usage\n\n### For DevOps Engineers\n- Use deployment guides for environment setup\n- Follow CI migration guide for pipeline updates\n- Reference DevOps action plan for infrastructure improvements\n\n### For Operations Teams\n- Consult operations air-gapped guide for secure environments\n- Use chaos testing guide for resilience validation\n- Follow cleanup procedures for code maintenance\n\n### For Developers\n- Review CI migration guide for pipeline contributions\n- Use load testing reports for performance optimization\n- Follow cleanup procedures for code quality\n\n## Deployment Environments\n\n### Development\n- Local deployment with Docker Compose\n- Minimal resource requirements\n- Full debugging capabilities\n\n### Staging\n- Kubernetes deployment with Helm\n- Intermediate resource allocation\n- Pre-production validation\n\n### Production\n- Optimized container images\n- High availability configuration\n- Monitoring and alerting integration\n\n### Air-Gapped\n- Secure offline environments\n- Manual deployment procedures\n- Limited external dependencies\n\n## Automation\n\n### CI/CD Pipelines\n- Automated testing and validation\n- Container image building and scanning\n- Deployment to multiple environments\n- Rollback procedures and health checks\n\n### Chaos Testing\n- Automated failure injection\n- Service resilience validation\n- Recovery procedure testing\n- Blast radius assessment\n\n## Constitutional Compliance\n\n**Constitutional Hash**: `cdd01ef066bc6cf2`\n\nAll operational procedures must maintain constitutional governance and compliance requirements.\n\n## Maintenance\n\n### Document Updates\n- Review deployment guides with infrastructure changes\n- Update DevOps procedures quarterly\n- Refresh load testing reports after performance optimizations\n\n### Automation Updates\n- Keep CI/CD pipelines current with new tooling\n- Update chaos testing scenarios with system changes\n- Maintain deployment automation scripts\n\n### Security Reviews\n- Regular security assessment of operational procedures\n- Update air-gapped procedures for new security requirements\n- Review access controls and permission matrices\n",
+        "timestamp": "2026-01-04T05:35:51.134105"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "060-document-error-codes-and-troubleshooting-for-commo",
+        "description": "The codebase has 13 TODO/FIXME comments across critical files including webhooks.py, approval_chain_engine.py, and config_validator.py. Additionally, there's no centralized documentation for error codes, failure modes, or troubleshooting guides. Users encountering errors have no reference for resolution.",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-03T19:36:08.643228",
+  "last_updated": "2026-01-04T05:35:51.181033"
+}

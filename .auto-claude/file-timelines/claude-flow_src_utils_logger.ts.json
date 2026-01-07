@@ -1,0 +1,25 @@
+{
+  "file_path": "claude-flow/src/utils/logger.ts",
+  "main_branch_history": [],
+  "task_views": {
+    "059-add-jsdoc-coverage-for-claude-flow-typescript-serv": {
+      "task_id": "059-add-jsdoc-coverage-for-claude-flow-typescript-serv",
+      "branch_point": {
+        "commit_hash": "fc6e42927298263034acf989773f3200e422ad17",
+        "content": "import pino from \"pino\";\nimport config from \"../config/index.js\";\n\nconst isProduction = config.ENVIRONMENT === \"production\";\n\nexport const logger = pino({\n  level: config.LOG_LEVEL?.toLowerCase() || \"info\",\n  base: {\n    service: \"claude-flow\",\n    env: config.ENVIRONMENT,\n  },\n  transport: isProduction\n    ? undefined\n    : {\n        target: \"pino-pretty\",\n        options: {\n          colorize: true,\n          ignore: \"pid,hostname\",\n          translateTime: \"SYS:standard\",\n        },\n      },\n  formatters: {\n    level: (label) => {\n      return { level: label.toUpperCase() };\n    },\n  },\n  timestamp: pino.stdTimeFunctions.isoTime,\n});\n\nexport default logger;\n",
+        "timestamp": "2026-01-04T05:35:52.969195"
+      },
+      "worktree_state": null,
+      "task_intent": {
+        "title": "Add JSDoc coverage for claude-flow TypeScript service public exports",
+        "description": "Add comprehensive JSDoc documentation to the 45 exported functions/classes across 17 TypeScript files in the claude-flow CLI tool to improve API documentation for enterprise users",
+        "from_plan": true
+      },
+      "commits_behind_main": 0,
+      "status": "active",
+      "merged_at": null
+    }
+  },
+  "created_at": "2026-01-04T05:35:52.987023",
+  "last_updated": "2026-01-04T05:35:52.992539"
+}
