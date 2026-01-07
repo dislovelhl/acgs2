@@ -5,194 +5,235 @@ name: ACGS-2 CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
 
 env:
   CONSTITUTIONAL_HASH: cdd01ef066bc6cf2
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: "3.12"
 
 jobs:
+  policy-compliance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Run policy compliance check
+        run: |
+          make verify-policy
+
   test-and-validate:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ["3.12"]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-    - name: Create virtual environment with test dependencies
-      run: |
-        cd acgs2-core
-        python -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
+      - name: Create virtual environment with test dependencies
+        run: |
+          cd acgs2-core
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
 
-    - name: Run core security tests
-      run: |
-        cd acgs2-core
-        source venv/bin/activate
-        python -m pytest tests/security/test_cors_config.py tests/security/test_rate_limiter.py tests/ceos/ -v --tb=short --durations=5
+      - name: Run core security tests
+        run: |
+          cd acgs2-core
+          source venv/bin/activate
+          python -m pytest tests/security/test_cors_config.py tests/security/test_rate_limiter.py tests/ceos/ -v --tb=short --durations=5
 
-    - name: Run Enhanced Agent Bus tests with coverage
-      run: |
-        cd acgs2-core
-        source venv/bin/activate
-        python -m pytest enhanced_agent_bus/tests/ --cov=enhanced_agent_bus --cov-report=term-missing --cov-report=xml --cov-fail-under=85 -q
+      - name: Run Enhanced Agent Bus tests with coverage
+        run: |
+          cd acgs2-core
+          source venv/bin/activate
+          python -m pytest enhanced_agent_bus/tests/ --cov=enhanced_agent_bus --cov-report=term-missing --cov-report=xml --cov-fail-under=85 -q
 
-    - name: Validate performance metrics
-      run: |
-        cd acgs2-core
-        source venv/bin/activate
-        python testing/comprehensive_profiler.py --iterations 50 --baseline | grep -E "(P99|P95|Throughput)" | tail -3
+      - name: Validate performance metrics
+        run: |
+          cd acgs2-core
+          source venv/bin/activate
+          python testing/comprehensive_profiler.py --iterations 50 --baseline | grep -E "(P99|P95|Throughput)" | tail -3
 
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./acgs2-core/coverage.xml
-        flags: acgs2-core,claude-flow,neural-mcp
-        name: ACGS-2 Core Coverage
-        fail_ci_if_error: false
-        verbose: true
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./acgs2-core/coverage.xml
+          flags: acgs2-core,claude-flow,neural-mcp
+          name: ACGS-2 Core Coverage
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-    - name: Generate test summary
-      run: |
-        cd acgs2-core
-        source venv/bin/activate
-        echo "## Test Results Summary" > test_summary.md
-        echo "- **Date:** $(date)" >> test_summary.md
-        echo "- **Constitutional Hash:** $CONSTITUTIONAL_HASH" >> test_summary.md
-        python -m pytest tests/ enhanced_agent_bus/tests/ --tb=line | tail -5 >> test_summary.md
+      - name: Generate test summary
+        run: |
+          cd acgs2-core
+          source venv/bin/activate
+          echo "## 📊 CI Confidence Report" > test_summary.md
+          echo "- **Date:** $(date)" >> test_summary.md
+          echo "- **Constitutional Hash:** $CONSTITUTIONAL_HASH" >> test_summary.md
 
-    - name: Upload test summary
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-summary-${{ matrix.python-version }}
-        path: acgs2-core/test_summary.md
+          # Calculate Confidence Score (Mock logic)
+          COVERAGE=$(grep -oP "(?<=Total coverage: )\d+" coverage.txt || echo "0")
+          POLICY_GATE=$(grep -q "✅ Policy gates passed" policy_gate.log && echo "1" || echo "0")
+
+          SCORE=0
+          (( SCORE += COVERAGE / 2 ))
+          (( SCORE += POLICY_GATE * 50 ))
+
+          echo "- **CI Confidence Score:** ${SCORE}/100" >> test_summary.md
+          echo "" >> test_summary.md
+          python -m pytest tests/ enhanced_agent_bus/tests/ --tb=line | tail -5 >> test_summary.md
+
+      - name: Upload test summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-summary-${{ matrix.python-version }}
+          path: acgs2-core/test_summary.md
 
   performance-monitoring:
     runs-on: ubuntu-latest
     needs: test-and-validate
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
 
-    - name: Initialize performance monitoring
-      run: |
-        cd acgs2-core
-        python -m venv venv
-        source venv/bin/activate
-        pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
-        python performance_monitor.py --init-only | tail -10
+      - name: Initialize performance monitoring
+        run: |
+          cd acgs2-core
+          python -m venv venv
+          source venv/bin/activate
+          pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
+          python performance_monitor.py --init-only | tail -10
 
-    - name: Run performance validation
-      run: |
-        cd acgs2-core
-        source venv/bin/activate
-        python testing/comprehensive_profiler.py --iterations 100 --baseline 2>&1 | grep -A 10 "Performance Summary"
+      - name: Run performance validation
+        run: |
+          cd acgs2-core
+          source venv/bin/activate
+          python testing/comprehensive_profiler.py --iterations 100 --baseline 2>&1 | grep -A 10 "Performance Summary"
 
   security-audit:
     runs-on: ubuntu-latest
     needs: test-and-validate
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Run security scanning
-      uses: github/super-linter/slim@v5
-      env:
-        DEFAULT_BRANCH: main
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        VALIDATE_PYTHON_BLACK: false
-        VALIDATE_PYTHON_FLAKE8: true
-        VALIDATE_PYTHON_ISORT: false
+      - name: Run security scanning
+        uses: github/super-linter/slim@v5
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_PYTHON_BLACK: false
+          VALIDATE_PYTHON_FLAKE8: true
+          VALIDATE_PYTHON_ISORT: false
 
   constitutional-validation:
     runs-on: ubuntu-latest
     needs: [test-and-validate, performance-monitoring]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Validate constitutional compliance
-      run: |
-        cd acgs2-core
-        python -m venv venv
-        source venv/bin/activate
-        pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
+      - name: Validate constitutional compliance
+        run: |
+          cd acgs2-core
+          python -m venv venv
+          source venv/bin/activate
+          pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
 
-        # Check constitutional hash consistency
-        HASH_COUNT=$(grep -r "cdd01ef066bc6cf2" . | wc -l)
-        echo "Constitutional hash references found: $HASH_COUNT"
+          # Check constitutional hash consistency
+          HASH_COUNT=$(grep -r "cdd01ef066bc6cf2" . | wc -l)
+          echo "Constitutional hash references found: $HASH_COUNT"
 
-        # Validate core governance files
-        if [ ! -f "enhanced_agent_bus/validators.py" ]; then
-          echo "ERROR: Core validators missing"
-          exit 1
-        fi
+          # Validate core governance files
+          if [ ! -f "enhanced_agent_bus/validators.py" ]; then
+            echo "ERROR: Core validators missing"
+            exit 1
+          fi
 
-        echo "✅ Constitutional validation passed"
+          echo "✅ Constitutional validation passed"
 
   deploy-validation:
     runs-on: ubuntu-latest
-    needs: [test-and-validate, performance-monitoring, security-audit, constitutional-validation]
+    needs:
+      [
+        test-and-validate,
+        performance-monitoring,
+        security-audit,
+        constitutional-validation,
+      ]
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Validate deployment readiness
-      run: |
-        cd acgs2-core
-        python -m venv venv
-        source venv/bin/activate
-        pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
+      - name: Validate deployment readiness
+        run: |
+          cd acgs2-core
+          python -m venv venv
+          source venv/bin/activate
+          pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
 
-        # Run comprehensive validation
-        python -m pytest enhanced_agent_bus/tests/test_agent_bus.py enhanced_agent_bus/tests/test_message_processor_coverage.py -v -x
+          # Run comprehensive validation
+          python -m pytest enhanced_agent_bus/tests/test_agent_bus.py enhanced_agent_bus/tests/test_message_processor_coverage.py -v -x
 
-        # Check performance targets
-        python testing/comprehensive_profiler.py --iterations 50 | grep -q "EXCELLENT" || exit 1
+          # Deployment Simulation (Dry Run)
+          echo "🚀 Starting deployment simulation..."
+          make reset-chain
+          # Simulate contract deployment or agent initialization
+          echo "Simulating service initialization..."
+          # mock-deploy --env production --dry-run
 
-        echo "✅ Deployment validation passed"
+          # Check performance targets
+          python testing/comprehensive_profiler.py --iterations 50 | grep -q "EXCELLENT" || exit 1
 
-    - name: Create deployment artifact
-      run: |
-        cd acgs2-core
-        tar -czf acgs2-core-${{ github.sha }}.tar.gz .
-        echo "artifact_name=acgs2-core-${{ github.sha }}.tar.gz" >> $GITHUB_ENV
+          echo "✅ Deployment validation passed"
 
-    - name: Upload deployment artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: acgs2-core-deployment
-        path: acgs2-core/acgs2-core-${{ github.sha }}.tar.gz
+      - name: Create deployment artifact
+        run: |
+          cd acgs2-core
+          tar -czf acgs2-core-${{ github.sha }}.tar.gz .
+          echo "artifact_name=acgs2-core-${{ github.sha }}.tar.gz" >> $GITHUB_ENV
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: acgs2-core-deployment
+          path: acgs2-core/acgs2-core-${{ github.sha }}.tar.gz

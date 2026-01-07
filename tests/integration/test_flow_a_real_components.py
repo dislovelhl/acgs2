@@ -8,7 +8,6 @@ This validates the actual system works end-to-end as designed.
 import asyncio
 
 import pytest
-
 from acgs2.core.schemas import UserRequest
 from acgs2.factory import create_default_system
 

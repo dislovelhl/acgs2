@@ -29,12 +29,14 @@ EDGE_CASE_ACCURACY_TARGET: Final[float] = 0.99  # 99% accuracy
 CONSENSUS_THRESHOLD: Final[float] = 0.60  # 60% cross-group consensus
 JAILBREAK_PREVENTION_TARGET: Final[float] = 0.95  # 95% prevention rate
 
+
 # Layer Identifiers
 class Layer:
     CONTEXT = "context_memory"
     VERIFICATION = "verification_validation"
     TEMPORAL = "temporal_symbolic"
     GOVERNANCE = "governance_policy"
+
 
 # Import core components when available
 __all__ = [

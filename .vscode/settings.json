@@ -24,5 +24,8 @@
   "cursorpyright.analysis.diagnosticSeverityOverrides": {
     "reportGeneralTypeIssues": "information"
   },
-  "cursorpyright.analysis.typeCheckingMode": "basic"
+  "cursorpyright.analysis.typeCheckingMode": "basic",
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/reusable-security.yml"
+  ]
 }
