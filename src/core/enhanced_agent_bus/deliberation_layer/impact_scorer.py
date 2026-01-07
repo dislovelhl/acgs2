@@ -71,6 +71,7 @@ except ImportError:
 
 PROFILING_AVAILABLE = False
 
+
 @dataclass
 class ScoringConfig:
     semantic_weight: float = 0.3
@@ -83,12 +84,14 @@ class ScoringConfig:
     critical_priority_boost: float = 0.9
     high_semantic_boost: float = 0.8
 
+
 @dataclass
 class ImpactAnalysis:
     score: float
     factors: Dict[str, float]
     recommendation: str
     requires_deliberation: bool
+
 
 class ImpactScorer:
     """
@@ -511,6 +514,7 @@ class ImpactScorer:
                         embedding_score = max(sims) if sims else 0.0
 
             except Exception as e:
+                logger.error(f"Semantic scoring failure: {e}")
 
         return max(keyword_score, embedding_score)
 
@@ -750,7 +754,7 @@ class ImpactScorer:
             return results
 
         except Exception as e:
-
+            logger.error(f"Batch scoring failed: {e}")
             return self._batch_score_sequential(messages, contexts)
 
     def _batch_score_sequential(
@@ -971,6 +975,7 @@ class ImpactScorer:
         # Fallback to sequential processing
         return [self._calculate_semantic_score({"content": text}) for text in texts]
 
+
 def cosine_similarity_fallback(a: Any, b: Any) -> float:
     try:
         a = np.array(a).flatten()
@@ -984,20 +989,26 @@ def cosine_similarity_fallback(a: Any, b: Any) -> float:
     except Exception:
         return 0.0
 
+
 def get_gpu_decision_matrix():
     return {}
+
 
 def get_reasoning_matrix():
     return {}
 
+
 def get_risk_profile():
     return {}
+
 
 def get_profiling_report():
     return {}
 
+
 def get_vector_space_metrics():
     return {}
+
 
 def reset_impact_scorer():
     """Reset global scorer and clear model caches."""
@@ -1020,9 +1031,11 @@ def reset_impact_scorer():
 
     logger.info("Impact scorer and model caches reset")
 
+
 def reset_profiling():
     """Reset profiling state (placeholder for future profiling features)."""
     pass
+
 
 def get_ml_backend_status() -> Dict[str, Any]:
     """
@@ -1040,7 +1053,9 @@ def get_ml_backend_status() -> Dict[str, Any]:
         "onnx_cached": ImpactScorer._onnx_session_instance is not None,
     }
 
+
 _global_scorer = None
+
 
 def get_impact_scorer(**kwargs):
     global _global_scorer
@@ -1048,8 +1063,10 @@ def get_impact_scorer(**kwargs):
         _global_scorer = ImpactScorer(**kwargs)
     return _global_scorer
 
+
 def calculate_message_impact(message: AgentMessage) -> float:
     return get_impact_scorer().calculate_impact_score(message)
+
 
 async def calculate_message_impact_async(message: AgentMessage) -> float:
     return await get_impact_scorer().calculate_impact_score_async(message)

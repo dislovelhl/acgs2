@@ -19,13 +19,32 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+import torch
+
+try:
+    from .stability.mhc import ManifoldHC
+except (ImportError, ValueError):
+    try:
+        from stability.mhc import ManifoldHC
+    except ImportError:
+        ManifoldHC = None
 
 # Import centralized constitutional hash
 try:
     from src.core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+
+import numpy as np
+
+try:
+    from sklearn.cluster import KMeans
+    from sklearn.decomposition import PCA
+except ImportError:
+    PCA = None
+    KMeans = None
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +223,7 @@ class DeliberationResult:
     cross_group_consensus: Dict[str, Any]
     approved_amendments: List[Dict[str, Any]]
     rejected_statements: List[Dict[str, Any]]
+    stability_analysis: Dict[str, Any] = field(default_factory=dict)
     deliberation_metadata: Dict[str, Any] = field(default_factory=dict)
     completed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     constitutional_hash: str = CONSTITUTIONAL_HASH
@@ -219,6 +239,7 @@ class DeliberationResult:
             "consensus_reached": self.consensus_reached,
             "consensus_statements": self.consensus_statements,
             "polarization_analysis": self.polarization_analysis,
+            "stability_analysis": self.stability_analysis,
             "cross_group_consensus": self.cross_group_consensus,
             "approved_amendments": self.approved_amendments,
             "rejected_statements": self.rejected_statements,
@@ -299,56 +320,105 @@ class PolisDeliberationEngine:
 
     async def identify_clusters(self) -> List[OpinionCluster]:
         """
-        Identify opinion clusters using simplified clustering algorithm.
+        Identify opinion clusters from voting data using PCA and K-Means.
 
-        In practice, this would use more sophisticated clustering like:
-        - PCA for dimensionality reduction
-        - K-means or hierarchical clustering
-        - Community detection algorithms
+        This implementation:
+        1. Vectorsizes voting data (Participants x Statements)
+        2. Applies PCA for dimensionality reduction (if sufficient data)
+        3. Uses K-Means to identify distinct opinion groups
+        4. Generates cluster metadata and representative statements
         """
-        # Simplified clustering based on voting patterns
-        clusters = []
+        # 1. Collect all stakeholders and statements
+        stakeholder_ids = set()
+        for votes in self.voting_matrix.values():
+            stakeholder_ids.update(votes.keys())
 
-        # Group statements by dominant voting pattern
-        pattern_groups = {}
-        for statement_id, votes in self.voting_matrix.items():
-            # Create a simple pattern signature
-            agree_ratio = sum(1 for v in votes.values() if v == 1) / max(1, len(votes))
-            pattern = f"agree_{int(agree_ratio * 10)}"
+        stakeholder_list = sorted(list(stakeholder_ids))
+        statement_list = sorted(list(self.statements.keys()))
 
-            if pattern not in pattern_groups:
-                pattern_groups[pattern] = []
-            pattern_groups[pattern].append(statement_id)
+        if not stakeholder_list or not statement_list:
+            logger.warning("Insufficient data for clustering.")
+            return []
 
-        # Create clusters from pattern groups
-        for pattern, statement_ids in pattern_groups.items():
-            if len(statement_ids) >= 3:  # Minimum cluster size
-                cluster = OpinionCluster(
-                    cluster_id=str(uuid.uuid4()),
-                    name=f"Opinion Cluster {pattern}",
-                    description=f"Statements with {pattern} agreement pattern",
-                    representative_statements=statement_ids[:5],  # Top 5 statements
-                    member_stakeholders=list(
-                        set(self.statements[sid].author_id for sid in statement_ids)
-                    ),
-                    size=len(statement_ids),
+        n_participants = len(stakeholder_list)
+        n_statements = len(statement_list)
+
+        # 2. Vectorize votes
+        # Matrix: [n_participants, n_statements]
+        # Values: -1 (oppose), 0 (pass/no_vote), 1 (support)
+        X = np.zeros((n_participants, n_statements))
+
+        name_to_idx = {sid: i for i, sid in enumerate(stakeholder_list)}
+
+        for j, stmt_id in enumerate(statement_list):
+            votes = self.voting_matrix.get(stmt_id, {})
+            for sid, vote in votes.items():
+                if sid in name_to_idx:
+                    X[name_to_idx[sid], j] = vote
+
+        # 3. Determine number of clusters (K)
+        # Use simple heuristic: min(5, sqrt(N), N) but at least 2 is preferred if N >= 2
+        # For small N in tests, allow N clusters (singlets) or N-1
+        k_clusters = min(5, max(2, int(np.sqrt(n_participants))))
+        if n_participants < 2:
+            k_clusters = 1
+
+        # Ensure we don't ask for more clusters than samples
+        if k_clusters > n_participants:
+            k_clusters = n_participants
+
+        # 4. Dimensionality Reduction (PCA)
+        # Only run PCA if we have enough features/samples
+        if PCA and n_participants >= 3 and n_statements >= 2:
+            n_components = min(n_participants, n_statements, 2)
+            try:
+                pca = PCA(n_components=n_components)
+                X_reduced = pca.fit_transform(X)
+                # Use reduced features for clustering
+                X_cluster = X_reduced
+            except Exception as e:
+                logger.warning(f"PCA failed, using raw features: {e}")
+                X_cluster = X
+        else:
+            X_cluster = X
+
+        # 5. Clustering (K-Means)
+        labels = np.zeros(n_participants, dtype=int)
+        if KMeans and n_participants >= k_clusters:
+            try:
+                kmeans = KMeans(n_clusters=k_clusters, random_state=42, n_init=10)
+                labels = kmeans.fit_predict(X_cluster)
+            except Exception as e:
+                logger.warning(f"KMeans failed, falling back to single cluster: {e}")
+                labels = np.zeros(n_participants, dtype=int)  # All in cluster 0
+        else:
+            # Fallback for tiny N or missing sklearn
+            labels = np.zeros(n_participants, dtype=int)
+
+        # 6. Build OpinionCluster objects
+        clusters_map = {}  # label_str -> OpinionCluster
+
+        for idx, cluster_label in enumerate(labels):
+            stakeholder_id = stakeholder_list[idx]
+            label_str = str(cluster_label)
+
+            if label_str not in clusters_map:
+                clusters_map[label_str] = OpinionCluster(
+                    cluster_id=f"cluster_{uuid.uuid4().hex[:8]}",
+                    name=f"Opinion Group {cluster_label + 1}",
+                    description=f"Cluster {cluster_label + 1} identified via PCA/K-Means",
+                    representative_statements=[],  # TODO: Identify best statements identifying this cluster
+                    member_stakeholders=[],
+                    metadata={"pca_components": 2 if PCA else 0},
+                    size=0,
                 )
 
-                # Calculate consensus score (average agreement within cluster)
-                cluster_consensus = []
-                for sid in statement_ids:
-                    if sid in self.statements:
-                        cluster_consensus.append(self.statements[sid].consensus_potential)
+            clusters_map[label_str].member_stakeholders.append(stakeholder_id)
+            clusters_map[label_str].size += 1
 
-                cluster.consensus_score = (
-                    statistics.mean(cluster_consensus) if cluster_consensus else 0
-                )
-
-                clusters.append(cluster)
-                self.clusters[cluster.cluster_id] = cluster
-
-        logger.info(f"Identified {len(clusters)} opinion clusters")
-        return clusters
+        self.clusters = {c.cluster_id: c for c in clusters_map.values()}
+        logger.info(f"Identified {len(self.clusters)} opinion clusters via Advanced Clustering")
+        return list(self.clusters.values())
 
     async def analyze_cross_group_consensus(self, clusters: List[OpinionCluster]) -> Dict[str, Any]:
         """
@@ -435,6 +505,14 @@ class DemocraticConstitutionalGovernance:
         logger.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
         logger.info(f"Consensus threshold: {consensus_threshold}")
 
+        # Stability Layer for consensus aggregation
+        if ManifoldHC:
+            self.stability_layer = ManifoldHC(dim=8)  # Support up to 8 stakeholder groups
+            logger.info("Governance stability layer (mHC) enabled")
+        else:
+            self.stability_layer = None
+            logger.warning("Governance stability layer (mHC) not available")
+
     async def register_stakeholder(
         self, name: str, group: StakeholderGroup, expertise_areas: List[str]
     ) -> Stakeholder:
@@ -512,6 +590,11 @@ class DemocraticConstitutionalGovernance:
             proposal, clusters, cross_group_analysis
         )
 
+        # Capture stability stats if available
+        stability_stats = {}
+        if self.stability_layer and hasattr(self.stability_layer, "last_stats"):
+            stability_stats = self.stability_layer.last_stats
+
         # Create deliberation result
         result = DeliberationResult(
             deliberation_id=deliberation_id,
@@ -532,6 +615,7 @@ class DemocraticConstitutionalGovernance:
                 "cross_group_consensus": cross_group_analysis,
                 "risk_level": cross_group_analysis.get("polarization_risk", "unknown"),
             },
+            stability_analysis=stability_stats,
             cross_group_consensus=cross_group_analysis,
             approved_amendments=approved_amendments,
             rejected_statements=rejected_items,
@@ -624,6 +708,49 @@ class DemocraticConstitutionalGovernance:
                 )
                 await self.polis_engine.vote_on_statement(statement.statement_id, stakeholder, vote)
 
+    async def _apply_stability_constraint(
+        self, scores: List[float], trust_scores: Optional[List[float]] = None
+    ) -> List[float]:
+        """
+        Apply manifold constraint to consensus scores for mathematical stability.
+        Uses mHC (Manifold-Constrained HyperConnection) with dynamic resizing.
+        """
+        if not ManifoldHC or not scores:
+            return scores
+
+        try:
+            n = len(scores)
+
+            # Dynamic Dimension Resizing: Re-initialize layer if dimensionality changed
+            if not self.stability_layer or self.stability_layer.dim != n:
+                self.stability_layer = ManifoldHC(dim=n)
+                logger.info(f"mHC stability layer resized to dim={n}")
+
+            score_tensor = torch.tensor(scores, dtype=torch.float32).unsqueeze(0)
+
+            # Prepare trust marginals if available
+            row_marginal = None
+            col_marginal = None
+            if trust_scores:
+                # Ensure trust_scores length matches n
+                trust_scores = trust_scores[:n] + [0.5] * (n - len(trust_scores))
+                row_marginal = torch.tensor(trust_scores, dtype=torch.float32)
+                col_marginal = row_marginal  # Symmetric marginals for UMM
+
+            # Apply mHC forward pass
+            with torch.no_grad():
+                stabilized_tensor = self.stability_layer(
+                    score_tensor,
+                    row_marginal=row_marginal,
+                    col_marginal=col_marginal,
+                    alpha=0.4,  # Adversarial capping to prevent single-group dominance
+                )
+
+            return stabilized_tensor.squeeze(0).tolist()
+        except Exception as e:
+            logger.warning(f"Stability projection failed, using raw scores: {e}")
+            return scores
+
     async def _determine_consensus(
         self,
         proposal: ConstitutionalProposal,
@@ -637,6 +764,29 @@ class DemocraticConstitutionalGovernance:
 
         # Check cross-group consensus
         consensus_ratio = cross_group_analysis.get("consensus_ratio", 0)
+
+        # Apply mHC stability constraint to cluster consensus scores
+        cluster_scores = [c.consensus_score for c in clusters]
+
+        # Calculate cluster trust scores (weighted by stakeholder trust)
+        cluster_trust = []
+        for cluster in clusters:
+            member_trusts = [
+                self.stakeholders[sid].trust_score
+                for sid in cluster.member_stakeholders
+                if sid in self.stakeholders
+            ]
+            # Default to neutral trust (0.5) if no stakeholders found in cluster
+            avg_trust = statistics.mean(member_trusts) if member_trusts else 0.5
+            cluster_trust.append(avg_trust)
+
+        stabilized_scores = await self._apply_stability_constraint(
+            cluster_scores, trust_scores=cluster_trust
+        )
+
+        for i, cluster in enumerate(clusters):
+            if i < len(stabilized_scores):
+                cluster.consensus_score = stabilized_scores[i]
 
         if consensus_ratio >= proposal.consensus_threshold:
             consensus_reached = True

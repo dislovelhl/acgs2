@@ -9,8 +9,12 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from .models import AgentMessage
-from .validators import ValidationResult
+try:
+    from .models import AgentMessage
+    from .validators import ValidationResult
+except (ImportError, ValueError):
+    from models import AgentMessage
+    from validators import ValidationResult
 
 try:
     from src.core.shared.config import settings

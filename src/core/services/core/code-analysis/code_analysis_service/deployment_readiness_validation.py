@@ -115,7 +115,6 @@ def test_cache_configuration() -> dict[str, Any]:
     """Test 4: Cache Service Configuration."""
     try:
         from app.services.cache_service import CacheService
-
         from config.settings import get_settings
 
         settings = get_settings()
@@ -139,7 +138,6 @@ def test_constitutional_compliance() -> dict[str, Any]:
     """Test 5: Constitutional Compliance Validation."""
     try:
         from app.utils.constitutional import CONSTITUTIONAL_HASH
-
         from config.settings import get_settings
 
         settings = get_settings()

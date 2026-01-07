@@ -37,11 +37,12 @@ target-version = "py311"
 extend-exclude = ["venv", ".venv", "node_modules", "build", "dist", ".worktrees"]
 
 [tool.ruff.lint]
-select = ["E", "F", "B", "I"]
+select = ["E", "F", "B", "I", "T20"]  # T20 = flake8-print (catch print statements)
 ignore = [
     "B008",  # Do not perform function call in argument defaults (FastAPI Depends)
     "E501",  # Line too long (Handled by Black mostly)
 ]
+
 
 [tool.ruff.lint.isort]
 known-first-party = ["src", "shared", "services", "enhanced_agent_bus", "routes", "main", "app"]
@@ -50,6 +51,12 @@ known-first-party = ["src", "shared", "services", "enhanced_agent_bus", "routes"
 "*/alembic/env.py" = ["I001"]
 "alembic/env.py" = ["I001"]
 "**/alembic/*.py" = ["I001"]
+# Allow print statements in verification/debugging scripts and CLI tools
+"**/verify_*.py" = ["T20"]
+"**/tests/*" = ["T20"]
+"scripts/*.py" = ["T20"]
+"**/seed_*.py" = ["T20"]
+
 
 [tool.black]
 line-length = 100

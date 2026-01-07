@@ -19,6 +19,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 class SagaStatus(Enum):
     PENDING = "pending"
     RUNNING = "running"
@@ -26,6 +27,7 @@ class SagaStatus(Enum):
     COMPENSATING = "compensating"
     ROLLED_BACK = "rolled_back"
     FAILED = "failed"
+
 
 @dataclass
 class SagaStep:
@@ -37,6 +39,7 @@ class SagaStep:
     status: SagaStatus = SagaStatus.PENDING
     result: Optional[Any] = None
     error: Optional[str] = None
+
 
 class SagaTransaction:
     """
@@ -103,7 +106,6 @@ class SagaTransaction:
 
         for step in reversed(self._completed_steps):
             if step.compensation:
-
                 try:
                     await step.compensation(step.result)
                 except Exception as e:
@@ -112,10 +114,14 @@ class SagaTransaction:
                     )
                     # In a real system, we might retry or escalate to manual intervention
             else:
+                logger.debug(
+                    f"[{CONSTITUTIONAL_HASH}] No compensation needed for step: {step.name}"
+                )
 
         logger.info(
             f"[{CONSTITUTIONAL_HASH}] Compensation completed for transaction: {self.transaction_id}"
         )
+
 
 class ConstitutionalSaga(SagaTransaction):
     """

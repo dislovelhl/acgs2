@@ -24,6 +24,7 @@ from .pacar_manager import PACARManager
 
 logger = logging.getLogger(__name__)
 
+
 class PACARVerifier:
     """Orchestrates Red Team and Validator agents for agentic verification."""
 
@@ -166,7 +167,6 @@ class PACARVerifier:
         """
         # If no session_id provided, fall back to single-turn verification
         if not session_id:
-
             return await self.verify(content, original_intent)
 
         logger.info(f"Executing PACAR verification with context for session {session_id}")
@@ -197,7 +197,7 @@ class PACARVerifier:
         if self.redis_client:
             conversation_data = await self._get_conversation(session_id)
             if conversation_data:
-
+                logger.debug(f"Retrieved existing conversation for session {session_id}")
             else:
                 logger.info(f"Creating new conversation for session {session_id}")
 

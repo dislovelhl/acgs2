@@ -16,7 +16,7 @@ client = TestClient(app)
 def mock_agent_bus():
     """Mock the global agent_bus object in api module."""
     # The api.py checks 'if not agent_bus' so we need to mock it to be truthy
-    with patch("enhanced_agent_bus.api.agent_bus", {"status": "initialized"}):
+    with patch("src.core.enhanced_agent_bus.api.agent_bus", {"status": "initialized"}):
         yield
 
 

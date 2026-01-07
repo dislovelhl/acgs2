@@ -1,7 +1,6 @@
 # ACGS-2 API Reference
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 3.0.0
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 3.0.0
 > **Base URL**: `http://localhost:8000` (Policy Registry), `http://localhost:8080` (Agent Bus)
 > **Last Updated**: 2026-01-04
 
@@ -31,13 +30,13 @@ ACGS-2 provides RESTful APIs for all core services. All APIs:
 
 ### Base URLs
 
-| Service | Base URL | Port | Description |
-|---------|----------|------|-------------|
-| Policy Registry | `http://localhost:8000` | 8000 | Policy management |
-| Agent Bus | `http://localhost:8080` | 8080 | Agent communication |
-| Audit Service | `http://localhost:8084` | 8084 | Audit logging |
-| HITL Approvals | `http://localhost:8081` | 8081 | Human-in-the-loop |
-| ML Governance | `http://localhost:8000` | 8000 | ML model management |
+| Service         | Base URL                | Port | Description                 |
+| --------------- | ----------------------- | ---- | --------------------------- |
+| Policy Registry | `http://localhost:8000` | 8000 | Policy management           |
+| Agent Bus       | `http://localhost:8080` | 8080 | Agent communication         |
+| Audit Service   | `http://localhost:8084` | 8084 | Audit logging               |
+| HITL Approvals  | `http://localhost:8081` | 8081 | Human-in-the-loop workflows |
+| ML Governance   | `http://localhost:8000` | 8000 | ML model management         |
 
 ### Common Headers
 
@@ -140,11 +139,11 @@ Get all policies for the current tenant.
 
 **Query Parameters**:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `status` | string | No | Filter by status (DRAFT, ACTIVE, ARCHIVED) |
-| `limit` | integer | No | Maximum number of results (default: 100) |
-| `offset` | integer | No | Pagination offset (default: 0) |
+| Parameter | Type    | Required | Description                                |
+| --------- | ------- | -------- | ------------------------------------------ |
+| `status`  | string  | No       | Filter by status (DRAFT, ACTIVE, ARCHIVED) |
+| `limit`   | integer | No       | Maximum number of results (default: 100)   |
+| `offset`  | integer | No       | Pagination offset (default: 0)             |
 
 **Response**:
 
@@ -305,10 +304,10 @@ Get policy content with A/B testing support.
 
 **Query Parameters**:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `client_id` | string | Yes | Client identifier for A/B testing |
-| `version` | string | No | Specific version to retrieve |
+| Parameter   | Type   | Required | Description                       |
+| ----------- | ------ | -------- | --------------------------------- |
+| `client_id` | string | Yes      | Client identifier for A/B testing |
+| `version`   | string | No       | Specific version to retrieve      |
 
 **Response**:
 
@@ -478,14 +477,14 @@ Query audit logs with filters.
 
 **Query Parameters**:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `start_time` | ISO 8601 | No | Start time filter |
-| `end_time` | ISO 8601 | No | End time filter |
-| `event_type` | string | No | Filter by event type |
-| `actor` | string | No | Filter by actor |
-| `limit` | integer | No | Maximum results (default: 100) |
-| `offset` | integer | No | Pagination offset |
+| Parameter    | Type     | Required | Description                    |
+| ------------ | -------- | -------- | ------------------------------ |
+| `start_time` | ISO 8601 | No       | Start time filter              |
+| `end_time`   | ISO 8601 | No       | End time filter                |
+| `event_type` | string   | No       | Filter by event type           |
+| `actor`      | string   | No       | Filter by actor                |
+| `limit`      | integer  | No       | Maximum results (default: 100) |
+| `offset`     | integer  | No       | Pagination offset              |
 
 **Response**:
 
@@ -516,21 +515,25 @@ Query audit logs with filters.
 
 ### Create Approval Request
 
-Create a human-in-the-loop approval request.
+Create a human-in-the-loop approval request. The system will dynamically resolve the appropriate approval chain via OPA policies if `chain_id` is omitted.
 
-**Endpoint**: `POST /api/v1/hitl-approvals/requests`
+**Endpoint**: `POST /hitl/approvals/requests`
 
 **Request**:
 
 ```json
 {
-  "request_type": "policy_activation",
-  "payload": {
+  "decision_id": "policy_activation_001",
+  "tenant_id": "tenant_1",
+  "requested_by": "user@example.com",
+  "title": "Activate High Risk Policy",
+  "priority": "HIGH",
+  "context": {
     "policy_id": "policy-001",
     "version": "1.1.0"
   },
-  "risk_score": 0.85,
-  "required_approvers": 2
+  "chain_id": null,
+  "description": "Approval required for policy activation with score > 0.8"
 }
 ```
 
@@ -540,26 +543,31 @@ Create a human-in-the-loop approval request.
 {
   "status": "success",
   "data": {
-    "request_id": "req-001",
+    "id": "req-001",
     "status": "pending",
-    "required_approvers": 2,
-    "created_at": "2024-01-15T10:30:00Z"
+    "chain_id": "chain-abc-123",
+    "requested_by": "user@example.com",
+    "created_at": "2026-01-06T10:30:00Z"
   }
 }
 ```
 
 ### Submit Approval Decision
 
-Submit an approval decision.
+Submit an approval or rejection decision. Authorization is validated via OPA policies.
 
-**Endpoint**: `POST /api/v1/hitl-approvals/requests/{request_id}/decisions`
+**Endpoint**: `POST /hitl/approvals/requests/{request_id}/decisions`
 
 **Request**:
 
 ```json
 {
-  "decision": "approve",
-  "reasoning": "Policy changes are safe and compliant"
+  "approver_id": "approver_1",
+  "decision": "approved",
+  "rationale": "Policy changes are safe and compliant",
+  "context": {
+    "approver_role": "compliance_officer"
+  }
 }
 ```
 
@@ -569,10 +577,9 @@ Submit an approval decision.
 {
   "status": "success",
   "data": {
-    "request_id": "req-001",
+    "id": "req-001",
     "status": "approved",
-    "approvals_count": 2,
-    "completed_at": "2024-01-15T10:35:00Z"
+    "updated_at": "2026-01-06T10:35:00Z"
   }
 }
 ```
@@ -670,15 +677,15 @@ Get a prediction from a registered model.
 
 ### Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `AUTHENTICATION_REQUIRED` | 401 | Authentication token missing or invalid |
-| `AUTHORIZATION_DENIED` | 403 | Insufficient permissions |
-| `RESOURCE_NOT_FOUND` | 404 | Requested resource not found |
-| `VALIDATION_ERROR` | 400 | Request validation failed |
-| `CONSTITUTIONAL_ERROR` | 400 | Constitutional hash mismatch |
-| `RATE_LIMIT_EXCEEDED` | 429 | Rate limit exceeded |
-| `INTERNAL_ERROR` | 500 | Internal server error |
+| Code                      | HTTP Status | Description                             |
+| ------------------------- | ----------- | --------------------------------------- |
+| `AUTHENTICATION_REQUIRED` | 401         | Authentication token missing or invalid |
+| `AUTHORIZATION_DENIED`    | 403         | Insufficient permissions                |
+| `RESOURCE_NOT_FOUND`      | 404         | Requested resource not found            |
+| `VALIDATION_ERROR`        | 400         | Request validation failed               |
+| `CONSTITUTIONAL_ERROR`    | 400         | Constitutional hash mismatch            |
+| `RATE_LIMIT_EXCEEDED`     | 429         | Rate limit exceeded                     |
+| `INTERNAL_ERROR`          | 500         | Internal server error                   |
 
 ---
 
@@ -686,12 +693,12 @@ Get a prediction from a registered model.
 
 Rate limits are enforced at multiple levels:
 
-| Scope | Limit | Window |
-|-------|-------|--------|
-| IP | 1000 requests | 1 minute |
-| Tenant | 10000 requests | 1 minute |
-| User | 1000 requests | 1 minute |
-| Endpoint | Varies | 1 minute |
+| Scope    | Limit          | Window   |
+| -------- | -------------- | -------- |
+| IP       | 1000 requests  | 1 minute |
+| Tenant   | 10000 requests | 1 minute |
+| User     | 1000 requests  | 1 minute |
+| Endpoint | Varies         | 1 minute |
 
 Rate limit headers are included in responses:
 

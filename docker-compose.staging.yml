@@ -1,0 +1,62 @@
+# ACGS-2 Staging Docker Compose
+# Deployment for mHC Stability System
+# Constitutional Hash: cdd01ef066bc6cf2
+
+services:
+  # Governance Service (Agent Bus) - Using local mount to pick up source changes
+  agent-bus:
+    image: acgs2-agent-bus:latest
+    ports:
+      - "8100:8000"
+    volumes:
+      - .:/app_root
+    command: sh -c "pip install --no-cache-dir prometheus-client slowapi pybreaker litellm numpy torch orjson --extra-index-url https://download.pytorch.org/whl/cpu && python -m uvicorn src.core.enhanced_agent_bus.api:app --host 0.0.0.0 --port 8000"
+    environment:
+      - ENVIRONMENT=staging
+      - OPA_URL=http://opa:8181
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP:-kafka:29092}
+      - CONSTITUTIONAL_HASH=cdd01ef066bc6cf2
+      - RATE_LIMIT_REQUESTS_PER_MINUTE=120
+      - PYTHONPATH=/app_root
+    networks:
+      - acgs-staging
+    restart: unless-stopped
+    depends_on:
+      - opa
+      - redis
+
+  # Core Dependencies (Simplified for Staging)
+  opa:
+    image: openpolicyagent/opa:latest
+    command: run --server --addr 0.0.0.0:8181
+    networks:
+      - acgs-staging
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - acgs-staging
+
+  # Analytics API - Proxy for Stability Metrics
+  analytics-api:
+    image: acgs2-agent-bus:latest
+    volumes:
+      - .:/app_root
+    environment:
+      - AGENT_BUS_URL=http://agent-bus:8000
+      - ENVIRONMENT=staging
+      - PYTHONPATH=/app_root
+    ports:
+      - "8082:8080"
+    working_dir: /app_root
+    command: sh -c "pip install --no-cache-dir prometheus-client slowapi pybreaker litellm numpy torch orjson --extra-index-url https://download.pytorch.org/whl/cpu && python -m uvicorn src.core.services.analytics-api.src.main:app --host 0.0.0.0 --port 8080"
+    networks:
+      - acgs-staging
+    depends_on:
+      - agent-bus
+
+  # Networking
+networks:
+  acgs-staging:
+    driver: bridge

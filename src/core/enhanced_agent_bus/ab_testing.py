@@ -271,6 +271,8 @@ class PromotionResult:
     """Result of promoting candidate to champion."""
 
     status: PromotionStatus
+    success: bool = False
+    message: Optional[str] = None
     previous_champion_version: Optional[int] = None
     new_champion_version: Optional[int] = None
     comparison: Optional[MetricsComparison] = None
@@ -740,6 +742,86 @@ class ABTestRouter:
     def get_traffic_distribution(self, n_requests: int = 1000) -> Dict[str, Any]:
         """Get traffic distribution."""
         return self.metrics_manager.get_traffic_distribution(n_requests)
+
+
+# Global singleton router
+_ab_test_router: Optional[ABTestRouter] = None
+
+
+def get_ab_test_router(**kwargs: Any) -> ABTestRouter:
+    """
+    Get or create the global A/B test router singleton.
+
+    Args:
+        **kwargs: Parameters passed to ABTestRouter constructor if creating
+
+    Returns:
+        ABTestRouter instance
+    """
+    global _ab_test_router
+    if _ab_test_router is None or kwargs:
+        _ab_test_router = ABTestRouter(**kwargs)
+    return _ab_test_router
+
+
+def route_request(request_id: str) -> RoutingResult:
+    """
+    Route a request using the global A/B test router.
+
+    Args:
+        request_id: Unique request identifier
+
+    Returns:
+        RoutingResult indicating the selected cohort
+    """
+    return get_ab_test_router().route(request_id)
+
+
+def route_and_predict(request_id: str, features: Any) -> PredictionResult:
+    """
+    Route a request and get a prediction using the global router.
+
+    Args:
+        request_id: Unique request identifier
+        features: Features to pass to the model
+
+    Returns:
+        PredictionResult
+    """
+    return get_ab_test_router().route_and_predict(request_id, features)
+
+
+def get_ab_test_metrics() -> Dict[str, Any]:
+    """
+    Get a summary of A/B test metrics from the global router.
+
+    Returns:
+        Dictionary containing metrics summary
+    """
+    return get_ab_test_router().get_metrics_summary()
+
+
+def compare_models() -> MetricsComparison:
+    """
+    Compare champion vs candidate models using the global router.
+
+    Returns:
+        MetricsComparison result
+    """
+    return get_ab_test_router().compare_metrics()
+
+
+def promote_candidate_model(force: bool = False) -> PromotionResult:
+    """
+    Promote the candidate model to champion using the global router.
+
+    Args:
+        force: Whether to force promotion even if metrics aren't better
+
+    Returns:
+        PromotionResult
+    """
+    return get_ab_test_router().promote_candidate(force)
 
 
 # Export key classes and functions

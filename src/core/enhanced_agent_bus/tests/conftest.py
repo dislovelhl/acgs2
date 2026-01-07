@@ -207,7 +207,9 @@ except AttributeError:
 
     MessageProcessor = message_processor.MessageProcessor
 try:
-from src.core.enhanced_agent_bus.agent_bus import EnhancedAgentBus
+    from src.core.enhanced_agent_bus.agent_bus import EnhancedAgentBus
+except ImportError:
+    EnhancedAgentBus = None
 
 
 @pytest.fixture(scope="session")

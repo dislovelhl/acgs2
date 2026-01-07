@@ -7,7 +7,9 @@ Supports SOC 2, ISO 27001, GDPR, and ISO 42001 compliance frameworks.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from datetime import date, datetime, timezone
+from datetime import date as d_date
+from datetime import datetime as d_datetime
+from datetime import timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -53,7 +55,7 @@ class GovernanceMetrics(BaseModel):
     tenant_id: str = Field(..., min_length=1, max_length=255, description="Tenant identifier")
 
     # Date for the metrics snapshot
-    date: date = Field(..., description="Date of the metrics snapshot")
+    date: d_date = Field(..., description="Date of the metrics snapshot")
 
     # Core compliance metrics
     compliance_score: float = Field(
@@ -80,8 +82,8 @@ class GovernanceMetrics(BaseModel):
     )
 
     # Timestamps
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: d_datetime = Field(default_factory=lambda: d_datetime.now(timezone.utc))
+    updated_at: d_datetime = Field(default_factory=lambda: d_datetime.now(timezone.utc))
 
     @field_validator("controls_total", mode="before")
     @classmethod
@@ -94,16 +96,16 @@ class GovernanceMetrics(BaseModel):
         return v
 
     @field_serializer("date")
-    def serialize_date(self, value: date) -> str:
+    def serialize_date(self, value: d_date) -> str:
         return value.isoformat()
 
     @field_serializer("created_at", "updated_at")
-    def serialize_datetimes(self, value: datetime) -> str:
+    def serialize_datetimes(self, value: d_datetime) -> str:
         return value.isoformat()
 
     def update_timestamp(self) -> None:
         """Update the updated_at timestamp."""
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = d_datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -159,14 +161,22 @@ class GovernanceKPIs(BaseModel):
     )
 
     # Data freshness
-    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_updated: d_datetime = Field(default_factory=lambda: d_datetime.now(timezone.utc))
     data_stale_warning: bool = Field(
         default=False,
         description="True if data hasn't been updated in >7 days",
     )
 
+    # OPA and HITL metrics
+    opa_metrics: Dict[str, Any] = Field(
+        default_factory=dict, description="Real-time OPA policy evaluation metrics"
+    )
+    hitl_metrics: Dict[str, Any] = Field(
+        default_factory=dict, description="Human-in-the-loop approval metrics"
+    )
+
     @field_serializer("last_updated")
-    def serialize_datetime(self, value: datetime) -> str:
+    def serialize_datetime(self, value: d_datetime) -> str:
         return value.isoformat()
 
     @field_validator("controls_total", mode="before")
@@ -191,6 +201,8 @@ class GovernanceKPIs(BaseModel):
             "high_risk_incidents": self.high_risk_incidents,
             "trend_direction": self.trend_direction.value,
             "trend_change_percent": self.trend_change_percent,
+            "opa_metrics": self.opa_metrics,
+            "hitl_metrics": self.hitl_metrics,
             "last_updated": self.last_updated.isoformat(),
             "data_stale_warning": self.data_stale_warning,
         }
@@ -199,7 +211,7 @@ class GovernanceKPIs(BaseModel):
 class GovernanceTrendPoint(BaseModel):
     """Single data point in governance trend series."""
 
-    date: date = Field(..., description="Date of the data point")
+    date: d_date = Field(..., description="Date of the data point")
     compliance_score: float = Field(
         ..., ge=0.0, le=100.0, description="Compliance score on this date"
     )
@@ -209,7 +221,7 @@ class GovernanceTrendPoint(BaseModel):
     audit_count: int = Field(default=0, ge=0)
 
     @field_serializer("date")
-    def serialize_date(self, value: date) -> str:
+    def serialize_date(self, value: d_date) -> str:
         return value.isoformat()
 
 
@@ -235,8 +247,8 @@ class GovernanceTrends(BaseModel):
     )
 
     # Aggregated statistics
-    period_start: date = Field(..., description="Start date of trend period")
-    period_end: date = Field(..., description="End date of trend period")
+    period_start: d_date = Field(..., description="Start date of trend period")
+    period_end: d_date = Field(..., description="End date of trend period")
     avg_compliance_score: float = Field(
         default=0.0,
         ge=0.0,
@@ -264,7 +276,7 @@ class GovernanceTrends(BaseModel):
     )
 
     @field_serializer("period_start", "period_end")
-    def serialize_dates(self, value: date) -> str:
+    def serialize_dates(self, value: d_date) -> str:
         return value.isoformat()
 
     def to_dict(self) -> Dict[str, Any]:
@@ -300,16 +312,16 @@ class FrameworkComplianceStatus(BaseModel):
     controls_passing: int = Field(default=0, ge=0)
     controls_failing: int = Field(default=0, ge=0)
     controls_total: int = Field(default=0, ge=0)
-    last_audit_date: Optional[date] = Field(
+    last_audit_date: Optional[d_date] = Field(
         default=None, description="Date of last audit for this framework"
     )
-    next_audit_due: Optional[date] = Field(default=None, description="Due date for next audit")
+    next_audit_due: Optional[d_date] = Field(default=None, description="Due date for next audit")
     certification_status: Optional[str] = Field(
         default=None, description="Current certification status"
     )
 
     @field_serializer("last_audit_date", "next_audit_due")
-    def serialize_optional_date(self, value: Optional[date]) -> Optional[str]:
+    def serialize_optional_date(self, value: Optional[d_date]) -> Optional[str]:
         return value.isoformat() if value else None
 
 
@@ -337,10 +349,10 @@ class MultiFrameworkKPIs(BaseModel):
     highest_framework: Optional[ComplianceFramework] = Field(
         default=None, description="Framework with highest compliance score"
     )
-    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_updated: d_datetime = Field(default_factory=lambda: d_datetime.now(timezone.utc))
 
     @field_serializer("last_updated")
-    def serialize_datetime(self, value: datetime) -> str:
+    def serialize_datetime(self, value: d_datetime) -> str:
         return value.isoformat()
 
 
@@ -354,13 +366,13 @@ class GovernanceAlert(BaseModel):
     title: str = Field(..., max_length=255)
     description: str = Field(..., max_length=1000)
     framework: Optional[ComplianceFramework] = Field(default=None)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: d_datetime = Field(default_factory=lambda: d_datetime.now(timezone.utc))
     acknowledged: bool = Field(default=False)
-    acknowledged_at: Optional[datetime] = Field(default=None)
+    acknowledged_at: Optional[d_datetime] = Field(default=None)
     acknowledged_by: Optional[str] = Field(default=None)
 
     @field_serializer("created_at", "acknowledged_at")
-    def serialize_optional_datetime(self, value: Optional[datetime]) -> Optional[str]:
+    def serialize_optional_datetime(self, value: Optional[d_datetime]) -> Optional[str]:
         return value.isoformat() if value else None
 
 

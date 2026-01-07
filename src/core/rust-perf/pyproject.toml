@@ -31,7 +31,7 @@ module-name = "acgs2_perf"
 profile = "release"
 
 # Use abi3 for Python 3.8+ compatibility
-python-source = "python"
+# python-source = "python"
 
 # Build features
 features = ["pyo3/extension-module", "pyo3/abi3-py38"]

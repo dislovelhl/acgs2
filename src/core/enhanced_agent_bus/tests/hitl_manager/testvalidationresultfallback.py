@@ -182,7 +182,6 @@ class TestValidationResultFallback:
 
     def test_validation_result_with_custom_metadata(self):
         """Test ValidationResult with custom metadata."""
-        from datetime import datetime, timezone
 
         from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
 

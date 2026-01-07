@@ -326,7 +326,7 @@ class AnomalyAlerter:
         import hashlib
 
         content = f"{alert_type.value}:{severity.value}:{title}:{source}"
-        hash_obj = hashlib.md5(content.encode())
+        hash_obj = hashlib.md5(content.encode(), usedforsecurity=False)
         return f"{alert_type.value}_{hash_obj.hexdigest()[:8]}"
 
     @staticmethod

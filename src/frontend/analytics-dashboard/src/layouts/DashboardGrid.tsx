@@ -22,6 +22,7 @@ import { InsightWidget } from "../components/widgets/InsightWidget";
 import { AnomalyWidget } from "../components/widgets/AnomalyWidget";
 import { PredictionWidget } from "../components/widgets/PredictionWidget";
 import { ComplianceWidget } from "../components/widgets/ComplianceWidget";
+import { StabilityMetricsWidget } from "../components/widgets/StabilityMetricsWidget";
 import { Tooltip } from "../components/common/Tooltip";
 
 // Create responsive grid layout component
@@ -31,7 +32,12 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = "acgs-analytics-dashboard-layout";
 
 /** Widget identifiers */
-type WidgetId = "insights" | "anomalies" | "predictions" | "compliance";
+type WidgetId =
+  | "insights"
+  | "anomalies"
+  | "predictions"
+  | "compliance"
+  | "stability";
 
 /** Widget configuration */
 interface WidgetConfig {
@@ -72,7 +78,13 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
     id: "compliance",
     title: "Compliance Status",
     component: <ComplianceWidget />,
-    defaultLayout: { x: 0, y: 20, w: 6, h: 10, minW: 3, minH: 6 },
+    defaultLayout: { x: 0, y: 22, w: 6, h: 10, minW: 3, minH: 6 },
+  },
+  {
+    id: "stability",
+    title: "mHC Stability",
+    component: <StabilityMetricsWidget />,
+    defaultLayout: { x: 6, y: 22, w: 6, h: 10, minW: 3, minH: 6 },
   },
 ];
 
@@ -100,10 +112,14 @@ function generateDefaultLayouts(): Layouts {
   // Medium screens (md) - slightly condensed
   layouts.md = WIDGET_CONFIGS.map((widget) => ({
     i: widget.id,
-    x: widget.id === "predictions" ? 0 : widget.defaultLayout.x === 0 ? 0 : 5,
-    y: widget.defaultLayout.y,
     w: widget.id === "predictions" ? 10 : 5,
     h: widget.defaultLayout.h,
+    x:
+      widget.id === "predictions"
+        ? 0
+        : ["insights", "compliance"].includes(widget.id)
+        ? 0
+        : 5,
     minW: widget.defaultLayout.minW,
     minH: widget.defaultLayout.minH,
   }));

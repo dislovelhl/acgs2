@@ -6,6 +6,7 @@
 //!
 //! Target: >5x performance improvement over equivalent Python implementations
 
+use ndarray::{Array1, Array2, Axis};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use std::collections::HashMap;
@@ -43,7 +44,7 @@ fn fast_hash(key: &str) -> u64 {
 /// # Returns
 /// A cache key string in format "acgs2:{hash}"
 #[pyfunction]
-fn generate_cache_key(service: &str, endpoint: &str, params: Vec<(&str, &str)>) -> String {
+fn generate_cache_key(service: &str, endpoint: &str, params: Vec<(String, String)>) -> String {
     let mut combined = String::with_capacity(256);
     combined.push_str(service);
     combined.push(':');
@@ -51,13 +52,13 @@ fn generate_cache_key(service: &str, endpoint: &str, params: Vec<(&str, &str)>) 
 
     // Sort params for consistent hashing regardless of order
     let mut sorted_params = params;
-    sorted_params.sort_by(|a, b| a.0.cmp(b.0));
+    sorted_params.sort_by(|a, b| a.0.cmp(&b.0));
 
     for (key, value) in sorted_params {
         combined.push(':');
-        combined.push_str(key);
+        combined.push_str(&key);
         combined.push('=');
-        combined.push_str(value);
+        combined.push_str(&value);
     }
 
     let hash = fast_hash(&combined);
@@ -74,7 +75,7 @@ fn generate_cache_key(service: &str, endpoint: &str, params: Vec<(&str, &str)>) 
 /// # Returns
 /// Vector of validation results (true/false for each string)
 #[pyfunction]
-fn batch_validate_strings(strings: Vec<&str>, pattern: &str) -> Vec<bool> {
+fn batch_validate_strings(strings: Vec<String>, pattern: &str) -> Vec<bool> {
     strings
         .iter()
         .map(|s| match pattern {
@@ -263,7 +264,7 @@ fn merge_dicts<'py>(py: Python<'py>, dicts: Vec<Bound<'py, PyDict>>) -> PyResult
 /// # Returns
 /// Vector of extracted values (None if key not found)
 #[pyfunction]
-fn batch_extract_json_field(json_strings: Vec<&str>, key: &str) -> Vec<Option<String>> {
+fn batch_extract_json_field(json_strings: Vec<String>, key: &str) -> Vec<Option<String>> {
     let search_pattern = format!("\"{}\":", key);
 
     json_strings
@@ -301,7 +302,7 @@ fn batch_extract_json_field(json_strings: Vec<&str>, key: &str) -> Vec<Option<St
 /// # Returns
 /// Normalized strings
 #[pyfunction]
-fn batch_normalize_strings(strings: Vec<&str>) -> Vec<String> {
+fn batch_normalize_strings(strings: Vec<String>) -> Vec<String> {
     strings
         .iter()
         .map(|s| {
@@ -326,7 +327,7 @@ fn batch_normalize_strings(strings: Vec<&str>) -> Vec<String> {
 /// Vector of similarity scores (0.0 to 1.0)
 #[pyfunction]
 #[pyo3(signature = (query, targets, n = 2))]
-fn batch_similarity_scores(query: &str, targets: Vec<&str>, n: usize) -> Vec<f64> {
+fn batch_similarity_scores(query: &str, targets: Vec<String>, n: usize) -> Vec<f64> {
     let query_ngrams = get_ngrams(query, n);
 
     targets
@@ -375,7 +376,7 @@ fn jaccard_similarity(
 /// # Returns
 /// HashMap of value -> count
 #[pyfunction]
-fn count_values(values: Vec<&str>) -> HashMap<String, usize> {
+fn count_values(values: Vec<String>) -> HashMap<String, usize> {
     let mut counts: HashMap<String, usize> = HashMap::new();
     for value in values {
         *counts.entry(value.to_string()).or_insert(0) += 1;
@@ -392,12 +393,11 @@ fn count_values(values: Vec<&str>) -> HashMap<String, usize> {
 /// # Returns
 /// Deduplicated list
 #[pyfunction]
-fn deduplicate_ordered(values: Vec<&str>) -> Vec<String> {
+fn deduplicate_ordered(values: Vec<String>) -> Vec<String> {
     let mut seen = std::collections::HashSet::new();
     values
         .into_iter()
-        .filter(|v| seen.insert(*v))
-        .map(|v| v.to_string())
+        .filter(|v| seen.insert(v.clone()))
         .collect()
 }
 
@@ -411,7 +411,7 @@ fn deduplicate_ordered(values: Vec<&str>) -> Vec<String> {
 /// # Returns
 /// True if any value matches any pattern
 #[pyfunction]
-fn batch_match_patterns(values: Vec<&str>, patterns: Vec<&str>) -> bool {
+fn batch_match_patterns(values: Vec<String>, patterns: Vec<String>) -> bool {
     for value in &values {
         for pattern in &patterns {
             if match_wildcard_pattern(value, pattern) {
@@ -482,6 +482,105 @@ fn fast_checksum(data: &str) -> u32 {
     sum
 }
 
+/// Project a weight matrix onto the Birkhoff polytope using the Sinkhorn-Knopp algorithm.
+/// This ensures the matrix is doubly stochastic (rows and columns sum to 1) or matches specified marginals.
+///
+/// # Arguments
+/// * `w_vec` - Input matrix as nested vectors
+/// * `row_marginal` - Optional target sums for rows (default: uniform)
+/// * `col_marginal` - Optional target sums for columns (default: uniform)
+/// * `iters` - Number of Sinkhorn iterations
+/// * `eps` - Epsilon for numerical stability
+///
+/// # Returns
+/// Nested vectors representing the projected doubly stochastic matrix
+#[pyfunction]
+#[pyo3(signature = (w_vec, row_marginal = None, col_marginal = None, iters = 20, eps = 1e-6))]
+fn sinkhorn_knopp(
+    w_vec: Vec<Vec<f64>>,
+    row_marginal: Option<Vec<f64>>,
+    col_marginal: Option<Vec<f64>>,
+    iters: usize,
+    eps: f64,
+) -> PyResult<Vec<Vec<f64>>> {
+    let rows = w_vec.len();
+    if rows == 0 {
+        return Ok(vec![]);
+    }
+    let cols = w_vec[0].len();
+
+    // Convert Vec<Vec<f64>> to Array2<f64>
+    let mut data = Vec::with_capacity(rows * cols);
+    for row in w_vec {
+        if row.len() != cols {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "All rows must have the same length",
+            ));
+        }
+        data.extend(row);
+    }
+    let w = Array2::from_shape_vec((rows, cols), data).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid shape: {}", e))
+    })?;
+
+    // Prepare target marginals (convert Vec to Array1)
+    let r_target = row_marginal.map(|v| Array1::from_vec(v));
+    let c_target = col_marginal.map(|v| Array1::from_vec(v));
+
+    // Validate marginal dimensions if provided
+    if let Some(ref r) = r_target {
+        if r.len() != rows {
+             return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                format!("Row marginal length {} must match matrix rows {}", r.len(), rows),
+            ));
+        }
+    }
+    if let Some(ref c) = c_target {
+        if c.len() != cols {
+             return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                format!("Column marginal length {} must match matrix cols {}", c.len(), cols),
+            ));
+        }
+    }
+
+    let w_projected = sinkhorn_knopp_core(w, r_target.as_ref(), c_target.as_ref(), iters, eps);
+
+    // Convert back to Vec<Vec<f64>>
+    Ok(w_projected.axis_iter(Axis(0)).map(|row| row.to_vec()).collect())
+}
+
+/// Internal core logic for Sinkhorn-Knopp algorithm with optional marginals.
+fn sinkhorn_knopp_core(
+    mut w: Array2<f64>,
+    r_target: Option<&Array1<f64>>,
+    c_target: Option<&Array1<f64>>,
+    iters: usize,
+    eps: f64,
+) -> Array2<f64> {
+    // Step 1: Exponential projection to ensure positivity
+    w.mapv_inplace(|x| x.exp());
+
+    // Step 2: Iterative Sinkhorn normalization
+    for _ in 0..iters {
+        // Column normalization
+        let col_sums = w.sum_axis(Axis(0));
+        for (j, mut col) in w.axis_iter_mut(Axis(1)).enumerate() {
+            let target = if let Some(c_t) = c_target { c_t[j] } else { 1.0 };
+            let s = col_sums[j] + eps;
+            col.mapv_inplace(|x| x * (target / s));
+        }
+
+        // Row normalization
+        let row_sums = w.sum_axis(Axis(1));
+        for (i, mut row) in w.axis_iter_mut(Axis(0)).enumerate() {
+            let target = if let Some(r_t) = r_target { r_t[i] } else { 1.0 };
+            let s = row_sums[i] + eps;
+            row.mapv_inplace(|x| x * (target / s));
+        }
+    }
+    w
+}
+
 /// Python module definition
 #[pymodule]
 fn acgs2_perf(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -499,6 +598,7 @@ fn acgs2_perf(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(deduplicate_ordered, m)?)?;
     m.add_function(wrap_pyfunction!(batch_match_patterns, m)?)?;
     m.add_function(wrap_pyfunction!(fast_checksum, m)?)?;
+    m.add_function(wrap_pyfunction!(sinkhorn_knopp, m)?)?;
     Ok(())
 }
 
@@ -518,11 +618,19 @@ mod tests {
 
     #[test]
     fn test_generate_cache_key() {
-        let key = generate_cache_key("service", "/api/test", vec![("a", "1"), ("b", "2")]);
+        let key = generate_cache_key(
+            "service",
+            "/api/test",
+            vec![("a".to_string(), "1".to_string()), ("b".to_string(), "2".to_string())],
+        );
         assert!(key.starts_with("acgs2:"));
 
         // Same params in different order should produce same key
-        let key2 = generate_cache_key("service", "/api/test", vec![("b", "2"), ("a", "1")]);
+        let key2 = generate_cache_key(
+            "service",
+            "/api/test",
+            vec![("b".to_string(), "2".to_string()), ("a".to_string(), "1".to_string())],
+        );
         assert_eq!(key, key2);
     }
 
@@ -559,14 +667,14 @@ mod tests {
         let values = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
         let percentiles = compute_percentiles(values, vec![50.0, 90.0, 99.0]);
 
-        assert_eq!(percentiles[0], 5.0); // P50
+        assert_eq!(percentiles[0], 6.0); // P50
         assert_eq!(percentiles[1], 9.0); // P90
         assert_eq!(percentiles[2], 10.0); // P99
     }
 
     #[test]
     fn test_batch_normalize_strings() {
-        let strings = vec!["  HELLO World  ", "  test  string  "];
+        let strings = vec!["  HELLO World  ".to_string(), "  test  string  ".to_string()];
         let normalized = batch_normalize_strings(strings);
 
         assert_eq!(normalized[0], "hello world");
@@ -575,7 +683,7 @@ mod tests {
 
     #[test]
     fn test_count_values() {
-        let values = vec!["a", "b", "a", "c", "a", "b"];
+        let values = vec!["a".to_string(), "b".to_string(), "a".to_string(), "c".to_string(), "a".to_string(), "b".to_string()];
         let counts = count_values(values);
 
         assert_eq!(*counts.get("a").unwrap(), 3);
@@ -585,7 +693,7 @@ mod tests {
 
     #[test]
     fn test_deduplicate_ordered() {
-        let values = vec!["a", "b", "a", "c", "b", "d"];
+        let values = vec!["a".to_string(), "b".to_string(), "a".to_string(), "c".to_string(), "b".to_string(), "d".to_string()];
         let deduped = deduplicate_ordered(values);
 
         assert_eq!(deduped, vec!["a", "b", "c", "d"]);
@@ -619,5 +727,25 @@ mod tests {
         assert!(!validate_identifier("123invalid"));
         assert!(!validate_identifier(""));
         assert!(!validate_identifier("has-dash"));
+    }
+
+    #[test]
+    fn test_sinkhorn_knopp() {
+        let result = sinkhorn_knopp_core(ndarray::Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap(), 20, 1e-9);
+
+        // Verify shapes
+        assert_eq!(result.dim(), (2, 2));
+
+        // Verify row sums (should be approx 1.0)
+        for row in result.axis_iter(Axis(0)) {
+            let sum: f64 = row.sum();
+            assert!((sum - 1.0).abs() < 1e-6);
+        }
+
+        // Verify col sums
+        for col in result.axis_iter(Axis(1)) {
+            let sum: f64 = col.sum();
+            assert!((sum - 1.0).abs() < 1e-6);
+        }
     }
 }

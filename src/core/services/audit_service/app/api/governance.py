@@ -8,7 +8,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import logging
-from datetime import date, datetime, timedelta, timezone
+from datetime import date as d_date
+from datetime import datetime as d_datetime
+from datetime import timedelta, timezone
 from typing import Any, Dict, Optional
 
 try:
@@ -38,7 +40,10 @@ async def _calculate_kpis_from_ledger(tenant_id: str) -> JSONDict:
     """
     Calculate governance KPIs from audit ledger data.
     """
-    from ..core.audit_ledger import get_audit_ledger
+    try:
+        from ...core.audit_ledger import get_audit_ledger
+    except (ImportError, ValueError):
+        from core.audit_ledger import get_audit_ledger
 
     # Get real metrics from audit ledger
     ledger = await get_audit_ledger()
@@ -52,28 +57,51 @@ async def _calculate_kpis_from_ledger(tenant_id: str) -> JSONDict:
     successful_anchors = sum(1 for result in recent_results if result.get("success", False))
     failed_anchors = len(recent_results) - successful_anchors
 
-    # Calculate compliance score based on anchor success rate
-    if recent_results:
-        compliance_score = (successful_anchors / len(recent_results)) * 100
-    else:
-        compliance_score = 100.0  # No recent validations = assume compliant
+    # Calculate additional metrics from ledger entries
+    all_entries = ledger.entries[-200:]  # Look at last 200 entries
+    opa_evals = [
+        e for e in all_entries if e.validation_result.metadata.get("type") == "opa_evaluation"
+    ]
+    hitl_actions = [
+        e
+        for e in all_entries
+        if e.validation_result.metadata.get("type")
+        in ("approval_request_created", "approval_decision_submitted")
+    ]
+
+    opa_success = sum(
+        1 for e in opa_evals if e.validation_result.metadata.get("result", {}).get("allowed", False)
+    )
+    opa_total = len(opa_evals)
+
+    # Calculate compliance score based on anchor success rate and OPA pass rate
+    anchor_success_rate = (successful_anchors / len(recent_results)) if recent_results else 1.0
+    opa_success_rate = (opa_success / opa_total) if opa_total > 0 else 1.0
+
+    compliance_score = (anchor_success_rate * 0.4 + opa_success_rate * 0.6) * 100
 
     # Check if data is stale
     last_updated = anchor_stats.get("last_updated")
     if last_updated:
-        days_since_update = (datetime.now(timezone.utc) - last_updated).days
+        days_since_update = (d_datetime.now(timezone.utc) - last_updated).days
         data_stale = days_since_update > DATA_STALE_THRESHOLD_DAYS
     else:
         data_stale = True
 
     return {
         "compliance_score": round(compliance_score, 1),
-        "controls_passing": successful_anchors,
-        "controls_failing": failed_anchors,
-        "controls_total": len(recent_results) if recent_results else 1,
+        "controls_passing": successful_anchors + opa_success,
+        "controls_failing": failed_anchors + (opa_total - opa_success),
+        "controls_total": len(recent_results) + opa_total,
         "recent_audits": len(recent_results),
-        "high_risk_incidents": failed_anchors,
-        "last_updated": datetime.now(timezone.utc),
+        "high_risk_incidents": failed_anchors + (opa_total - opa_success),
+        "opa_metrics": {
+            "total_evaluations": opa_total,
+            "allowed": opa_success,
+            "denied": opa_total - opa_success,
+        },
+        "hitl_metrics": {"total_actions": len(hitl_actions)},
+        "last_updated": d_datetime.now(timezone.utc),
         "data_stale": data_stale,
     }
 
@@ -126,19 +154,27 @@ async def get_governance_kpis(
     Executive and Compliance Officer roles have access to this endpoint.
     """
     try:
+        try:
+            from ...core.audit_ledger import get_audit_ledger
+        except (ImportError, ValueError):
+            from core.audit_ledger import get_audit_ledger
+
         # Calculate KPIs from ledger data
         kpi_data = await _calculate_kpis_from_ledger(tenant_id)
 
-        # Calculate trend from historical data
-        # For now, assume previous score was 85.0 for trend calculation
-        previous_score = 85.0
+        # Calculate trend from historical data (yesterday)
+        yesterday = d_date.today() - timedelta(days=1)
+        yesterday_metrics = await (await get_audit_ledger()).get_metrics_for_date(
+            tenant_id=tenant_id, date=yesterday
+        )
+        previous_score = yesterday_metrics.get("compliance_score", 100.0)
         trend_direction, trend_change = await _calculate_trend(
             kpi_data["compliance_score"], previous_score
         )
 
         # Check data freshness
         data_stale = kpi_data.get("data_stale", False)
-        last_updated = kpi_data.get("last_updated", datetime.now(timezone.utc))
+        last_updated = kpi_data.get("last_updated", d_datetime.now(timezone.utc))
 
         # Build KPIs response using the model
         kpis = GovernanceKPIs(
@@ -151,6 +187,8 @@ async def get_governance_kpis(
             high_risk_incidents=kpi_data["high_risk_incidents"],
             trend_direction=trend_direction,
             trend_change_percent=round(trend_change, 2),
+            opa_metrics=kpi_data.get("opa_metrics", {}),
+            hitl_metrics=kpi_data.get("hitl_metrics", {}),
             last_updated=last_updated,
             data_stale_warning=data_stale,
         )
@@ -192,12 +230,15 @@ async def get_governance_trends(
     """
     try:
         # Calculate date range
-        end_date = date.today()
+        end_date = d_date.today()
         start_date = end_date - timedelta(days=days)
 
         # Integrate with audit_ledger/metrics database for real trend data
         try:
-            from ..core.audit_ledger import get_audit_ledger
+            try:
+                from ...core.audit_ledger import get_audit_ledger
+            except (ImportError, ValueError):
+                from core.audit_ledger import get_audit_ledger
 
             ledger = await get_audit_ledger()
             data_points = []
@@ -311,5 +352,5 @@ async def governance_health() -> JSONDict:
         "api": "governance",
         "version": "1.0.0",
         "endpoints": ["/kpis", "/trends", "/health"],
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": d_datetime.now(timezone.utc).isoformat(),
     }

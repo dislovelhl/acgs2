@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 # Constitutional Hash for immutable validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
+
 @dataclass
 class Z3Constraint:
     """Represents a Z3 constraint with metadata."""
@@ -45,6 +46,7 @@ class Z3Constraint:
     def __post_init__(self):
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
+
 
 @dataclass
 class Z3VerificationResult:
@@ -63,6 +65,7 @@ class Z3VerificationResult:
         if self.solver_stats is None:
             self.solver_stats = {}
 
+
 @dataclass
 class ConstitutionalPolicy:
     """Represents a constitutional policy with formal verification."""
@@ -79,6 +82,7 @@ class ConstitutionalPolicy:
     def __post_init__(self):
         if self.created_at is None:
             self.created_at = datetime.utcnow()
+
 
 class Z3SolverAdapter:
     """
@@ -160,6 +164,7 @@ class Z3SolverAdapter:
                 core = self.solver.unsat_core()
                 unsat_core = [str(c) for c in core]
             except Exception as e:
+                logger.error(f"Unsat core collection failed: {e}")
 
             return Z3VerificationResult(
                 is_sat=False, unsat_core=unsat_core, solve_time_ms=solve_time
@@ -175,6 +180,7 @@ class Z3SolverAdapter:
     def get_constraint_names(self) -> List[str]:
         """Get list of all constraint names."""
         return list(self.named_constraints.keys())
+
 
 class LLMAssistedZ3Adapter:
     """
@@ -389,6 +395,7 @@ class LLMAssistedZ3Adapter:
 
         return refined_constraints
 
+
 class ConstitutionalZ3Verifier:
     """
     High-level constitutional policy verifier using Z3.
@@ -491,6 +498,7 @@ class ConstitutionalZ3Verifier:
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
+
 # Convenience functions
 async def verify_policy_formally(
     policy_text: str, policy_id: Optional[str] = None
@@ -510,6 +518,7 @@ async def verify_policy_formally(
 
     verifier = ConstitutionalZ3Verifier()
     return await verifier.verify_constitutional_policy(policy_id, policy_text)
+
 
 # Export for use in other modules
 __all__ = [

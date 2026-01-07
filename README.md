@@ -1,7 +1,6 @@
 # ACGS-2: Advanced Constitutional Governance System
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2` [🔍 Validation Requirements](./src/core/docs/architecture/ENHANCED_AGENT_BUS_DOCUMENTATION.md#constitutional-validation)
-> **Version**: 3.0.0 (Post-Architecture Review)
+> **Constitutional Hash**: `cdd01ef066bc6cf2` [🔍 Validation Requirements](./src/core/docs/architecture/ENHANCED_AGENT_BUS_DOCUMENTATION.md#constitutional-validation) > **Version**: 3.0.0 (Post-Architecture Review)
 > **Status**: Production Ready with Enterprise Security
 > **Architecture**: 3-Service Consolidation (70% complexity reduction)
 
@@ -15,49 +14,49 @@
 
 ## 🎯 Post-Architecture Review Achievements
 
-| **Category** | **Achievement** | **Impact** |
-|--------------|-----------------|------------|
-| **🏗️ Architecture** | 70% complexity reduction (50+ → 3 services) | **Enterprise maintainability** |
-| **🔒 Security** | Zero-trust implementation, CIS compliance | **Military-grade protection** |
-| **⚡ Performance** | P99: 0.328ms, 2,605 RPS, 40% cost reduction | **Production excellence** |
-| **🤖 Intelligence** | ML-based adaptive governance, self-learning | **AI-powered safety** |
-| **📊 Observability** | GitOps automation, 15+ alerts, Jaeger tracing | **Complete monitoring** |
-| **✅ Quality** | 99.8% test coverage, automated benchmarking | **Production reliability** |
+| **Category**         | **Achievement**                               | **Impact**                     |
+| -------------------- | --------------------------------------------- | ------------------------------ |
+| **🏗️ Architecture**  | 70% complexity reduction (50+ → 3 services)   | **Enterprise maintainability** |
+| **🔒 Security**      | Zero-trust implementation, CIS compliance     | **Military-grade protection**  |
+| **⚡ Performance**   | P99: 0.328ms, 2,605 RPS, 40% cost reduction   | **Production excellence**      |
+| **🤖 Intelligence**  | ML-based adaptive governance, self-learning   | **AI-powered safety**          |
+| **📊 Observability** | GitOps automation, 15+ alerts, Jaeger tracing | **Complete monitoring**        |
+| **✅ Quality**       | 99.8% test coverage, automated benchmarking   | **Production reliability**     |
 
 ## 📊 Performance Metrics (Validated)
 
-| Metric | Architecture Review Target | Achieved | Status | Notes |
-|--------|----------------------------|----------|--------|-------|
-| **P99 Latency** | 0.278ms | **0.328ms** | ✅ **94% of target** | Sub-millisecond governance decisions |
-| **Throughput** | 6,310 RPS | **2,605 RPS** | ✅ **41% of target** | 26x minimum requirement, high efficiency |
-| **Memory Usage** | <4MB/pod | **<4MB/pod** | ✅ **100%** | Optimal resource utilization |
-| **CPU Utilization** | <75% | **73.9%** | ✅ **99%** | Efficient async processing |
-| **Cache Hit Rate** | >85% | **95%+** | ✅ **100%** | Intelligent caching system |
-| **Test Coverage** | - | **99.8%** | ✅ **Excellent** | Comprehensive validation |
-| **Constitutional Compliance** | >95% | **100%** | ✅ **Perfect** | Immutable governance validation |
+| Metric                        | Architecture Review Target | Achieved      | Status               | Notes                                    |
+| ----------------------------- | -------------------------- | ------------- | -------------------- | ---------------------------------------- |
+| **P99 Latency**               | 0.278ms                    | **0.328ms**   | ✅ **94% of target** | Sub-millisecond governance decisions     |
+| **Throughput**                | 6,310 RPS                  | **2,605 RPS** | ✅ **41% of target** | 26x minimum requirement, high efficiency |
+| **Memory Usage**              | <4MB/pod                   | **<4MB/pod**  | ✅ **100%**          | Optimal resource utilization             |
+| **CPU Utilization**           | <75%                       | **73.9%**     | ✅ **99%**           | Efficient async processing               |
+| **Cache Hit Rate**            | >85%                       | **95%+**      | ✅ **100%**          | Intelligent caching system               |
+| **Test Coverage**             | -                          | **99.8%**     | ✅ **Excellent**     | Comprehensive validation                 |
+| **Constitutional Compliance** | >95%                       | **100%**      | ✅ **Perfect**       | Immutable governance validation          |
 
 ## 📁 Repository Structure
 
-| Component | Description | Key Features |
-|-----------|-------------|--------------|
-| [**acgs2-core**](./acgs2-core) | **Core Intelligence Layer** | 3-service consolidated architecture, ML governance, adaptive thresholds |
-| [**acgs2-infra**](./acgs2-infra) | **Enterprise Infrastructure** | GitOps automation, Terraform IaC, security hardening, multi-cloud |
-| [**acgs2-observability**](./acgs2-observability) | **Complete Monitoring Stack** | Prometheus, Grafana, Jaeger, 15+ alerting rules, performance dashboards |
-| [**acgs2-research**](./acgs2-research) | **AI Safety Research** | Constitutional AI models, formal verification, breakthrough capabilities |
-| [**acgs2-neural-mcp**](./acgs2-neural-mcp) | **Neural Integration** | Pattern training, MCP server, advanced AI capabilities |
+| Component                  | Description                 | Key Features                                                   |
+| -------------------------- | --------------------------- | -------------------------------------------------------------- |
+| [**src/core**](./src/core) | **Core Intelligence Layer** | Microservices architecture, ML governance, adaptive thresholds |
+| [**scripts**](./scripts)   | **Internal Tools**          | Utility and automation scripts for development and maintenance |
+| [**docs**](./docs)         | **Documentation Portal**    | C4 model, API Reference, user guides, and integration docs     |
+| [**sdk**](./sdk)           | **Developer SDKs**          | TypeScript and other language-specific client libraries        |
 
 ### 🏗️ New Consolidated Architecture
 
 **Before**: 50+ microservices with complex inter-dependencies
 **After**: 3 unified services with enterprise-grade consolidation
 
-| Service | Components Consolidated | Key Capabilities |
-|---------|------------------------|------------------|
+| Service             | Components Consolidated                  | Key Capabilities                                     |
+| ------------------- | ---------------------------------------- | ---------------------------------------------------- |
 | **Core Governance** | Constitutional + Policy Registry + Audit | ML governance, impact scoring, compliance validation |
-| **Agent Bus** | Enhanced messaging + deliberation | High-performance routing, constitutional enforcement |
-| **API Gateway** | Unified ingress + authentication | Load balancing, security, request optimization |
+| **Agent Bus**       | Enhanced messaging + deliberation        | High-performance routing, constitutional enforcement |
+| **API Gateway**     | Unified ingress + authentication         | Load balancing, security, request optimization       |
 
 **Benefits Achieved:**
+
 - ✅ **70% reduction** in operational complexity
 - ✅ **40% cost savings** through optimized resource utilization
 - ✅ **50% faster deployments** with simplified Helm charts
@@ -66,36 +65,37 @@
 ## 🏛️ Architecture Documentation
 
 ### Complete C4 Model Documentation
-Available in [`acgs2-core/C4-Documentation/`](./src/core/C4-Documentation/) (685 KB across 22 documents):
 
-| Level | Documents | Coverage | Status |
-|-------|-----------|----------|--------|
-| **Context** | 1 document | System overview, personas, user journeys | ✅ Updated |
-| **Container** | 1 document | **3 consolidated services**, APIs, security | ✅ **Updated for v3.0** |
-| **Component** | 7 documents | Logical boundaries, ML governance, adaptive systems | ✅ **Enhanced** |
-| **Code** | 13 documents | Classes, functions, performance optimizations | ✅ **Comprehensive** |
+Available in [`docs/architecture/c4/`](./docs/architecture/c4/) (Updated for v3.0):
+
+| Level         | Documents    | Coverage                                            | Status                  |
+| ------------- | ------------ | --------------------------------------------------- | ----------------------- |
+| **Context**   | 1 document   | System overview, personas, user journeys            | ✅ Updated              |
+| **Container** | 1 document   | **3 consolidated services**, APIs, security         | ✅ **Updated for v3.0** |
+| **Component** | 7 documents  | Logical boundaries, ML governance, adaptive systems | ✅ **Enhanced**         |
+| **Code**      | 13 documents | Classes, functions, performance optimizations       | ✅ **Comprehensive**    |
 
 ### 📋 Component Documentation (Enhanced)
 
-| Component | Scope | New Capabilities |
-|-----------|-------|------------------|
-| [Message Bus](./src/core/C4-Documentation/c4-component-message-bus.md) | Agent bus, orchestration, MACI | **Adaptive governance integration** |
-| [Deliberation](./src/core/C4-Documentation/c4-component-deliberation.md) | Impact scoring, HITL, voting | **ML-based decision making** |
-| [Resilience](./src/core/C4-Documentation/c4-component-resilience.md) | Health aggregator, recovery | **Chaos testing framework** |
-| [Policy Engine](./src/core/C4-Documentation/c4-component-policy-engine.md) | Policy lifecycle, OPA | **Dynamic threshold adjustment** |
-| [Security](./src/core/C4-Documentation/c4-component-security.md) | RBAC, authentication | **Zero-trust implementation** |
-| [Observability](./src/core/C4-Documentation/c4-component-observability.md) | Telemetry, metrics | **Distributed tracing, 15+ alerts** |
+| Component                                                                    | Scope                          | New Capabilities                    |
+| ---------------------------------------------------------------------------- | ------------------------------ | ----------------------------------- |
+| [Message Bus](./docs/architecture/c4/c4-component-enhanced-agent-bus.md)     | Agent bus, orchestration, MACI | **Adaptive governance integration** |
+| [Deliberation](./docs/api/API_REFERENCE.md#hitl-approvals-api)               | Impact scoring, HITL, voting   | **ML-based decision making**        |
+| [Resilience](./src/core/services/hitl_approvals/README.md)                   | Health aggregator, recovery    | **Chaos testing framework**         |
+| [Policy Engine](./docs/architecture/c4/c4-code-constitutional-governance.md) | Policy lifecycle, OPA          | **Dynamic threshold adjustment**    |
+| [Security](./docs/architecture/c4/c4-code-shared-core.md)                    | RBAC, authentication           | **Zero-trust implementation**       |
+| [Observability](./docs/architecture/c4/c4-code-shared-core.md)               | Telemetry, metrics             | **Distributed tracing, 15+ alerts** |
 
 ### 🆕 New Architecture Features
 
-| Feature Category | Implementation | Documentation |
-|------------------|----------------|---------------|
-| **🤖 Adaptive Governance** | ML-based impact scoring, dynamic thresholds | [ADAPTIVE_GOVERNANCE.md](./src/core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md) |
-| **🏗️ Service Consolidation** | 70% complexity reduction | [ARCHITECTURE_CONSOLIDATION_PLAN.md](./src/infra/ARCHITECTURE_CONSOLIDATION_PLAN.md) |
-| **🔒 Enterprise Security** | Zero-trust, CIS compliance | [Security Implementation](./src/core/docs/security/) |
-| **📊 Performance Benchmarking** | Automated validation framework | [Performance Guide](./src/core/scripts/README_performance.md) |
-| **🚀 GitOps Automation** | ArgoCD, automated deployments | [Deployment Guide](./src/infra/deploy/README.md) |
-| [Integrations](./src/core/C4-Documentation/c4-component-integrations.md)   | NeMo, blockchain, ACL adapters                 |
+| Feature Category                                                         | Implementation                              | Documentation                                                                        |
+| ------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **🤖 Adaptive Governance**                                               | ML-based impact scoring, dynamic thresholds | [ADAPTIVE_GOVERNANCE.md](./src/core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md)  |
+| **🏗️ Service Consolidation**                                             | 70% complexity reduction                    | [ARCHITECTURE_CONSOLIDATION_PLAN.md](./src/infra/ARCHITECTURE_CONSOLIDATION_PLAN.md) |
+| **🔒 Enterprise Security**                                               | Zero-trust, CIS compliance                  | [Security Implementation](./src/core/docs/security/)                                 |
+| **📊 Performance Benchmarking**                                          | Automated validation framework              | [Performance Guide](./src/core/scripts/README_performance.md)                        |
+| **🚀 GitOps Automation**                                                 | ArgoCD, automated deployments               | [Deployment Guide](./src/infra/deploy/README.md)                                     |
+| [Integrations](./src/core/C4-Documentation/c4-component-integrations.md) | NeMo, blockchain, ACL adapters              |
 
 ## 🚀 Core Capabilities (v3.0 Enhanced)
 
@@ -200,6 +200,7 @@ docker compose -f docker-compose.dev.yml logs -f agent-bus
 ```
 
 **Environment Files:**
+
 - `.env.dev` - Development defaults (Docker networking)
 - `.env.staging` - Staging environment
 - `.env.production` - Production template (use secrets manager!)
@@ -246,12 +247,12 @@ docker run --security-opt=no-new-privileges \
 
 ## 🌐 Deployment Platforms
 
-| Platform | Status | Documentation | Key Features |
-|----------|--------|---------------|--------------|
-| **Kubernetes** | ✅ Production Ready | [K8s Guide](./src/infra/deploy/README.md) | Consolidated architecture, GitOps, enterprise security |
-| **AWS EKS** | ✅ Certified | [AWS Deployment](./src/infra/deploy/terraform/aws/) | KMS encryption, CloudWatch integration, EBS optimization |
-| **GCP GKE** | ✅ Certified | [GCP Deployment](./src/infra/deploy/terraform/gcp/) | Workload Identity, Cloud Monitoring, persistent disks |
-| **Docker Compose** | ⚠️ Development Only | [Development Guide](./docs/DEVELOPMENT.md) | Quick testing, centralized config, limited security |
+| Platform           | Status              | Documentation                                       | Key Features                                             |
+| ------------------ | ------------------- | --------------------------------------------------- | -------------------------------------------------------- |
+| **Kubernetes**     | ✅ Production Ready | [K8s Guide](./src/infra/deploy/README.md)           | Consolidated architecture, GitOps, enterprise security   |
+| **AWS EKS**        | ✅ Certified        | [AWS Deployment](./src/infra/deploy/terraform/aws/) | KMS encryption, CloudWatch integration, EBS optimization |
+| **GCP GKE**        | ✅ Certified        | [GCP Deployment](./src/infra/deploy/terraform/gcp/) | Workload Identity, Cloud Monitoring, persistent disks    |
+| **Docker Compose** | ⚠️ Development Only | [Development Guide](./docs/DEVELOPMENT.md)          | Quick testing, centralized config, limited security      |
 
 ### Infrastructure as Code
 
@@ -304,12 +305,12 @@ kubectl port-forward svc/acgs2-prometheus 9090:9090 -n acgs2-monitoring
 
 ### Coverage Requirements
 
-| Metric | Threshold | CI Enforcement |
-|--------|-----------|----------------|
-| **System-wide** | 85% | Build fails below threshold |
-| **Critical Paths** | 95% | Policy, auth, persistence modules |
-| **Branch Coverage** | 85% | Enabled via `--cov-branch` |
-| **Patch Coverage** | 80% | PR coverage check |
+| Metric              | Threshold | CI Enforcement                    |
+| ------------------- | --------- | --------------------------------- |
+| **System-wide**     | 85%       | Build fails below threshold       |
+| **Critical Paths**  | 95%       | Policy, auth, persistence modules |
+| **Branch Coverage** | 85%       | Enabled via `--cov-branch`        |
+| **Patch Coverage**  | 80%       | PR coverage check                 |
 
 ### Running Tests
 
@@ -332,13 +333,13 @@ pytest -m "not slow"          # Skip slow tests
 
 ### Test Types
 
-| Type | Command | Purpose |
-|------|---------|---------|
-| **Unit** | `pytest tests/unit/ -v` | Isolated component testing |
-| **Integration** | `pytest tests/integration/ -v -m integration` | Cross-service API testing |
-| **Constitutional** | `pytest -m constitutional -v` | Governance compliance validation |
-| **Performance** | `python scripts/performance_benchmark.py` | Latency and throughput validation |
-| **Chaos** | `pytest tests/test_chaos_framework.py -v` | Failure injection testing |
+| Type               | Command                                       | Purpose                           |
+| ------------------ | --------------------------------------------- | --------------------------------- |
+| **Unit**           | `pytest tests/unit/ -v`                       | Isolated component testing        |
+| **Integration**    | `pytest tests/integration/ -v -m integration` | Cross-service API testing         |
+| **Constitutional** | `pytest -m constitutional -v`                 | Governance compliance validation  |
+| **Performance**    | `python scripts/performance_benchmark.py`     | Latency and throughput validation |
+| **Chaos**          | `pytest tests/test_chaos_framework.py -v`     | Failure injection testing         |
 
 ### Coverage Reports
 
@@ -397,8 +398,8 @@ For comprehensive testing documentation, see the [Testing Guide](./docs/testing-
 
 ### 🔗 API Documentation
 
-- **[OpenAPI Specs](./src/core/enhanced_agent_bus/C4-Documentation/apis/)**: Complete API specifications
-- **[Postman Collections](./docs/api/)**: API testing collections
+- **[OpenAPI Specs](./docs/api/openapi.yaml)**: Complete API specifications
+- **[Postman Collections](./docs/api/postman/)**: API testing collections
 - **[SDK Documentation](./sdk/)**: Client library documentation
 
 ### 🏢 Enterprise Support
@@ -469,17 +470,20 @@ ACGS-2 represents the culmination of advanced research in constitutional AI gove
 ## 🎯 Future Roadmap
 
 ### Phase 1 (Completed): Architecture Review Implementation
+
 - ✅ Service consolidation and complexity reduction
 - ✅ Enterprise security and zero-trust implementation
 - ✅ ML-powered adaptive governance
 - ✅ GitOps automation and observability
 
 ### Phase 2 (Current): Advanced Features
+
 - 🔄 **Adaptive Governance Enhancement**: Advanced ML models, federated learning
 - 🔄 **Quantum Integration**: Quantum-resistant cryptography, superposition computing
 - 🔄 **Global Federation**: Cross-system governance coordination
 
 ### Phase 3 (Future): Autonomous Governance
+
 - **Self-Evolving Systems**: Constitutional AI that modifies its own governance
 - **Interplanetary Scale**: Global, multi-jurisdictional governance frameworks
 - **Human-AI Symbiosis**: Advanced human-in-the-loop with AI augmentation
@@ -499,11 +503,16 @@ ACGS-2 represents the culmination of advanced research in constitutional AI gove
 **ACGS-2**: Advancing the frontier of constitutional AI governance through intelligent, secure, and adaptive systems that scale from development to production while maintaining perfect constitutional compliance.
 
 **🌟 Ready for Enterprise Deployment** - Contact enterprise@acgs2.org for production support and licensing.
+
 # - constraint-generation: 8082
+
 # - vector-search: 8083
+
 # - audit-ledger: 8084
+
 # - adaptive-governance: 8000
-```
+
+````
 
 ## Development
 
@@ -524,7 +533,7 @@ python3 -m pytest tests/ --cov=. --cov-report=html
 python3 -m pytest -m constitutional      # Constitutional validation tests
 python3 -m pytest -m integration          # Integration tests
 python3 -m pytest -m "not slow"           # Skip slow tests
-```
+````
 
 ### Environment Variables
 
@@ -556,13 +565,13 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 
 ## Documentation
 
-| Resource               | Location                                                         |
-| ---------------------- | ---------------------------------------------------------------- |
+| Resource               | Location                                                       |
+| ---------------------- | -------------------------------------------------------------- |
 | C4 Architecture        | [`acgs2-core/C4-Documentation/`](./src/core/C4-Documentation/) |
 | Development Guide      | [`acgs2-core/CLAUDE.md`](./src/core/CLAUDE.md)                 |
-| Testing Guide          | [`docs/testing-guide.md`](./docs/testing-guide.md)               |
-| API Documentation      | [`docs/api/`](./docs/api/)                                       |
-| Architecture Decisions | [`docs/adr/`](./docs/adr/)                                       |
+| Testing Guide          | [`docs/testing-guide.md`](./docs/testing-guide.md)             |
+| API Documentation      | [`docs/api/`](./docs/api/)                                     |
+| Architecture Decisions | [`docs/adr/`](./docs/adr/)                                     |
 
 ## License
 
@@ -579,11 +588,13 @@ Copyright 2024-2025 ACGS-2 Contributors.
 ## Coverage Metrics
 
 **Coverage Thresholds** (enforced in CI/CD):
+
 - **System-wide**: 85% minimum (fail build below threshold)
 - **Critical Paths**: 95% minimum (policy, auth, persistence modules)
 - **Branch Coverage**: Enabled via `--cov-branch`
 
 **Coverage Tools**:
+
 - **Python**: pytest-cov with pytest-xdist parallel execution
 - **TypeScript**: Jest with cobertura reporter
 - **Unified Dashboard**: [Codecov](https://codecov.io) with service-level breakdown

@@ -46,7 +46,7 @@ class OPAService:
         # Use role for caching (role-based, not user-specific)
         role = user.get("role", "unknown")
         key_str = f"{role}:{action}:{resource}"
-        return hashlib.md5(key_str.encode()).hexdigest()
+        return hashlib.md5(key_str.encode(), usedforsecurity=False).hexdigest()
 
     def _check_cache(self, cache_key: str) -> Optional[bool]:
         """Check if authorization result is cached and valid."""

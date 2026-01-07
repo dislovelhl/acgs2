@@ -5,12 +5,13 @@ Manages routing of approvals through configured chains and steps.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from src.core.shared.audit_client import AuditClient
 
 from ..models.approval_chain import ApprovalChain
 from ..models.approval_request import ApprovalAuditLog, ApprovalDecision, ApprovalRequest
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 import redis.asyncio as redis
 
 from ..config.settings import settings
+from ..core.opa_client import get_opa_client
 
 
 class ApprovalChainEngine:
@@ -32,6 +34,7 @@ class ApprovalChainEngine:
         self.db = db
         self.notifications = NotificationOrchestrator()
         self.redis = redis_client
+        self.audit_client = AuditClient(service_url=settings.audit_service_url)
 
     async def _get_redis(self) -> redis.Redis:
         if self.redis:
@@ -46,16 +49,26 @@ class ApprovalChainEngine:
 
     async def create_request(
         self,
-        chain_id: UUID,
         decision_id: str,
         tenant_id: str,
         requested_by: str,
         title: str,
         priority: str,
         context: Dict[str, Any],
+        chain_id: Optional[UUID] = None,
         description: Optional[str] = None,
     ) -> ApprovalRequest:
         """Create a new approval request and start the chain"""
+        # If chain_id not provided, determine it dynamically via OPA
+        if not chain_id:
+            chain_id = await self._resolve_chain_id(
+                decision_id=decision_id,
+                tenant_id=tenant_id,
+                priority=priority,
+                context=context,
+                description=description,
+            )
+
         # Fetch chain and its steps
         query = (
             select(ApprovalChain)
@@ -107,6 +120,20 @@ class ApprovalChainEngine:
         # Notify initial approvers
         await self.notifications.send_approval_request_notification(request)
 
+        # Report to audit ledger
+        await self.audit_client.report_decision(
+            {
+                "type": "approval_request_created",
+                "request_id": str(request.id),
+                "decision_id": decision_id,
+                "tenant_id": tenant_id,
+                "requested_by": requested_by,
+                "priority": priority,
+                "timestamp": datetime.utcnow().isoformat(),
+                "constitutional_hash": "cdd01ef066bc6cf2",
+            }
+        )
+
         return request
 
     async def submit_decision(
@@ -143,44 +170,21 @@ class ApprovalChainEngine:
 
         # Verify approver role via OPA before allowing decision submission
         try:
-            from ..core.opa_client import get_opa_client
-
-            opa_client = get_opa_client()
-            await opa_client.initialize()
-
-            # Get required approver roles for this step
-            required_roles = await opa_client.get_required_approvers(
-                decision_type=request.decision_id.split("_")[0],  # Extract type from decision_id
-                impact_level=request.priority,
-                current_level=request.current_step_index + 1,
-            )
-
-            # Check if approver is authorized for this action
-            # Note: In production, approver_role should come from auth context
-            # For now, we'll assume it's passed in context or default to checking against required roles
-            approver_role = (
-                context.get("approver_role", "unknown") if "context" in locals() else "unknown"
-            )
-
             # Check authorization via OPA
-            authorized = await opa_client.evaluate_authorization(
-                user_id=approver_id,
-                user_role=approver_role,
-                action=decision,
-                resource=str(request_id),
-                context={
-                    "request_priority": request.priority,
-                    "current_step": request.current_step_index + 1,
-                    "required_roles": required_roles,
-                    "tenant_id": request.tenant_id,
-                },
+            authorized = await self._is_authorized(
+                request=request,
+                approver_id=approver_id,
+                decision=decision,
+                context=context if "context" in locals() else {},
             )
 
             if not authorized:
                 raise ValueError(
-                    f"Approver {approver_id} (role: {approver_role}) not authorized for {decision} action on request {request_id}"
+                    f"Approver {approver_id} not authorized for {decision} action on request {request_id}"
                 )
 
+        except ValueError:
+            raise
         except Exception as e:
             logger.error(f"OPA role verification failed: {e}, proceeding with basic validation")
             # Continue with existing logic as fallback
@@ -247,6 +251,21 @@ class ApprovalChainEngine:
                     await r.delete(f"hitl:escalation:pending:{request.id}")
 
                     # Notify requester of success?
+                    pass
+
+            # Report decision to audit ledger
+            await self.audit_client.report_decision(
+                {
+                    "type": "approval_decision_submitted",
+                    "request_id": str(request_id),
+                    "approver_id": approver_id,
+                    "decision": decision,
+                    "rationale": rationale,
+                    "step_index": request.current_step_index,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "constitutional_hash": "cdd01ef066bc6cf2",
+                }
+            )
 
         return request
 
@@ -304,3 +323,91 @@ class ApprovalChainEngine:
             await self.notifications.send_escalation_notification(request, 999)  # 999 = max level
 
         return request
+
+    async def _resolve_chain_id(
+        self,
+        decision_id: str,
+        tenant_id: str,
+        priority: str,
+        context: Dict[str, Any],
+        description: Optional[str] = None,
+    ) -> UUID:
+        """Resolve chain ID dynamically using OPA routing policy"""
+        try:
+            opa_client = get_opa_client()
+            await opa_client.initialize()
+
+            routing_decision = await opa_client.evaluate_routing(
+                decision_type=decision_id.split("_")[0],
+                user_role=context.get("requester_role", "unknown"),
+                impact_level=priority,
+                context={
+                    "tenant_id": tenant_id,
+                    "decision_context": context,
+                    "description": description,
+                },
+            )
+
+            if routing_decision.get("allowed", False):
+                recommended_chain_id = routing_decision.get("chain_id")
+                if recommended_chain_id:
+                    # Verify the chain exists
+                    query = select(ApprovalChain).where(ApprovalChain.id == recommended_chain_id)
+                    result = await self.db.execute(query)
+                    chain = result.scalar_one_or_none()
+                    if chain:
+                        logger.info(f"OPA recommended chain {chain.id} for request {decision_id}")
+                        return chain.id
+
+            logger.info("No OPA recommendation or chain not found, using fallback")
+        except Exception as e:
+            logger.error(f"OPA chain resolution failed: {e}, using fallback")
+
+        # Fallback to priority-based selection
+        query = select(ApprovalChain).where(ApprovalChain.priority == priority).limit(1)
+        result = await self.db.execute(query)
+        chain = result.scalar_one_or_none()
+
+        if not chain:
+            query = select(ApprovalChain).limit(1)
+            result = await self.db.execute(query)
+            chain = result.scalar_one_or_none()
+
+        if not chain:
+            raise ValueError("No suitable approval chain found")
+
+        return chain.id
+
+    async def _is_authorized(
+        self, request: ApprovalRequest, approver_id: str, decision: str, context: Dict[str, Any]
+    ) -> bool:
+        """Check if approver is authorized via OPA"""
+        opa_client = get_opa_client()
+        await opa_client.initialize()
+
+        required_roles = await self._get_required_roles(request)
+        approver_role = context.get("approver_role", "unknown")
+
+        return await opa_client.evaluate_authorization(
+            user_id=approver_id,
+            user_role=approver_role,
+            action=decision,
+            resource=str(request.id),
+            context={
+                "request_priority": request.priority,
+                "current_step": request.current_step_index + 1,
+                "required_roles": required_roles,
+                "tenant_id": request.tenant_id,
+            },
+        )
+
+    async def _get_required_roles(self, request: ApprovalRequest) -> List[str]:
+        """Get required roles for the current step from OPA"""
+        opa_client = get_opa_client()
+        await opa_client.initialize()
+
+        return await opa_client.get_required_approvers(
+            decision_type=request.decision_id.split("_")[0],
+            impact_level=request.priority,
+            current_level=request.current_step_index + 1,
+        )

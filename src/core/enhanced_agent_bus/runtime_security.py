@@ -350,7 +350,7 @@ class RuntimeSecurityScanner:
                 agent_id=agent_id,
                 metadata={"provided_hash_prefix": hash_value[:8] if hash_value else ""},
             )
-            result.add_blocking_event(event, "Constitutional hash validation failed")
+            result.add_blocking_event(event, "Constitutional hash mismatch")
 
     async def _check_tenant(
         self,

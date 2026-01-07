@@ -193,7 +193,6 @@ class TestConstitutionalCompliance:
     @pytest.mark.constitutional
     async def test_all_decisions_include_timestamp(self):
         """Verify all decisions include proper timestamps."""
-        from datetime import datetime
 
         from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,

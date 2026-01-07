@@ -290,20 +290,8 @@ class PolicyService:
         # Handle A/B testing
         if active_version.ab_test_group and client_id:
             # Simple A/B routing based on client_id hash
-            test_group = self._get_ab_test_group(client_id)
-            if test_group != active_version.ab_test_group:
-                # Return previous version or default
-                return await self._get_fallback_policy(policy_id)
-
-        # Cache and return
-        await self.cache.set_policy(policy_id, "active", active_version.content)
-        return active_version.content
-
-    def _get_ab_test_group(self, client_id: str) -> ABTestGroup:
-        """Determine A/B test group for client"""
-        # Simple hash-based routing
-        hash_val = int(hashlib.md5(client_id.encode()).hexdigest(), 16)
-        return ABTestGroup.A if hash_val % 2 == 0 else ABTestGroup.B
+            hash_val = int(hashlib.md5(client_id.encode(), usedforsecurity=False).hexdigest(), 16)
+            return ABTestGroup.A if hash_val % 2 == 0 else ABTestGroup.B
 
     async def _get_fallback_policy(self, policy_id: str) -> Optional[Dict[str, Any]]:
         """Get fallback policy content"""

@@ -92,6 +92,17 @@ try:
 except ImportError:
     pass
 
+try:
+    from .retry import (
+        RetryBudget,
+        exponential_backoff,
+        retry_async,
+        retry_sync,
+    )
+except ImportError:
+    pass
+
+
 __all__ = [
     "CONSTITUTIONAL_HASH",
     "DEFAULT_REDIS_URL",
@@ -122,4 +133,9 @@ __all__ = [
     "correlation_id_middleware",
     "add_correlation_id_middleware",
     "get_correlation_id",
+    # Retry utilities
+    "retry_async",
+    "retry_sync",
+    "exponential_backoff",
+    "RetryBudget",
 ]

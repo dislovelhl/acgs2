@@ -20,6 +20,7 @@ from .adapters.policy_client import PolicyClientAdapter
 from .config import MCPConfig, TransportType
 from .protocol.handler import MCPHandler
 from .protocol.types import (
+    JSONDict,
     MCPError,
     MCPRequest,
     MCPResponse,

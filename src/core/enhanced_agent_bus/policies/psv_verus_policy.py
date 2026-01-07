@@ -296,7 +296,7 @@ method shouldLog(level: LogLevel) returns (log: bool)
     async def _apply_learned_improvements(self, dafny_spec: str, natural_spec: str) -> str:
         """Apply learned improvements from previous successful verifications."""
         # Look for similar successful patterns
-        spec_hash = hashlib.md5(natural_spec.encode()).hexdigest()[:8]
+        spec_hash = hashlib.md5(natural_spec.encode(), usedforsecurity=False).hexdigest()[:8]
 
         improvements = self.success_patterns.get(spec_hash, [])
 
@@ -316,7 +316,9 @@ method shouldLog(level: LogLevel) returns (log: bool)
         for error in errors:
             error_pattern = self._extract_error_pattern(error)
             if error_pattern:
-                spec_hash = hashlib.md5(original_spec.encode()).hexdigest()[:8]
+                spec_hash = hashlib.md5(original_spec.encode(), usedforsecurity=False).hexdigest()[
+                    :8
+                ]
                 if spec_hash not in self.success_patterns:
                     self.success_patterns[spec_hash] = []
                 self.success_patterns[spec_hash].append(f"fixed_{error_pattern}")

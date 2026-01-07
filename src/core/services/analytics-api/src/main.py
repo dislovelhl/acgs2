@@ -22,6 +22,7 @@ from src.core.shared.security.cors_config import get_cors_config
 
 from .routes.anomalies import router as anomalies_router
 from .routes.export import router as export_router
+from .routes.governance import router as governance_router
 from .routes.insights import router as insights_router
 from .routes.predictions import router as predictions_router
 from .routes.query import router as query_router
@@ -78,6 +79,7 @@ app.add_middleware(CORSMiddleware, **get_cors_config())
 # Include route handlers
 app.include_router(anomalies_router)
 app.include_router(export_router)
+app.include_router(governance_router)
 app.include_router(insights_router)
 app.include_router(predictions_router)
 app.include_router(query_router)

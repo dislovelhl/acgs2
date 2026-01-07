@@ -75,6 +75,7 @@ markers = [
     "constitutional: marks tests for constitutional validation",
     "benchmark: marks performance benchmark tests",
     "governance: marks tests as critical governance path tests (90%+ coverage required)",
+    "e2e: marks end-to-end tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",

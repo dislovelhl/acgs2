@@ -402,7 +402,7 @@ class FalsePositiveSuppressor:
         content = (
             f"{violation.violation_type.value}:{violation.description}:{violation.match_content}"
         )
-        return hashlib.md5(content.encode()).hexdigest()
+        return hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()
 
 
 class RealTimeScanDashboard:

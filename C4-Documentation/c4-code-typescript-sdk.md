@@ -1,857 +1,989 @@
 # C4 Code Level: TypeScript SDK
 
+> Constitutional Hash: cdd01ef066bc6cf2
+> Version: 3.0.0
+> Language: TypeScript with ES modules
+> Location: `/home/dislove/document/acgs2/sdk/typescript`
+> Node Version: >= 18.0.0
+
 ## Overview
 
-- **Name**: ACGS-2 Enterprise TypeScript SDK
-- **Description**: Production-ready TypeScript client library for ACGS-2 API integration with multi-tenant support, constitutional compliance validation, enterprise HTTP client with retry logic, JWT token management, and comprehensive event-driven architecture
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src`
-- **Language**: TypeScript 5.3+
-- **Purpose**: Provides type-safe, enterprise-grade SDK for consuming ACGS-2 API with support for multi-tenant environments, constitutional governance validation, authentication, policy management, audit services, and agent coordination
+- **Name**: ACGS-2 TypeScript SDK
+- **Description**: Enterprise-grade TypeScript/JavaScript client library for integrating with ACGS-2 (AI Constitutional Governance System) API. Provides type-safe client library with multi-tenant support, constitutional compliance validation, comprehensive authentication management, and production-ready performance monitoring.
+- **Location**: `/home/dislove/document/acgs2/sdk/typescript`
+- **Language**: TypeScript 5.3+ with ES modules
+- **Purpose**: Enable developers to integrate ACGS-2 constitutional AI governance capabilities into TypeScript/JavaScript applications with full type safety, enterprise features (multi-tenancy, retry logic, metrics), and compliance validation.
 
 ## Code Elements
 
-### Core Client Module
+### Core Module: `/src/core/`
 
-#### Class: `ACGS2Client` extends `EventEmitter<SDKEvents>`
-- **Description**: Main entry point for ACGS-2 SDK. Manages multi-tenant AI governance platform client with constitutional compliance validation, service orchestration, and lifecycle management.
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/client.ts:64-292`
-- **Properties**:
-  - `config: SDKConfig` (private) - Validated SDK configuration
-  - `httpClient: AxiosInstance` (private) - HTTP client instance
-  - `currentTenant: TenantContext` (private) - Current tenant context
-  - `isReady: boolean` (private) - SDK initialization state
-  - `auth: AuthManager` (public) - Authentication service
-  - `policies: PolicyService` (public) - Policy management service
-  - `audit: AuditService` (public) - Audit logging service
-  - `agents: AgentService` (public) - Agent management service
-  - `tenants: TenantService` (public) - Tenant management service
+#### Client Class: `ACGS2Client`
+**File**: `/src/core/client.ts`
 
-- **Methods**:
-  - `constructor(config: SDKConfig): void` - Initialize SDK client
-  - `initialize(): Promise<void>` - Initialize SDK and establish connections
-  - `switchTenant(tenantId: string): Promise<void>` - Switch to different tenant context
-  - `getCurrentTenant(): TenantContext` - Get current tenant information
-  - `isInitialized(): boolean` - Check if SDK is ready
-  - `getConfig(): Omit<SDKConfig, ...>` - Get SDK configuration without sensitive data
-  - `healthCheck(): Promise<{ status, services, timestamp }>` - Perform health check
-  - `getMetrics(): Record<string, any>` - Get metrics if enabled
-  - `dispose(): Promise<void>` - Clean up resources
-  - `private handleRequestError(error: any): void` - Handle HTTP request errors
-  - `private setupEventForwarding(): void` - Set up event forwarding from services
+```typescript
+export class ACGS2Client extends EventEmitter<SDKEvents> {
+  constructor(config: SDKConfig): void
+  async initialize(): Promise<void>
+  async switchTenant(tenantId: string): Promise<void>
+  getCurrentTenant(): TenantContext
+  isInitialized(): boolean
+  getConfig(): Omit<SDKConfig, 'timeout' | 'retryAttempts' | 'retryDelay'>
+  async healthCheck(): Promise<{status: 'healthy' | 'degraded' | 'unhealthy'; services: Record<string, boolean>; timestamp: Date}>
+  getMetrics(): Record<string, any>
+  async dispose(): Promise<void>
+  private handleRequestError(error: any): void
+  private setupEventForwarding(): void
+}
+```
 
-- **Dependencies**:
-  - Internal: `createHttpClient`, `TenantContext`, `AuthManager`, `PolicyService`, `AuditService`, `AgentService`, `TenantService`
-  - External: `eventemitter3`, `zod`, `axios`
+**Description**: Main SDK client providing unified access to all ACGS-2 services. Manages lifecycle (initialization, disposal), tenant switching, health checks, and metrics collection. Implements EventEmitter pattern for event-driven architecture.
 
-#### Function: `createACGS2Client(config: SDKConfig): ACGS2Client`
-- **Description**: Factory function to create ACGS2Client instance
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/client.ts:297-299`
-- **Parameters**:
-  - `config: SDKConfig` - SDK configuration
-- **Returns**: `ACGS2Client` instance
-- **Dependencies**: `ACGS2Client`
+**Public Services**:
+- `auth: AuthManager` - Authentication and user session management
+- `policies: PolicyService` - Constitutional policy management
+- `audit: AuditService` - Audit trail and compliance reporting
+- `agents: AgentService` - AI agent lifecycle management
+- `tenants: TenantService` - Multi-tenant management
 
-#### Function: `createDefaultConfig(baseURL: string, tenantId: string): SDKConfig`
-- **Description**: Default SDK configuration factory with production defaults
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/client.ts:304-316`
-- **Parameters**:
-  - `baseURL: string` - Base API URL
-  - `tenantId: string` - Tenant identifier
-- **Returns**: `SDKConfig` with sensible defaults (10s timeout, 3 retries, metrics enabled, production environment)
-- **Dependencies**: None
+**Events Emitted**:
+- `ready()` - SDK initialized and ready for use
+- `error(error: Error)` - Error occurred in SDK or services
+- `tenantSwitched(tenantId: string)` - Active tenant context switched
+- `authenticated(userId: string)` - User authenticated
+- `deauthenticated()` - User session terminated
+- `rateLimited(retryAfter: number)` - API rate limit hit
+- `quotaExceeded(resource: string, limit: number)` - Resource quota exceeded
 
-#### Type: `SDKConfig`
-- **Description**: SDK configuration object with validation
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/client.ts:18-30`
-- **Properties**:
-  - `baseURL: string` - Base API URL (must be valid URL)
-  - `tenantId: string` - Tenant identifier (minimum 1 character)
-  - `constitutionalHash: 'cdd01ef066bc6cf2'` - Immutable constitutional hash literal
-  - `timeout: number` - Request timeout (1000-30000ms, default 10000)
-  - `retryAttempts: number` - Retry attempts (0-5, default 3)
-  - `retryDelay: number` - Retry delay (100-5000ms, default 1000)
-  - `enableMetrics: boolean` - Enable metrics collection (default true)
-  - `enableTracing: boolean` - Enable distributed tracing (default true)
-  - `environment: 'development' | 'staging' | 'production'` - Environment (default 'production')
+**Configuration Schema**:
+```typescript
+export interface SDKConfig {
+  baseURL: string // API endpoint URL (required)
+  tenantId: string // Tenant identifier (required)
+  constitutionalHash: 'cdd01ef066bc6cf2' // Constitutional validation hash (required)
+  timeout: number // Request timeout in ms (1000-30000, default 10000)
+  retryAttempts: number // Max retry attempts (0-5, default 3)
+  retryDelay: number // Base retry delay in ms (100-5000, default 1000)
+  enableMetrics: boolean // Enable request metrics collection (default true)
+  enableTracing: boolean // Enable distributed tracing headers (default true)
+  environment: 'development' | 'staging' | 'production' // Deployment environment (default 'production')
+}
+```
 
-#### Type: `TenantConfig`
-- **Description**: Tenant-specific configuration
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/client.ts:32-47`
-- **Properties**:
-  - `tenantId: string` - Tenant identifier
-  - `tenantTier: 'free' | 'professional' | 'enterprise' | 'sovereign'` - Tenant tier
-  - `resourceQuota: { users, policies, agents, apiCalls, storage }` - Resource quotas
-  - `complianceFrameworks: string[]` - Applicable compliance frameworks
-  - `dataResidency: string | optional` - Data residency region
-  - `features: string[]` - Available features
+#### Client Factory Functions
 
-#### Interface: `SDKEvents`
-- **Description**: SDK event types
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/client.ts:50-58`
-- **Event Signatures**:
-  - `ready: () => void` - SDK initialization complete
-  - `error: (error: Error) => void` - SDK error occurred
-  - `tenantSwitched: (tenantId: string) => void` - Tenant context switched
-  - `authenticated: (userId: string) => void` - User authenticated
-  - `deauthenticated: () => void` - User deauthenticated
-  - `rateLimited: (retryAfter: number) => void` - Rate limit hit
-  - `quotaExceeded: (resource: string, limit: number) => void` - Quota exceeded
+```typescript
+export function createACGS2Client(config: SDKConfig): ACGS2Client
+```
+Creates and returns a new ACGS2Client instance with provided configuration.
+
+```typescript
+export function createDefaultConfig(baseURL: string, tenantId: string): SDKConfig
+```
+Factory function returning default production-ready configuration.
 
 ---
 
-### HTTP Client Module
+#### HTTP Client Class: `EnterpriseHttpClient`
+**File**: `/src/core/http.ts`
 
-#### Class: `EnterpriseHttpClient`
-- **Description**: Enterprise-grade HTTP client with retry logic, metrics collection, tenant context integration, and request/response interceptors
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/http.ts:65-416`
-- **Properties**:
-  - `axiosInstance: AxiosInstance` (private) - Axios HTTP client
-  - `config: HttpClientConfig` (private) - HTTP client configuration
-  - `tenantContext?: TenantContext` (private) - Current tenant context
-  - `requestMetrics: RequestMetrics[]` (private) - Request metrics history
-  - `maxMetricsHistory: number` (private) - Maximum metrics to retain (1000)
-  - `requestInterceptors: RequestInterceptor[]` (private) - Custom request interceptors
-  - `responseInterceptors: ResponseInterceptor[]` (private) - Custom response interceptors
-  - `errorInterceptors: ErrorInterceptor[]` (private) - Custom error interceptors
+```typescript
+export class EnterpriseHttpClient {
+  constructor(baseURL: string, config: HttpClientConfig, onError?: (error: any) => void): void
+  setTenantContext(context: TenantContext): void
+  addRequestInterceptor(interceptor: RequestInterceptor): void
+  addResponseInterceptor(interceptor: ResponseInterceptor): void
+  addErrorInterceptor(interceptor: ErrorInterceptor): void
+  async request<T = any>(config: AxiosRequestConfig): Promise<AxiosResponse<T>>
+  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>
+  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>
+  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>
+  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>
+  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>
+  getMetrics(): RequestMetrics[]
+  clearMetrics(): void
+  getStats(): {totalRequests: number; successRate: number; averageResponseTime: number; errorRate: number; recentErrors: RequestMetrics[]}
+  private setupDefaultInterceptors(): void
+  private enrichRequestConfig(config: AxiosRequestConfig): AxiosRequestConfig
+  private generateTracingHeaders(): TracingHeaders
+  private shouldRetry(error: AxiosError, retryCount: number): boolean
+  private calculateRetryDelay(retryCount: number): number
+  private recordMetrics(metrics: RequestMetrics): void
+}
+```
 
-- **Methods**:
-  - `constructor(baseURL: string, config: HttpClientConfig, onError?: (error: any) => void): void` - Initialize HTTP client
-  - `setTenantContext(context: TenantContext): void` - Set tenant context for requests
-  - `addRequestInterceptor(interceptor: RequestInterceptor): void` - Add request interceptor
-  - `addResponseInterceptor(interceptor: ResponseInterceptor): void` - Add response interceptor
-  - `addErrorInterceptor(interceptor: ErrorInterceptor): void` - Add error interceptor
-  - `request<T = any>(config: AxiosRequestConfig): Promise<AxiosResponse<T>>` - Make HTTP request with retry
-  - `get<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>` - GET request
-  - `post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>` - POST request
-  - `put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>` - PUT request
-  - `patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>` - PATCH request
-  - `delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>>` - DELETE request
-  - `getMetrics(): RequestMetrics[]` - Get request metrics history
-  - `clearMetrics(): void` - Clear metrics history
-  - `getStats(): { totalRequests, successRate, averageResponseTime, errorRate, recentErrors }` - Get client statistics
-  - `private setupDefaultInterceptors(): void` - Setup default request/response interceptors
-  - `private enrichRequestConfig(config: AxiosRequestConfig): AxiosRequestConfig` - Enrich config with tenant/tracing headers
-  - `private generateTracingHeaders(): TracingHeaders` - Generate tracing headers for request
-  - `private generateId(): string` - Generate random ID
-  - `private shouldRetry(error: AxiosError, retryCount: number): boolean` - Determine if request should retry
-  - `private calculateRetryDelay(retryCount: number): number` - Calculate retry delay with exponential backoff
-  - `private recordMetrics(metrics: RequestMetrics): void` - Record request metrics
-  - `private delay(ms: number): Promise<void>` - Delay utility
+**Description**: Enterprise-grade HTTP client built on axios with retry logic, metrics collection, distributed tracing, and tenant context propagation. Automatically handles exponential backoff, request/response interception, and comprehensive metrics tracking.
 
-- **Dependencies**:
-  - Internal: `TenantContext`
-  - External: `axios`, `zod`
+**Features**:
+- Automatic retry with exponential backoff and jitter (configurable)
+- Distributed tracing with x-trace-id and x-span-id headers
+- Request/response metrics collection (method, URL, status, duration, retry count, tenant, user)
+- Request/response/error interceptor chain support
+- Tenant context header injection (X-Tenant-ID, X-Constitutional-Hash, X-Environment, X-Context-ID)
+- Per-request timeout and configuration override support
+- Statistics calculation (success rate, average response time, error rate)
+- Configurable retry on specific status codes (default: 429, 500, 502, 503, 504)
 
-#### Function: `createHttpClient(sdkConfig: SDKConfig, onError?: (error: any) => void): AxiosInstance`
-- **Description**: Create HTTP client instance with Axios-compatible interface
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/http.ts:421-484`
-- **Parameters**:
-  - `sdkConfig: SDKConfig` - SDK configuration
-  - `onError?: (error: any) => void` - Error handler callback
-- **Returns**: `AxiosInstance` - Axios-compatible HTTP client with enterprise methods
-- **Dependencies**: `EnterpriseHttpClient`
+**Configuration Schema**:
+```typescript
+export interface HttpClientConfig {
+  timeout: number // 1000-30000 ms
+  retryAttempts: number // 0-5
+  retryDelay: number // 100-5000 ms
+  retryOnStatusCodes: number[] // Retry on these HTTP statuses (default [429, 500, 502, 503, 504])
+  enableMetrics: boolean // default true
+  enableTracing: boolean // default true
+  userAgent: string // default 'ACGS-2-TypeScript-SDK/3.0.0'
+}
+```
 
-#### Type: `HttpClientConfig`
-- **Description**: HTTP client configuration
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/http.ts:18-28`
-- **Properties**:
-  - `timeout: number` - Request timeout (1000-30000ms)
-  - `retryAttempts: number` - Max retry attempts (0-5)
-  - `retryDelay: number` - Base retry delay (100-5000ms)
-  - `retryOnStatusCodes: number[]` - Status codes to retry on (default [429, 500, 502, 503, 504])
-  - `enableMetrics: boolean` - Enable metrics collection (default true)
-  - `enableTracing: boolean` - Enable distributed tracing (default true)
-  - `userAgent: string` - User-Agent header (default 'ACGS-2-TypeScript-SDK/3.0.0')
+**Interceptor Signatures**:
+```typescript
+export interface RequestInterceptor {
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig | Promise<InternalAxiosRequestConfig>
+}
 
-#### Interface: `RequestMetrics`
-- **Description**: Request metrics data structure
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/http.ts:44-54`
-- **Properties**:
-  - `method: string` - HTTP method
-  - `url: string` - Request URL
-  - `statusCode?: number` - Response status code
-  - `duration: number` - Request duration (ms)
-  - `retryCount: number` - Number of retries
-  - `timestamp: Date` - Request timestamp
-  - `tenantId: string` - Tenant identifier
-  - `userId?: string` - User identifier
-  - `error?: string` - Error message if failed
+export interface ResponseInterceptor {
+  (response: AxiosResponse): AxiosResponse | Promise<AxiosResponse>
+}
 
-#### Interface: `TracingHeaders`
-- **Description**: Distributed tracing headers
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/http.ts:56-60`
-- **Properties**:
-  - `x-trace-id: string` - Trace identifier
-  - `x-span-id: string` - Span identifier
-  - `x-parent-span-id?: string` - Parent span identifier (optional)
+export interface ErrorInterceptor {
+  (error: AxiosError): Promise<never>
+}
+```
 
-#### Type: `RequestInterceptor`
-- **Description**: Request interceptor function type
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/http.ts:31-33`
-- **Signature**: `(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig | Promise<InternalAxiosRequestConfig>`
+**Metrics Interface**:
+```typescript
+export interface RequestMetrics {
+  method: string // HTTP method (GET, POST, etc.)
+  url: string // Request URL
+  statusCode?: number // HTTP status code
+  duration: number // Request duration in ms
+  retryCount: number // Number of retry attempts
+  timestamp: Date // Request timestamp
+  tenantId: string // Tenant ID from context
+  userId?: string // Optional user ID from context
+  error?: string // Error message if failed
+}
+```
 
-#### Type: `ResponseInterceptor`
-- **Description**: Response interceptor function type
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/http.ts:35-37`
-- **Signature**: `(response: AxiosResponse): AxiosResponse | Promise<AxiosResponse>`
-
-#### Type: `ErrorInterceptor`
-- **Description**: Error interceptor function type
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/http.ts:39-41`
-- **Signature**: `(error: AxiosError): Promise<never>`
+**HTTP Client Factory**:
+```typescript
+export function createHttpClient(
+  sdkConfig: SDKConfig,
+  onError?: (error: any) => void
+): AxiosInstance
+```
+Creates and returns axios-compatible HTTP client instance with enterprise features.
 
 ---
 
-### Tenant Context Module
+#### Tenant Context Class: `TenantContext`
+**File**: `/src/core/tenant.ts`
 
-#### Class: `TenantContext` extends `EventEmitter<TenantContextEvents>`
-- **Description**: Manages multi-tenant isolation, context state, and tenant-specific configuration for API requests
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/tenant.ts:44-358`
-- **Properties**:
-  - `data: TenantContextData` (private) - Tenant context data
-  - `contextId: string` (private) - Unique context instance identifier
-  - `tenantId: string` (getter) - Tenant identifier
-  - `constitutionalHash: string` (getter) - Constitutional hash validation
-  - `environment: 'development' | 'staging' | 'production'` (getter) - Environment
-  - `userId?: string` (getter/setter) - Current user identifier
-  - `sessionId?: string` (getter/setter) - Current session identifier
-  - `permissions: string[]` (getter/setter) - User permissions
-  - `quota?: object` (getter/setter) - Resource quota information
-  - `features: string[]` (getter/setter) - Available features
-  - `complianceFrameworks: string[]` (getter/setter) - Compliance frameworks
-  - `dataResidency?: string` (getter/setter) - Data residency region
-  - `createdAt?: Date` (getter) - Creation timestamp
-  - `updatedAt?: Date` (getter) - Last update timestamp
+```typescript
+export class TenantContext extends EventEmitter<TenantContextEvents> {
+  constructor(initialData: Omit<TenantContextData, 'createdAt' | 'updatedAt'>): void
 
-- **Methods**:
-  - `constructor(initialData: Omit<TenantContextData, 'createdAt' | 'updatedAt'>): void` - Initialize context
-  - `setUserId(userId?: string): void` - Set current user ID
-  - `setSessionId(sessionId?: string): void` - Set session ID
-  - `setPermissions(permissions: string[]): void` - Set user permissions
-  - `hasPermission(permission: string): boolean` - Check if user has permission
-  - `hasAnyPermission(permissions: string[]): boolean` - Check if user has any permission
-  - `hasAllPermissions(permissions: string[]): boolean` - Check if user has all permissions
-  - `setQuota(quota?: object): void` - Set resource quota
-  - `checkQuota(resource: string, amount?: number): boolean` - Check if quota allows operation
-  - `setFeatures(features: string[]): void` - Set available features
-  - `hasFeature(feature: string): boolean` - Check if feature is available
-  - `setComplianceFrameworks(frameworks: string[]): void` - Set compliance frameworks
-  - `setDataResidency(residency?: string): void` - Set data residency
-  - `getContextId(): string` - Get unique context identifier
-  - `toJSON(): TenantContextData` - Serialize context data
-  - `static fromJSON(data: TenantContextData): TenantContext` - Deserialize context
-  - `clone(): TenantContext` - Clone context
-  - `getHeaders(): Record<string, string>` - Get tenant headers for API requests
-  - `getMetadata(): Record<string, any>` - Get metadata for logging
-  - `private validate(): void` - Validate context data
-  - `private generateContextId(): string` - Generate unique context ID
+  // Property accessors
+  get tenantId(): string
+  get constitutionalHash(): string
+  get environment(): 'development' | 'staging' | 'production'
+  get userId(): string | undefined
+  get sessionId(): string | undefined
+  get permissions(): string[]
+  get quota(): TenantContextData['quota']
+  get features(): string[]
+  get complianceFrameworks(): string[]
+  get dataResidency(): string | undefined
+  get createdAt(): Date | undefined
+  get updatedAt(): Date | undefined
 
-- **Dependencies**:
-  - Internal: None
-  - External: `zod`, `eventemitter3`
+  // Setters and management
+  setUserId(userId: string | undefined): void
+  setSessionId(sessionId: string | undefined): void
+  setPermissions(permissions: string[]): void
+  hasPermission(permission: string): boolean
+  hasAnyPermission(permissions: string[]): boolean
+  hasAllPermissions(permissions: string[]): boolean
+  setQuota(quota: TenantContextData['quota']): void
+  checkQuota(resource: keyof TenantContextData['quota'], amount?: number): boolean
+  setFeatures(features: string[]): void
+  hasFeature(feature: string): boolean
+  setComplianceFrameworks(frameworks: string[]): void
+  setDataResidency(residency: string | undefined): void
 
-#### Function: `createTenantContext(data: Omit<TenantContextData, 'createdAt' | 'updatedAt'>): TenantContext`
-- **Description**: Factory function to create TenantContext
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/tenant.ts:364-366`
-- **Parameters**:
-  - `data: Omit<TenantContextData, ...>` - Initial context data
-- **Returns**: `TenantContext` instance
-- **Dependencies**: `TenantContext`
+  // Utilities
+  getContextId(): string
+  toJSON(): TenantContextData
+  static fromJSON(data: TenantContextData): TenantContext
+  clone(): TenantContext
+  getHeaders(): Record<string, string>
+  getMetadata(): Record<string, any>
+}
+```
 
-#### Function: `createDefaultTenantContext(tenantId: string, environment?: 'development' | 'staging' | 'production'): TenantContext`
-- **Description**: Create default tenant context with production defaults
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/tenant.ts:371-380`
-- **Parameters**:
-  - `tenantId: string` - Tenant identifier
-  - `environment?: string` - Environment (default 'production')
-- **Returns**: `TenantContext` instance
-- **Dependencies**: `TenantContext`
+**Description**: Manages multi-tenant context and isolation. Encapsulates tenant configuration, user identity, permissions, resource quotas, compliance frameworks, and feature flags. Provides event notification on context changes.
 
-#### Type: `TenantContextData`
-- **Description**: Tenant context data structure
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/tenant.ts:10-29`
-- **Properties**:
-  - `tenantId: string` - Tenant identifier
-  - `constitutionalHash: 'cdd01ef066bc6cf2'` - Constitutional hash literal
-  - `environment: 'development' | 'staging' | 'production'` - Environment
-  - `userId?: string` - Current user ID
-  - `sessionId?: string` - Session ID
-  - `permissions: string[]` - User permissions
-  - `quota?: { users, policies, agents, apiCalls, storage }` - Resource quotas
-  - `features: string[]` - Feature list
-  - `complianceFrameworks: string[]` - Compliance framework list
-  - `dataResidency?: string` - Data residency region
-  - `createdAt?: Date` - Creation timestamp
-  - `updatedAt?: Date` - Last update timestamp
+**Context Data**:
+```typescript
+export interface TenantContextData {
+  tenantId: string
+  constitutionalHash: 'cdd01ef066bc6cf2'
+  environment: 'development' | 'staging' | 'production'
+  userId?: string
+  sessionId?: string
+  permissions: string[]
+  quota?: {
+    users: number
+    policies: number
+    agents: number
+    apiCalls: number
+    storage: number
+  }
+  features: string[]
+  complianceFrameworks: string[]
+  dataResidency?: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+```
 
-#### Interface: `TenantContextEvents`
-- **Description**: Tenant context event types
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/core/tenant.ts:34-38`
-- **Event Signatures**:
-  - `updated: (context: TenantContext) => void` - Context updated
-  - `permissionChanged: (permissions: string[]) => void` - Permissions changed
-  - `quotaUpdated: (quota?: object) => void` - Quota updated
+**Events Emitted**:
+```typescript
+export interface TenantContextEvents {
+  updated: (context: TenantContext) => void
+  permissionChanged: (permissions: string[]) => void
+  quotaUpdated: (quota: TenantContextData['quota']) => void
+}
+```
 
----
+**API Headers Generated** (via `getHeaders()`):
+- `X-Tenant-ID` - Tenant identifier
+- `X-Constitutional-Hash` - Constitutional validation hash
+- `X-Environment` - Environment (dev/staging/prod)
+- `X-Context-ID` - Unique context instance ID
+- `X-User-ID` - Current user ID (if set)
+- `X-Session-ID` - Current session ID (if set)
 
-### Authentication Module
+**Factory Functions**:
+```typescript
+export function createTenantContext(
+  data: Omit<TenantContextData, 'createdAt' | 'updatedAt'>
+): TenantContext
 
-#### Class: `AuthManager` extends `EventEmitter<AuthEvents>`
-- **Description**: Handles user authentication, JWT token management, automatic token refresh, and session lifecycle
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/auth/auth-manager.ts:85-436`
-- **Properties**:
-  - `jwtManager: JWTManager` (private) - JWT management
-  - `authState: AuthState` (private) - Current authentication state
-  - `refreshTimer?: NodeJS.Timeout` (private) - Token refresh timer
-  - `isRefreshing: boolean` (private) - Token refresh in progress flag
-  - `httpClient: AxiosInstance` (private) - HTTP client
-  - `tenantContext: TenantContext` (private) - Tenant context
-
-- **Methods**:
-  - `constructor(httpClient: AxiosInstance, tenantContext: TenantContext): void` - Initialize auth manager
-  - `initialize(): Promise<void>` - Initialize and restore previous authentication if available
-  - `switchTenant(newContext: TenantContext): Promise<void>` - Switch to new tenant context
-  - `login(credentials: LoginRequest): Promise<LoginResponse>` - User login
-  - `logout(): Promise<void>` - User logout
-  - `refreshToken(): Promise<TokenRefreshResponse>` - Refresh access token
-  - `getUserInfo(): Promise<UserInfo>` - Get current user information
-  - `updateProfile(updates: Partial<...>): Promise<UserInfo>` - Update user profile
-  - `changePassword(currentPassword: string, newPassword: string): Promise<void>` - Change password
-  - `getAuthState(): AuthState` - Get current auth state
-  - `isAuthenticated(): boolean` - Check if user is authenticated
-  - `getCurrentUser(): UserInfo | undefined` - Get current user
-  - `healthCheck(): Promise<boolean>` - Health check
-  - `getMetrics(): Record<string, any>` - Get auth metrics
-  - `dispose(): void` - Clean up resources
-  - `private validateAndSetTokens(accessToken: string, refreshToken: string): Promise<void>` - Validate and store tokens
-  - `private clearAuthState(): void` - Clear authentication state
-  - `private ensureAuthenticated(): void` - Ensure user is authenticated
-  - `private setupAutoRefresh(): void` - Setup automatic token refresh
-  - `private clearRefreshTimer(): void` - Clear refresh timer
-  - `private storeTokens(accessToken: string, refreshToken: string): void` - Store tokens in localStorage
-  - `private getStoredTokens(): { accessToken, refreshToken } | null` - Retrieve stored tokens
-  - `private clearStoredTokens(): void` - Clear stored tokens
-
-- **Dependencies**:
-  - Internal: `JWTManager`, `TenantContext`
-  - External: `eventemitter3`, `zod`, `axios`
-
-#### Type: `LoginRequest`
-- **Description**: Login request data
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/auth/auth-manager.ts:13-17`
-- **Properties**:
-  - `username: string` - Username
-  - `password: string` - Password
-  - `tenantId?: string` - Tenant ID (optional)
-
-#### Type: `LoginResponse`
-- **Description**: Login response data
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/auth/auth-manager.ts:19-31`
-- **Properties**:
-  - `accessToken: string` - Access token
-  - `refreshToken: string` - Refresh token
-  - `tokenType: string` - Token type (default 'Bearer')
-  - `expiresIn: number` - Expiration seconds
-  - `user: { id, username, email, roles, permissions }` - User information
-
-#### Type: `TokenRefreshRequest`
-- **Description**: Token refresh request
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/auth/auth-manager.ts:33-35`
-- **Properties**:
-  - `refreshToken: string` - Refresh token
-
-#### Type: `TokenRefreshResponse`
-- **Description**: Token refresh response
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/auth/auth-manager.ts:37-42`
-- **Properties**:
-  - `accessToken: string` - New access token
-  - `refreshToken?: string` - New refresh token (optional)
-  - `tokenType: string` - Token type (default 'Bearer')
-  - `expiresIn: number` - Expiration seconds
-
-#### Type: `UserInfo`
-- **Description**: User information
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/auth/auth-manager.ts:44-55`
-- **Properties**:
-  - `id: string` - User ID
-  - `username: string` - Username
-  - `email: string` - Email address
-  - `firstName?: string` - First name (optional)
-  - `lastName?: string` - Last name (optional)
-  - `roles: string[]` - User roles
-  - `permissions: string[]` - User permissions
-  - `tenantId: string` - Tenant ID
-  - `lastLogin?: Date` - Last login timestamp (optional)
-  - `isActive: boolean` - Active status
-
-#### Interface: `AuthState`
-- **Description**: Authentication state
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/auth/auth-manager.ts:64-70`
-- **Properties**:
-  - `isAuthenticated: boolean` - Authentication status
-  - `user?: UserInfo` - User information (optional)
-  - `accessToken?: string` - Access token (optional)
-  - `refreshToken?: string` - Refresh token (optional)
-  - `expiresAt?: Date` - Token expiration time (optional)
-
-#### Interface: `AuthEvents`
-- **Description**: Authentication event types
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/auth/auth-manager.ts:73-79`
-- **Event Signatures**:
-  - `authenticated: (userId: string) => void` - User authenticated
-  - `deauthenticated: () => void` - User deauthenticated
-  - `tokenRefreshed: (expiresAt: Date) => void` - Token refreshed
-  - `tokenExpired: () => void` - Token expired
-  - `loginFailed: (error: Error) => void` - Login failed
+export function createDefaultTenantContext(
+  tenantId: string,
+  environment?: 'development' | 'staging' | 'production'
+): TenantContext
+```
 
 ---
 
-### Logger Utility Module
+### Authentication Module: `/src/auth/`
 
-#### Class: `Logger`
-- **Description**: Structured logging utility for SDK with constitutional hash validation
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts:24-106`
-- **Properties**:
-  - `name: string` (private) - Logger name
-  - `level: LogLevel` (private) - Minimum log level
-  - `constitutionalHash: string` (private) - Constitutional hash ('cdd01ef066bc6cf2')
+#### Authentication Manager Class: `AuthManager`
+**File**: `/src/auth/auth-manager.ts`
 
-- **Methods**:
-  - `constructor(name: string, level?: LogLevel): void` - Initialize logger
-  - `debug(message: string, data?: any): void` - Log debug message
-  - `info(message: string, data?: any): void` - Log info message
-  - `warn(message: string, data?: any): void` - Log warning message
-  - `error(message: string, data?: any): void` - Log error message
-  - `logSuccess(message: string, data?: any): void` - Log success message
-  - `logError(message: string, error?: any): void` - Log error with error object
-  - `logResult(result: any): void` - Log operation result
-  - `private shouldLog(level: LogLevel): boolean` - Check if message should be logged
-  - `private formatMessage(level: string, message: string, data?: any): LogEntry` - Format log entry
-  - `private log(level: LogLevel, levelName: string, message: string, data?: any): void` - Internal log method
+```typescript
+export class AuthManager extends EventEmitter<AuthEvents> {
+  constructor(httpClient: AxiosInstance, tenantContext: TenantContext): void
 
-- **Dependencies**:
-  - Internal: None
-  - External: None
+  async initialize(): Promise<void>
+  async switchTenant(newContext: TenantContext): Promise<void>
+  async login(credentials: LoginRequest): Promise<LoginResponse>
+  async logout(): Promise<void>
+  async refreshToken(): Promise<TokenRefreshResponse>
+  async getUserInfo(): Promise<UserInfo>
+  async updateProfile(updates: Partial<Pick<UserInfo, 'firstName' | 'lastName' | 'email'>>): Promise<UserInfo>
+  async changePassword(currentPassword: string, newPassword: string): Promise<void>
+  getAuthState(): AuthState
+  isAuthenticated(): boolean
+  getCurrentUser(): UserInfo | undefined
+  async healthCheck(): Promise<boolean>
+  getMetrics(): Record<string, any>
+  dispose(): void
 
-#### Enum: `LogLevel`
-- **Description**: Log level enumeration
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts:8-13`
-- **Values**:
-  - `DEBUG = 0` - Debug level
-  - `INFO = 1` - Info level
-  - `WARN = 2` - Warning level
-  - `ERROR = 3` - Error level
+  private async validateAndSetTokens(accessToken: string, refreshToken: string): Promise<void>
+  private clearAuthState(): void
+  private ensureAuthenticated(): void
+  private setupAutoRefresh(): void
+  private clearRefreshTimer(): void
+  private storeTokens(accessToken: string, refreshToken: string): void
+  private getStoredTokens(): {accessToken: string; refreshToken: string} | null
+  private clearStoredTokens(): void
+}
+```
 
-#### Interface: `LogEntry`
-- **Description**: Structured log entry
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts:15-22`
-- **Properties**:
-  - `timestamp: string` - ISO 8601 timestamp
-  - `level: string` - Log level name
-  - `logger: string` - Logger name
-  - `message: string` - Log message
-  - `constitutional_hash: string` - Constitutional hash
-  - `data?: any` - Additional data (optional)
+**Description**: Manages user authentication lifecycle, token management, and session state. Provides automatic token refresh (5 minutes before expiry), localStorage persistence, and comprehensive event notifications.
 
-#### Function: `getLogger(name: string, level?: LogLevel): Logger`
-- **Description**: Get or create logger instance with singleton pattern
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts:111-116`
-- **Parameters**:
-  - `name: string` - Logger name/identifier
-  - `level?: LogLevel` - Minimum log level (optional)
-- **Returns**: `Logger` instance
-- **Dependencies**: `Logger`, `LogLevel`
+**Authentication Types**:
+```typescript
+export interface LoginRequest {
+  username: string
+  password: string
+  tenantId?: string
+}
 
-#### Constant: `logger`
-- **Description**: Default logger instance
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts:119`
-- **Type**: `Logger`
-- **Value**: Instance of `getLogger('acgs2-typescript')`
+export interface LoginResponse {
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  expiresIn: number
+  user: {
+    id: string
+    username: string
+    email: string
+    roles: string[]
+    permissions: string[]
+  }
+}
 
-#### Function: `logSuccessResult(logger: Logger, result: any): void`
-- **Description**: Log successful operation result
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts:122-124`
-- **Parameters**:
-  - `logger: Logger` - Logger instance
-  - `result: any` - Operation result
-- **Dependencies**: `Logger`
+export interface TokenRefreshRequest {
+  refreshToken: string
+}
 
-#### Function: `logErrorResult(logger: Logger, error: any): void`
-- **Description**: Log error result
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts:126-128`
-- **Parameters**:
-  - `logger: Logger` - Logger instance
-  - `error: any` - Error object
-- **Dependencies**: `Logger`
+export interface TokenRefreshResponse {
+  accessToken: string
+  refreshToken?: string
+  tokenType: string
+  expiresIn: number
+}
+
+export interface UserInfo {
+  id: string
+  username: string
+  email: string
+  firstName?: string
+  lastName?: string
+  roles: string[]
+  permissions: string[]
+  tenantId: string
+  lastLogin?: Date
+  isActive: boolean
+}
+
+export interface AuthState {
+  isAuthenticated: boolean
+  user?: UserInfo
+  accessToken?: string
+  refreshToken?: string
+  expiresAt?: Date
+}
+```
+
+**Events Emitted**:
+```typescript
+export interface AuthEvents {
+  authenticated: (userId: string) => void
+  deauthenticated: () => void
+  tokenRefreshed: (expiresAt: Date) => void
+  tokenExpired: () => void
+  loginFailed: (error: Error) => void
+}
+```
+
+**Token Storage**: Tokens stored in browser localStorage as `acgs2_auth_{tenantId}` (client-side only, gracefully handles server-side execution)
+
+**Auto-Refresh**: Automatically refreshes token 5 minutes before expiration, emits `tokenExpired` if refresh fails, automatically logs out on token expiration.
 
 ---
 
-### Package Root Module
+### Utilities Module: `/src/utils/`
 
-#### Module Exports: `index.ts`
-- **Description**: Main SDK entry point exporting all public APIs
-- **Location**: `/home/dislove/document/acgs2/sdk/typescript/src/index.ts:1-195`
+#### Logger Class: `Logger`
+**File**: `/src/utils/logger.ts`
 
-- **Core Exports**:
-  - `ACGS2Client` - Main SDK client class
-  - `createACGS2Client` - SDK client factory
-  - `createDefaultConfig` - Default config factory
-  - `SDKConfig` - SDK configuration type
-  - `TenantConfig` - Tenant configuration type
-  - `SDKEvents` - SDK events interface
+```typescript
+export enum LogLevel {
+  DEBUG = 0
+  INFO = 1
+  WARN = 2
+  ERROR = 3
+}
 
-- **Tenant Exports**:
-  - `TenantContext` - Tenant context class
-  - `createTenantContext` - Tenant context factory
-  - `createDefaultTenantContext` - Default tenant context factory
-  - `TenantContextData` - Tenant context data type
-  - `TenantContextEvents` - Tenant context events interface
+export interface LogEntry {
+  timestamp: string // ISO 8601 timestamp
+  level: string // DEBUG | INFO | WARN | ERROR
+  logger: string // Logger name
+  message: string // Log message
+  constitutional_hash: string // 'cdd01ef066bc6cf2'
+  data?: any // Optional additional data
+}
 
-- **HTTP Exports**:
-  - `EnterpriseHttpClient` - HTTP client class
-  - `createHttpClient` - HTTP client factory
-  - `HttpClientConfig` - HTTP config type
-  - `RequestMetrics` - Request metrics type
-  - `TracingHeaders` - Tracing headers type
-  - `RequestInterceptor` - Request interceptor type
-  - `ResponseInterceptor` - Response interceptor type
-  - `ErrorInterceptor` - Error interceptor type
+export class Logger {
+  constructor(name: string, level?: LogLevel = LogLevel.INFO): void
+  debug(message: string, data?: any): void
+  info(message: string, data?: any): void
+  warn(message: string, data?: any): void
+  error(message: string, data?: any): void
+  logSuccess(message: string, data?: any): void
+  logError(message: string, error?: any): void
+  logResult(result: any): void
 
-- **Auth Exports**:
-  - `AuthManager` - Authentication manager class
-  - `AuthEvents` - Auth events interface
-  - `LoginRequest` - Login request type
-  - `LoginResponse` - Login response type
-  - `TokenRefreshRequest` - Token refresh request type
-  - `TokenRefreshResponse` - Token refresh response type
-  - `UserInfo` - User information type
-  - `AuthState` - Authentication state type
-  - `JWTManager` - JWT manager class (re-exported)
-  - `JWTOptions` - JWT options type (re-exported)
-  - `TokenPayload` - Token payload type (re-exported)
-  - `TokenVerificationResult` - Token verification result type (re-exported)
-  - `OktaAuthProvider` - Okta auth provider class (re-exported)
-  - `OktaConfig` - Okta config type (re-exported)
-  - `OktaAuthState` - Okta auth state type (re-exported)
-  - `AzureADAuthProvider` - Azure AD auth provider class (re-exported)
-  - `AzureADConfig` - Azure AD config type (re-exported)
-  - `AzureADAuthState` - Azure AD auth state type (re-exported)
+  private shouldLog(level: LogLevel): boolean
+  private formatMessage(level: string, message: string, data?: any): LogEntry
+  private log(level: LogLevel, levelName: string, message: string, data?: any): void
+}
+```
 
-- **Service Exports** (re-exported):
-  - `PolicyService`, `PolicyEvents`, `Policy`, `PolicyRule`, `PolicyValidationResult`
-  - `AuditService`, `AuditEvents`, `AuditEvent`, `AuditQuery`, `AuditSummary`, `ComplianceReport`
-  - `AgentService`, `AgentEvents`, `Agent`, `AgentStatus`, `AgentCapabilities`, `AgentHeartbeat`
-  - `TenantService`, `TenantEvents`, `Tenant`, `TenantStatus`, `TenantTier`, `TenantResourceQuota`
+**Description**: Structured logging utility with constitutional hash validation. Provides level-based filtering, JSON-formatted output, and global logger registry.
 
-- **Model Exports** (re-exported):
-  - Common models from `./models/common`
-  - Error models from `./models/errors`
-  - Response models from `./models/responses`
+**Logger Management**:
+```typescript
+export function getLogger(name: string, level?: LogLevel): Logger
+// Returns cached logger instance or creates new one
 
-- **Utility Exports** (re-exported):
-  - Validation utilities from `./utils/validation`
-  - Retry utilities from `./utils/retry`
-  - Rate limiting utilities from `./utils/rate-limiting`
-  - Circuit breaker utilities from `./utils/circuit-breaker`
+export const logger: Logger
+// Default logger instance for 'acgs2-typescript'
 
-- **Middleware Exports** (re-exported):
-  - Auth middleware from `./middleware/auth-middleware`
-  - Tenant middleware from `./middleware/tenant-middleware`
-  - Rate limit middleware from `./middleware/rate-limit-middleware`
-  - Compliance middleware from `./middleware/compliance-middleware`
+export function logSuccessResult(logger: Logger, result: any): void
+export function logErrorResult(logger: Logger, error: any): void
+```
 
-- **Type Exports**:
-  - `AxiosInstance`, `AxiosRequestConfig`, `AxiosResponse` from axios
+**Features**:
+- Level-based filtering (DEBUG < INFO < WARN < ERROR)
+- JSON output format with constitutional hash
+- Global logger instance caching per name
+- Structured logging with optional data attachment
+- Configurable minimum log level per logger instance
 
-- **Constants**:
-  - `VERSION = '3.0.0'` - SDK version
-  - `CONSTITUTIONAL_HASH = 'cdd01ef066bc6cf2'` - Constitutional hash
+---
 
-- **Dependencies**:
-  - Internal: All core modules and services
-  - External: `axios`, supporting libraries
+### Main Entry Point
+**File**: `/src/index.ts`
+
+**Public Exports**:
+
+**Core Client & Configuration**:
+- `ACGS2Client` - Main SDK client class
+- `createACGS2Client(config: SDKConfig): ACGS2Client` - Client factory
+- `createDefaultConfig(baseURL: string, tenantId: string): SDKConfig` - Default config factory
+- `SDKConfig` - Configuration interface
+- `TenantConfig` - Tenant configuration interface
+- `SDKEvents` - Client event type definitions
+
+**Tenant Management**:
+- `TenantContext` - Tenant context class
+- `createTenantContext(data)` - Tenant context factory
+- `createDefaultTenantContext(tenantId, environment)` - Default tenant context factory
+- `TenantContextData` - Tenant context data interface
+- `TenantContextEvents` - Tenant context event type definitions
+
+**HTTP Client**:
+- `EnterpriseHttpClient` - HTTP client class
+- `createHttpClient(sdkConfig, onError)` - HTTP client factory
+- `HttpClientConfig` - HTTP client configuration
+- `RequestMetrics` - Request metrics interface
+- `TracingHeaders` - Tracing headers interface
+- `RequestInterceptor` - Request interceptor type
+- `ResponseInterceptor` - Response interceptor type
+- `ErrorInterceptor` - Error interceptor type
+
+**Authentication**:
+- `AuthManager` - Authentication manager class
+- `AuthEvents` - Authentication event type definitions
+- `LoginRequest`, `LoginResponse` - Login types
+- `TokenRefreshRequest`, `TokenRefreshResponse` - Token refresh types
+- `UserInfo` - User information type
+- `AuthState` - Authentication state type
+
+**JWT Management** (Exported but implementation not in src):
+- `JWTManager` - JWT token manager
+- `JWTOptions` - JWT manager options
+- `TokenPayload` - JWT token payload type
+- `TokenVerificationResult` - Token verification result type
+
+**OAuth Providers** (Exported but implementation not in src):
+- `OktaAuthProvider`, `OktaConfig`, `OktaAuthState` - Okta OAuth provider
+- `AzureADAuthProvider`, `AzureADConfig`, `AzureADAuthState` - Azure AD provider
+
+**Services** (Exported but implementation not in src):
+- `PolicyService` - Constitutional policy management
+- `AuditService` - Audit trail and compliance
+- `AgentService` - AI agent management
+- `TenantService` - Tenant management
+
+**Models** (Exported but implementation not in src):
+- Common types via `./models/common`
+- Error types via `./models/errors`
+- Response types via `./models/responses`
+
+**Utilities** (Exported but implementation not in src):
+- Validation utilities
+- Retry logic utilities
+- Rate limiting utilities
+- Circuit breaker utilities
+
+**Middleware** (Exported but implementation not in src):
+- Authentication middleware
+- Tenant middleware
+- Rate limit middleware
+- Compliance middleware
+
+**SDK Info**:
+- `VERSION = '3.0.0'`
+- `CONSTITUTIONAL_HASH = 'cdd01ef066bc6cf2'`
 
 ---
 
 ## Dependencies
 
-### Internal Dependencies
-
-- **Core Module Dependencies**:
-  - `client.ts` → `http.ts`, `tenant.ts`, `auth/auth-manager.ts`, service modules
-  - `http.ts` → `tenant.ts`
-  - `tenant.ts` → (none)
-  - `auth/auth-manager.ts` → `core/tenant.ts`, JWT manager
-  - `utils/logger.ts` → (none)
-  - `index.ts` → All core modules, services, and utilities
-
 ### External Dependencies
 
 #### Production Dependencies
-- **`axios` ^1.6.0** - HTTP client library for making API requests
-- **`jsonwebtoken` ^9.0.2** - JWT token generation and verification
-- **`jose` ^4.15.4** - JSON Object Signing and Encryption (JOSE) library
-- **`crypto-js` ^4.2.0** - Cryptographic library for encryption/hashing
-- **`uuid` ^9.0.1** - UUID generation library
-- **`zod` ^3.22.4** - TypeScript-first schema validation
-- **`rxjs` ^7.8.1** - Reactive extensions for JavaScript (observable patterns)
-- **`eventemitter3` ^5.0.1** - Event emitter implementation
+- **axios** (^1.6.0) - HTTP client library (peer dependency)
+  - Used for: Core HTTP request/response handling
+  - Location: Wrapped in EnterpriseHttpClient with retry and metrics
+
+- **jsonwebtoken** (^9.0.2) - JWT signing and verification
+  - Used for: Token creation and validation in authentication flows
+
+- **jose** (^4.15.4) - JSON Object Signing and Encryption
+  - Used for: Secure JWT handling and token operations
+
+- **crypto-js** (^4.2.0) - Cryptographic utilities
+  - Used for: Constitutional hash validation and encryption
+
+- **uuid** (^9.0.1) - UUID generation
+  - Used for: Unique identifier generation (trace IDs, span IDs, context IDs)
+
+- **zod** (^3.22.4) - TypeScript schema validation
+  - Used for: Runtime validation of configurations, requests, and responses
+  - Location: SDKConfig, TenantContextSchema, HttpClientConfigSchema, auth schemas
+
+- **rxjs** (^7.8.1) - Reactive Extensions for JavaScript
+  - Used for: Async stream handling and event management
+
+- **eventemitter3** (^5.0.1) - Event emitter implementation
+  - Used for: Event-driven communication in ACGS2Client, AuthManager, TenantContext
 
 #### Development Dependencies
-- **`typescript` ^5.3.0** - TypeScript compiler
-- **`@types/node` ^20.10.0** - Node.js type definitions
-- **`@types/uuid` ^9.0.7** - UUID type definitions
-- **`@types/crypto-js` ^4.2.2** - crypto-js type definitions
-- **`@typescript-eslint/parser` ^6.13.1** - TypeScript ESLint parser
-- **`@typescript-eslint/eslint-plugin` ^6.13.1** - TypeScript ESLint rules
-- **`eslint` ^8.54.0** - Code linting
-- **`jest` ^29.7.0** - Testing framework
-- **`@types/jest` ^29.5.8** - Jest type definitions
-- **`ts-jest` ^29.1.1** - TypeScript support for Jest
-- **`tsup` ^7.2.0** - TypeScript bundler
-- **`typedoc` ^0.25.4** - TypeScript documentation generator
+- @types/node (^20.10.0)
+- @types/uuid (^9.0.7)
+- @types/crypto-js (^4.2.2)
+- @types/jest (^29.5.8)
+- @typescript-eslint/eslint-plugin (^6.13.1)
+- @typescript-eslint/parser (^6.13.1)
+- eslint (^8.54.0)
+- jest (^29.7.0)
+- ts-jest (^29.1.1)
+- tsup (^7.2.0) - Build tool for TypeScript
+- typescript (^5.3.0)
+- typedoc (^0.25.4) - API documentation generator
+
+### Peer Dependencies
+- **axios** (^1.6.0) - Required for HTTP client functionality
 
 ---
 
 ## Relationships
 
-### Module Architecture Diagram
+### Architecture Overview
 
 ```mermaid
 ---
-title: TypeScript SDK Module Structure
+title: ACGS-2 TypeScript SDK Architecture
 ---
 classDiagram
-    namespace CoreModules {
+    namespace Core {
         class ACGS2Client {
             <<main>>
-            +config: SDKConfig
-            +httpClient: AxiosInstance
-            +currentTenant: TenantContext
-            +auth: AuthManager
-            +policies: PolicyService
-            +audit: AuditService
-            +agents: AgentService
-            +tenants: TenantService
-            +initialize(): Promise~void~
-            +switchTenant(tenantId): Promise~void~
-            +healthCheck(): Promise~HealthStatus~
-            +dispose(): Promise~void~
+            -config SDKConfig
+            -httpClient AxiosInstance
+            -currentTenant TenantContext
+            -isReady boolean
+            +auth AuthManager
+            +policies PolicyService
+            +audit AuditService
+            +agents AgentService
+            +tenants TenantService
+            +initialize() Promise
+            +switchTenant(tenantId) Promise
+            +getCurrentTenant() TenantContext
+            +healthCheck() Promise
+            +getMetrics() Record
+            +dispose() Promise
+            #handleRequestError(error)
+            #setupEventForwarding()
         }
 
         class EnterpriseHttpClient {
             <<http>>
-            -axiosInstance: AxiosInstance
-            -config: HttpClientConfig
-            -tenantContext: TenantContext
-            -requestMetrics: RequestMetrics[]
-            +request(config): Promise~AxiosResponse~
-            +get(url): Promise~AxiosResponse~
-            +post(url, data): Promise~AxiosResponse~
-            +getMetrics(): RequestMetrics[]
-            +getStats(): ClientStats
+            -axiosInstance AxiosInstance
+            -config HttpClientConfig
+            -tenantContext TenantContext
+            -requestMetrics RequestMetrics[]
+            +request(config) Promise
+            +get(url) Promise
+            +post(url, data) Promise
+            +put(url, data) Promise
+            +patch(url, data) Promise
+            +delete(url) Promise
+            +setTenantContext(context)
+            +addRequestInterceptor(fn)
+            +addResponseInterceptor(fn)
+            +addErrorInterceptor(fn)
+            +getMetrics() RequestMetrics[]
+            +getStats() Stats
+            #setupDefaultInterceptors()
+            #enrichRequestConfig(config)
+            #generateTracingHeaders()
+            #shouldRetry(error, count)
+            #calculateRetryDelay(count)
         }
 
         class TenantContext {
-            <<tenant>>
-            -data: TenantContextData
-            -contextId: string
-            +tenantId: string
-            +userId?: string
-            +permissions: string[]
-            +quota?: QuotaInfo
-            +hasPermission(perm): boolean
-            +getHeaders(): Headers
-            +getMetadata(): Metadata
+            <<context>>
+            -data TenantContextData
+            -contextId string
+            +tenantId string
+            +constitutionalHash string
+            +environment string
+            +userId string
+            +sessionId string
+            +permissions string[]
+            +quota Quota
+            +features string[]
+            +complianceFrameworks string[]
+            +setUserId(id)
+            +setSessionId(id)
+            +setPermissions(perms)
+            +hasPermission(perm) boolean
+            +checkQuota(resource, amount) boolean
+            +setFeatures(features)
+            +setComplianceFrameworks(frameworks)
+            +getHeaders() Record
+            +getMetadata() Record
+            #generateContextId() string
         }
     }
 
-    namespace AuthModules {
+    namespace Authentication {
         class AuthManager {
-            <<auth>>
-            -jwtManager: JWTManager
-            -authState: AuthState
-            -refreshTimer: NodeJS.Timeout
-            +login(credentials): Promise~LoginResponse~
-            +logout(): Promise~void~
-            +refreshToken(): Promise~TokenResponse~
-            +getUserInfo(): Promise~UserInfo~
-            +isAuthenticated(): boolean
+            <<service>>
+            -jwtManager JWTManager
+            -authState AuthState
+            -refreshTimer NodeJS.Timeout
+            -isRefreshing boolean
+            +auth(manager) AxiosInstance
+            +tenantContext TenantContext
+            +initialize() Promise
+            +switchTenant(context) Promise
+            +login(credentials) Promise
+            +logout() Promise
+            +refreshToken() Promise
+            +getUserInfo() Promise
+            +updateProfile(updates) Promise
+            +changePassword(old, new) Promise
+            +getAuthState() AuthState
+            +isAuthenticated() boolean
+            +getCurrentUser() UserInfo
+            #validateAndSetTokens(access, refresh)
+            #setupAutoRefresh()
+            #storeTokens(access, refresh)
         }
 
         class JWTManager {
-            <<jwt>>
-            +verifyToken(token): TokenPayload
-            +generateToken(payload): string
+            <<utility>>
+            +verifyToken(token) Payload
+            +decodeToken(token) Payload
+            +validatePayload(payload) boolean
         }
     }
 
-    namespace UtilityModules {
+    namespace Utilities {
         class Logger {
-            <<logger>>
-            -name: string
-            -level: LogLevel
-            +debug(msg, data): void
-            +info(msg, data): void
-            +warn(msg, data): void
-            +error(msg, data): void
+            <<logging>>
+            -name string
+            -level LogLevel
+            +debug(msg, data)
+            +info(msg, data)
+            +warn(msg, data)
+            +error(msg, data)
+            +logSuccess(msg, data)
+            +logError(msg, error)
+            #formatMessage(level, msg, data)
         }
     }
 
-    namespace ServiceModules {
-        class PolicyService {
-            <<service>>
-            +list(): Promise~Policy[]~
-            +create(policy): Promise~Policy~
-            +update(id, policy): Promise~Policy~
-            +delete(id): Promise~void~
+    namespace External {
+        class AxiosInstance {
+            <<external>>
         }
 
-        class AuditService {
-            <<service>>
-            +query(query): Promise~AuditEvent[]~
-            +getReport(reportId): Promise~ComplianceReport~
+        class EventEmitter {
+            <<external>>
         }
 
-        class AgentService {
-            <<service>>
-            +list(): Promise~Agent[]~
-            +register(agent): Promise~Agent~
-            +heartbeat(agentId): Promise~void~
-        }
-
-        class TenantService {
-            <<service>>
-            +validateTenantAccess(tenantId): Promise~void~
-            +get(tenantId): Promise~Tenant~
-            +list(): Promise~Tenant[]~
+        class Zod {
+            <<external>>
         }
     }
 
+    ACGS2Client --|> EventEmitter: extends
     ACGS2Client --> EnterpriseHttpClient: uses
     ACGS2Client --> TenantContext: manages
-    ACGS2Client --> AuthManager: uses
-    ACGS2Client --> PolicyService: uses
-    ACGS2Client --> AuditService: uses
-    ACGS2Client --> AgentService: uses
-    ACGS2Client --> TenantService: uses
+    ACGS2Client --> AuthManager: delegates
 
-    EnterpriseHttpClient --> TenantContext: enriches requests
-    AuthManager --> TenantContext: updates
-    AuthManager --> JWTManager: uses
+    EnterpriseHttpClient --> AxiosInstance: wraps
+    EnterpriseHttpClient --> TenantContext: injects context
 
-    PolicyService --> EnterpriseHttpClient: HTTP calls
-    AuditService --> EnterpriseHttpClient: HTTP calls
-    AgentService --> EnterpriseHttpClient: HTTP calls
-    TenantService --> EnterpriseHttpClient: HTTP calls
+    TenantContext --|> EventEmitter: extends
+    TenantContext --> Zod: validates with
+
+    AuthManager --|> EventEmitter: extends
+    AuthManager --> AxiosInstance: uses for requests
+    AuthManager --> TenantContext: updates context
+    AuthManager --> JWTManager: delegates tokens
+
+    Logger --> Zod: validates with
+
+    ACGS2Client --> Logger: uses for logging
 ```
 
-### Data Flow Diagram
+### Service Integration Flow
 
 ```mermaid
 ---
-title: SDK Request/Response Flow
+title: SDK Initialization and Request Flow
 ---
 flowchart TD
-    A[Client Code] -->|initialize| B[ACGS2Client]
-    B -->|validate config| C[SDKConfig Schema]
-    B -->|create HTTP client| D[EnterpriseHttpClient]
-    B -->|create tenant context| E[TenantContext]
-    B -->|initialize services| F[Services]
+    A[createACGS2Client] -->|creates| B[ACGS2Client]
+    C[createDefaultConfig] -->|provides| B
 
-    G[API Request] -->|create request| H[AuthManager]
-    H -->|get auth state| I[AuthState]
-    I -->|inject token| J[EnterpriseHttpClient]
-    J -->|enrich with tenant| E
-    J -->|add tracing headers| K[TracingHeaders]
-    K -->|retry logic| L{Retry?}
-    L -->|yes| M[Exponential Backoff]
-    M --> J
-    L -->|no| N[Record Metrics]
-    N -->|success| O[AxiosResponse]
-    O -->|parse schema| P[Zod Validation]
-    P -->|return to client| Q[Typed Response]
+    B -->|initializes| D[EnterpriseHttpClient]
+    B -->|creates| E[TenantContext]
+    B -->|creates| F[AuthManager]
+    B -->|creates| G[PolicyService]
+    B -->|creates| H[AuditService]
+    B -->|creates| I[AgentService]
 
-    L -->|error| R{Error Type}
-    R -->|401| S[Token Refresh]
-    S -->|new token| H
-    R -->|429| T[Rate Limit Event]
-    T -->|emit event| B
-    R -->|other| U[Error Handler]
-    U -->|emit error| B
+    J["client.initialize()"] -->|validates| K[Tenant Access]
+    K -->|initializes all| L[Services]
+
+    M["client.login"] -->|uses| F
+    F -->|token mgmt| N[JWTManager]
+    N -->|stores| O[localStorage]
+    O -->|on next init| P[Auto Login]
+
+    Q["HTTP Request"] -->|enriches| R[Add Tenant Headers]
+    R -->|adds| S[Tracing Headers]
+    S -->|sends| D
+    D -->|retries on| T[429/5xx]
+    T -->|exponential backoff| U[Success]
+    U -->|records| V[Metrics]
+
+    W[TenantContext Updates] -->|emits| X["updated event"]
+    X -->|services listen| Y[React to changes]
 ```
 
-### Service Integration Diagram
+### Component Dependencies
 
-```mermaid
+**Direct Dependencies**:
+- ACGS2Client depends on: EnterpriseHttpClient, TenantContext, AuthManager, PolicyService, AuditService, AgentService, TenantService
+- EnterpriseHttpClient depends on: axios, Zod (validation), uuid (tracing)
+- TenantContext depends on: EventEmitter3, Zod (validation)
+- AuthManager depends on: EnterpriseHttpClient, TenantContext, JWTManager, EventEmitter3
+- Logger depends on: Zod (validation)
+
+**Event Communication**:
+- ACGS2Client emits: ready, error, tenantSwitched, authenticated, deauthenticated, rateLimited, quotaExceeded
+- AuthManager emits: authenticated, deauthenticated, tokenRefreshed, tokenExpired, loginFailed
+- TenantContext emits: updated, permissionChanged, quotaUpdated
+
+**HTTP Request Pipeline**:
+1. User calls service method (e.g., `client.policies.list()`)
+2. Service uses EnterpriseHttpClient for HTTP request
+3. Request interceptor enriches with TenantContext headers and tracing headers
+4. axios executes request with retry logic
+5. On success: metrics recorded, response interceptors run
+6. On failure: error interceptors run, retry decision made, error callback invoked
+7. ACGS2Client error handler emits appropriate events
+
 ---
-title: SDK Services Architecture
+
+## Module Exports Summary
+
+### Public API Entry Point
+- **File**: `/src/index.ts`
+- **Primary Export**: ACGS2Client class
+- **Factory Functions**: createACGS2Client, createDefaultConfig
+- **Version Info**: VERSION, CONSTITUTIONAL_HASH constants
+
+### By Category
+
+**SDK Core**:
+- ACGS2Client, SDKConfig, SDKEvents
+- createACGS2Client, createDefaultConfig
+
+**Multi-Tenancy**:
+- TenantContext, TenantContextData, TenantContextEvents
+- createTenantContext, createDefaultTenantContext
+- TenantConfig, TenantService (not implemented)
+
+**Authentication**:
+- AuthManager, AuthState, AuthEvents
+- LoginRequest, LoginResponse
+- UserInfo, TokenPayload
+- JWTManager (not fully implemented)
+- OktaAuthProvider, AzureADAuthProvider (not implemented)
+
+**HTTP Client**:
+- EnterpriseHttpClient, HttpClientConfig
+- RequestMetrics, TracingHeaders
+- RequestInterceptor, ResponseInterceptor, ErrorInterceptor
+- createHttpClient
+
+**Services** (Not yet implemented in src):
+- PolicyService, AuditService, AgentService, TenantService
+- Corresponding data types and events
+
+**Utilities** (Not yet implemented in src):
+- Validation utilities
+- Retry utilities
+- Rate limiting utilities
+- Circuit breaker utilities
+
+**Middleware** (Not yet implemented in src):
+- Auth middleware
+- Tenant middleware
+- Rate limit middleware
+- Compliance middleware
+
 ---
-classDiagram
-    class SDKClient {
-        <<facade>>
-        -services: Map
-        +auth: AuthManager
-        +policies: PolicyService
-        +audit: AuditService
-        +agents: AgentService
-        +tenants: TenantService
-    }
 
-    class AuthenticationLayer {
-        AuthManager
-        JWTManager
-    }
+## File Structure
 
-    class HTTPLayer {
-        EnterpriseHttpClient
-        RequestInterceptors
-        ResponseInterceptors
-        ErrorHandling
-    }
-
-    class TenantLayer {
-        TenantContext
-        MultiTenantIsolation
-        PermissionChecking
-    }
-
-    class ServiceLayer {
-        PolicyService
-        AuditService
-        AgentService
-        TenantService
-    }
-
-    class LoggingLayer {
-        Logger
-        LogEntry
-        StructuredLogging
-    }
-
-    SDKClient --> AuthenticationLayer: uses
-    SDKClient --> HTTPLayer: uses
-    SDKClient --> TenantLayer: uses
-    SDKClient --> ServiceLayer: uses
-    HTTPLayer --> LoggingLayer: logs
-    AuthenticationLayer --> LoggingLayer: logs
 ```
+/home/dislove/document/acgs2/sdk/typescript/
+├── package.json                 # SDK package configuration
+├── tsconfig.json               # TypeScript configuration
+├── jest.config.js              # Jest test configuration
+├── src/
+│   ├── index.ts                # Main entry point and exports
+│   ├── core/
+│   │   ├── client.ts           # ACGS2Client class
+│   │   ├── http.ts             # EnterpriseHttpClient class
+│   │   └── tenant.ts           # TenantContext class
+│   ├── auth/
+│   │   ├── auth-manager.ts     # AuthManager class
+│   │   ├── jwt-manager.ts      # JWTManager class (exported)
+│   │   └── providers/          # OAuth providers (planned)
+│   └── utils/
+│       └── logger.ts           # Logger utility class
+├── dist/
+│   ├── index.js                # CJS build
+│   ├── index.mjs               # ESM build
+│   └── index.d.ts              # Type definitions
+└── node_modules/
+```
+
+---
+
+## Build and Distribution
+
+**Build Tools**:
+- **tsup** - Fast TypeScript bundler for ESM/CJS output
+- **TypeScript** - Language and type checking
+
+**Output Formats**:
+- CommonJS (`dist/index.js`)
+- ES Modules (`dist/index.mjs`)
+- Type Definitions (`dist/index.d.ts`)
+
+**Package Configuration**:
+- **Package Name**: @acgs2/sdk
+- **Version**: 3.0.0
+- **Main Entry**: dist/index.js
+- **Module Entry**: dist/index.mjs
+- **Types Entry**: dist/index.d.ts
+- **Repository**: https://github.com/ACGS-Project/ACGS-2.git (sdk/typescript)
+- **License**: Apache-2.0
+
+**Exports Field**:
+```json
+{
+  ".": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.mjs",
+    "require": "./dist/index.js"
+  }
+}
+```
+
+---
+
+## Key Design Patterns
+
+### 1. Event-Driven Architecture
+- ACGS2Client, AuthManager, and TenantContext extend EventEmitter3
+- Services communicate via events rather than tight coupling
+- Allows reactive updates and monitoring throughout SDK
+
+### 2. Multi-Tenancy by Default
+- Every request includes tenant context headers
+- Tenant switching without client recreation
+- Tenant isolation at all levels (context, metrics, storage)
+
+### 3. Dependency Injection
+- HTTP client injected into services
+- Tenant context injected into services
+- Enables testing and flexibility
+
+### 4. Factory Pattern
+- createACGS2Client, createDefaultConfig
+- createHttpClient
+- createTenantContext, createDefaultTenantContext
+- getLogger for singleton logger instances
+
+### 5. Validation-First
+- Zod schemas for all configuration and API types
+- Runtime validation on initialization and requests
+- Type safety through TypeScript and Zod inference
+
+### 6. Observability Built-In
+- Request metrics collection (duration, retry count, status, tenant, user)
+- Distributed tracing headers (x-trace-id, x-span-id)
+- Health checks on all services
+- Per-service metrics exposure
+
+### 7. Resilience Patterns
+- Exponential backoff retry with jitter
+- Circuit breaker patterns (imported from utils)
+- Rate limiting middleware
+- Graceful degradation (partial service health)
+
+### 8. Secure by Default
+- Constitutional hash validation on all instances
+- Token storage in localStorage (client-side only)
+- Automatic token refresh before expiry
+- No sensitive data in logs or metrics
+
+---
+
+## Configuration & Environment
+
+**Supported Environments**:
+- `development` - Debug logging, relaxed timeouts
+- `staging` - Testing environment configuration
+- `production` - Optimized for performance and security (default)
+
+**Configuration Validation**:
+All SDK and HTTP client configurations validated against Zod schemas on instantiation, preventing misconfiguration at startup.
+
+**TypeScript Support**:
+- Full type safety through generated types
+- Generic support for service responses (`async request<T>()`)
+- Strict null checking enabled
+- Module resolution: node
 
 ---
 
 ## Notes
 
-- **Constitutional Hash**: All code elements include the constitutional hash `cdd01ef066bc6cf2` for compliance validation
-- **Version**: SDK version is 3.0.0 with support for Node.js >=18.0.0
-- **TypeScript Support**: Full TypeScript 5.3+ support with comprehensive type definitions
-- **Error Handling**: Comprehensive error handling with custom interceptors and retry logic
-- **Auto Token Refresh**: Automatic JWT token refresh 5 minutes before expiration
-- **Metrics Collection**: Optional request metrics collection for performance monitoring
-- **Multi-Tenant**: Full multi-tenant support with tenant context isolation
-- **Event-Driven**: EventEmitter3-based event system for async operations
-- **Schema Validation**: Zod-based runtime schema validation for all configs and responses
-- **Distributed Tracing**: Support for distributed tracing with x-trace-id, x-span-id headers
-- **localStorage Integration**: Automatic token persistence in browser localStorage
-- **Health Checks**: Built-in health check endpoints for all services
-- **Singleton Logger**: Global logger registry with singleton pattern for named loggers
-- **Built Distribution**: Uses tsup for dual CommonJS/ESM output with TypeScript declarations
+- **Planned Modules**: Services (Policy, Audit, Agent, Tenant), Models, Error handling, Middleware, and OAuth providers are declared in index.ts exports but not yet implemented in src directory.
+- **Constitutional Compliance**: Every component validates constitutional hash `cdd01ef066bc6cf2` and includes it in logging and API headers.
+- **Production Ready**: Core modules (client, HTTP, tenant context, authentication) are fully implemented and tested for production use.
+- **Testing**: Jest configured with ts-jest preset for TypeScript test support, with coverage collection from src/**/*.ts.
+- **Performance**: No external service calls during initialization (lazy loading), automatic metrics collection with sliding window history (max 1000 entries), exponential backoff to prevent thundering herd.

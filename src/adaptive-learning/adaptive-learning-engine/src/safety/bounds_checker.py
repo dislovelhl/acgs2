@@ -1587,68 +1587,7 @@ class SafetyBoundsChecker:
                 self._status = SafetyStatus.CRITICAL
 
                 if self.enable_auto_pause:
-                    # AUTO-PAUSE MECHANISM: Preventing Bad Model Updates
-                    # ====================================================
-                    #
-                    # When enable_auto_pause=True, the circuit breaker automatically halts
-                    # learning after consecutive_failures_limit failures. This prevents
-                    # degraded models from corrupting production in several critical ways:
-                    #
-                    # 1. FEEDBACK LOOP PREVENTION:
-                    #    A degraded model makes incorrect predictions → those predictions
-                    #    generate incorrect feedback labels → model learns from its own
-                    #    mistakes → degradation accelerates.
-                    #
-                    #    Example in Governance:
-                    #    - Model incorrectly grants access (FP) → User accesses resource →
-                    #      System logs "successful access" as positive feedback →
-                    #      Model learns to grant more improper access → CASCADE
-                    #
-                    # 2. PRODUCTION CORRUPTION PREVENTION:
-                    #    Without auto-pause, consecutive failures would allow ModelManager
-                    #    to swap in progressively worse models, degrading the production
-                    #    system. Auto-pause blocks swaps until human review confirms fix.
-                    #
-                    #    Timeline without auto-pause:
-                    #    T0: Model at 90% accuracy (production)
-                    #    T1: New model at 84% fails check → WARNING (swap allowed)
-                    #    T2: New model at 82% fails check → WARNING (swap allowed)
-                    #    T3: New model at 79% fails check → WARNING (swap allowed)
-                    #    T4: Production now running 79% model → CRITICAL FAILURE
-                    #
-                    #    Timeline WITH auto-pause:
-                    #    T0: Model at 90% accuracy (production)
-                    #    T1: New model at 84% fails check → WARNING (swap allowed)
-                    #    T2: New model at 82% fails check → WARNING (swap allowed)
-                    #    T3: New model at 79% fails check → PAUSED (swap BLOCKED)
-                    #    T4: Production still running 90% model → STABLE
-                    #
-                    # 3. FORCED INVESTIGATION WINDOW:
-                    #    Auto-pause creates mandatory stop for root cause analysis:
-                    #    - Is training data corrupted? (bad labels, feature drift)
-                    #    - Is there distribution shift? (concept drift, covariate shift)
-                    #    - Are hyperparameters misconfigured? (learning rate too high)
-                    #    - Is there infrastructure failure? (broken pipeline)
-                    #
-                    # 4. GOVERNANCE SAFETY MARGIN:
-                    #    In access control, even a brief period with a degraded model can:
-                    #    - Grant unauthorized access (security breach, compliance violation)
-                    #    - Deny legitimate access (business disruption, user frustration)
-                    #    - Create audit inconsistencies (compliance risk)
-                    #    Auto-pause prevents these risks by blocking updates proactively.
-                    #
-                    # WHY ENABLE_AUTO_PAUSE IS CRITICAL:
-                    # When enable_auto_pause=False (NOT RECOMMENDED for production):
-                    # - Circuit breaker transitions to CRITICAL but does NOT pause
-                    # - Learning continues despite consecutive failures (DANGEROUS)
-                    # - Operator must manually monitor and pause (human-in-the-loop delay)
-                    # - Use only for testing/debugging where controlled degradation is acceptable
-                    #
-                    # When enable_auto_pause=True (RECOMMENDED for production):
-                    # - Circuit breaker automatically pauses learning (fail-safe)
-                    # - No human intervention delay (immediate protection)
-                    # - Forces operators to fix root cause before resume (deliberate recovery)
-                    # - Default: True for safety-critical governance applications
+            # AUTO-PAUSE MECHANISM: See SAFETY_DESIGN.md for details.
                     #
                     # This is the circuit breaker "opening" to prevent further damage.
                     # Sets status to PAUSED and blocks all future learning operations.
@@ -1739,8 +1678,9 @@ class SafetyBoundsChecker:
                 if prediction == label:
                     correct += 1
             except Exception as e:
-
                 # Count as incorrect
+                logger.error(f"Validation error for sample: {e}")
+                pass
 
         return correct / total if total > 0 else 0.0
 
@@ -1748,189 +1688,7 @@ class SafetyBoundsChecker:
         """Pause learning due to safety bounds violation.
 
         CIRCUIT BREAKER OPENS (PAUSED STATE)
-        =====================================
-
-        This method opens the circuit breaker, halting all learning operations.
-        It represents the final safety action when consecutive failures indicate
-        a systematic problem that requires human intervention.
-
-        Circuit Breaker Open State:
-        - All learning operations are blocked (is_learning_allowed() returns False)
-        - Model updates are rejected to prevent further degradation
-        - System maintains current model until manual recovery
-        - Consecutive failure counter remains elevated until reset
-
-        Why Open the Circuit?
-        1. **Prevent Cascading Failures**: A degraded model learning from its own
-           bad predictions creates a feedback loop. Opening the circuit breaks this loop.
-
-        2. **Preserve System Stability**: Better to maintain a slightly degraded model
-           than risk further corruption through continued learning.
-
-        3. **Force Human Review**: Systematic failures (3+ consecutive) indicate issues
-           that automated systems cannot resolve:
-           - Data quality problems (garbage in, garbage out)
-           - Distribution shift requiring retraining from scratch
-           - Configuration errors (wrong thresholds, bad hyperparameters)
-           - Infrastructure issues (corrupted data pipeline)
-
-        4. **Governance Safety**: In access control, continued learning with a failing
-           model could grant improper permissions or deny legitimate access at scale.
-
-        Integration with ModelManager:
-        When the circuit opens, the ModelManager should:
-        - Reject new model updates (return SwapStatus.REJECTED_SAFETY)
-        - Continue serving the current (paused) model for predictions
-        - Alert operators for manual investigation
-        - Wait for force_resume() before accepting updates again
-
-        Recovery Process and Manual Intervention:
-        ==========================================
-
-        When the circuit breaker opens (PAUSED state), manual intervention via
-        force_resume() is required to restart learning. This deliberate human-in-the-loop
-        ensures systematic issues are resolved before resuming operations.
-
-        WHEN TO USE MANUAL INTERVENTION (force_resume):
-
-        Scenario 1: Root Cause Identified and Fixed
-        --------------------------------------------
-        If investigation reveals a fixable issue that has been resolved:
-
-        Example: Data Pipeline Corruption
-        - Investigation: Features were not being normalized correctly
-        - Fix: Repaired StandardScaler initialization in preprocessing
-        - Action: force_resume() after verifying fix on validation data
-        - Rationale: Root cause eliminated, safe to resume learning
-
-        Example: Hyperparameter Misconfiguration
-        - Investigation: Learning rate (0.1) was too high, causing divergence
-        - Fix: Reduced learning_rate to 0.01 in model configuration
-        - Action: force_resume() after testing with smaller learning rate
-        - Rationale: Configuration corrected, stable training expected
-
-        Example: Bad Training Batch
-        - Investigation: Single batch contained corrupted labels (flipped grant/deny)
-        - Fix: Removed corrupted batch from training queue, validated data quality
-        - Action: force_resume() after data quality checks pass
-        - Rationale: Corrupted data purged, clean training data restored
-
-        Scenario 2: Temporary Distribution Shift Resolved
-        --------------------------------------------------
-        If drift detection shows distribution has returned to normal:
-
-        Example: Organizational Restructure
-        - Investigation: Company acquisition caused temporary access pattern shift
-        - Resolution: Access patterns stabilized after integration completed
-        - Action: force_resume() after drift_score returns to baseline
-        - Rationale: Distribution shift was temporary, model is valid again
-
-        Example: Seasonal Policy Change
-        - Investigation: End-of-quarter access patterns deviated from norm
-        - Resolution: Quarter ended, access patterns returned to typical levels
-        - Action: force_resume() after monitoring shows pattern normalization
-        - Rationale: Seasonal drift resolved, model applicable again
-
-        Scenario 3: Threshold Adjustment After Review
-        ----------------------------------------------
-        If investigation shows thresholds were too conservative:
-
-        Example: Overly Strict Accuracy Threshold
-        - Investigation: Model consistently at 83-84% (below 85% threshold)
-        - Analysis: Domain research shows 80-85% is acceptable for this use case
-        - Action: Lower accuracy_threshold to 0.80, then force_resume()
-        - Rationale: Threshold was misconfigured, model is actually safe
-        - CAUTION: Only adjust thresholds after thorough domain analysis!
-
-        WHEN NOT TO USE MANUAL INTERVENTION:
-
-        Do NOT force_resume() if:
-
-        1. Root Cause Unknown:
-           - Consecutive failures detected but cause unclear
-           - Action: Continue investigation, review logs/metrics/drift
-           - Risk: Resuming without fix will trigger circuit breaker again
-
-        2. Systematic Data Quality Issues:
-           - Label noise, feature corruption, or missing values persist
-           - Action: Fix data pipeline, validate data quality first
-           - Risk: Model will learn from garbage data (garbage in, garbage out)
-
-        3. Fundamental Model Degradation:
-           - Model has catastrophically forgotten previous knowledge
-           - Distribution shift is permanent (concept drift)
-           - Action: Retrain model from scratch with new data
-           - Risk: Resuming learning won't fix fundamental model corruption
-
-        4. Infrastructure Instability:
-           - Database connections flapping, network issues, resource constraints
-           - Action: Stabilize infrastructure before resuming
-           - Risk: Unstable infrastructure will cause repeated failures
-
-        STANDARD RECOVERY WORKFLOW:
-
-        Step 1: INVESTIGATE
-        -------------------
-        - Check logs for error messages and stack traces
-        - Review accuracy metrics (current vs. historical)
-        - Analyze drift scores (check_drift() results)
-        - Inspect recent training batches (data quality)
-        - Verify infrastructure health (database, network, resources)
-
-        Step 2: DIAGNOSE
-        ----------------
-        - Identify root cause (data quality, drift, configuration, infrastructure)
-        - Determine if issue is transient or systematic
-        - Assess whether model can be salvaged or needs retraining
-
-        Step 3: FIX
-        -----------
-        - Repair data pipeline if corrupted
-        - Adjust hyperparameters if misconfigured
-        - Retrain model if fundamentally degraded
-        - Fix infrastructure if unstable
-
-        Step 4: VALIDATE
-        ----------------
-        - Test fix on validation data (ensure accuracy > threshold)
-        - Verify data quality checks pass
-        - Confirm drift scores are within acceptable range
-        - Run safety checks manually before force_resume()
-
-        Step 5: RESUME
-        --------------
-        - Call force_resume() to close circuit breaker
-        - Monitor initial checks closely (ensure they pass)
-        - Watch for consecutive failures (circuit may reopen)
-        - Document incident for post-mortem analysis
-
-        Step 6: MONITOR
-        ---------------
-        - Track accuracy metrics for next 24-48 hours
-        - Watch for circuit breaker state transitions
-        - Verify model performance remains stable
-        - Conduct post-mortem to prevent recurrence
-
-        ALTERNATIVE: AUTOMATIC RECOVERY
-
-        The circuit breaker can also close automatically if a safety check passes
-        after being PAUSED. This happens in _handle_success() when status == PAUSED.
-
-        Automatic recovery occurs when:
-        - Underlying issue self-resolves (temporary drift, transient error)
-        - Next model update happens to pass safety checks
-        - No manual intervention was needed
-
-        However, automatic recovery should NOT be relied upon for systematic issues.
-        If consecutive failures indicated a real problem, force_resume() with
-        investigation is the safer approach.
-
-        Callbacks:
-        Pause callbacks are invoked to notify integrated systems:
-        - ModelManager: Stop processing new model updates
-        - Monitoring: Trigger critical alerts (PagerDuty, Slack, etc.)
-        - Audit Log: Record circuit breaker state change for compliance
-        - Dashboard: Update UI to show PAUSED state
+        See SAFETY_DESIGN.md for detailed recovery workflow and rationale.
         """
         # Set circuit breaker to OPEN (PAUSED) state
         self._status = SafetyStatus.PAUSED
@@ -1962,54 +1720,7 @@ class SafetyBoundsChecker:
         """Resume learning after safety bounds are satisfied.
 
         CIRCUIT BREAKER CLOSES (OK STATE)
-        ==================================
-
-        This method closes the circuit breaker, resuming normal learning operations.
-        It is called when a safety check passes after the circuit was previously open,
-        or when an operator manually forces resume via force_resume().
-
-        Circuit Breaker Closed State:
-        - Learning operations are enabled (is_learning_allowed() returns True)
-        - Model updates are accepted if they pass safety checks
-        - Consecutive failure counter is reset to 0
-        - System transitions to OK state (normal operation)
-
-        When Does the Circuit Close?
-        1. **Automatic Recovery**: A safety check passes after the circuit was PAUSED
-           - This happens in _handle_success() when status == PAUSED
-           - Indicates the underlying issue has been resolved
-           - System automatically resumes normal operation
-
-        2. **Manual Recovery**: Operator calls force_resume() after investigation
-           - Used when operator has fixed root cause manually
-           - Resets failure counters and degradation tracking
-           - Allows system to return to normal operation under supervision
-
-        Why Automatic Closure is Safe:
-        - Circuit only closes if a safety check PASSES (accuracy above threshold)
-        - This means the model has recovered to acceptable performance
-        - Unlike traditional circuit breakers (which use timeout), ML circuit
-          breakers require evidence of recovery (passing check) before closing
-
-        Why Manual Intervention is Sometimes Required:
-        - If model cannot recover automatically (e.g., fundamental distribution shift)
-        - If data pipeline needs repair (no new valid data arriving)
-        - If thresholds need adjustment (overly conservative settings)
-        - If model needs complete retraining (not just continued learning)
-
-        Integration with ModelManager:
-        When the circuit closes, the ModelManager should:
-        - Resume accepting new model updates (if they pass safety checks)
-        - Continue monitoring for future failures
-        - Log the recovery event for audit trail
-        - Update dashboards to show OK state
-
-        Callbacks:
-        Resume callbacks are invoked to notify integrated systems:
-        - ModelManager: Resume processing model updates
-        - Monitoring: Clear critical alerts, send recovery notification
-        - Audit Log: Record circuit breaker recovery for compliance
-        - Dashboard: Update UI to show OK state
+        See SAFETY_DESIGN.md for integration details and recovery logic.
         """
         # Increment resume counter for metrics tracking
         self._times_resumed += 1

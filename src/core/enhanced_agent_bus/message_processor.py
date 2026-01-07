@@ -51,7 +51,14 @@ except (ImportError, ValueError):
         rust_bus,
     )
     from interfaces import ProcessingStrategy  # type: ignore
-    from memory_profiler import get_memory_profiler  # type: ignore
+
+    try:
+        from memory_profiler import get_memory_profiler  # type: ignore
+    except ImportError:
+        # Extreme fallback if even absolute import fails
+        def get_memory_profiler(*args, **kwargs):
+            return None
+
     from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority  # type: ignore
     from runtime_security import get_runtime_security_scanner  # type: ignore
     from utils import LRUCache  # type: ignore

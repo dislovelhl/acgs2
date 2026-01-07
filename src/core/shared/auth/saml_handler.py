@@ -102,6 +102,13 @@ except ImportError:
     HAS_HTTPX = False
     httpx = None  # type: ignore[assignment]
 
+# Production-ready timeouts
+DEFAULT_TIMEOUT = 10.0
+METADATA_FETCH_TIMEOUT = 30.0
+
+# Enterprise-grade User-Agent
+HTTP_USER_AGENT = "ACGS-2-SAML-Handler/1.0 (Enterprise SSO Service)"
+
 logger = logging.getLogger(__name__)
 
 # Exceptions and SAMLUserInfo moved to saml_types.py
@@ -290,7 +297,7 @@ class SAMLHandler:
         return list(self._idp_configs.keys())
 
     async def _get_http_client(self) -> "httpx.AsyncClient":
-        """Get or create HTTP client.
+        """Get or create HTTP client with production settings.
 
         Returns:
             httpx AsyncClient instance
@@ -298,7 +305,12 @@ class SAMLHandler:
         if self._http_client is None:
             if not HAS_HTTPX:
                 raise SAMLError("httpx library is required for SAML metadata fetching")
-            self._http_client = httpx.AsyncClient(timeout=30.0)
+
+            self._http_client = httpx.AsyncClient(
+                timeout=httpx.Timeout(DEFAULT_TIMEOUT, connect=5.0, read=METADATA_FETCH_TIMEOUT),
+                headers={"User-Agent": HTTP_USER_AGENT},
+                follow_redirects=True,
+            )
         return self._http_client
 
     async def _fetch_metadata(
@@ -403,6 +415,16 @@ class SAMLHandler:
         key_content = sp.get_key_content()
 
         if cert_content and key_content:
+            # Clean up old temp files if they exist
+            for attr in ["_temp_cert_file", "_temp_key_file"]:
+                if hasattr(self, attr):
+                    old_file = getattr(self, attr)
+                    if old_file:
+                        try:
+                            Path(old_file.name).unlink(missing_ok=True)
+                        except Exception:
+                            pass
+
             # Write to temporary files for PySAML2
             self._temp_cert_file = tempfile.NamedTemporaryFile(
                 mode="w", suffix=".crt", delete=False
@@ -419,6 +441,15 @@ class SAMLHandler:
 
         # Add IdP metadata
         if metadata_xml:
+            # Clean up old metadata file
+            if hasattr(self, "_temp_metadata_file"):
+                old_file = self._temp_metadata_file
+                if old_file:
+                    try:
+                        Path(old_file.name).unlink(missing_ok=True)
+                    except Exception:
+                        pass
+
             # Write metadata to temp file
             self._temp_metadata_file = tempfile.NamedTemporaryFile(
                 mode="w", suffix=".xml", delete=False

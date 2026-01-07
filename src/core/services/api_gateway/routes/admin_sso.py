@@ -54,6 +54,7 @@ _role_mappings: Dict[str, JSONDict] = {}
 # Request/Response Models
 # ========================================
 
+
 class SSOProviderCreateRequest(BaseModel):
     """Request model for creating an SSO provider with validation."""
 
@@ -108,6 +109,7 @@ class SSOProviderCreateRequest(BaseModel):
             raise ValueError("Type must be 'oidc' or 'saml'")
         return v_lower
 
+
 class SSOProviderUpdateRequest(BaseModel):
     """Request model for updating an SSO provider."""
 
@@ -160,6 +162,7 @@ class SSOProviderUpdateRequest(BaseModel):
             )
         return v.strip()
 
+
 class SSOProviderResponse(BaseModel):
     """Response model for SSO provider data."""
 
@@ -187,6 +190,7 @@ class SSOProviderResponse(BaseModel):
     created_at: str = Field(..., description="Creation timestamp")
     updated_at: str = Field(..., description="Last update timestamp")
 
+
 class RoleMappingCreateRequest(BaseModel):
     """Request model for creating a role mapping."""
 
@@ -206,6 +210,7 @@ class RoleMappingCreateRequest(BaseModel):
                 "underscores, colons, and periods"
             )
         return v.strip()
+
 
 class RoleMappingUpdateRequest(BaseModel):
     """Request model for updating a role mapping."""
@@ -232,6 +237,7 @@ class RoleMappingUpdateRequest(BaseModel):
             )
         return v.strip()
 
+
 class RoleMappingResponse(BaseModel):
     """Response model for role mapping data."""
 
@@ -244,9 +250,11 @@ class RoleMappingResponse(BaseModel):
     created_at: str = Field(..., description="Creation timestamp")
     updated_at: str = Field(..., description="Last update timestamp")
 
+
 # ========================================
 # Authentication & Authorization
 # ========================================
+
 
 async def get_current_admin(
     request: Request,
@@ -329,6 +337,8 @@ async def get_current_admin(
         except ImportError:
             pass
         except Exception as e:
+            logger.warning(f"Error validating JWT token: {e}")
+            pass
 
     # Check for development mode bypass
     if settings.env == "development" and settings.sso.enabled is False:
@@ -353,9 +363,11 @@ async def get_current_admin(
         detail="Admin authentication required.",
     )
 
+
 # ========================================
 # SSO Provider CRUD Endpoints
 # ========================================
+
 
 @router.post("/providers", response_model=SSOProviderResponse, status_code=201)
 async def create_sso_provider(
@@ -476,6 +488,7 @@ async def create_sso_provider(
         updated_at=provider["updated_at"],
     )
 
+
 @router.get("/providers", response_model=list[SSOProviderResponse])
 async def list_sso_providers(
     enabled_only: bool = Query(False, description="Only return enabled providers"),
@@ -534,6 +547,7 @@ async def list_sso_providers(
 
     return providers
 
+
 @router.get("/providers/{provider_id}", response_model=SSOProviderResponse)
 async def get_sso_provider(
     provider_id: str,
@@ -575,6 +589,7 @@ async def get_sso_provider(
         created_at=provider["created_at"],
         updated_at=provider["updated_at"],
     )
+
 
 @router.put("/providers/{provider_id}", response_model=SSOProviderResponse)
 async def update_sso_provider(
@@ -648,6 +663,7 @@ async def update_sso_provider(
         updated_at=provider["updated_at"],
     )
 
+
 @router.delete("/providers/{provider_id}", status_code=204)
 async def delete_sso_provider(
     provider_id: str,
@@ -694,9 +710,11 @@ async def delete_sso_provider(
         },
     )
 
+
 # ========================================
 # Role Mapping CRUD Endpoints
 # ========================================
+
 
 @router.post("/role-mappings", response_model=RoleMappingResponse, status_code=201)
 async def create_role_mapping(
@@ -779,6 +797,7 @@ async def create_role_mapping(
         updated_at=mapping["updated_at"],
     )
 
+
 @router.get("/role-mappings", response_model=list[RoleMappingResponse])
 async def list_role_mappings(
     provider_id: Optional[str] = Query(None, description="Filter by SSO provider ID"),
@@ -833,6 +852,7 @@ async def list_role_mappings(
 
     return mappings
 
+
 @router.get("/role-mappings/{mapping_id}", response_model=RoleMappingResponse)
 async def get_role_mapping(
     mapping_id: str,
@@ -867,6 +887,7 @@ async def get_role_mapping(
         created_at=mapping["created_at"],
         updated_at=mapping["updated_at"],
     )
+
 
 @router.put("/role-mappings/{mapping_id}", response_model=RoleMappingResponse)
 async def update_role_mapping(
@@ -936,6 +957,7 @@ async def update_role_mapping(
         created_at=mapping["created_at"],
         updated_at=mapping["updated_at"],
     )
+
 
 @router.delete("/role-mappings/{mapping_id}", status_code=204)
 async def delete_role_mapping(

@@ -645,7 +645,7 @@ class ComplianceReportGenerator:
         html_template = template if template else DEFAULT_REPORT_TEMPLATE
 
         # Set up Jinja2 environment
-        env = Environment(loader=BaseLoader())
+        env = Environment(loader=BaseLoader(), autoescape=True)
         jinja_template = env.from_string(html_template)
 
         # Render HTML with data
@@ -728,7 +728,7 @@ class ComplianceReportGenerator:
         html_template = template if template else DEFAULT_REPORT_TEMPLATE
 
         # Set up Jinja2 environment
-        env = Environment(loader=BaseLoader())
+        env = Environment(loader=BaseLoader(), autoescape=True)
         jinja_template = env.from_string(html_template)
 
         # Render HTML with data

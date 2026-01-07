@@ -838,10 +838,29 @@ class AuditLedger:
         }
 
 
+# Global AuditLedger instance (singleton pattern)
+_audit_ledger: Optional[AuditLedger] = None
+
+
+async def get_audit_ledger() -> AuditLedger:
+    """
+    Get the global AuditLedger instance.
+
+    Returns:
+        The singleton AuditLedger instance
+    """
+    global _audit_ledger
+    if _audit_ledger is None:
+        _audit_ledger = AuditLedger()
+        await _audit_ledger.start()
+    return _audit_ledger
+
+
 __all__ = [
     "AuditEntry",
     "AuditLedgerConfig",
     "AuditLedger",
+    "get_audit_ledger",
     "ValidationResult",
     "ANCHOR_MANAGER_AVAILABLE",
     "HAS_REDIS",

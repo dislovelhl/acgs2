@@ -401,7 +401,7 @@ class TieredCacheManager:
         if self.config.serialize and not isinstance(value, str):
             try:
                 return json.dumps(value)
-            except:
+            except (TypeError, ValueError):
                 return value
         return value
 
@@ -409,7 +409,7 @@ class TieredCacheManager:
         if self.config.serialize and isinstance(value, str):
             try:
                 return json.loads(value)
-            except:
+            except (TypeError, ValueError):
                 return value
         return value
 

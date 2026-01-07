@@ -66,6 +66,10 @@ except ImportError:
     HAS_HTTPX = False
     httpx = None  # type: ignore[assignment]
 
+# Default timeouts for OIDC operations
+DEFAULT_TIMEOUT = 10.0
+AUTH_FETCH_TIMEOUT = 5.0
+
 logger = logging.getLogger(__name__)
 
 # Constitutional hash constant
@@ -393,7 +397,10 @@ class OIDCHandler:
         if self._http_client is None:
             if not HAS_HTTPX:
                 raise OIDCError("httpx library is required for OIDC operations")
-            self._http_client = httpx.AsyncClient(timeout=30.0)
+            self._http_client = httpx.AsyncClient(
+                timeout=httpx.Timeout(DEFAULT_TIMEOUT, connect=AUTH_FETCH_TIMEOUT),
+                headers={"User-Agent": "ACGS-2/OIDC-Handler/1.0"},
+            )
         return self._http_client
 
     async def _fetch_metadata(

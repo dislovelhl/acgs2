@@ -795,7 +795,11 @@ class TestIntegration:
             os.makedirs(extract_dir)
 
             with tarfile.open(output_path, "r:gz") as tar:
-                tar.extractall(extract_dir)
+                # Use filter='data' for security if supported (Python 3.12+)
+                if hasattr(tarfile, "data_filter"):
+                    tar.extractall(extract_dir, filter="data")
+                else:
+                    tar.extractall(extract_dir)
 
             # Verify extracted files contain Rego content
             extracted_files = []

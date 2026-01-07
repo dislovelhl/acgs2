@@ -27,7 +27,14 @@ import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
+
+import torch
+
+try:
+    from ..governance.stability.mhc import sinkhorn_projection
+except (ImportError, ValueError):
+    sinkhorn_projection = None
 
 try:
     import redis.asyncio as aioredis
@@ -118,6 +125,28 @@ class VoteSession:
         self.votes.append(vote)
         return True
 
+    def _stabilize_weights(self) -> Dict[str, float]:
+        """
+        Apply manifold constraint to agent weights for stability.
+        Uses mHC-style softmax/simplex projection if torch is available.
+        """
+        if not self.agent_weights or sinkhorn_projection is None:
+            return self.agent_weights
+
+        try:
+            agent_ids = list(self.agent_weights.keys())
+            weights = torch.tensor(
+                [self.agent_weights[aid] for aid in agent_ids], dtype=torch.float32
+            )
+
+            # Simple version: Softmax to ensure stable distribution on simplex
+            stabilized = torch.nn.functional.softmax(weights, dim=0)
+
+            return {aid: float(stabilized[i]) for i, aid in enumerate(agent_ids)}
+        except Exception as e:
+            logger.warning(f"Weight stabilization failed in session {self.session_id}: {e}")
+            return self.agent_weights
+
     def check_consensus(self) -> Dict[str, Any]:
         """Check if consensus threshold has been reached."""
         if len(self.votes) < self.required_votes:
@@ -128,10 +157,17 @@ class VoteSession:
                 "votes_required": self.required_votes,
             }
 
+        # Apply mHC stability layer to weights if active
+        active_weights = self._stabilize_weights()
+
         # Calculate weighted voting result
-        total_weight = sum(v.weight for v in self.votes)
-        approve_weight = sum(v.weight for v in self.votes if v.decision == "approve")
-        reject_weight = sum(v.weight for v in self.votes if v.decision == "reject")
+        total_weight = sum(active_weights.get(v.agent_id, v.weight) for v in self.votes)
+        approve_weight = sum(
+            active_weights.get(v.agent_id, v.weight) for v in self.votes if v.decision == "approve"
+        )
+        reject_weight = sum(
+            active_weights.get(v.agent_id, v.weight) for v in self.votes if v.decision == "reject"
+        )
 
         if total_weight == 0:
             return {"consensus_reached": False, "reason": "zero_total_weight"}

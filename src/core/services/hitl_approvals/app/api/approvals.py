@@ -28,108 +28,14 @@ async def create_approval_request(
     """Create a new approval request"""
     engine = ApprovalChainEngine(db)
     try:
-        # If chain_id not provided, determine it dynamically via OPA
-        if not request.chain_id:
-            from ..core.opa_client import get_opa_client
-            from ..models.approval_chain import ApprovalChain
-
-            try:
-                opa_client = get_opa_client()
-                await opa_client.initialize()
-
-                # Evaluate routing policy to determine appropriate chain
-                routing_decision = await opa_client.evaluate_routing(
-                    decision_type=request.decision_id.split("_")[
-                        0
-                    ],  # Extract type from decision_id
-                    user_role=request.context.get("requester_role", "unknown"),
-                    impact_level=request.priority,
-                    context={
-                        "tenant_id": request.tenant_id,
-                        "decision_context": request.context,
-                        "description": request.description,
-                    },
-                )
-
-                if routing_decision.get("allowed", False):
-                    # Use recommended chain from OPA policy
-                    recommended_chain_id = routing_decision.get("chain_id")
-                    if recommended_chain_id:
-                        # Verify the chain exists
-                        query = select(ApprovalChain).where(
-                            ApprovalChain.id == recommended_chain_id
-                        )
-                        result = await db.execute(query)
-                        chain = result.scalar_one_or_none()
-                        if chain:
-                            request.chain_id = chain.id
-                            logger.info(
-                                f"OPA recommended chain {chain.id} for request {request.decision_id}"
-                            )
-                        else:
-                            logger.warning(
-                                f"OPA recommended chain {recommended_chain_id} not found, falling back"
-                            )
-                    else:
-                        # Fallback to priority-based selection
-                        logger.info(
-                            "No specific chain recommended by OPA, using priority-based selection"
-                        )
-                else:
-                    logger.warning(
-                        f"OPA denied routing decision for {request.decision_id}: {routing_decision.get('reason', 'unknown')}"
-                    )
-
-                # Fallback logic if OPA fails or denies
-                if not request.chain_id:
-                    query = (
-                        select(ApprovalChain)
-                        .where(ApprovalChain.priority == request.priority)
-                        .limit(1)
-                    )
-                    result = await db.execute(query)
-                    chain = result.scalar_one_or_none()
-                    if not chain:
-                        # Ultimate fallback to any available chain
-                        query = select(ApprovalChain).limit(1)
-                        result = await db.execute(query)
-                        chain = result.scalar_one_or_none()
-
-                    if chain:
-                        request.chain_id = chain.id
-                        logger.info(
-                            f"Using fallback chain {chain.id} for request {request.decision_id}"
-                        )
-                    else:
-                        raise HTTPException(
-                            status_code=400, detail="No suitable approval chain found"
-                        )
-
-            except Exception as e:
-                # Log error but continue with fallback logic
-                logger.error(f"OPA chain resolution failed: {e}, using fallback")
-                query = (
-                    select(ApprovalChain).where(ApprovalChain.priority == request.priority).limit(1)
-                )
-                result = await db.execute(query)
-                chain = result.scalar_one_or_none()
-                if not chain:
-                    query = select(ApprovalChain).limit(1)
-                    result = await db.execute(query)
-                    chain = result.scalar_one_or_none()
-
-                if not chain:
-                    raise HTTPException(status_code=400, detail="No suitable approval chain found")
-                request.chain_id = chain.id
-
         approval_request = await engine.create_request(
-            chain_id=request.chain_id,
             decision_id=request.decision_id,
             tenant_id=request.tenant_id,
             requested_by=request.requested_by,
             title=request.title,
             priority=request.priority,
             context=request.context,
+            chain_id=request.chain_id,
             description=request.description,
         )
         return approval_request

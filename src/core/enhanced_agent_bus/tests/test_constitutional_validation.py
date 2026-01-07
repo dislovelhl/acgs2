@@ -169,6 +169,7 @@ class TestMessageProcessor:
             from_agent="test_agent",
             to_agent="target_agent",
             sender_id="test_sender",
+            tenant_id="default-tenant",
             message_type=MessageType.COMMAND,
             content={"action": "test"},
             payload={"data": "test_data"},
@@ -181,6 +182,7 @@ class TestMessageProcessor:
             from_agent="test_agent",
             to_agent="target_agent",
             sender_id="test_sender",
+            tenant_id="default-tenant",
             message_type=MessageType.COMMAND,
             content={"action": "test"},
         )
@@ -271,6 +273,7 @@ class TestEnhancedAgentBus:
             from_agent="sender_agent",
             to_agent="receiver_agent",
             sender_id="test_sender",
+            tenant_id="default-tenant",
             message_type=MessageType.COMMAND,
             content={"action": "test"},
         )
@@ -327,6 +330,7 @@ class TestEnhancedAgentBus:
             from_agent="sender",
             to_agent="receiver",
             sender_id="sender",
+            tenant_id="default-tenant",
             message_type=MessageType.COMMAND,
         )
         message.constitutional_hash = "invalid"
