@@ -12,7 +12,7 @@ Comprehensive C4 code-level documentation for ACGS-2 multi-language SDKs has bee
 
 ### Primary Documentation
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/c4-code-sdk.md`
+**File**: `/home/dislove/document/acgs2/docs/architecture/c4/c4-code-sdk.md`
 - **Size**: 49 KB (1,606 lines)
 - **Coverage**: Python, TypeScript, Go SDKs
 - **Elements**: 80+ code elements documented
@@ -21,7 +21,7 @@ Comprehensive C4 code-level documentation for ACGS-2 multi-language SDKs has bee
 
 ### Supporting Documentation
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/SDK-DOCUMENTATION-SUMMARY.md`
+**File**: `/home/dislove/document/acgs2/docs/architecture/c4/SDK-DOCUMENTATION-SUMMARY.md`
 - **Size**: 12 KB (384 lines)
 - **Purpose**: Quick reference and summary
 - **Content**: Coverage analysis, statistics, integration points

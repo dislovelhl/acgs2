@@ -7,17 +7,17 @@
 1. **c4-code-antifragility.md** (Main Documentation)
    - 1,400+ lines of comprehensive C4 Code-level analysis
    - Complete coverage of all antifragility components
-   - Location: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/c4-code-antifragility.md`
+   - Location: `/home/dislove/document/acgs2/docs/architecture/c4/c4-code-antifragility.md`
 
 2. **antifragility-architecture.md** (Visual Diagrams)
    - 400+ lines of Mermaid diagrams
    - System architecture, class hierarchy, state machines
-   - Location: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/antifragility-architecture.md`
+   - Location: `/home/dislove/document/acgs2/docs/architecture/c4/antifragility-architecture.md`
 
 3. **README.md** (Updated)
    - Added antifragility documentation references
    - Integrated into C4 documentation index
-   - Location: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/README.md`
+   - Location: `/home/dislove/document/acgs2/docs/architecture/c4/README.md`
 
 ## Documentation Content Overview
 
@@ -346,11 +346,11 @@ All components enforce `CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"`:
 ## Files Created
 
 ### Primary Documentation
-- `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/c4-code-antifragility.md` (1,400+ lines)
-- `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/antifragility-architecture.md` (400+ lines)
+- `/home/dislove/document/acgs2/docs/architecture/c4/c4-code-antifragility.md` (1,400+ lines)
+- `/home/dislove/document/acgs2/docs/architecture/c4/antifragility-architecture.md` (400+ lines)
 
 ### Updated Files
-- `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/README.md` (added antifragility references)
+- `/home/dislove/document/acgs2/docs/architecture/c4/README.md` (added antifragility references)
 
 ## Code Analysis Summary
 

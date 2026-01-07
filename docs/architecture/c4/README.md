@@ -11,7 +11,7 @@ This directory contains comprehensive C4 model architecture documentation for th
 ## Documentation Structure
 
 ```
-C4-Documentation/
+./
 ├── README.md                    # This file - documentation index
 ├── c4-context.md               # Level 1: System Context
 ├── c4-container.md             # Level 2: Container Architecture

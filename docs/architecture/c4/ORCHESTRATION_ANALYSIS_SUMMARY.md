@@ -4,7 +4,7 @@
 
 Comprehensive C4 Code-level documentation has been successfully created for the ACGS-2 Orchestration and Execution layer. This documentation provides complete code-level analysis, function signatures, dependencies, workflows, and architectural patterns.
 
-**File Location**: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/c4-code-orchestration.md`
+**File Location**: `/home/dislove/document/acgs2/docs/architecture/c4/c4-code-orchestration.md`
 **Size**: 32 KB | **Lines**: 866
 **Constitutional Hash**: `cdd01ef066bc6cf2`
 

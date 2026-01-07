@@ -579,7 +579,7 @@ kubectl apply -f ../../gitops/argocd/applications/acgs2-core.yaml
 ### Documentation
 
 - **[API Reference](./api/)**: Complete API documentation
-- **[Architecture Docs](../src/core/C4-Documentation/)**: C4 model documentation
+- **[Architecture Docs](./architecture/c4/)**: C4 model documentation
 - **[Deployment Guide](./deployment/)**: Deployment instructions
 - **[Security Guide](./security/)**: Security best practices
 

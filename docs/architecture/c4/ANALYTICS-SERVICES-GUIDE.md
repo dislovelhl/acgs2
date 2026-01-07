@@ -1,6 +1,6 @@
 # Analytics Services C4 Code Documentation - Quick Reference
 
-**File Location**: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/c4-code-analytics.md`
+**File Location**: `/home/dislove/document/acgs2/docs/architecture/c4/c4-code-analytics.md`
 
 **Constitutional Hash**: cdd01ef066bc6cf2
 

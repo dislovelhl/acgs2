@@ -1,0 +1,522 @@
+openapi: 3.1.0
+info:
+  title: ACGS-2 Constitutional Validation API
+  description: |
+    RAG-powered constitutional compliance engine with vector search, LLM reasoning, and multi-agent coordination.
+
+    **Performance Characteristics:**
+    - P99 Latency: <100ms for RAG semantic search + LLM reasoning
+    - Constitutional Compliance: 100% perfect compliance
+    - Vector Search: 384-dimensional embeddings with COSINE similarity
+    - LLM Integration: GPT-4 with temperature 0.1 for consistent legal reasoning
+
+    **Constitutional Hash:** `cdd01ef066bc6cf2`
+  version: 3.0.0
+  contact:
+    name: ACGS-2 Support
+    email: support@acgs2.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://core-governance:8001/api/v1
+    description: Internal Kubernetes service
+  - url: https://api.acgs2.example.com/constitutional/v1
+    description: Production API Gateway
+
+security:
+  - bearerAuth: []
+  - constitutionalHash: []
+
+paths:
+  /constitutional/validate:
+    post:
+      summary: Validate decision against constitutional principles
+      description: |
+        Validates a governance decision against constitutional principles using RAG semantic search
+        and LLM reasoning. Returns validation result with confidence score and detailed reasoning.
+      operationId: validateDecision
+      tags:
+        - Constitutional Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - context
+              properties:
+                query:
+                  type: string
+                  description: The governance decision or query to validate
+                  example: "Should we allow automated decision-making without human oversight?"
+                context:
+                  type: object
+                  description: Additional context for validation
+                  additionalProperties: true
+                  example:
+                    decision_type: "automated_governance"
+                    impact_level: "high"
+                    affected_stakeholders: ["users", "administrators"]
+      responses:
+        '200':
+          description: Validation completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /constitutional/retrieve:
+    post:
+      summary: Semantic search for constitutional documents
+      description: |
+        Performs semantic search through constitutional documents and legal precedents using
+        384-dimensional embeddings with COSINE similarity. Supports hybrid search combining
+        semantic similarity (70%) and keyword matching (30%).
+      operationId: retrieveConstitutionalDocuments
+      tags:
+        - Constitutional Retrieval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: Search query for constitutional documents
+                  example: "precedents on automated decision-making"
+                limit:
+                  type: integer
+                  description: Maximum number of documents to return
+                  default: 10
+                  minimum: 1
+                  maximum: 100
+                filters:
+                  type: object
+                  description: Optional filters for search results
+                  properties:
+                    document_type:
+                      type: string
+                      enum: [constitutional_provision, legal_precedent, guidance_document]
+                    authority_level:
+                      type: string
+                      enum: [supreme_court, federal_law, state_law, administrative]
+                    recency:
+                      type: string
+                      description: Filter by document recency
+                      enum: [last_year, last_5_years, last_10_years, all]
+      responses:
+        '200':
+          description: Retrieval completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrievalResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /constitutional/reason:
+    post:
+      summary: LLM-powered decision reasoning
+      description: |
+        Uses GPT-4 to provide structured reasoning for governance decisions based on
+        retrieved constitutional documents. Temperature 0.1 for consistent legal reasoning.
+      operationId: reasonDecision
+      tags:
+        - Constitutional Reasoning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - context_docs
+              properties:
+                query:
+                  type: string
+                  description: Decision or query requiring reasoning
+                  example: "Should we implement real-time surveillance?"
+                context_docs:
+                  type: array
+                  description: Constitutional documents providing context
+                  items:
+                    type: object
+                    properties:
+                      content:
+                        type: string
+                      source:
+                        type: string
+                      authority_level:
+                        type: string
+                criteria:
+                  type: object
+                  description: Additional criteria for reasoning
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Reasoning completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReasoningResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: LLM service unavailable, fallback to rule-based reasoning
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReasoningResult'
+
+  /constitutional/precedent-analysis:
+    post:
+      summary: Analyze precedent conflicts
+      description: |
+        Analyzes conflicts between legal precedents and provides reconciliation recommendations.
+      operationId: analyzePrecedents
+      tags:
+        - Precedent Analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - case_description
+                - precedents
+              properties:
+                case_description:
+                  type: string
+                  description: Description of the case or decision
+                precedents:
+                  type: array
+                  description: List of relevant precedents
+                  items:
+                    type: object
+                    required:
+                      - citation
+                      - holding
+                    properties:
+                      citation:
+                        type: string
+                      holding:
+                        type: string
+                      authority_level:
+                        type: string
+                      date:
+                        type: string
+                        format: date
+      responses:
+        '200':
+          description: Precedent analysis completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrecedentAnalysisResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /constitutional/health:
+    get:
+      summary: Health check for constitutional service
+      description: Returns health status of constitutional service and dependencies
+      operationId: healthCheck
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  vector_db:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  llm:
+                    type: string
+                    enum: [healthy, unhealthy, fallback]
+                  timestamp:
+                    type: string
+                    format: date-time
+        '503':
+          description: Service is unhealthy
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token with tenant and user claims
+    constitutionalHash:
+      type: apiKey
+      in: header
+      name: X-Constitutional-Hash
+      description: Constitutional hash for cryptographic validation (cdd01ef066bc6cf2)
+
+  schemas:
+    ValidationResult:
+      type: object
+      required:
+        - is_valid
+        - confidence
+        - reasoning
+        - key_factors
+        - timestamp
+      properties:
+        is_valid:
+          type: boolean
+          description: Whether decision is constitutionally valid
+        confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Confidence score (0.0-1.0)
+        reasoning:
+          type: string
+          description: Detailed reasoning for validation result
+        key_factors:
+          type: array
+          description: Key factors considered in validation
+          items:
+            type: string
+        constitutional_references:
+          type: array
+          description: Referenced constitutional provisions
+          items:
+            type: object
+            properties:
+              provision:
+                type: string
+              relevance_score:
+                type: number
+                format: float
+        timestamp:
+          type: string
+          format: date-time
+        processing_time_ms:
+          type: number
+          format: float
+          description: Processing time in milliseconds
+
+    RetrievalResponse:
+      type: object
+      required:
+        - documents
+        - relevance_scores
+        - total_found
+      properties:
+        documents:
+          type: array
+          description: Retrieved constitutional documents
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              content:
+                type: string
+              source:
+                type: string
+              authority_level:
+                type: string
+              date:
+                type: string
+                format: date
+              metadata:
+                type: object
+                additionalProperties: true
+        relevance_scores:
+          type: array
+          description: Relevance scores for each document (0.0-1.0)
+          items:
+            type: number
+            format: float
+        total_found:
+          type: integer
+          description: Total number of matching documents
+        search_time_ms:
+          type: number
+          format: float
+          description: Search time in milliseconds
+
+    ReasoningResult:
+      type: object
+      required:
+        - recommendation
+        - confidence
+        - reasoning
+      properties:
+        recommendation:
+          type: string
+          description: Recommended decision or action
+        confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Confidence in recommendation
+        reasoning:
+          type: string
+          description: Detailed reasoning with precedent analysis
+        supporting_documents:
+          type: array
+          description: Documents supporting the recommendation
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              relevance:
+                type: string
+        fallback_mode:
+          type: boolean
+          description: Whether fallback rule-based reasoning was used
+        model_used:
+          type: string
+          description: LLM model used for reasoning
+          example: "gpt-4"
+
+    PrecedentAnalysisResult:
+      type: object
+      required:
+        - reconciliation
+        - conflicts
+      properties:
+        reconciliation:
+          type: string
+          description: Reconciliation recommendation for conflicting precedents
+        conflicts:
+          type: array
+          description: Identified conflicts between precedents
+          items:
+            type: object
+            properties:
+              precedent_a:
+                type: string
+              precedent_b:
+                type: string
+              conflict_description:
+                type: string
+              resolution_approach:
+                type: string
+        hierarchy_analysis:
+          type: object
+          description: Analysis of precedent hierarchy
+          properties:
+            controlling_precedent:
+              type: string
+            rationale:
+              type: string
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+        trace_id:
+          type: string
+          description: Trace ID for debugging
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "INVALID_REQUEST"
+            message: "Query parameter is required"
+            trace_id: "abc123"
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "UNAUTHORIZED"
+            message: "Valid JWT token required"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "RATE_LIMIT_EXCEEDED"
+            message: "Rate limit: 100 requests/minute"
+            details:
+              limit: 100
+              window: "1 minute"
+              retry_after: 30
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+            trace_id: "xyz789"
+
+tags:
+  - name: Constitutional Validation
+    description: Validate decisions against constitutional principles
+  - name: Constitutional Retrieval
+    description: Semantic search for constitutional documents
+  - name: Constitutional Reasoning
+    description: LLM-powered decision reasoning
+  - name: Precedent Analysis
+    description: Analyze legal precedent conflicts
+  - name: Health
+    description: Service health checks

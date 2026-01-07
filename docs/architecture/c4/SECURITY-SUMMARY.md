@@ -12,7 +12,7 @@ Comprehensive C4 Code-level documentation has been created for the ACGS-2 Securi
 
 ## Main Documentation
 
-**Primary File**: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/c4-code-security.md`
+**Primary File**: `/home/dislove/document/acgs2/docs/architecture/c4/c4-code-security.md`
 
 - **Lines of Code Documented**: 767+ lines of analysis
 - **File Size**: 30 KB

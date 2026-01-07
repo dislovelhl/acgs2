@@ -73,7 +73,7 @@ helm install acgs2 acgs2/acgs2 --namespace acgs2-system --create-namespace
 - [Security Hardening Guide](./docs/security/SECURITY_HARDENING.md)
 - [Performance Benchmarking Report](./src/core/scripts/README_performance.md)
 - [Compliance Templates](./src/core/docs/compliance/templates/)
-- [C4 Architecture Documentation](./src/core/C4-Documentation/)
+- [C4 Architecture Documentation](./architecture/c4/)
 
 ## 🆘 Support
 

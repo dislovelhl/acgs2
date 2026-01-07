@@ -9,25 +9,27 @@ This document describes the reorganized directory structure of the ACGS-2 projec
 ## 🏗️ Architecture Overview (Post-Reorganization)
 
 ### Before: Scattered Structure
+
 - **50+ loose files** at root level
 - **Duplicate directories** (sdk/, tests/, examples/, scripts/ in multiple places)
 - **Mixed concerns** (code, docs, tests, configs all at root)
 - **Complex navigation** requiring knowledge of scattered locations
 
 ### After: Clean Separation of Concerns
+
 - **All source code** consolidated under `src/`
 - **Documentation** centralized in `docs/`
 - **Tests** organized in `tests/`
 - **Configuration** in appropriate locations
 - **Clear navigation** with logical directory structure
 
-| Directory | Purpose | Key Contents |
-|-----------|---------|--------------|
-| **`src/`** | All source code | Core services, frontend, infra, research |
-| **`docs/`** | Documentation | Guides, architecture docs, API specs |
-| **`tests/`** | Test suites | Unit, integration, e2e tests, fixtures |
-| **`scripts/`** | Utilities | Build, deploy, maintenance scripts |
-| **`reports/`** | Analysis | Test results, benchmarks, audits |
+| Directory      | Purpose         | Key Contents                             |
+| -------------- | --------------- | ---------------------------------------- |
+| **`src/`**     | All source code | Core services, frontend, infra, research |
+| **`docs/`**    | Documentation   | Guides, architecture docs, API specs     |
+| **`tests/`**   | Test suites     | Unit, integration, e2e tests, fixtures   |
+| **`scripts/`** | Utilities       | Build, deploy, maintenance scripts       |
+| **`reports/`** | Analysis        | Test results, benchmarks, audits         |
 
 ## Root Directory Structure
 
@@ -56,7 +58,7 @@ This document describes the reorganized directory structure of the ACGS-2 projec
 ├── docs/                             # 📚 ALL DOCUMENTATION CENTRALIZED
 │   ├── api/                         # API specifications
 │   ├── architecture/                # Architecture docs (from root architecture/)
-│   ├── c4/                         # C4 documentation (from acgs2-core/C4-Documentation/)
+│   ├── c4/                         # C4 documentation (from docs/architecture/c4/)
 │   ├── deployment/                  # Deployment guides
 │   ├── research/                    # Research docs (from claudedocs/)
 │   ├── reports/                     # Chinese reports (商业价值评估报告.md, etc.)
@@ -113,7 +115,7 @@ Consolidated source code with clear separation by component type.
 | `services/` | Microservices (Policy Registry, Audit, HITL, etc.) | API Gateway, Analytics API, ML Governance |
 | `shared/` | Shared utilities (auth, logging, metrics, security) | Redis config, CORS, rate limiting |
 | `breakthrough/` | Breakthrough integrations (Mamba-2, MACI, Z3, etc.) | Advanced AI capabilities |
-| `C4-Documentation/` | Complete C4 model documentation | 685 KB across 22 documents |
+| `docs/architecture/c4/` | Complete C4 model documentation | 685 KB across 22 documents |
 
 #### **src/frontend/** (Frontend Applications)
 **From**: `acgs2-frontend/` + scattered frontend projects.
@@ -182,7 +184,7 @@ Centralized documentation with comprehensive coverage.
 - Architectural reports and plans
 
 #### **docs/c4/** (C4 Model Documentation)
-**From**: `acgs2-core/C4-Documentation/` - Complete architectural documentation.
+**Location**: `docs/architecture/c4/` - Complete architectural documentation.
 - Context, Container, Component, Code level docs
 - 685 KB across 22 comprehensive documents
 
@@ -387,11 +389,13 @@ Archived or deprecated code and services.
 ### Directory Structure Updates
 When adding new components, follow this hierarchy:
 ```
+
 src/{component_type}/{component_name}/
-├── __init__.py
+├── **init**.py
 ├── main.py (or equivalent entry point)
 ├── tests/ (component-specific tests)
 └── docs/ (component documentation)
+
 ```
 
 ### Version Control
@@ -427,3 +431,4 @@ src/{component_type}/{component_name}/
 ---
 
 **ACGS-2 v4.0**: Enterprise-ready constitutional AI governance platform with fully reorganized, clean architecture and consolidated source structure. 🏗️✨
+```

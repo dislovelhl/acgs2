@@ -218,17 +218,17 @@ This delivery provides **comprehensive C4 model architecture documentation** for
 
 | File | Path | Lines | Purpose |
 |------|------|-------|---------|
-| README.md | C4-Documentation/ | 207 | Documentation index |
-| c4-context.md | C4-Documentation/ | ~600 | System context |
-| c4-container.md | C4-Documentation/ | ~800 | Container architecture |
-| c4-component.md | C4-Documentation/ | ~500 | Component details |
-| c4-code-core.md | C4-Documentation/ | ~1,000 | Core code structure |
-| c4-code-deliberation-layer.md | C4-Documentation/ | ~400 | Deliberation code |
-| c4-code-antifragility.md | C4-Documentation/ | ~350 | Antifragility code |
-| c4-code-acl-adapters.md | C4-Documentation/ | ~300 | ACL adapters code |
-| policy-registry-api.yaml | C4-Documentation/apis/ | 746 | Policy Registry API |
-| audit-service-api.yaml | C4-Documentation/apis/ | 490 | Audit Service API |
-| apis/README.md | C4-Documentation/apis/ | 123 | API documentation guide |
+| README.md | ./ | 207 | Documentation index |
+| c4-context.md | ./ | ~600 | System context |
+| c4-container.md | ./ | ~800 | Container architecture |
+| c4-component.md | ./ | ~500 | Component details |
+| c4-code-core.md | ./ | ~1,000 | Core code structure |
+| c4-code-deliberation-layer.md | ./ | ~400 | Deliberation code |
+| c4-code-antifragility.md | ./ | ~350 | Antifragility code |
+| c4-code-acl-adapters.md | ./ | ~300 | ACL adapters code |
+| policy-registry-api.yaml | ./apis/ | 746 | Policy Registry API |
+| audit-service-api.yaml | ./apis/ | 490 | Audit Service API |
+| apis/README.md | ./apis/ | 123 | API documentation guide |
 
 ---
 

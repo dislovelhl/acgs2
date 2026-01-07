@@ -74,7 +74,7 @@
 
 #### 🏗️ Architects
 
-1. Start with: **[C4 Documentation](../src/core/C4-Documentation/)**
+1. Start with: **[C4 Documentation](./architecture/c4/)**
 2. Review: **[Architecture Documentation](./architecture/)**
 3. Explore: **[Roadmap](./ROADMAP_2025.md)**
 

@@ -3,7 +3,7 @@
 <!-- Constitutional Hash: cdd01ef066bc6cf2 -->
 
 ## Document Location
-- **File**: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/c4-code-infrastructure.md`
+- **File**: `/home/dislove/document/acgs2/docs/architecture/c4/c4-code-infrastructure.md`
 - **Lines**: 615
 - **Format**: C4 Code-Level Documentation
 
@@ -263,7 +263,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 - **Constitutional Hash**: `cdd01ef066bc6cf2` - Required in all operations
 - **Repository**: `/home/dislove/document/acgs2/acgs2-core/`
-- **Documentation Root**: `/home/dislove/document/acgs2/acgs2-core/C4-Documentation/`
+- **Documentation Root**: `/home/dislove/document/acgs2/docs/architecture/c4/`
 - **CI/CD Config**: `.gitlab-ci.yml` and `.github/workflows/`
 - **Docker Config**: `docker-compose.yml` and service Dockerfiles
 
