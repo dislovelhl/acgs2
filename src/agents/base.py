@@ -10,11 +10,33 @@ Provides shared functionality for all governance agents including:
 
 import asyncio
 import logging
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
+
+# Core AI Infrastructure Imports
+try:
+    from src.core.services.core.constitutional_retrieval_system.document_processor import (
+        DocumentProcessor,
+    )
+    from src.core.services.core.constitutional_retrieval_system.llm_reasoner import LLMReasoner
+    from src.core.services.core.constitutional_retrieval_system.retrieval_engine import (
+        RetrievalEngine,
+    )
+    from src.core.services.core.constitutional_retrieval_system.vector_database import (
+        create_vector_db_manager,
+    )
+
+    CORE_AI_AVAILABLE = True
+except ImportError:
+    LLMReasoner = None
+    RetrievalEngine = None
+    DocumentProcessor = None
+    create_vector_db_manager = None
+    CORE_AI_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +126,12 @@ class BaseGovernanceAgent(ABC):
         self._messages: List[Dict[str, Any]] = []
         self._hooks: Dict[str, List[Callable]] = {}
 
-        logger.info(f"Initialized agent: {name}")
+        # AI Infrastructure
+        self._ai_initialized: bool = False
+        self.llm_reasoner: Optional[LLMReasoner] = None
+        self.retrieval_engine: Optional[RetrievalEngine] = None
+
+        logger.info(f"Agent {name} initialized.")
 
     @property
     @abstractmethod
@@ -116,19 +143,6 @@ class BaseGovernanceAgent(ABC):
     @abstractmethod
     def system_prompt(self) -> str:
         """Return agent system prompt."""
-        pass
-
-    @abstractmethod
-    async def run(self, prompt: str) -> AgentResult:
-        """
-        Execute the agent with given prompt.
-
-        Args:
-            prompt: User prompt for the agent
-
-        Returns:
-            AgentResult with execution details
-        """
         pass
 
     def register_hook(self, hook_type: str, callback: Callable) -> None:
@@ -158,7 +172,7 @@ class BaseGovernanceAgent(ABC):
 
     def _build_query_options(self) -> Dict[str, Any]:
         """Build options dict for claude_agent_sdk.query()."""
-        options = {
+        options: Dict[str, Any] = {
             "allowedTools": self.config.allowed_tools,
             "permissionMode": self.config.permission_mode,
         }
@@ -177,34 +191,116 @@ class BaseGovernanceAgent(ABC):
 
         return options
 
-    async def _simulate_execution(self, prompt: str) -> AgentResult:
-        """
-        Simulate agent execution for testing.
+    async def _init_ai_infrastructure(self):
+        """Initialize real AI components for production execution."""
+        if self._ai_initialized:
+            return
 
-        In production, this would call claude_agent_sdk.query().
-        """
-        self.status = AgentStatus.RUNNING
+        if not CORE_AI_AVAILABLE:
+            logger.warning("Core AI components not available. Falling back to simulation.")
+            return
 
         try:
-            # Simulate processing
-            await asyncio.sleep(0.1)
+            # Initialize Vector DB
+            vector_db = create_vector_db_manager(db_type="qdrant")
+            await vector_db.connect()
+
+            # Initialize Processors and Engines
+            doc_processor = DocumentProcessor()
+            self.retrieval_engine = RetrievalEngine(vector_db, doc_processor)
+            self.llm_reasoner = LLMReasoner(
+                retrieval_engine=self.retrieval_engine,
+                openai_api_key=os.getenv("OPENAI_API_KEY"),
+                model_name=os.getenv("ACGS2_AGENT_MODEL", "gpt-4"),
+            )
+            self._ai_initialized = True
+            logger.info(f"Agent {self.name} initialized with real AI infrastructure.")
+        except Exception as e:
+            logger.error(f"Failed to initialize AI infrastructure for {self.name}: {e}")
+            self._ai_initialized = False
+
+    async def run(self, prompt: str) -> AgentResult:
+        """
+        Execute the agent loop.
+
+        In production, this retrieves context and calls the LLM Reasoner.
+        """
+        await self._init_ai_infrastructure()
+
+        self.status = AgentStatus.RUNNING
+        self._messages.append({"role": "user", "content": prompt})
+
+        try:
+            # Execute pre-execution hooks
+            await self._execute_hooks("PreExecution", {"prompt": prompt})
+
+            if self._ai_initialized:
+                agent_result = await self._run_production_loop(prompt)
+            else:
+                agent_result = await self._run_simulation_fallback(prompt)
+
+            # Execute post-execution hooks
+            await self._execute_hooks(
+                "PostExecution",
+                {
+                    "prompt": prompt,
+                    "result": agent_result.to_dict(),
+                },
+            )
 
             self.status = AgentStatus.COMPLETED
-            return AgentResult(
-                agent_name=self.name,
-                status=AgentStatus.COMPLETED,
-                result=f"[SIMULATED] Processed: {prompt[:100]}...",
-                session_id=self._session_id,
-                messages=self._messages,
-                metrics={"simulated": True},
-            )
+            return agent_result
+
         except Exception as e:
             self.status = AgentStatus.FAILED
+            logger.exception(f"Agent {self.name} failed during execution")
             return AgentResult(
                 agent_name=self.name,
                 status=AgentStatus.FAILED,
                 errors=[str(e)],
             )
+
+    async def _run_production_loop(self, prompt: str) -> AgentResult:
+        """Execute the real retrieval-reasoning loop."""
+        # 1. Retrieve relevant constitutional context
+        if self.retrieval_engine is None:
+            raise RuntimeError("Retrieval engine not initialized")
+
+        context_docs = await self.retrieval_engine.retrieve_similar_documents(prompt, limit=5)
+
+        # 2. Reason with context
+        if self.llm_reasoner is None:
+            raise RuntimeError("LLM Reasoner not initialized")
+
+        response = await self.llm_reasoner.reason_with_context(
+            query=prompt, context_documents=context_docs
+        )
+
+        result_text = response.get("reasoning", str(response))
+
+        return AgentResult(
+            agent_name=self.name,
+            status=AgentStatus.COMPLETED,
+            result=result_text,
+            session_id=self._session_id,
+            messages=self._messages + [{"role": "assistant", "content": result_text}],
+            metrics={
+                **response.get("metrics", {}),
+                "context_docs_count": len(context_docs),
+            },
+        )
+
+    async def _run_simulation_fallback(self, prompt: str) -> AgentResult:
+        """Execute simulation fallback logic."""
+        await asyncio.sleep(0.1)
+        return AgentResult(
+            agent_name=self.name,
+            status=AgentStatus.COMPLETED,
+            result=f"[SIMULATED] Processed: {prompt[:100]}...",
+            session_id=self._session_id,
+            messages=self._messages,
+            metrics={"simulated": True},
+        )
 
 
 def create_audit_hook(log_file: str = "./agent_audit.log") -> Callable:

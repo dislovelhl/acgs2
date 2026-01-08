@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from .base import AgentConfig, AgentResult, AgentStatus, BaseGovernanceAgent
+from .base import AgentConfig, AgentResult, BaseGovernanceAgent
 
 logger = logging.getLogger(__name__)
 
@@ -112,57 +112,11 @@ Output format:
 
     async def run(self, prompt: str) -> AgentResult:
         """
-        Execute policy analysis.
-
-        Args:
-            prompt: Analysis request (e.g., "Analyze the deliberation framework")
-
-        Returns:
-            AgentResult with policy analysis details
+        Execute policy analysis utilizing base agent production loop.
         """
-        self.status = AgentStatus.RUNNING
         logger.info(f"Starting policy analysis: {prompt[:100]}...")
-
-        try:
-            # In production, this would use claude_agent_sdk.query()
-            # For now, we simulate the analysis
-
-            # Execute pre-tool hooks
-            await self._execute_hooks("PreToolUse", {"prompt": prompt})
-
-            # Simulate agent execution
-            result = await self._simulate_policy_analysis(prompt)
-
-            # Execute post-tool hooks
-            await self._execute_hooks(
-                "PostToolUse",
-                {
-                    "prompt": prompt,
-                    "result": result.to_dict(),
-                },
-            )
-
-            self.status = AgentStatus.COMPLETED
-
-            return AgentResult(
-                agent_name=self.name,
-                status=AgentStatus.COMPLETED,
-                result=self._format_analysis_result(result),
-                metrics={
-                    "dfc_score": result.dfc_score,
-                    "dfc_status": result.dfc_status,
-                    "compliance": result.constitutional_compliance,
-                },
-            )
-
-        except Exception as e:
-            logger.error(f"Policy analysis failed: {e}")
-            self.status = AgentStatus.FAILED
-            return AgentResult(
-                agent_name=self.name,
-                status=AgentStatus.FAILED,
-                errors=[str(e)],
-            )
+        # The base class handles AI init, hooks, and retrieval/reasoning
+        return await super().run(prompt)
 
     async def analyze_deliberation(
         self,

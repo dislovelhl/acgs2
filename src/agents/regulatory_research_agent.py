@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from .base import AgentConfig, AgentResult, AgentStatus, BaseGovernanceAgent
+from .base import AgentConfig, AgentResult, BaseGovernanceAgent
 
 logger = logging.getLogger(__name__)
 
@@ -177,58 +177,11 @@ Focus on:
 
     async def run(self, prompt: str) -> AgentResult:
         """
-        Execute regulatory research.
-
-        Args:
-            prompt: Research query (e.g., "Find recent EU AI Act updates")
-
-        Returns:
-            AgentResult with research findings
+        Execute regulatory research utilizing base agent production loop.
         """
-        self.status = AgentStatus.RUNNING
         logger.info(f"Starting regulatory research: {prompt[:100]}...")
-
-        try:
-            # Execute pre-tool hooks
-            await self._execute_hooks("PreToolUse", {"prompt": prompt})
-
-            # Simulate research (in production, uses WebSearch/WebFetch)
-            report = await self._simulate_research(prompt)
-
-            # Cache the report
-            cache_key = prompt.lower()[:50]
-            self._cache[cache_key] = report
-
-            # Execute post-tool hooks
-            await self._execute_hooks(
-                "PostToolUse",
-                {
-                    "prompt": prompt,
-                    "report": report.to_dict(),
-                },
-            )
-
-            self.status = AgentStatus.COMPLETED
-
-            return AgentResult(
-                agent_name=self.name,
-                status=AgentStatus.COMPLETED,
-                result=self._format_research_report(report),
-                metrics={
-                    "updates_found": len(report.updates),
-                    "sources_consulted": report.sources_consulted,
-                    "action_required": sum(1 for u in report.updates if u.action_required),
-                },
-            )
-
-        except Exception as e:
-            logger.error(f"Regulatory research failed: {e}")
-            self.status = AgentStatus.FAILED
-            return AgentResult(
-                agent_name=self.name,
-                status=AgentStatus.FAILED,
-                errors=[str(e)],
-            )
+        # The base class handles AI init, hooks, and retrieval/reasoning
+        return await super().run(prompt)
 
     async def search_regulation(
         self,

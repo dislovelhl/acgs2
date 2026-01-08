@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from .base import AgentConfig, AgentResult, AgentStatus, BaseGovernanceAgent
 
@@ -264,14 +264,15 @@ IMPORTANT: You are operating in READ-ONLY mode. Do not attempt to modify any fil
         """
         import re
 
-        issues = []
+        issues: List[ComplianceIssue] = []
 
         for rule_id, rule in self.rules.items():
             pattern = rule["pattern"]
             is_required = rule.get("required", False)
 
             # Search for pattern in content
-            matches = list(re.finditer(pattern, content, re.IGNORECASE))
+            pattern_val = str(pattern) if not isinstance(pattern, str) else pattern
+            matches = list(re.finditer(pattern_val, content, re.IGNORECASE))
 
             if is_required and not matches:
                 # Required pattern not found
@@ -279,7 +280,7 @@ IMPORTANT: You are operating in READ-ONLY mode. Do not attempt to modify any fil
                     ComplianceIssue(
                         file_path=file_path,
                         line_number=None,
-                        severity=rule["severity"],
+                        severity=cast(ComplianceSeverity, rule["severity"]),
                         rule=rule_id,
                         message=f"{rule['name']}: Required pattern not found",
                         suggestion=f"Ensure {rule['name']} is implemented",
@@ -293,7 +294,7 @@ IMPORTANT: You are operating in READ-ONLY mode. Do not attempt to modify any fil
                         ComplianceIssue(
                             file_path=file_path,
                             line_number=line_num,
-                            severity=rule["severity"],
+                            severity=cast(ComplianceSeverity, rule["severity"]),
                             rule=rule_id,
                             message=f"{rule['name']}: {rule['message']}",
                             suggestion=f"Review line {line_num} for compliance",

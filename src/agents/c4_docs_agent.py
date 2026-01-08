@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from .base import AgentConfig, AgentResult, AgentStatus, BaseGovernanceAgent
+from .base import AgentConfig, AgentResult, BaseGovernanceAgent
 
 logger = logging.getLogger(__name__)
 
@@ -186,55 +186,11 @@ Use the diagram-generator subagent for creating Mermaid syntax.
 
     async def run(self, prompt: str) -> AgentResult:
         """
-        Execute C4 documentation generation.
-
-        Args:
-            prompt: Documentation request (e.g., "Generate C4 docs for governance module")
-
-        Returns:
-            AgentResult with documentation report
+        Execute C4 documentation generation utilizing base agent production loop.
         """
-        self.status = AgentStatus.RUNNING
         logger.info(f"Starting C4 documentation generation: {prompt[:100]}...")
-
-        try:
-            # Execute pre-tool hooks
-            await self._execute_hooks("PreToolUse", {"prompt": prompt})
-
-            # Simulate documentation generation
-            report = await self._simulate_doc_generation(prompt)
-
-            # Execute post-tool hooks
-            await self._execute_hooks(
-                "PostToolUse",
-                {
-                    "prompt": prompt,
-                    "report": report.to_dict(),
-                },
-            )
-
-            self.status = AgentStatus.COMPLETED
-
-            return AgentResult(
-                agent_name=self.name,
-                status=AgentStatus.COMPLETED,
-                result=self._format_doc_report(report),
-                metrics={
-                    "diagrams_generated": len(report.diagrams_generated),
-                    "files_created": len(report.files_created),
-                    "files_updated": len(report.files_updated),
-                    "coverage_gaps": len(report.coverage_gaps),
-                },
-            )
-
-        except Exception as e:
-            logger.error(f"C4 documentation generation failed: {e}")
-            self.status = AgentStatus.FAILED
-            return AgentResult(
-                agent_name=self.name,
-                status=AgentStatus.FAILED,
-                errors=[str(e)],
-            )
+        # The base class handles AI init, hooks, and retrieval/reasoning
+        return await super().run(prompt)
 
     async def analyze_module(self, module_path: str) -> List[C4Element]:
         """
@@ -329,7 +285,7 @@ Use the diagram-generator subagent for creating Mermaid syntax.
         Returns:
             List of coverage gaps
         """
-        gaps = []
+        gaps: List[str] = []
 
         # Check for required levels
         for _level in self.C4_LEVELS_REQUIRED:
