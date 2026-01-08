@@ -1,7 +1,7 @@
 # Optimized Dependencies for ACGS-2 Production - Updated to latest secure pinned versions (v3.0.0)
 
 cryptography==44.0.1
-fastapi==0.115.6
+fastapi==0.128.0
 pydantic==2.9.2
 uvicorn==0.32.0
 
