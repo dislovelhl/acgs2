@@ -16,6 +16,7 @@ This guide covers the comprehensive testing infrastructure for ACGS-2, including
 - [TypeScript Testing](#typescript-testing)
 - [CI/CD Integration](#cicd-integration)
 - [Codecov Dashboard](#codecov-dashboard)
+- [Validation & Verification Standards](#validation--verification-standards)
 - [Best Practices](#best-practices)
 
 ## Coverage Requirements
@@ -269,6 +270,59 @@ SKIP_LIVE_TESTS=false pytest tests/integration/ -v -m integration
 | `test_opa.py` | OPA | Policy evaluation, RBAC, constitutional validation |
 | `test_redis.py` | Redis | GET/SET, TTL, batch operations, connection pooling |
 | `test_kafka.py` | Kafka | Publish/consume, serialization, message delivery |
+
+## Validation & Verification Standards
+
+Use these standards when evaluating quality claims, documentation accuracy, and research outputs.
+They ensure **verification** (correctness of implementation and tests) stays aligned with
+**validation** (user goals and real-world usefulness).
+
+### Definitions
+
+| Term | Purpose | Evidence | Example |
+|------|---------|----------|---------|
+| **Verification** | Prove the system behaves as specified | Test logs, reproducible commands, CI artifacts | Passing policy validation tests |
+| **Validation** | Prove the system solves the right problem | User studies, task success metrics, feedback | 30-minute onboarding completion rate |
+
+### Evidence Quality and Confidence
+
+When reporting results, distinguish **facts** from **hypotheses** and include a confidence level.
+
+| Evidence Type | Examples | Confidence Guidance |
+|---------------|----------|---------------------|
+| **Executable evidence** | Failing/passing tests, logs, metrics | High when reproducible |
+| **Human feedback** | Surveys, interviews, observations | Medium; cross-check with logs |
+| **External references** | Standards, scholarly sources | High when peer-reviewed and current |
+
+### Bias and Misinformation Safeguards
+
+- Use **authoritative sources** (standards, peer-reviewed papers) when citing external facts.
+- Cross-reference claims across **multiple sources** and local logs.
+- Note **limitations** explicitly (sample size, missing data, environment differences).
+- Flag any **hypotheses** and the evidence needed to confirm them.
+
+### Study Design and Statistical Hygiene
+
+- Use clear **success metrics** (completion rate, time-to-completion, error rate).
+- Record **sample size**, **variance**, and **outliers** for user studies.
+- Avoid over-claiming: require **replication** before asserting generalizability.
+
+### Reporting Template (Copy/Paste)
+
+```
+Claim:
+Evidence:
+Validation or Verification:
+Confidence (High/Medium/Low):
+Limitations:
+Next Verification Steps:
+```
+
+### Update and Feedback Loop
+
+- Update documentation and tests after each **significant change**.
+- Record user feedback in `docs/feedback.md` and link it to related issues.
+- Track open gaps or known limitations in the release notes or backlog.
 
 ## TypeScript Testing
 

@@ -188,6 +188,42 @@ Critical issues found:   [  ]
 
 ## Testing Methodology
 
+### Validation vs. Verification Scope
+
+Use this report to separate **validation** (are we building the right onboarding experience?) from
+**verification** (did the quickstart and assets behave correctly during testing).
+
+| Aspect | Definition | Evidence Collected | Acceptance Gate |
+|--------|------------|--------------------|-----------------|
+| **Validation** | User outcomes, clarity, and usefulness | Session timings, satisfaction scores, qualitative feedback | ≥80% completion rate; avg satisfaction >4.0/5.0 |
+| **Verification** | Technical correctness of steps and artifacts | Environment checks, command outputs, error logs | 0 critical blockers; all required steps reproducible |
+
+### Evidence Quality, Confidence, and Sources
+
+Track evidence quality and confidence for each claim. Cite authoritative sources when referencing
+external research or benchmarks (e.g., vendor docs, peer-reviewed papers).
+
+| Evidence Type | Examples | Confidence Scale | Notes |
+|---------------|----------|------------------|-------|
+| **Direct observation** | Screen recordings, timestamps, logs | High / Medium / Low | Highest confidence when multiple observers agree |
+| **Self-report** | Survey responses, interviews | Medium / Low | Validate with logs where possible |
+| **External sources** | Standards, academic papers | High / Medium / Low | Record full citations and links |
+
+### Bias and Misinformation Controls
+
+- Recruit a **diverse tester mix** (experience, OS, roles) to reduce sampling bias.
+- Cross-check **self-reported outcomes** with command logs and timestamps.
+- Flag **hypotheses vs. facts** explicitly in session notes (e.g., "Hypothesis: step 4 is unclear").
+- Record **limitations** (sample size, environment differences) alongside results.
+
+### Update Cadence and Cross-Reference Strategy
+
+- Re-run validation after **documentation or onboarding flow changes**.
+- Cross-reference session outcomes with:
+  - `docs/getting-started.md` for quickstart steps
+  - `docs/DEVELOPMENT.md` for troubleshooting guidance
+  - `docs/testing-guide.md` for verification expectations
+
 ### Recruitment Criteria
 
 We recruit developers with diverse backgrounds to ensure the quickstart works for our target audience:
