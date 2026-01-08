@@ -6,12 +6,15 @@ Supports querying OPA to determine approval chain routing based on decision type
 impact level, and user roles.
 """
 
+import datetime
 import logging
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import Any, Dict, List, Optional
 
 import httpx
 from src.core.shared.audit_client import AuditClient
+from src.core.shared.policy.models import PolicySpecification, VerificationStatus
+from src.core.shared.policy.unified_generator import UnifiedVerifiedPolicyGenerator
 
 # Use local config/settings if available, otherwise fallback
 try:
@@ -79,6 +82,7 @@ class OPAClient:
 
         self._http_client: Optional[httpx.AsyncClient] = None
         self._audit_client: Optional[AuditClient] = None
+        self._policy_generator = UnifiedVerifiedPolicyGenerator()
         self._memory_cache: Dict[str, JSONDict] = {}
         self._initialized = False
 
@@ -178,6 +182,50 @@ class OPAClient:
                 "reason": f"OPA elevation error: {e}",
             }
 
+    async def evaluate_policy_verified(
+        self,
+        input_data: JSONDict,
+        policy_path: str,
+        natural_language_intent: str,
+    ) -> JSONDict:
+        """
+        Evaluate a policy and provide a formal proof of correctness.
+        """
+        # Step 1: Standard OPA Evaluation
+        opa_result = await self.evaluate_policy(input_data, policy_path)
+
+        # Step 2: Formal Verification
+        spec = PolicySpecification(
+            spec_id=f"opa_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            natural_language=natural_language_intent,
+            context=input_data,
+        )
+
+        try:
+            policy = await self._policy_generator.generate_verified_policy(spec)
+
+            opa_result["verification_status"] = policy.verification_status.value
+            opa_result["smt_formulation"] = policy.smt_formulation
+            opa_result["proven"] = policy.verification_status in (
+                VerificationStatus.VERIFIED,
+                VerificationStatus.PROVEN,
+            )
+
+            # Verification override if OPA allowed but proof fails (Safe-fail)
+            if opa_result["allowed"] and not opa_result["proven"]:
+                opa_result["allowed"] = False
+                opa_result[
+                    "reason"
+                ] = f"Action allowed by OPA but failed formal verification: {policy.verification_status.value}"
+
+            return opa_result
+        except Exception as e:
+            logger.error(f"Formal verification failed: {e}")
+            if self.fail_closed:
+                opa_result["allowed"] = False
+                opa_result["reason"] = f"Formal verification error (fail-closed): {e}"
+            return opa_result
+
     async def evaluate_routing(
         self,
         decision_type: str,
@@ -203,6 +251,54 @@ class OPAClient:
             chain_id = result["result"].get("chain_id")
             if chain_id:
                 result["chain_id"] = chain_id
+
+        return result
+
+    async def _compute_dfc(self, result: JSONDict) -> float:
+        """
+        Compute Democratic Fidelity Coefficient (DFC) as a diagnostic heuristic.
+        Measures the alignment of the decision with constitutional principles.
+        """
+        # Baseline score
+        score = 0.7 if result.get("allowed") else 0.3
+
+        # Boost if formally proven
+        if result.get("proven"):
+            score += 0.2
+
+        # Adjustment based on impact level
+        impact = result.get("impact_level", "medium")
+        if impact == "high":
+            score -= 0.1  # Higher rigor needed for high impact
+        elif impact == "low":
+            score += 0.05
+
+        return min(max(score, 0.0), 1.0)
+
+    async def evaluate_with_dfc(
+        self,
+        decision_type: str,
+        user_role: str,
+        impact_level: str = "medium",
+        context: Optional[JSONDict] = None,
+    ) -> JSONDict:
+        """
+        Evaluate policy with DFC diagnostic metrics.
+        """
+        input_data = {
+            "decision_type": decision_type,
+            "user_role": user_role,
+            "impact_level": impact_level,
+            **(context or {}),
+        }
+
+        # Use verified evaluation
+        intent = f"Evaluate routing for {decision_type} (impact: {impact_level})"
+        result = await self.evaluate_policy_verified(input_data, self.ROUTING_POLICY, intent)
+
+        # Append DFC score
+        result["dfc_score"] = await self._compute_dfc(result)
+        result["impact_level"] = impact_level
 
         return result
 

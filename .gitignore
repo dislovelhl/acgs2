@@ -56,12 +56,15 @@ test_output.txt
 # Backup files
 acgs2-audit-backup-*.tar.gz
 
+# Rust and other build artifacts
+**/target/
+
 # Virtual environments (additional patterns)
 venv/
 test_venv/
 enhanced_agent_bus/venv/
-acgs2-core/enhanced_agent_bus/venv/
-acgs2-core/enhanced_agent_bus/test_venv/
+src/core/enhanced_agent_bus/venv/
+src/core/enhanced_agent_bus/test_venv/
 
 # Large binaries in virtual environments
 **/venv/bin/z3

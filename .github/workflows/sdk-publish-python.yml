@@ -4,16 +4,16 @@ on:
   release:
     types: [published]
     tags:
-      - 'sdk/python/v*'
+      - "sdk/python/v*"
   workflow_dispatch:
     inputs:
       version:
-        description: 'SDK version to publish'
+        description: "SDK version to publish"
         required: true
         type: string
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: "3.11"
   REGISTRY: ghcr.io
 
 permissions:
@@ -50,13 +50,13 @@ jobs:
           pip install build twine
 
       - name: Build Python SDK
-        working-directory: ./acgs2-core/sdk/python
+        working-directory: ./src/core/sdk/python
         run: |
           python -m build
 
       - name: Check package
         run: |
-          python -m twine check acgs2-core/sdk/python/dist/*
+          python -m twine check src/core/sdk/python/dist/*
 
       - name: Publish to PyPI
         if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
@@ -64,7 +64,7 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          python -m twine upload acgs2-core/sdk/python/dist/*
+          python -m twine upload src/core/sdk/python/dist/*
 
       - name: Publish to Test PyPI (on workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
@@ -72,7 +72,7 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
-          python -m twine upload --repository testpypi acgs2-core/sdk/python/dist/*
+          python -m twine upload --repository testpypi src/core/sdk/python/dist/*
 
       - name: Create GitHub Release Notes
         if: github.event_name == 'release'
@@ -83,7 +83,7 @@ jobs:
             const path = require('path');
 
             // Read SDK changelog or generate release notes
-            const changelogPath = path.join(process.cwd(), 'acgs2-core', 'sdk', 'python', 'CHANGELOG.md');
+            const changelogPath = path.join(process.cwd(), 'src/core', 'sdk', 'python', 'CHANGELOG.md');
             let releaseNotes = '## Python SDK Release\n\n';
 
             if (fs.existsSync(changelogPath)) {

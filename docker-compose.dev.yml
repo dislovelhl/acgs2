@@ -49,7 +49,8 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_password}", "ping"]
+      test:
+        ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_password}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -109,7 +110,11 @@ services:
     volumes:
       - postgres-ml-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ML_USER:-mlflow} -d ${POSTGRES_ML_DB:-mlflow_db}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_ML_USER:-mlflow} -d ${POSTGRES_ML_DB:-mlflow_db}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -251,7 +256,7 @@ services:
   # Analytics Dashboard (React/Vite)
   analytics-dashboard:
     build:
-      context: ./analytics-dashboard
+      context: ./src/frontend/analytics-dashboard
       dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
@@ -259,7 +264,7 @@ services:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8082}
       - VITE_ACGS_ENV=${ACGS_ENV:-development}
     volumes:
-      - ./analytics-dashboard:/app
+      - ./src/frontend/analytics-dashboard:/app
       - /app/node_modules
     depends_on:
       analytics-api:
@@ -273,7 +278,6 @@ networks:
 
 volumes:
   postgres_data:
-
 # =============================================================================
 # Configuration Notes
 # =============================================================================

@@ -35,7 +35,7 @@ services:
     ports:
       - "${OPA_PORT:-8181}:8181"
     volumes:
-      - ./acgs2-core/enhanced_agent_bus/policies:/policies:ro
+      - ./src/core/enhanced_agent_bus/policies:/policies:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8181/health"]
       interval: 10s
@@ -129,7 +129,11 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-topics --bootstrap-server localhost:29092 --list || exit 1",
+        ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -144,7 +148,6 @@ networks:
 
 volumes:
   redis-data:
-
 # =============================================================================
 # Quick Start Guide
 # =============================================================================

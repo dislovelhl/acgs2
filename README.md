@@ -212,7 +212,7 @@ See [Development Guide](./docs/DEVELOPMENT.md) for complete configuration option
 ```bash
 # Clone and setup
 git clone https://github.com/ACGS-Project/ACGS-2.git
-cd ACGS-2/acgs2-core
+cd ACGS-2/src/core
 
 # Create virtual environment
 python -m venv .venv && source .venv/bin/activate
@@ -319,7 +319,7 @@ kubectl port-forward svc/acgs2-prometheus 9090:9090 -n acgs2-monitoring
 python scripts/run_unified_tests.py --run --coverage --parallel
 
 # Run with pytest directly (parallel execution)
-cd acgs2-core
+cd src/core
 pytest -n auto --cov=acgs2_core --cov-branch --cov-report=term-missing --cov-fail-under=85
 
 # Run integration tests (requires services running)
@@ -421,11 +421,11 @@ git clone https://github.com/your-username/ACGS-2.git
 cd ACGS-2
 
 # Set up development environment
-pip install -r acgs2-core/config/requirements_optimized.txt
-cd acgs2-core/enhanced_agent_bus/rust && cargo build --release
+pip install -r src/core/config/requirements_optimized.txt
+cd src/core/enhanced_agent_bus/rust && cargo build --release
 
 # Run tests
-python -m pytest acgs2-core/ -v --cov=acgs2-core
+python -m pytest src/core/ -v --cov=src/core
 
 # Submit pull request
 git checkout -b feature/your-enhancement
@@ -523,8 +523,8 @@ ACGS-2 represents the culmination of advanced research in constitutional AI gove
 ./scripts/run_all_tests.sh
 
 # Run tests for specific components
-cd acgs2-core/enhanced_agent_bus && python -m pytest tests/ -v
-cd acgs2-core && python -m pytest services/policy_registry/tests/ -v
+cd src/core/enhanced_agent_bus && python -m pytest tests/ -v
+cd src/core && python -m pytest services/policy_registry/tests/ -v
 
 # Legacy single-directory testing (limited scope)
 python3 -m pytest tests/ --cov=. --cov-report=html
@@ -565,13 +565,13 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 
 ## Documentation
 
-| Resource               | Location                                                       |
-| ---------------------- | -------------------------------------------------------------- |
-| C4 Architecture        | [`acgs2-core/C4-Documentation/`](./src/core/C4-Documentation/) |
-| Development Guide      | [`acgs2-core/CLAUDE.md`](./src/core/CLAUDE.md)                 |
-| Testing Guide          | [`docs/testing-guide.md`](./docs/testing-guide.md)             |
-| API Documentation      | [`docs/api/`](./docs/api/)                                     |
-| Architecture Decisions | [`docs/adr/`](./docs/adr/)                                     |
+| Resource               | Location                                                     |
+| ---------------------- | ------------------------------------------------------------ |
+| C4 Architecture        | [`src/core/C4-Documentation/`](./src/core/C4-Documentation/) |
+| Development Guide      | [`src/core/CLAUDE.md`](./src/core/CLAUDE.md)                 |
+| Testing Guide          | [`docs/testing-guide.md`](./docs/testing-guide.md)           |
+| API Documentation      | [`docs/api/`](./docs/api/)                                   |
+| Architecture Decisions | [`docs/adr/`](./docs/adr/)                                   |
 
 ## License
 

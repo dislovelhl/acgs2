@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ACGS2_CORE="$PROJECT_ROOT/acgs2-core"
+ACGS2_CORE="$PROJECT_ROOT/src/core"
 
 echo "📁 Project Root: $PROJECT_ROOT"
 echo "📁 Core Module: $ACGS2_CORE"

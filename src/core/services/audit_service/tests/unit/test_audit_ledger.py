@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from src.core.services.audit_service.core.audit_ledger import (
+    AuditEntry,
     AuditLedger,
     AuditLedgerConfig,
 )
@@ -16,19 +17,28 @@ from src.core.services.audit_service.core.audit_ledger import (
 class TestAuditEntry:
     """Test AuditEntry data structure."""
 
-    # Disable Redis for unit tests to ensure isolation
-    config = AuditLedgerConfig(
-        batch_size=3,
-        redis_url=None,
-        enable_blockchain_anchoring=False,
-        persistence_file=str(storage_path),
-    )
+    @pytest.fixture
+    async def storage_path(self, tmp_path):
+        """Create a temporary storage path."""
+        p = tmp_path / "audit_storage"
+        p.mkdir()
+        return p
 
-    with patch("redis.from_url", side_effect=Exception("Redis disabled for tests")):
-        l = AuditLedger(config=config)
-        await l.start()
-        yield l
-        await l.stop()
+    @pytest.fixture
+    async def ledger_with_config(self, storage_path):
+        """Create a ledger with specific config for testing."""
+        config = AuditLedgerConfig(
+            batch_size=3,
+            redis_url=None,
+            enable_blockchain_anchoring=False,
+            persistence_file=str(storage_path / "ledger.json"),
+        )
+
+        with patch("redis.from_url", side_effect=Exception("Redis disabled for tests")):
+            ledger_inst = AuditLedger(config=config)
+            await ledger_inst.start()
+            yield ledger_inst
+            await ledger_inst.stop()
 
 
 class TestAuditLedger:

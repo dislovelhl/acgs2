@@ -2,71 +2,75 @@ name: ACGS-2 Quality Gates
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
     inputs:
       performance_test:
-        description: 'Run performance regression tests'
+        description: "Run performance regression tests"
         required: false
-        default: 'false'
+        default: "false"
         type: boolean
 
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install ruff mypy bandit pre-commit pytest pytest-cov
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy bandit pre-commit pytest pytest-cov
 
-    - name: Install ACGS-2 dependencies
-      run: |
-        cd acgs2-core
-        pip install -e .[dev]
+      - name: Syntax Check (P0 Gate)
+        run: |
+          python -m compileall src/
 
-    - name: Run Ruff Linting
-      run: |
-        cd acgs2-core
-        ruff check enhanced_agent_bus services --select E,F,B,I --output-format=github
+      - name: Install ACGS-2 dependencies
+        run: |
+          cd src/core
+          pip install -e .[dev] || pip install -e .
 
-    - name: Run ACGS-2 Quality Gate
-      run: |
-        ./scripts/quality_gate.sh
+      - name: Run Ruff Linting
+        run: |
+          cd src/core
+          ruff check enhanced_agent_bus services --select E,F,B,I --output-format=github
 
-    - name: Run Security Scan
-      run: |
-        cd acgs2-core
-        bandit -r enhanced_agent_bus services -f json -o security_report.json || true
-        if [ -f security_report.json ]; then
-          cat security_report.json
-        fi
+      - name: Run ACGS-2 Quality Gate
+        run: |
+          ./scripts/quality_gate.sh
 
-    - name: Run Type Checking
-      run: |
-        cd acgs2-core
-        mypy enhanced_agent_bus services --ignore-missing-imports || true
+      - name: Run Security Scan
+        run: |
+          cd src/core
+          bandit -r enhanced_agent_bus services -f json -o security_report.json || true
+          if [ -f security_report.json ]; then
+            cat security_report.json
+          fi
 
-    - name: Run Unit Tests
-      run: |
-        cd acgs2-core/enhanced_agent_bus
-        python -m pytest tests/ -v --cov=enhanced_agent_bus --cov-report=xml --cov-report=term --cov-fail-under=80
+      - name: Run Type Checking
+        run: |
+          cd src/core
+          mypy enhanced_agent_bus services --ignore-missing-imports || true
 
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./acgs2-core/enhanced_agent_bus/coverage.xml
-        flags: unittests
-        name: codecov-umbrella
+      - name: Run Unit Tests
+        run: |
+          cd src/core/enhanced_agent_bus
+          python -m pytest tests/ -v --cov=enhanced_agent_bus --cov-report=xml --cov-report=term --cov-fail-under=80
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./src/core/enhanced_agent_bus/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
 
   performance-regression:
     runs-on: ubuntu-latest
@@ -111,46 +115,46 @@ jobs:
         command: ["run", "--server", "--log-level=info"]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install aiohttp requests tqdm
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install aiohttp requests tqdm
 
-    - name: Install ACGS-2 services
-      run: |
-        cd acgs2-core
-        pip install -e .[dev]
+      - name: Install ACGS-2 services
+        run: |
+          cd acgs2-core
+          pip install -e .[dev]
 
-    - name: Start ACGS-2 services
-      run: |
-        cd acgs2-core
-        docker-compose -f docker-compose.dev.yml up -d --wait
-        sleep 30
+      - name: Start ACGS-2 services
+        run: |
+          cd acgs2-core
+          docker-compose -f docker-compose.dev.yml up -d --wait
+          sleep 30
 
-    - name: Check service health
-      run: |
-        curl -f http://localhost:8000/health || exit 1
-        curl -f http://localhost:8080/health || exit 1
-        curl -f http://localhost:8181/health || exit 1
+      - name: Check service health
+        run: |
+          curl -f http://localhost:8000/health || exit 1
+          curl -f http://localhost:8080/health || exit 1
+          curl -f http://localhost:8181/health || exit 1
 
-    - name: Run Performance Regression Test
-      run: |
-        ./scripts/performance_regression_test.sh
+      - name: Run Performance Regression Test
+        run: |
+          ./scripts/performance_regression_test.sh
 
-    - name: Upload performance results
-      uses: actions/upload-artifact@v4
-      with:
-        name: performance-results
-        path: |
-          acgs2-core/scripts/performance_benchmark_report.json
-          reports/performance/
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: |
+            acgs2-core/scripts/performance_benchmark_report.json
+            reports/performance/
 
   chaos-engineering:
     runs-on: ubuntu-latest
@@ -181,37 +185,37 @@ jobs:
           ZOOKEEPER_CLIENT_PORT: 2181
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        cd acgs2-core
-        pip install -e .[dev]
+      - name: Install dependencies
+        run: |
+          cd acgs2-core
+          pip install -e .[dev]
 
-    - name: Start ACGS-2 services
-      run: |
-        cd acgs2-core
-        docker-compose -f docker-compose.dev.yml up -d --wait
-        sleep 30
+      - name: Start ACGS-2 services
+        run: |
+          cd acgs2-core
+          docker-compose -f docker-compose.dev.yml up -d --wait
+          sleep 30
 
-    - name: Run Chaos Engineering Tests
-      run: |
-        cd acgs2-core/enhanced_agent_bus
-        python -m pytest tests/test_chaos_framework.py -v
-        python -m pytest tests/runtime/chaos_profiles.py -v
+      - name: Run Chaos Engineering Tests
+        run: |
+          cd acgs2-core/enhanced_agent_bus
+          python -m pytest tests/test_chaos_framework.py -v
+          python -m pytest tests/runtime/chaos_profiles.py -v
 
-    - name: Run Chaos Experiments
-      run: |
-        cd acgs2-core/chaos
-        python experiments/chaos_engine.py --dry-run
+      - name: Run Chaos Experiments
+        run: |
+          cd acgs2-core/chaos
+          python experiments/chaos_engine.py --dry-run
 
-    - name: Upload chaos test results
-      uses: actions/upload-artifact@v4
-      with:
-        name: chaos-results
-        path: reports/chaos/
+      - name: Upload chaos test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-results
+          path: reports/chaos/

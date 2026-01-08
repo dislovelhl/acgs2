@@ -17,7 +17,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ACGS2_CORE="$PROJECT_ROOT/acgs2-core"
+ACGS2_CORE="$PROJECT_ROOT/src/core"
 VENV_DIR="$ACGS2_CORE/venv"
 
 # Setup virtual environment
@@ -116,15 +116,15 @@ run_test_component() {
 }
 
 # Run test components (focus on working tests)
-run_test_component "Enhanced Agent Bus Tests" "cd acgs2-core/enhanced_agent_bus && python -m pytest tests/ -q --tb=short" 4570
-run_test_component "Policy Registry Tests" "cd acgs2-core && python -m pytest services/policy_registry/tests/ -q --tb=short" 120
-run_test_component "Metering Tests" "cd acgs2-core && python -m pytest services/metering/tests/ -q --tb=short" 9
-run_test_component "Shared Tests" "cd acgs2-core && python -m pytest shared/tests/ -q --tb=short" 10
-run_test_component "Core Tests" "cd acgs2-core && python -m pytest tests/ -q --tb=short" 6
+run_test_component "Enhanced Agent Bus Tests" "cd src/core/enhanced_agent_bus && python -m pytest tests/ -q --tb=short" 4570
+run_test_component "Policy Registry Tests" "cd src/core && python -m pytest services/policy_registry/tests/ -q --tb=short" 120
+run_test_component "Metering Tests" "cd src/core && python -m pytest services/metering/tests/ -q --tb=short" 9
+run_test_component "Shared Tests" "cd src/core && python -m pytest shared/tests/ -q --tb=short" 10
+run_test_component "Core Tests" "cd src/core && python -m pytest tests/ -q --tb=short" 6
 run_test_component "Observability Tests" "cd acgs2-observability && python -m pytest tests/ -q --tb=short" 28
 run_test_component "Governance Experiments" "cd acgs2-research && python -m pytest governance-experiments/tests/ -q --tb=short" 4
 run_test_component "Research Tests" "cd acgs2-research && python -m pytest tests/ -q --tb=short" 5
-run_test_component "Performance Validation" "cd acgs2-core && python testing/comprehensive_profiler.py --iterations 50 --baseline 2>/dev/null && echo 'Performance test completed successfully'" 1
+run_test_component "Performance Validation" "cd src/core && python testing/comprehensive_profiler.py --iterations 50 --baseline 2>/dev/null && echo 'Performance test completed successfully'" 1
 
 # Calculate pass rate
 if [ $TOTAL_TESTS -gt 0 ]; then

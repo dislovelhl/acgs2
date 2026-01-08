@@ -6,6 +6,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 Orchestrates multi-agent critique and validation.
 """
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -18,6 +19,8 @@ try:
 except ImportError:
     aioredis = None
     REDIS_AVAILABLE = False
+
+from src.core.shared.audit_client import AuditClient
 
 from ..config import BusConfiguration
 from ..deliberation_layer.llm_assistant import get_llm_assistant
@@ -34,7 +37,70 @@ class PACARVerifier:
         self.config = config or BusConfiguration.from_environment()
         self.assistant = get_llm_assistant()
         self.manager = PACARManager(config=self.config)
+        self.audit_client = AuditClient()
+
+        # Initialize Redis client for conversation persistence
+        self.redis_client: Optional["aioredis.Redis"] = None
+        if REDIS_AVAILABLE:
+            redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
+            try:
+                self.redis_client = aioredis.from_url(redis_url)
+            except Exception as e:
+                logger.warning(f"Failed to initialize Redis client: {e}")
+
         logger.info("PACARVerifier initialized for SDPC Phase 2 (Multi-turn enabled)")
+
+    async def _get_conversation(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve conversation from Redis.
+
+        Args:
+            session_id: Unique session identifier
+
+        Returns:
+            Conversation data dict or None if not found/error
+        """
+        if not self.redis_client:
+            return None
+        try:
+            data = await self.redis_client.get(f"pacar:session:{session_id}")
+            return json.loads(data) if data else None
+        except Exception as e:
+            logger.warning(f"Failed to get conversation {session_id}: {e}")
+            return None
+
+    async def _store_conversation(self, session_id: str, data: Dict[str, Any], ttl: int) -> None:
+        """Store conversation in Redis with TTL.
+
+        Args:
+            session_id: Unique session identifier
+            data: Conversation data to store
+            ttl: Time-to-live in seconds
+        """
+        if not self.redis_client:
+            return
+        try:
+            await self.redis_client.setex(
+                f"pacar:session:{session_id}",
+                ttl,
+                json.dumps(data),
+            )
+        except Exception as e:
+            logger.warning(f"Failed to store conversation {session_id}: {e}")
+
+    def _prune_conversation(self, data: Dict[str, Any], max_messages: int = 50) -> Dict[str, Any]:
+        """Prune conversation to maintain context window limit.
+
+        Args:
+            data: Conversation data
+            max_messages: Maximum number of messages to retain
+
+        Returns:
+            Pruned conversation data
+        """
+        messages = data.get("messages", [])
+        if len(messages) > max_messages:
+            data["messages"] = messages[-max_messages:]
+        return data
 
     async def verify(
         self, content: str, original_intent: str, session_id: Optional[str] = None
@@ -46,7 +112,7 @@ class PACARVerifier:
         """
         logger.info(f"Executing PACAR multi-agent verification (Session: {session_id})")
 
-        from ..models import CONSTITUTIONAL_HASH
+        from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 
         red_team_prompt = (
             f"Role: Adversarial Auditor (Red Team)\n"
@@ -81,7 +147,13 @@ class PACARVerifier:
                 )
             else:
                 # Single turn fallback
-                red_team_analysis = await self.assistant.analyze_message_impact(content)
+                msg = AgentMessage(
+                    content={"text": content},
+                    from_agent="pacar_verifier",
+                    to_agent="red_team_fallback",
+                    message_type=MessageType.CONSTITUTIONAL_VALIDATION,
+                )
+                red_team_analysis = await self.assistant.analyze_message_impact(msg)
 
             # Stage 2: Validator Review (simulate by adding red team critique to context)
             critique = red_team_analysis.get("reasoning", "No specific critique provided.")
@@ -128,6 +200,22 @@ class PACARVerifier:
                 "metrics": metrics,
             }
 
+            # Report to Audit Ledger
+            await self.audit_client.report_decision(
+                {
+                    "type": "pacar_verification",
+                    "session_id": session_id,
+                    "original_intent": original_intent,
+                    "is_valid": is_valid,
+                    "confidence": confidence,
+                    "risk_level": risk_level,
+                    "red_team_critique": critique,
+                    "validator_reasoning": result["validator_reasoning"],
+                    "constitutional_hash": "cdd01ef066bc6cf2",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+
             if session_id:
                 await self.manager.add_message(
                     session_id,
@@ -173,7 +261,7 @@ class PACARVerifier:
 
         logger.info(f"Executing PACAR verification with context for session {session_id}")
 
-        from ..models import CONSTITUTIONAL_HASH
+        from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 
         red_team_prompt = (
             f"Role: Adversarial Auditor (Red Team)\n"
@@ -239,7 +327,13 @@ class PACARVerifier:
                 )
             else:
                 # Fallback if manager unavailable
-                red_team_analysis = await self.assistant.analyze_message_impact(content)
+                msg = AgentMessage(
+                    content={"text": content},
+                    from_agent="pacar_verifier",
+                    to_agent="red_team_fallback",
+                    message_type=MessageType.CONSTITUTIONAL_VALIDATION,
+                )
+                red_team_analysis = await self.assistant.analyze_message_impact(msg)
 
             # Stage 2: Validator Review
             critique = red_team_analysis.get("reasoning", "No specific critique provided.")
@@ -287,6 +381,23 @@ class PACARVerifier:
                 "session_id": session_id,
                 "message_count": len(conversation_data["messages"]),
             }
+
+            # Report to Audit Ledger
+            await self.audit_client.report_decision(
+                {
+                    "type": "pacar_verification_context",
+                    "session_id": session_id,
+                    "tenant_id": tenant_id,
+                    "original_intent": original_intent,
+                    "is_valid": is_valid,
+                    "confidence": confidence,
+                    "risk_level": risk_level,
+                    "red_team_critique": critique,
+                    "validator_reasoning": verification_result["validator_reasoning"],
+                    "constitutional_hash": "cdd01ef066bc6cf2",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
             # Update user message with verification result for audit trail
             conversation_data["messages"][-1]["verification_result"] = {

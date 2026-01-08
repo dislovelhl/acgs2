@@ -7,11 +7,13 @@ Thank you for your interest in contributing to ACGS-2 (Advanced Constitutional G
 ### Development Environment Setup
 
 1. **Prerequisites**
+
    - Docker and Docker Compose
    - Python 3.11+
    - Git
 
 2. **Clone and Setup**
+
    ```bash
    git clone <repository-url>
    cd acgs2
@@ -19,6 +21,7 @@ Thank you for your interest in contributing to ACGS-2 (Advanced Constitutional G
    ```
 
 3. **Start Development Environment**
+
    ```bash
    ./scripts/start-dev.sh
    ```
@@ -31,10 +34,12 @@ Thank you for your interest in contributing to ACGS-2 (Advanced Constitutional G
 ## 📋 Development Workflow
 
 ### 1. Choose an Issue
+
 - Check [Issues](../../issues) for tasks labeled `good first issue` or `help wanted`
 - Comment on the issue to indicate you're working on it
 
 ### 2. Create a Branch
+
 ```bash
 git checkout -b feature/your-feature-name
 # or
@@ -42,11 +47,13 @@ git checkout -b fix/issue-number-description
 ```
 
 ### 3. Make Changes
+
 - Follow the [Code Style Guidelines](#code-style)
 - Write tests for new functionality
 - Update documentation as needed
 
 ### 4. Test Your Changes
+
 ```bash
 # Run tests
 ./scripts/run-tests.sh
@@ -60,6 +67,7 @@ docker-compose -f docker-compose.dev.yml exec agent-bus black --check .
 ```
 
 ### 5. Commit Changes
+
 ```bash
 git add .
 git commit -m "feat: add your feature description
@@ -70,6 +78,7 @@ git commit -m "feat: add your feature description
 ```
 
 ### 6. Create Pull Request
+
 - Push your branch to GitHub
 - Create a Pull Request with a clear description
 - Reference any related issues
@@ -78,13 +87,13 @@ git commit -m "feat: add your feature description
 
 ### Available Services
 
-| Service | Port | Purpose | Health Check |
-|---------|------|---------|--------------|
-| API Gateway | 8080 | Request routing | `/health` |
-| Agent Bus | 8000 | Core processing | `/health` |
-| OPA | 8181 | Policy engine | `/health` |
-| Redis | 6379 | Caching | `redis-cli ping` |
-| Kafka | 9092 | Messaging | Kafka topics |
+| Service     | Port | Purpose         | Health Check     |
+| ----------- | ---- | --------------- | ---------------- |
+| API Gateway | 8080 | Request routing | `/health`        |
+| Agent Bus   | 8000 | Core processing | `/health`        |
+| OPA         | 8181 | Policy engine   | `/health`        |
+| Redis       | 6379 | Caching         | `redis-cli ping` |
+| Kafka       | 9092 | Messaging       | Kafka topics     |
 
 ### Useful Commands
 
@@ -108,12 +117,14 @@ docker-compose -f docker-compose.dev.yml down -v && ./scripts/start-dev.sh
 ## 💻 Code Style Guidelines
 
 ### Python Code Style
+
 - Follow [PEP 8](https://pep8.org/) conventions
 - Use [Black](https://black.readthedocs.io/) for code formatting
 - Use [Ruff](https://github.com/astral-sh/ruff) for linting
 - Maximum line length: 100 characters
 
 ### Commit Messages
+
 Follow [Conventional Commits](https://conventionalcommits.org/) format:
 
 ```
@@ -127,6 +138,7 @@ type(scope): description
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 ### Documentation
+
 - Update docstrings for all public functions/classes
 - Add type hints for function parameters and return values
 - Update README.md and relevant docs for significant changes
@@ -139,16 +151,18 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 **ACGS-2 enforces strict coverage thresholds:**
 
-| Metric | Minimum | CI Enforcement |
-|--------|---------|----------------|
-| **System-wide** | 85% | Build fails below threshold |
-| **Critical Paths** | 95% | Policy, auth, persistence |
-| **Branch Coverage** | 85% | Enabled via `--cov-branch` |
-| **Patch Coverage** | 80% | PR coverage check |
+| Metric              | Minimum | CI Enforcement              |
+| ------------------- | ------- | --------------------------- |
+| **System-wide**     | 85%     | Build fails below threshold |
+| **Critical Paths**  | 95%     | Policy, auth, persistence   |
+| **Branch Coverage** | 85%     | Enabled via `--cov-branch`  |
+| **Patch Coverage**  | 80%     | PR coverage check           |
 
 ### Test Structure
+
 ```
-acgs2-core/tests/
+src/core/tests/
+cd src/core
 ├── unit/           # Unit tests (isolated components)
 ├── integration/    # Integration tests (cross-service)
 │   ├── conftest.py       # Integration fixtures
@@ -222,12 +236,12 @@ npm test -- --coverage
 
 ### Test Markers
 
-| Marker | Description | Usage |
-|--------|-------------|-------|
+| Marker                        | Description                     | Usage                        |
+| ----------------------------- | ------------------------------- | ---------------------------- |
 | `@pytest.mark.constitutional` | Constitutional compliance tests | Required for governance code |
-| `@pytest.mark.integration` | Integration tests | Cross-service testing |
-| `@pytest.mark.asyncio` | Async test functions | Async code testing |
-| `@pytest.mark.slow` | Slow-running tests | Can be skipped in quick runs |
+| `@pytest.mark.integration`    | Integration tests               | Cross-service testing        |
+| `@pytest.mark.asyncio`        | Async test functions            | Async code testing           |
+| `@pytest.mark.slow`           | Slow-running tests              | Can be skipped in quick runs |
 
 ## 🔒 Security Considerations
 
@@ -238,6 +252,7 @@ ACGS-2 implements **automated secrets detection** to prevent accidental credenti
 #### 🛡️ What Gets Detected
 
 The pre-commit hooks automatically scan for:
+
 - **AI Provider Credentials**: Anthropic, Claude Code, OpenRouter, HuggingFace, OpenAI API keys
 - **Infrastructure Secrets**: AWS keys, JWT secrets, Vault tokens, database passwords
 - **Generic Patterns**: 140+ built-in patterns for SSH keys, GitHub tokens, cloud credentials, etc.
@@ -245,12 +260,14 @@ The pre-commit hooks automatically scan for:
 #### ✅ What You CAN Commit
 
 **Safe to commit:**
+
 - Development placeholders (e.g., `dev-jwt-secret-min-32-chars-required`, `test-api-key-placeholder`)
 - Example configuration files (`.env.example` with placeholder values)
 - Test fixtures clearly marked as fake secrets
 - Public certificates for testing (e.g., SAML test certificates)
 
 **Example safe values:**
+
 ```env
 # .env.example
 JWT_SECRET=dev-jwt-secret-min-32-chars-required
@@ -261,6 +278,7 @@ POSTGRES_PASSWORD=test-password-123
 #### ❌ What You CANNOT Commit
 
 **Never commit:**
+
 - Real API keys from any provider (Anthropic, OpenAI, AWS, etc.)
 - Production passwords or tokens
 - Private keys without `.gitleaksignore` exception
@@ -272,15 +290,18 @@ POSTGRES_PASSWORD=test-password-123
 If the secrets detection hooks block your commit:
 
 **1. Is it a real secret?**
-   - **YES**: Remove it and use `secrets_manager.py` or Vault
-   - **NO**: Follow the quick-fix guide below
+
+- **YES**: Remove it and use `secrets_manager.py` or Vault
+- **NO**: Follow the quick-fix guide below
 
 **2. Is it a false positive?**
-   - Check if it matches placeholder patterns (`dev-*`, `test-*`, `your-*`)
-   - Add to `.secrets-allowlist.yaml` if it's safe
-   - Add fingerprint to `.gitleaksignore` if needed
+
+- Check if it matches placeholder patterns (`dev-*`, `test-*`, `your-*`)
+- Add to `.secrets-allowlist.yaml` if it's safe
+- Add fingerprint to `.gitleaksignore` if needed
 
 **3. Quick fixes:**
+
 ```bash
 # Option 1: Use secrets_manager.py for safe storage
 from acgs2_core.shared.secrets_manager import secrets_manager
@@ -296,6 +317,7 @@ git commit --no-verify -m "message"  # Only for verified safe content
 #### 📖 Documentation
 
 For comprehensive guidance:
+
 - **[Migration Guide](./docs/SECRETS_DETECTION_MIGRATION.md)** - **If you're an existing developer**, start here to update your hooks
 - **[Secrets Detection Guide](./docs/SECRETS_DETECTION.md)** - Complete documentation on what's detected and how it works
 - **[Quick-Fix Guide](./docs/SECRETS_QUICK_FIX.md)** - Step-by-step solutions for common issues
@@ -304,6 +326,7 @@ For comprehensive guidance:
 #### 🔧 Setup
 
 **For new developers**, the secrets detection hooks are automatically installed when you run:
+
 ```bash
 pre-commit install  # One-time setup
 ```
@@ -313,6 +336,7 @@ pre-commit install  # One-time setup
 After installation, every commit is automatically scanned. The hooks run quickly (<5s) and provide actionable error messages if secrets are detected.
 
 ### Code Security
+
 - Never commit secrets or credentials (enforced by automated hooks)
 - Validate all inputs to prevent injection attacks
 - Use parameterized queries for database operations
@@ -320,6 +344,7 @@ After installation, every commit is automatically scanned. The hooks run quickly
 - Use `secrets_manager.py` for credential storage and validation
 
 ### Reporting Security Issues
+
 - **DO NOT** create public GitHub issues for security vulnerabilities
 - Email security concerns to [security@acgs2.org](mailto:security@acgs2.org)
 - Include detailed reproduction steps and potential impact
@@ -344,6 +369,7 @@ After installation, every commit is automatically scanned. The hooks run quickly
 ## 🤝 Code Review Process
 
 ### Pull Request Requirements
+
 - [ ] Tests pass (`python scripts/run_unified_tests.py --run --coverage`)
 - [ ] Code coverage meets thresholds (85% system-wide, 95% critical paths)
 - [ ] Code style checks pass (Ruff, Black)
@@ -352,6 +378,7 @@ After installation, every commit is automatically scanned. The hooks run quickly
 - [ ] Constitutional compliance maintained
 
 ### Review Checklist
+
 - [ ] Code is readable and well-documented
 - [ ] Tests are comprehensive and passing
 - [ ] Coverage thresholds met (check Codecov PR comment)
@@ -362,11 +389,13 @@ After installation, every commit is automatically scanned. The hooks run quickly
 ## 📞 Getting Help
 
 ### Communication Channels
+
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: General questions and discussions
 - **Documentation**: Check docs/ directory first
 
 ### Finding Your Way Around
+
 - **README.md**: High-level project overview
 - **docs/**: Detailed documentation
 - **ARCHITECTURE.md**: System architecture details
@@ -375,18 +404,21 @@ After installation, every commit is automatically scanned. The hooks run quickly
 ## 🎯 Areas for Contribution
 
 ### High Priority
+
 - Performance optimization
 - Security hardening
 - Test coverage improvement
 - Documentation enhancement
 
 ### Medium Priority
+
 - New blockchain network support
 - Additional policy templates
 - UI/UX improvements
 - Internationalization
 
 ### Future Opportunities
+
 - Mobile app development
 - Advanced analytics dashboard
 - Machine learning integration
@@ -399,6 +431,7 @@ By contributing to ACGS-2, you agree that your contributions will be licensed un
 ## 🙏 Recognition
 
 Contributors are recognized in:
+
 - GitHub repository contributors list
 - CHANGELOG.md for significant contributions
 - Project documentation acknowledgments

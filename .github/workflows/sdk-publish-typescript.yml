@@ -4,16 +4,16 @@ on:
   release:
     types: [published]
     tags:
-      - 'sdk/typescript/v*'
+      - "sdk/typescript/v*"
   workflow_dispatch:
     inputs:
       version:
-        description: 'SDK version to publish'
+        description: "SDK version to publish"
         required: true
         type: string
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: "20"
   REGISTRY: ghcr.io
 
 permissions:
@@ -36,29 +36,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-          cache-dependency-path: acgs2-core/sdk/typescript/package-lock.json
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+          cache-dependency-path: src/core/sdk/typescript/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./acgs2-core/sdk/typescript
+        working-directory: ./src/core/sdk/typescript
         run: npm ci
 
       - name: Run tests
-        working-directory: ./acgs2-core/sdk/typescript
+        working-directory: ./src/core/sdk/typescript
         run: npm test
 
       - name: Build TypeScript SDK
-        working-directory: ./acgs2-core/sdk/typescript
+        working-directory: ./src/core/sdk/typescript
         run: npm run build
 
       - name: Check package
-        working-directory: ./acgs2-core/sdk/typescript
+        working-directory: ./src/core/sdk/typescript
         run: npm pack --dry-run
 
       - name: Publish to npm
         if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
-        working-directory: ./acgs2-core/sdk/typescript
+        working-directory: ./src/core/sdk/typescript
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
@@ -72,7 +72,7 @@ jobs:
             const path = require('path');
 
             // Read SDK changelog or generate release notes
-            const changelogPath = path.join(process.cwd(), 'acgs2-core', 'sdk', 'typescript', 'CHANGELOG.md');
+            const changelogPath = path.join(process.cwd(), 'src/core', 'sdk', 'typescript', 'CHANGELOG.md');
             let releaseNotes = '## TypeScript SDK Release\n\n';
 
             if (fs.existsSync(changelogPath)) {

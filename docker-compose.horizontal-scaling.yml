@@ -11,7 +11,7 @@
 #   docker compose -f docker-compose.horizontal-scaling.yml up -d --scale api-gateway=2
 #
 # Verification:
-#   locust -f acgs2-core/testing/performance_20k_rps_horizontal.py --headless \
+#   locust -f src/core/testing/performance_20k_rps_horizontal.py --headless \
 #     --users 20000 --spawn-rate 200 --run-time 5m --host http://localhost:8090
 
 services:
@@ -20,9 +20,9 @@ services:
     image: nginx:1.25-alpine
     container_name: acgs-nginx-lb
     ports:
-      - "8090:8090"  # External load-balanced port
+      - "8090:8090" # External load-balanced port
     volumes:
-      - ./acgs2-core/deploy/nginx-lb.conf:/etc/nginx/nginx.conf:ro
+      - ./src/core/deploy/nginx-lb.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api-gateway-1
       - api-gateway-2
@@ -36,16 +36,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
 
   # API Gateway Instance 1
   api-gateway-1:
     build:
-      context: ./acgs2-core/services/api_gateway
+      context: ./src/core/services/api_gateway
       dockerfile: Dockerfile.dev
     container_name: acgs-api-gateway-1
     environment:
@@ -60,7 +60,7 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-dev_password}
     ports:
-      - "8081:8080"  # Direct access for debugging
+      - "8081:8080" # Direct access for debugging
     depends_on:
       - redis
       - agent-bus
@@ -74,16 +74,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 2G
         reservations:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
 
   # API Gateway Instance 2
   api-gateway-2:
     build:
-      context: ./acgs2-core/services/api_gateway
+      context: ./src/core/services/api_gateway
       dockerfile: Dockerfile.dev
     container_name: acgs-api-gateway-2
     environment:
@@ -98,7 +98,7 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-dev_password}
     ports:
-      - "8082:8080"  # Direct access for debugging
+      - "8082:8080" # Direct access for debugging
     depends_on:
       - redis
       - agent-bus
@@ -112,10 +112,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 2G
         reservations:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
 
   # Redis for caching and state management (shared across instances)
@@ -126,7 +126,8 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_password}", "ping"]
+      test:
+        ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_password}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -135,16 +136,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
 
   # Agent Bus (single instance for backend services)
   agent-bus:
     build:
-      context: ./acgs2-core/enhanced_agent_bus
+      context: ./src/core/enhanced_agent_bus
       dockerfile: Dockerfile.dev
     container_name: acgs-agent-bus
     ports:
@@ -167,10 +168,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 2G
         reservations:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
 
   # Open Policy Agent for policy decisions
@@ -181,7 +182,7 @@ services:
     ports:
       - "8181:8181"
     volumes:
-      - ./acgs2-core/enhanced_agent_bus/policies:/policies:ro
+      - ./src/core/enhanced_agent_bus/policies:/policies:ro
     networks:
       - acgs-scaling
 
@@ -191,7 +192,6 @@ networks:
     ipam:
       config:
         - subnet: 172.30.0.0/16
-
 # =============================================================================
 # Horizontal Scaling Configuration Notes
 # =============================================================================
@@ -205,7 +205,7 @@ networks:
 #                                 [Redis :6379] (shared cache)
 #
 # Load Testing:
-#   locust -f acgs2-core/testing/performance_20k_rps_horizontal.py \
+#   locust -f src/core/testing/performance_20k_rps_horizontal.py \
 #     --headless --users 20000 --spawn-rate 200 --run-time 5m \
 #     --host http://localhost:8090
 #

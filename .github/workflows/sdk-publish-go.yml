@@ -4,16 +4,16 @@ on:
   release:
     types: [published]
     tags:
-      - 'sdk/go/v*'
+      - "sdk/go/v*"
   workflow_dispatch:
     inputs:
       version:
-        description: 'SDK version to publish'
+        description: "SDK version to publish"
         required: true
         type: string
 
 env:
-  GO_VERSION: '1.21'
+  GO_VERSION: "1.21"
   REGISTRY: ghcr.io
 
 permissions:
@@ -36,24 +36,24 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: acgs2-core/sdk/go/go.sum
+          cache-dependency-path: src/core/sdk/go/go.sum
 
       - name: Verify Go SDK module
-        working-directory: ./acgs2-core/sdk/go
+        working-directory: ./src/core/sdk/go
         run: |
           go mod tidy
           go mod verify
 
       - name: Run Go tests
-        working-directory: ./acgs2-core/sdk/go
+        working-directory: ./src/core/sdk/go
         run: go test -v ./...
 
       - name: Build Go SDK
-        working-directory: ./acgs2-core/sdk/go
+        working-directory: ./src/core/sdk/go
         run: go build ./...
 
       - name: Validate Go module
-        working-directory: ./acgs2-core/sdk/go
+        working-directory: ./src/core/sdk/go
         run: |
           # Check module structure
           go mod verify
@@ -82,7 +82,7 @@ jobs:
             const path = require('path');
 
             // Read SDK changelog or generate release notes
-            const changelogPath = path.join(process.cwd(), 'acgs2-core', 'sdk', 'go', 'CHANGELOG.md');
+            const changelogPath = path.join(process.cwd(), 'src/core', 'sdk', 'go', 'CHANGELOG.md');
             let releaseNotes = '## Go SDK Release\n\n';
 
             if (fs.existsSync(changelogPath)) {

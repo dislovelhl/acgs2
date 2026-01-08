@@ -586,7 +586,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 
         return results
 
-    def send_email_with_retry(
+    async def send_email_with_retry(
         self,
         recipient: str,
         attachment_data: bytes,
@@ -715,7 +715,7 @@ Constitutional Hash: cdd01ef066bc6cf2
         )
 
     @classmethod
-    def send_report_email_with_retry(
+    async def send_report_email_with_retry(
         cls,
         recipient: str,
         pdf_bytes: bytes,
@@ -744,7 +744,7 @@ Constitutional Hash: cdd01ef066bc6cf2
             EmailRetryExhaustedError: If all retry attempts fail
 
         Example:
-            result = EmailService.send_report_email_with_retry(
+            result = await EmailService.send_report_email_with_retry(
                 recipient="compliance@company.com",
                 pdf_bytes=report_data,
                 report_name="Monthly SOC 2 Report",
@@ -752,7 +752,7 @@ Constitutional Hash: cdd01ef066bc6cf2
             )
         """
         service = cls()
-        return service.send_email_with_retry(
+        return await service.send_email_with_retry(
             recipient=recipient,
             attachment_data=pdf_bytes,
             report_name=report_name,
@@ -761,7 +761,7 @@ Constitutional Hash: cdd01ef066bc6cf2
         )
 
     @classmethod
-    def send_report_to_multiple_with_retry(
+    async def send_report_to_multiple_with_retry(
         cls,
         recipients: List[str],
         pdf_bytes: bytes,
@@ -790,7 +790,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 
         for recipient in recipients:
             try:
-                result = service.send_email_with_retry(
+                result = await service.send_email_with_retry(
                     recipient=recipient,
                     attachment_data=pdf_bytes,
                     report_name=report_name,

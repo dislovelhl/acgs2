@@ -41,7 +41,7 @@ class FullTestSuiteRunner:
 
     def __init__(self, project_root: Path):
         self.project_root = project_root
-        self.core_dir = project_root / "acgs2-core"
+        self.core_dir = project_root / "src/core"
         self.venv_dir = self.core_dir / "venv"
         self.results: List[TestResult] = []
 
@@ -325,7 +325,9 @@ class FullTestSuiteRunner:
         coverage_components = [r for r in self.results if r.coverage_percent is not None]
         if coverage_components:
             weighted_coverage = sum(
-                r.coverage_percent * r.tests_run for r in coverage_components
+                float(r.coverage_percent) * r.tests_run
+                for r in coverage_components
+                if r.coverage_percent is not None
             ) / sum(r.tests_run for r in coverage_components)
         else:
             weighted_coverage = None
@@ -400,7 +402,7 @@ class FullTestSuiteRunner:
         with open(report_file, "w") as f:
             json.dump(report, f, indent=2)
 
-        return summary["overall_status"] == "PASSED"
+        return str(summary.get("overall_status")) == "PASSED"
 
 
 def main():
