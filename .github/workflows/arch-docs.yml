@@ -52,7 +52,7 @@ jobs:
           # Note: agentos is an internally used CLI for ACGS-2 documentation
           agentos summarize \
             --spec .tmp/arch.json \
-            --governance acgs2-core/policies/constitution.yaml \
+            --governance src/core/policies/constitution.yaml \
             --diagrams docs/architecture \
             --out docs/summaries \
             --redact sensitive

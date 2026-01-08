@@ -3,17 +3,17 @@ name: Policy Validation
 on:
   pull_request:
     paths:
-      - 'acgs2-core/policies/**'
-      - 'acgs2-core/policies/**/*.rego'
-      - 'acgs2-core/policies/**/*.json'
-      - 'acgs2-core/policies/**/*.yaml'
-      - 'acgs2-core/policies/**/*.yml'
+      - 'src/core/policies/**'
+      - 'src/core/policies/**/*.rego'
+      - 'src/core/policies/**/*.json'
+      - 'src/core/policies/**/*.yaml'
+      - 'src/core/policies/**/*.yml'
   push:
     branches:
       - main
       - develop
     paths:
-      - 'acgs2-core/policies/**'
+      - 'src/core/policies/**'
   workflow_dispatch:
 
 env:
@@ -41,15 +41,15 @@ jobs:
         run: |
           echo "🔍 Validating policy syntax with 'opa check'..."
           # Check all Rego files in policies directory
-          REGO_FILES=$(find acgs2-core/policies -name "*.rego" -type f)
+          REGO_FILES=$(find src/core/policies -name "*.rego" -type f)
 
           if [ -z "$REGO_FILES" ]; then
-            echo "⚠️  No Rego files found in acgs2-core/policies/"
+            echo "⚠️  No Rego files found in src/core/policies/"
             exit 0
           fi
 
           # Run opa check on all files
-          if ! opa check acgs2-core/policies --format json; then
+          if ! opa check src/core/policies --format json; then
             echo "❌ Policy syntax validation failed"
             echo "Running detailed check on individual files..."
             echo "$REGO_FILES" | while read -r file; do
@@ -66,7 +66,7 @@ jobs:
         run: |
           echo "🧪 Running policy tests with 'opa test'..."
           # Find test files
-          TEST_DIRS=$(find acgs2-core/policies -type d | sort -u)
+          TEST_DIRS=$(find src/core/policies -type d | sort -u)
           TEST_FOUND=false
 
           for dir in $TEST_DIRS; do
@@ -92,8 +92,8 @@ jobs:
         run: |
           echo "📊 Generating policy coverage report..."
           # Count policies and tests
-          POLICY_COUNT=$(find acgs2-core/policies -name "*.rego" ! -name "*_test.rego" ! -name "test_*.rego" | wc -l)
-          TEST_COUNT=$(find acgs2-core/policies -name "*_test.rego" -o -name "test_*.rego" | wc -l)
+          POLICY_COUNT=$(find src/core/policies -name "*.rego" ! -name "*_test.rego" ! -name "test_*.rego" | wc -l)
+          TEST_COUNT=$(find src/core/policies -name "*_test.rego" -o -name "test_*.rego" | wc -l)
 
           echo "Policy files: $POLICY_COUNT"
           echo "Test files: $TEST_COUNT"
@@ -106,11 +106,11 @@ jobs:
       - name: Validate Bundle Manifest Schema
         run: |
           echo "📦 Validating bundle manifest schema..."
-          if [ -f acgs2-core/policies/schema/bundle-manifest.schema.json ]; then
+          if [ -f src/core/policies/schema/bundle-manifest.schema.json ]; then
             python3 -c "
             import json
             import sys
-            schema = json.load(open('acgs2-core/policies/schema/bundle-manifest.schema.json'))
+            schema = json.load(open('src/core/policies/schema/bundle-manifest.schema.json'))
             print('✅ Bundle manifest schema is valid JSON')
             "
           else
@@ -122,7 +122,7 @@ jobs:
           echo "🔐 Verifying constitutional hash..."
           EXPECTED_HASH="cdd01ef066bc6cf2"
           # Check if constitutional hash appears in policy files
-          if grep -r "$EXPECTED_HASH" acgs2-core/policies/ > /dev/null 2>&1; then
+          if grep -r "$EXPECTED_HASH" src/core/policies/ > /dev/null 2>&1; then
             echo "✅ Constitutional hash found in policies"
           else
             echo "⚠️  Constitutional hash not found in policy files (may be in code)"
@@ -133,9 +133,9 @@ jobs:
           echo "📋 Validating policy structure..."
           # Check for required policy files
           REQUIRED_POLICIES=(
-            "acgs2-core/policies/constitutional.rego"
-            "acgs2-core/policies/rbac.rego"
-            "acgs2-core/policies/routing.rego"
+            "src/core/policies/constitutional.rego"
+            "src/core/policies/rbac.rego"
+            "src/core/policies/routing.rego"
           )
 
           for policy in "${REQUIRED_POLICIES[@]}"; do
@@ -173,7 +173,7 @@ jobs:
         run: |
           echo "🔒 Running security scan on policies..."
           # Check for dangerous patterns in Rego policies
-          find acgs2-core/policies -name "*.rego" -type f | while read -r file; do
+          find src/core/policies -name "*.rego" -type f | while read -r file; do
             # Check for potentially dangerous patterns
             if grep -E "(http\.request|http\.send|exec|eval)" "$file" > /dev/null 2>&1; then
               echo "⚠️  Potentially dangerous pattern found in $file"
@@ -197,15 +197,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd acgs2-core
+          cd src/core
           pip install -r config/requirements_optimized.txt || pip install opa-python-client httpx
 
       - name: Run Shadow Mode Execution
         run: |
           echo "🔄 Running shadow mode execution..."
           # Check if shadow mode executor exists
-          if [ -f acgs2-core/tools/shadow_mode_executor.py ]; then
-            python3 acgs2-core/tools/shadow_mode_executor.py --dry-run || echo "⚠️  Shadow mode executor not fully implemented"
+          if [ -f src/core/tools/shadow_mode_executor.py ]; then
+            python3 src/core/tools/shadow_mode_executor.py --dry-run || echo "⚠️  Shadow mode executor not fully implemented"
           else
             echo "ℹ️  Shadow mode executor not found, skipping"
           fi
@@ -226,7 +226,7 @@ jobs:
           mkdir -p /tmp/policy-bundle
 
           # Copy policies
-          cp -r acgs2-core/policies/*.rego /tmp/policy-bundle/ 2>/dev/null || true
+          cp -r src/core/policies/*.rego /tmp/policy-bundle/ 2>/dev/null || true
 
           # Create bundle manifest
           python3 -c "

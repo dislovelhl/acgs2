@@ -214,13 +214,13 @@ jobs:
 
       - name: Run Chaos Engineering Tests
         run: |
-          cd acgs2-core/enhanced_agent_bus
+          cd src/core/enhanced_agent_bus
           python -m pytest tests/test_chaos_framework.py -v
           python -m pytest tests/runtime/chaos_profiles.py -v
 
       - name: Run Chaos Experiments
         run: |
-          cd acgs2-core/chaos
+          cd src/core/chaos
           python experiments/chaos_engine.py --dry-run
 
       - name: Upload chaos test results

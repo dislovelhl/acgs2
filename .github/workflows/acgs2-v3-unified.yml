@@ -22,7 +22,7 @@ jobs:
       - name: Pip Audit
         run: |
           pip install pip-audit
-          pip-audit -r acgs2-core/requirements_optimized.txt
+          pip-audit -r src/core/requirements_optimized.txt
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -32,7 +32,7 @@ jobs:
       - name: Cargo Audit
         run: |
           cargo install cargo-audit
-          cd acgs2-core/enhanced_agent_bus/rust && cargo audit
+          cd src/core/enhanced_agent_bus/rust && cargo audit
 
   test-python:
     name: Python Tests with Coverage (3.12)
@@ -48,16 +48,16 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test]
-          pip install -r acgs2-core/requirements_optimized.txt
+          pip install -r src/core/requirements_optimized.txt
           pip install pytest-cov
       - name: Run All Tests with Coverage
         run: |
-          cd acgs2-core/enhanced_agent_bus
+          cd src/core/enhanced_agent_bus
           python -m pytest tests/ -v --cov=enhanced_agent_bus --cov-report=xml --cov-report=term --cov-fail-under=80
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
-          file: ./acgs2-core/enhanced_agent_bus/coverage.xml
+          file: ./src/core/enhanced_agent_bus/coverage.xml
           flags: unittests
           name: codecov-unified
       - name: Upload coverage artifact
@@ -65,8 +65,8 @@ jobs:
         with:
           name: coverage-reports
           path: |
-            acgs2-core/enhanced_agent_bus/coverage.xml
-            acgs2-core/enhanced_agent_bus/.coverage
+            src/core/enhanced_agent_bus/coverage.xml
+            src/core/enhanced_agent_bus/.coverage
 
   test-rust:
     name: Rust Tests (1.80.0)
@@ -80,7 +80,7 @@ jobs:
           toolchain: 1.80.0
       - name: Cargo Test
         run: |
-          cd acgs2-core/enhanced_agent_bus/rust && cargo test
+          cd src/core/enhanced_agent_bus/rust && cargo test
 
   test-adaptive-learning:
     name: Adaptive Learning Engine Tests (3.12)
@@ -108,7 +108,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Optimized Image
         run: |
-          docker build -t acgs2-bus:v3 -f acgs2-core/Dockerfile.optimized acgs2-core/
+          docker build -t acgs2-bus:v3 -f src/core/Dockerfile.optimized src/core/
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@0.24.0
         with:

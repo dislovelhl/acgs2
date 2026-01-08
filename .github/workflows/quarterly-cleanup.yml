@@ -35,14 +35,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd acgs2-core
+          cd src/core
           pip install -r requirements_optimized.txt
           pip install black isort flake8 bandit pip-audit pycln pre-commit
 
       - name: Run import cleanup
         id: import_cleanup
         run: |
-          cd acgs2-core
+          cd src/core
           echo "Running import cleanup..."
           python3 tools/import_cleanup.py --fix . || true
 
@@ -55,20 +55,20 @@ jobs:
 
       - name: Run code formatting
         run: |
-          cd acgs2-core
+          cd src/core
           black .
           isort --profile black .
 
       - name: Run linting and security checks
         run: |
-          cd acgs2-core
+          cd src/core
           flake8 --max-line-length=100 --ignore=E501,W503 . || true
           bandit -r . -f json -o security_report.json || true
           pip-audit --requirement requirements_optimized.txt --format json -o dependency_audit.json || true
 
       - name: Generate cleanup report
         run: |
-          cd acgs2-core
+          cd src/core
           echo "# ACGS-2 Quarterly Cleanup Report" > CLEANUP_REPORT.md
           echo "" >> CLEANUP_REPORT.md
           echo "**Date**: $(date)" >> CLEANUP_REPORT.md
@@ -164,6 +164,6 @@ jobs:
         with:
           name: cleanup-reports
           path: |
-            acgs2-core/CLEANUP_REPORT.md
-            acgs2-core/security_report.json
-            acgs2-core/dependency_audit.json
+            src/core/CLEANUP_REPORT.md
+            src/core/security_report.json
+            src/core/dependency_audit.json

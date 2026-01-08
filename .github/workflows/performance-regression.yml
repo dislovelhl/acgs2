@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test,loadtest]
-          pip install -r acgs2-core/requirements_optimized.txt
+          pip install -r src/core/requirements_optimized.txt
 
       - name: Verify Locust installation
         run: |
@@ -46,8 +46,8 @@ jobs:
 
       - name: Validate load test file syntax
         run: |
-          python -m py_compile acgs2-core/testing/performance_10k_rps.py
-          python -m py_compile acgs2-core/testing/load_test.py
+          python -m py_compile src/core/testing/performance_10k_rps.py
+          python -m py_compile src/core/testing/load_test.py
 
   rust-extensions:
     name: Build Rust Extensions
@@ -69,17 +69,17 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            acgs2-core/rust-perf/target/
+            src/core/rust-perf/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
 
       - name: Clippy check (memory safety)
         run: |
-          cd acgs2-core/rust-perf
+          cd src/core/rust-perf
           cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Cargo test
         run: |
-          cd acgs2-core/rust-perf
+          cd src/core/rust-perf
           cargo test
 
   performance-smoke-test:
@@ -109,7 +109,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test,loadtest]
-          pip install -r acgs2-core/requirements_optimized.txt
+          pip install -r src/core/requirements_optimized.txt
 
       - name: Set up Rust and build extensions
         uses: dtolnay/rust-toolchain@stable
@@ -119,12 +119,12 @@ jobs:
       - name: Install maturin and build
         run: |
           pip install maturin
-          cd acgs2-core/rust-perf
+          cd src/core/rust-perf
           maturin develop --release
 
       - name: Start API Gateway
         run: |
-          cd acgs2-core/services/api_gateway
+          cd src/core/services/api_gateway
           uvicorn main:app --host 0.0.0.0 --port 8080 &
           sleep 5
         env:
@@ -137,7 +137,7 @@ jobs:
 
       - name: Run smoke test (100 users, 30s)
         run: |
-          locust -f acgs2-core/testing/load_test.py \
+          locust -f src/core/testing/load_test.py \
             --headless \
             --users 100 \
             --spawn-rate 10 \
@@ -184,7 +184,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test,loadtest]
-          pip install -r acgs2-core/requirements_optimized.txt
+          pip install -r src/core/requirements_optimized.txt
 
       - name: Set up Rust and build extensions
         uses: dtolnay/rust-toolchain@stable
@@ -194,7 +194,7 @@ jobs:
       - name: Install maturin and build
         run: |
           pip install maturin
-          cd acgs2-core/rust-perf
+          cd src/core/rust-perf
           maturin develop --release
 
       - name: Increase file descriptor limits
@@ -203,7 +203,7 @@ jobs:
 
       - name: Start API Gateway
         run: |
-          cd acgs2-core/services/api_gateway
+          cd src/core/services/api_gateway
           uvicorn main:app --host 0.0.0.0 --port 8080 --workers 4 &
           sleep 10
         env:
@@ -217,7 +217,7 @@ jobs:
       - name: Run performance regression test
         run: |
           mkdir -p results
-          locust -f acgs2-core/testing/performance_10k_rps.py \
+          locust -f src/core/testing/performance_10k_rps.py \
             --headless \
             --users ${{ env.LOCUST_USERS }} \
             --spawn-rate 100 \

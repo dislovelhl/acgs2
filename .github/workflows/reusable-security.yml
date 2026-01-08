@@ -53,7 +53,7 @@ jobs:
       - name: Run Bandit (Python security)
         run: |
           pip install bandit
-          bandit -r acgs2-core/ -f json -o bandit-report.json || true
+          bandit -r src/core/ -f json -o bandit-report.json || true
 
       - name: Convert Bandit JSON to SARIF
         if: always()

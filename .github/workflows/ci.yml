@@ -57,7 +57,7 @@ jobs:
 
       - name: Create virtual environment with test dependencies
         run: |
-          cd acgs2-core
+          cd src/core
           python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
@@ -65,27 +65,27 @@ jobs:
 
       - name: Run core security tests
         run: |
-          cd acgs2-core
+          cd src/core
           source venv/bin/activate
           python -m pytest tests/security/test_cors_config.py tests/security/test_rate_limiter.py tests/ceos/ -v --tb=short --durations=5
 
       - name: Run Enhanced Agent Bus tests with coverage
         run: |
-          cd acgs2-core
+          cd src/core
           source venv/bin/activate
           python -m pytest enhanced_agent_bus/tests/ --cov=enhanced_agent_bus --cov-report=term-missing --cov-report=xml --cov-fail-under=85 -q
 
       - name: Validate performance metrics
         run: |
-          cd acgs2-core
+          cd src/core
           source venv/bin/activate
           python testing/comprehensive_profiler.py --iterations 50 --baseline | grep -E "(P99|P95|Throughput)" | tail -3
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
-          files: ./acgs2-core/coverage.xml
-          flags: acgs2-core,claude-flow,neural-mcp
+          files: ./src/core/coverage.xml
+          flags: src/core,claude-flow,neural-mcp
           name: ACGS-2 Core Coverage
           fail_ci_if_error: false
           verbose: true
@@ -94,7 +94,7 @@ jobs:
 
       - name: Generate test summary
         run: |
-          cd acgs2-core
+          cd src/core
           source venv/bin/activate
           echo "## 📊 CI Confidence Report" > test_summary.md
           echo "- **Date:** $(date)" >> test_summary.md
@@ -116,7 +116,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: test-summary-${{ matrix.python-version }}
-          path: acgs2-core/test_summary.md
+          path: src/core/test_summary.md
 
   performance-monitoring:
     runs-on: ubuntu-latest
@@ -133,7 +133,7 @@ jobs:
 
       - name: Initialize performance monitoring
         run: |
-          cd acgs2-core
+          cd src/core
           python -m venv venv
           source venv/bin/activate
           pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
@@ -141,7 +141,7 @@ jobs:
 
       - name: Run performance validation
         run: |
-          cd acgs2-core
+          cd src/core
           source venv/bin/activate
           python testing/comprehensive_profiler.py --iterations 100 --baseline 2>&1 | grep -A 10 "Performance Summary"
 
@@ -172,7 +172,7 @@ jobs:
 
       - name: Validate constitutional compliance
         run: |
-          cd acgs2-core
+          cd src/core
           python -m venv venv
           source venv/bin/activate
           pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
@@ -206,7 +206,7 @@ jobs:
 
       - name: Validate deployment readiness
         run: |
-          cd acgs2-core
+          cd src/core
           python -m venv venv
           source venv/bin/activate
           pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
@@ -228,12 +228,12 @@ jobs:
 
       - name: Create deployment artifact
         run: |
-          cd acgs2-core
-          tar -czf acgs2-core-${{ github.sha }}.tar.gz .
-          echo "artifact_name=acgs2-core-${{ github.sha }}.tar.gz" >> $GITHUB_ENV
+          cd src/core
+          tar -czf src/core-${{ github.sha }}.tar.gz .
+          echo "artifact_name=src/core-${{ github.sha }}.tar.gz" >> $GITHUB_ENV
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v3
         with:
-          name: acgs2-core-deployment
-          path: acgs2-core/acgs2-core-${{ github.sha }}.tar.gz
+          name: src/core-deployment
+          path: src/core/src/core-${{ github.sha }}.tar.gz

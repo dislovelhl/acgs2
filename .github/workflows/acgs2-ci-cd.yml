@@ -38,28 +38,28 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: |
           pip install pre-commit ruff black mypy
 
       - name: Lint with pre-commit
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: pre-commit run --all-files
 
       - name: Ruff check
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: ruff check .
 
       - name: Black check
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: black --check .
 
       - name: Mypy check
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: mypy .
 
       - name: Constitutional hash validation
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: |
           HASH="cdd01ef066bc6cf2"
           COUNT=$(grep -r "$HASH" --include="*.py" --include="*.rego" . | wc -l)
@@ -110,7 +110,7 @@ jobs:
           echo "✅ All environment files valid"
 
       - name: Config schema validation
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: |
           pip install pydantic pydantic-settings python-dotenv
           python -c "
@@ -132,8 +132,8 @@ jobs:
 
       - name: OPA policy validation
         run: |
-          docker run --rm -v ${{ github.workspace }}/acgs2-core/policies/rego:/policies openpolicyagent/opa:latest check /policies
-          docker run --rm -v ${{ github.workspace }}/acgs2-core/policies/rego:/policies openpolicyagent/opa:latest test /policies -v
+          docker run --rm -v ${{ github.workspace }}/src/core/policies/rego:/policies openpolicyagent/opa:latest check /policies
+          docker run --rm -v ${{ github.workspace }}/src/core/policies/rego:/policies openpolicyagent/opa:latest test /policies -v
 
   security:
     needs: validate
@@ -158,22 +158,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-          cache-dependency-path: acgs2-core/pyproject.toml
+          cache-dependency-path: src/core/pyproject.toml
 
       - name: Install Python deps
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: |
           pip install -r requirements_optimized.txt pytest pytest-cov pytest-asyncio
 
       - name: Pytest with coverage
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: |
           pytest --cov=enhanced_agent_bus --cov-report=xml:coverage.xml --cov-report=term-missing --cov-fail-under=${{ env.COVERAGE_MIN }}
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          file: ./acgs2-core/coverage.xml
+          file: ./src/core/coverage.xml
 
       - name: Rust setup ${{ matrix.rust }}
         uses: dtolnay/rust-toolchain@stable
@@ -181,7 +181,7 @@ jobs:
           components: clippy
 
       - name: Cargo test
-        working-directory: ./acgs2-core/enhanced_agent_bus/rust
+        working-directory: ./src/core/enhanced_agent_bus/rust
         run: cargo test --all-features
 
   build:
@@ -209,8 +209,8 @@ jobs:
       - name: Build and push multi-arch images
         uses: docker/build-push-action@v6
         with:
-          context: ./acgs2-core
-          file: ./acgs2-core/Dockerfile.optimized
+          context: ./src/core
+          file: ./src/core/Dockerfile.optimized
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.REGISTRY }}:${{ github.sha }},${{ env.REGISTRY }}:latest
@@ -224,7 +224,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Validate chaos experiments
-        working-directory: ./acgs2-core
+        working-directory: ./src/core
         run: |
           # Install kubeval or yamllint for chaos yamls
           pip install yamllint kubeval
@@ -254,7 +254,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy Helm
-        working-directory: ./acgs2-core/deploy/helm/acgs2
+        working-directory: ./src/core/deploy/helm/acgs2
         run: |
           helm upgrade --install acgs2 . \
             --set image.repository=${{ env.REGISTRY }} \
@@ -283,7 +283,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }}
 
       - name: Deploy Helm prod
-        working-directory: ./acgs2-core/deploy/helm/acgs2
+        working-directory: ./src/core/deploy/helm/acgs2
         run: |
           helm upgrade --install acgs2 . \
             --set image.repository=${{ env.REGISTRY }} \
@@ -311,7 +311,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }}
 
       - name: Rollback to previous revision
-        working-directory: ./acgs2-core/deploy/helm/acgs2
+        working-directory: ./src/core/deploy/helm/acgs2
         run: helm rollback acgs2 1 --namespace acgs2-prod
 
   notify:
