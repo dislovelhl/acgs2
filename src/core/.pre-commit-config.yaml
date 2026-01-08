@@ -86,77 +86,13 @@ repos:
         language: system
         types: [python]
 
-      # Advanced import validation
-      - id: import-validation
-        name: Import Validation (Unused & Missing)
-        entry: |
-          python3 -c "
-          import ast
-          import sys
-          import os
-
-          def find_unused_imports(file_path):
-              try:
-                  with open(file_path, 'r', encoding='utf-8') as f:
-                      content = f.read()
-
-                  tree = ast.parse(content, filename=file_path)
-
-                  # Find all import statements
-                  imports = {}
-                  for node in ast.walk(tree):
-                      if isinstance(node, ast.Import):
-                          for alias in node.names:
-                              name = alias.asname if alias.asname else alias.name.split('.')[0]
-                              imports[name] = node.lineno
-                      elif isinstance(node, ast.ImportFrom):
-                          if node.module:
-                              module_name = node.module.split('.')[0]
-                              if module_name not in ['__future__', 'typing', 'collections', 'functools', 'itertools']:
-                                  for alias in node.names:
-                                      name = alias.asname if alias.asname else alias.name
-                                      imports[name] = node.lineno
-
-                  # Find all usages
-                  usages = set()
-                  for node in ast.walk(tree):
-                      if isinstance(node, ast.Name):
-                          usages.add(node.id)
-                      elif isinstance(node, ast.Attribute):
-                          if isinstance(node.value, ast.Name):
-                              usages.add(node.value.id)
-
-                  # Check for unused imports
-                  unused = []
-                  for name, line in imports.items():
-                      if name not in usages and name != '*':
-                          unused.append((name, line))
-
-                  return unused
-              except Exception as e:
-                  return []
-
-          # Check files
-          total_issues = 0
-          for file_path in sys.argv[1:]:
-              if file_path.endswith('.py') and os.path.isfile(file_path):
-                  unused = find_unused_imports(file_path)
-                  if unused:
-                      print(f'❌ {file_path}:')
-                      for name, line in unused:
-                          print(f'  Line {line}: unused import \"{name}\"')
-                      total_issues += len(unused)
-
-          if total_issues > 0:
-              print(f'\\n⚠️  Found {total_issues} unused import(s) across {len([f for f in sys.argv[1:] if f.endswith(\".py\") and os.path.isfile(f) and find_unused_imports(f)])} file(s)')
-              print('💡 Run: python3 tools/import_cleanup.py --fix to automatically remove unused imports')
-              sys.exit(1)
-          else:
-              print('✅ No unused imports detected')
-          "
-        language: system
-        types: [python]
-        pass_filenames: true
+  # Ruff linter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
 
       # Constitutional compliance counter
       - id: constitutional-compliance-count

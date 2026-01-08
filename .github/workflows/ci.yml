@@ -61,6 +61,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
+          pip install -r config/requirements_optimized.txt
           pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
 
       - name: Run core security tests
@@ -136,6 +137,8 @@ jobs:
           cd src/core
           python -m venv venv
           source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r config/requirements_optimized.txt
           pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
           python performance_monitor.py --init-only | tail -10
 
@@ -175,6 +178,8 @@ jobs:
           cd src/core
           python -m venv venv
           source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r config/requirements_optimized.txt
           pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
 
           # Check constitutional hash consistency
@@ -209,6 +214,8 @@ jobs:
           cd src/core
           python -m venv venv
           source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r config/requirements_optimized.txt
           pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
 
           # Run comprehensive validation
