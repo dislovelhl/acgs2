@@ -128,7 +128,7 @@ class PagerDutyCredentials(IntegrationCredentials):
     @model_validator(mode="after")
     def validate_urgency_mapping(self) -> "PagerDutyCredentials":
         valid_urgencies = {"high", "low"}
-        for severity, urgency in self.urgency_mapping.items():
+        for _severity, urgency in self.urgency_mapping.items():
             if urgency not in valid_urgencies:
                 raise ValueError(f"Invalid urgency '{urgency}'. Must be one of: {valid_urgencies}")
         return self
@@ -136,7 +136,7 @@ class PagerDutyCredentials(IntegrationCredentials):
     @model_validator(mode="after")
     def validate_severity_mapping(self) -> "PagerDutyCredentials":
         valid_severities = {"critical", "error", "warning", "info"}
-        for severity, pd_severity in self.severity_mapping.items():
+        for _severity, pd_severity in self.severity_mapping.items():
             if pd_severity not in valid_severities:
                 raise ValueError(
                     f"Invalid PagerDuty severity '{pd_severity}'. Must be: {valid_severities}"

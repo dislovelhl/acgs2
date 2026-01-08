@@ -84,12 +84,13 @@ import time
 from collections import deque
 from typing import Any, Deque, Dict, List, Optional, Tuple
 
-from river import compose, linear_model, metrics, optim, preprocessing
+from river import compose, linear_model, metrics, optim, preprocessing, utils
 
 logger = logging.getLogger(__name__)
 
-from .online_learner.enums import ModelState, ModelType
-from .online_learner.models import ModelMetrics, PredictionResult, TrainingResult
+from src.models.online_learner.enums import ModelState, ModelType
+from src.models.online_learner.models import ModelMetrics, PredictionResult, TrainingResult
+
 
 class OnlineLearner:
     """River-based online learning model for governance decisions.
@@ -427,13 +428,13 @@ class OnlineLearner:
         #
         # References:
         # -----------
-        # - River metrics.Rolling() documentation:
-        #   https://riverml.xyz/latest/api/metrics/Rolling/
+        # - River utils.Rolling() documentation:
+        #   https://riverml.xyz/latest/api/utils/Rolling/
         # - Gama et al. (2014): "A Survey on Concept Drift Adaptation"
         #   Section on sliding window approaches for drift detection
         # - Bifet & Gavaldà (2007): Comparison of fixed vs. adaptive windows
         self._accuracy_metric = metrics.Accuracy()
-        self._rolling_accuracy_metric = metrics.Rolling(
+        self._rolling_accuracy_metric = utils.Rolling(
             metrics.Accuracy(), window_size=rolling_window_size
         )
 
@@ -861,6 +862,7 @@ class OnlineLearner:
                             # Update rolling accuracy (recent performance for drift detection)
                             self._rolling_accuracy_metric.update(y, y_pred)
                     except Exception as e:
+                        logger.warning(f"Error updating accuracy metrics: {e}")
 
                 # TIME-WEIGHTED LEARNING FOR NON-STATIONARY ENVIRONMENTS
                 # =======================================================
@@ -1423,7 +1425,7 @@ class OnlineLearner:
         with self._lock:
             self._model = self._build_pipeline()
             self._accuracy_metric = metrics.Accuracy()
-            self._rolling_accuracy_metric = metrics.Rolling(
+            self._rolling_accuracy_metric = utils.Rolling(
                 metrics.Accuracy(), window_size=self.rolling_window_size
             )
             self._sample_count = 0

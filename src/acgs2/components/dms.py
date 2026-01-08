@@ -429,7 +429,7 @@ class DistributedMemorySystem(DistributedMemorySystemInterface):
             retention={"ttl_days": 7, "pii": False},  # Keep checkpoints for task resumption
         )
 
-        result = await self.write(checkpoint_record, envelope)
+        await self.write(checkpoint_record, envelope)
         return checkpoint_id
 
     async def read_checkpoint(self, plan_id: str, step_idx: int) -> Optional[Dict[str, Any]]:

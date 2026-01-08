@@ -456,7 +456,7 @@ class PSVSelfPlay:
         attempts = 0
         max_attempts = 3  # Maximum attempts per challenge
 
-        for attempt in range(max_attempts):
+        for _attempt in range(max_attempts):
             attempts += 1
 
             try:

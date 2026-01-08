@@ -108,25 +108,13 @@ class ValidationStatus(Enum):
     WARNING = "warning"
 
 
-class MessagePriority(Enum):
-    """Message priority levels.
-
-    DEPRECATED: Use Priority instead. This enum will be removed in v3.0.0.
-
-    Warning: MessagePriority uses DESCENDING values (lower = higher priority)
-    which is counterintuitive. Priority uses ASCENDING values instead.
-
-    Migration guide:
-        MessagePriority.CRITICAL -> Priority.CRITICAL
-        MessagePriority.HIGH -> Priority.HIGH
-        MessagePriority.NORMAL -> Priority.NORMAL (or Priority.MEDIUM)
-        MessagePriority.LOW -> Priority.LOW
-    """
-
-    CRITICAL = 0
-    HIGH = 1
-    NORMAL = 2
-    LOW = 3
+# DEPRECATED: MessagePriority is now an alias for Priority.
+# The old MessagePriority enum used DESCENDING values (CRITICAL=0, LOW=3),
+# which was counterintuitive. Priority uses ASCENDING values (LOW=0, CRITICAL=3).
+# This alias is provided for backward compatibility during the transition period.
+# Code using MessagePriority.X.value will now get different numeric values.
+# Use Priority directly in all new code.
+MessagePriority = Priority
 
 
 class MessageStatus(Enum):

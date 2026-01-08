@@ -74,11 +74,14 @@ class VotingService:
         default_strategy: VotingStrategy = VotingStrategy.QUORUM,
         election_store: Optional[RedisElectionStore] = None,
         kafka_bus: Optional[Any] = None,
+        force_in_memory: bool = False,
     ):
         self.default_strategy = default_strategy
         self.election_store = election_store
         self.kafka_bus = kafka_bus
-        self._store_initialized = False
+        self._force_in_memory = force_in_memory
+        # If force_in_memory is True, mark as initialized to skip Redis connection
+        self._store_initialized = force_in_memory
 
     async def _ensure_store_initialized(self) -> bool:
         """Ensure Redis election store is initialized."""
@@ -204,7 +207,7 @@ class VotingService:
         }
 
         # Publish vote event to Kafka BEFORE updating Redis (as per spec)
-        if self.kafka_bus and KAFKA_BUS_AVAILABLE:
+        if self.kafka_bus:
             try:
                 # Create VoteEvent for Kafka
                 vote_event_dict = {
@@ -267,7 +270,7 @@ class VotingService:
 
         return None
 
-    async def _check_resolution(self, election_id: str):
+    async def _check_resolution(self, election_id: str) -> None:
         """
         Check if an election can be resolved based on its strategy.
 
@@ -286,8 +289,6 @@ class VotingService:
         participants = election_data.get("participants", [])
         participant_weights = election_data.get("participant_weights", {})
         votes = election_data.get("votes", {})
-
-        total_participants = len(participants)
 
         # Calculate weighted totals
         approvals_weight = sum(

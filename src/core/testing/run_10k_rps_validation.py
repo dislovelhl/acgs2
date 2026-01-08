@@ -105,9 +105,9 @@ def check_service_health(host: str, timeout: int = 5) -> bool:
             if response.status == 200:
                 data = json.loads(response.read().decode())
                 return data.get("status") == "healthy"
-    except Exception as e:
+    except Exception:
         # print(f"Health check failed: {e}", file=sys.stderr)  # DEBUG_CLEANUP
-    return False
+        return False
 
 
 def query_prometheus_p99(prometheus_url: str) -> Optional[float]:
@@ -131,9 +131,9 @@ def query_prometheus_p99(prometheus_url: str) -> Optional[float]:
                         # Get the P99 value in milliseconds
                         p99_seconds = float(results[0].get("value", [0, 0])[1])
                         return p99_seconds * 1000  # Convert to ms
-    except Exception as e:
+    except Exception:
         # print(f"Prometheus query failed: {e}", file=sys.stderr)  # DEBUG_CLEANUP
-    return None
+        return None
 
 
 def run_locust_test(
@@ -198,7 +198,7 @@ def run_locust_test(
     except FileNotFoundError:
         # print("Locust not found. Install with: pip install locust", file=sys.stderr)  # DEBUG_CLEANUP
         return False, csv_prefix
-    except Exception as e:
+    except Exception:
         # print(f"Error running Locust: {e}", file=sys.stderr)  # DEBUG_CLEANUP
         return False, csv_prefix
 
@@ -243,7 +243,7 @@ def parse_locust_stats(csv_path: Path) -> Optional[dict]:
                 "p95_ms": float(aggregated.get("95%", 0)),
                 "p99_ms": float(aggregated.get("99%", 0)),
             }
-    except Exception as e:
+    except Exception:
         # print(f"Error parsing Locust stats: {e}", file=sys.stderr)  # DEBUG_CLEANUP
         return None
 
@@ -394,20 +394,22 @@ def print_results(results: TestResults) -> None:
     # print(f"  Max:              {results.max_latency_ms:.3f}ms")  # DEBUG_CLEANUP
     if results.prometheus_p99_ms:
         # print(f"  Prometheus P99:   {results.prometheus_p99_ms:.3f}ms")  # DEBUG_CLEANUP
+        pass
     if results.cache_hit_rate:
         # print(f"  Cache Hit Rate:   {results.cache_hit_rate * 100:.2f}%")  # DEBUG_CLEANUP
+        pass
     # print("-" * 40)  # DEBUG_CLEANUP
     # print("\nVALIDATION RESULTS:")  # DEBUG_CLEANUP
-
-    for validation in results.validations:
-        status = "PASS" if validation.passed else "FAIL"
-        # print(f"  [{status}] {validation.message}")  # DEBUG_CLEANUP
-
+    # for validation in results.validations:
+    #     status = "PASS" if validation.passed else "FAIL"
+    #     print(f"  [{status}] {validation.message}")
     # print("-" * 40)  # DEBUG_CLEANUP
     if results.all_passed:
         # print("RESULT: ALL PERFORMANCE TARGETS MET")  # DEBUG_CLEANUP
+        pass
     else:
         # print("RESULT: PERFORMANCE TARGETS NOT MET")  # DEBUG_CLEANUP
+        pass
     # print("=" * 60)  # DEBUG_CLEANUP
 
 

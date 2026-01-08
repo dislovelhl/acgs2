@@ -400,7 +400,6 @@ class CompositeValidationStrategy:
             Tuple of (is_valid, error_message)
         """
         errors = []
-        pqc_validated = False
 
         # Prioritize PQC validation if signature is present
         for strategy in self._strategies:
@@ -409,7 +408,7 @@ class CompositeValidationStrategy:
                 if not is_valid:
                     errors.append(f"PQC: {error}")
                 else:
-                    pqc_validated = True
+                    pass
                 continue
 
         # Run remaining strategies

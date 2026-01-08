@@ -148,7 +148,7 @@ class DeliberationQueue:
         partition_idx = hash(task_id) % self.NUM_PARTITIONS
         return self._partition_locks[partition_idx]
 
-    def _load_tasks(self):
+    def _load_tasks(self) -> None:
         """Load tasks from persistent storage."""
         try:
             with open(self.persistence_path, "r") as f:
@@ -219,7 +219,7 @@ class DeliberationQueue:
         logger.info(f"Message {message.message_id} enqueued for deliberation (Task {task_id})")
         return task_id
 
-    async def _async_save_tasks(self):
+    async def _async_save_tasks(self) -> None:
         """Asynchronously save tasks to persistent storage."""
         await asyncio.to_thread(self._save_tasks)
 
@@ -227,7 +227,7 @@ class DeliberationQueue:
         """Alias for enqueue_for_deliberation."""
         return await self.enqueue_for_deliberation(*args, **kwargs)
 
-    async def _monitor_task(self, task_id: str):
+    async def _monitor_task(self, task_id: str) -> None:
         """Monitor task for timeout with proper shutdown handling."""
         task = self.tasks.get(task_id)
         if not task:
@@ -272,7 +272,7 @@ class DeliberationQueue:
                 except ValueError:
                     pass  # Already removed
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop all background tasks cleanly."""
         self._shutdown = True  # Signal all monitor tasks to exit
         self._shutdown_event.set()  # Wake up all waiting tasks immediately
@@ -290,16 +290,16 @@ class DeliberationQueue:
                 logger.warning("Some deliberation tasks did not stop cleanly within timeout")
         self.processing_tasks.clear()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "DeliberationQueue":
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
         """Async context manager exit - ensures cleanup."""
         await self.stop()
         return False
 
-    async def update_status(self, task_id: str, status: Any):
+    async def update_status(self, task_id: str, status: Any) -> None:
         """Update the status of a deliberation task."""
         async with self._lock:
             if task_id in self.tasks:
@@ -424,7 +424,7 @@ class DeliberationQueue:
             asyncio.create_task(self._async_save_tasks())
         return True
 
-    def _save_tasks(self):
+    def _save_tasks(self) -> None:
         """Save current tasks to persistent storage."""
         if not self.persistence_path:
             return
@@ -443,7 +443,7 @@ class DeliberationQueue:
         except Exception as e:
             logger.error(f"Failed to persist deliberation tasks: {e}")
 
-    async def resolve_task(self, task_id: str, approved: bool):
+    async def resolve_task(self, task_id: str, approved: bool) -> None:
         """Resolve a task and return approval status."""
         status = DeliberationStatus.APPROVED if approved else DeliberationStatus.REJECTED
         await self.update_status(task_id, status)

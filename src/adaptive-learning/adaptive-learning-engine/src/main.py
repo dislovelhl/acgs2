@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 # Environment configuration
 ENVIRONMENT = os.getenv("ENVIRONMENT", os.getenv("APP_ENV", "development"))
 
+
 def get_cors_origins() -> list[str]:
     """
     Get CORS origins with environment-aware security defaults.
@@ -95,6 +96,7 @@ def get_cors_origins() -> list[str]:
     logger.info(f"CORS configured for {ENVIRONMENT}: {len(origins)} origins allowed")
     return origins
 
+
 # Global state for service instances
 _model_manager: Optional[ModelManager] = None
 _drift_detector: Optional[DriftDetector] = None
@@ -102,6 +104,7 @@ _safety_checker: Optional[SafetyBoundsChecker] = None
 _metrics_registry: Optional[MetricsRegistry] = None
 _config: Optional[AdaptiveLearningConfig] = None
 _drift_check_task: Optional[asyncio.Task] = None
+
 
 async def _start_drift_check_loop(
     detector: DriftDetector,
@@ -125,6 +128,7 @@ async def _start_drift_check_loop(
                         f"Threshold: {result.drift_threshold:.4f}"
                     )
                 else:
+                    logger.debug("No drift detected")
 
         except asyncio.CancelledError:
             logger.info("Drift check loop cancelled")
@@ -132,6 +136,7 @@ async def _start_drift_check_loop(
         except Exception as e:
             logger.error(f"Error in drift check loop: {e}", exc_info=True)
             # Continue loop despite errors - graceful degradation
+
 
 async def _initialize_services(config: AdaptiveLearningConfig) -> None:
     """Initialize all service components.
@@ -209,6 +214,7 @@ async def _initialize_services(config: AdaptiveLearningConfig) -> None:
 
     logger.info("Adaptive Learning Engine initialization complete")
 
+
 async def _shutdown_services() -> None:
     """Clean up all service components."""
     global _drift_check_task
@@ -235,6 +241,7 @@ async def _shutdown_services() -> None:
 
     logger.info("Adaptive Learning Engine shutdown complete")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for startup and shutdown events.
@@ -258,6 +265,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     await _shutdown_services()
+
 
 # Create FastAPI application
 app = FastAPI(

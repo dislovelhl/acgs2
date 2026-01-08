@@ -69,7 +69,8 @@ sys.modules["enhanced_agent_bus.config"] = _config
 AgentMessage = _models.AgentMessage
 MessageType = _models.MessageType
 MessageStatus = _models.MessageStatus
-MessagePriority = _models.MessagePriority
+Priority = _models.Priority
+MessagePriority = _models.MessagePriority  # Alias for backward compatibility
 CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 
 
@@ -297,14 +298,14 @@ class TestPrepareProcessingContext:
             message_type=MessageType.COMMAND,
             content={"action": "test"},
             tenant_id="tenant_123",
-            priority=MessagePriority.HIGH,
+            priority=Priority.HIGH,
         )
 
         context = layer._prepare_processing_context(msg)
 
         assert context["agent_id"] == "sender_agent"
         assert context["tenant_id"] == "tenant_123"
-        assert context["priority"] == MessagePriority.HIGH
+        assert context["priority"] == Priority.HIGH
         assert context["message_type"] == MessageType.COMMAND
         assert context["constitutional_hash"] == CONSTITUTIONAL_HASH
 

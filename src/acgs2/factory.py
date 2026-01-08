@@ -21,6 +21,7 @@ from .core.interfaces import ComponentFactory as ComponentFactoryProtocol
 
 logger = logging.getLogger(__name__)
 
+
 class ComponentFactory(ComponentFactoryProtocol):
     """Factory for creating ACGS-2 components with proper dependency injection."""
 
@@ -51,7 +52,13 @@ class ComponentFactory(ComponentFactoryProtocol):
         logger.info("Created UIG instance")
         return uig
 
-    async def create_sas(self, obs: Optional[ObservabilitySystem] = None, aud: Optional[AuditLedger] = None, npt: Optional[NeuralPatternTraining] = None, config: Optional[Dict[str, Any]] = None) -> SafetyAlignmentSystem:
+    async def create_sas(
+        self,
+        obs: Optional[ObservabilitySystem] = None,
+        aud: Optional[AuditLedger] = None,
+        npt: Optional[NeuralPatternTraining] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> SafetyAlignmentSystem:
         """Create Safety Alignment System."""
         if "sas" in self._instances:
             return self._instances["sas"]
@@ -63,7 +70,12 @@ class ComponentFactory(ComponentFactoryProtocol):
         logger.info("Created SAS instance")
         return sas
 
-    async def create_dms(self, obs: Optional[ObservabilitySystem] = None, aud: Optional[AuditLedger] = None, config: Optional[Dict[str, Any]] = None) -> DistributedMemorySystem:
+    async def create_dms(
+        self,
+        obs: Optional[ObservabilitySystem] = None,
+        aud: Optional[AuditLedger] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> DistributedMemorySystem:
         """Create Distributed Memory System."""
         if "dms" in self._instances:
             return self._instances["dms"]
@@ -81,7 +93,12 @@ class ComponentFactory(ComponentFactoryProtocol):
         logger.info("Created DMS instance")
         return dms
 
-    async def create_tms(self, obs: Optional[ObservabilitySystem] = None, aud: Optional[AuditLedger] = None, config: Optional[Dict[str, Any]] = None) -> ToolMediationSystem:
+    async def create_tms(
+        self,
+        obs: Optional[ObservabilitySystem] = None,
+        aud: Optional[AuditLedger] = None,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> ToolMediationSystem:
         """Create Tool Mediation System."""
         if "tms" in self._instances:
             return self._instances["tms"]
@@ -179,7 +196,7 @@ class ComponentFactory(ComponentFactoryProtocol):
 
         for name, instance in self._instances.items():
             try:
-                if hasattr(instance, 'shutdown'):
+                if hasattr(instance, "shutdown"):
                     await instance.shutdown()
 
             except Exception as e:
@@ -194,10 +211,7 @@ class ComponentFactory(ComponentFactoryProtocol):
 
     def list_components(self) -> Dict[str, str]:
         """List all created component instances."""
-        return {
-            name: type(instance).__name__
-            for name, instance in self._instances.items()
-        }
+        return {name: type(instance).__name__ for name, instance in self._instances.items()}
 
     async def health_check(self) -> Dict[str, Any]:
         """System-wide health check."""
@@ -209,7 +223,7 @@ class ComponentFactory(ComponentFactoryProtocol):
 
         for name, instance in self._instances.items():
             try:
-                if hasattr(instance, 'health_check'):
+                if hasattr(instance, "health_check"):
                     component_health = await instance.health_check()
                     health["components"][name] = component_health
 
@@ -223,7 +237,9 @@ class ComponentFactory(ComponentFactoryProtocol):
 
         return health
 
+
 # Convenience functions for quick setup
+
 
 async def create_default_system(config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Create default ACGS-2 system with sensible defaults."""
@@ -240,6 +256,7 @@ async def create_default_system(config: Optional[Dict[str, Any]] = None) -> Dict
 
     factory = ComponentFactory(merged_config)
     return await factory.create_system()
+
 
 async def test_complete_flow_a() -> None:
     """Complete test of Flow A including tool execution."""
@@ -259,14 +276,15 @@ async def test_complete_flow_a() -> None:
     ]
 
     for i, query in enumerate(test_queries, 1):
-
         try:
             request = UserRequest(query=query)
             response = await uig.handle_request(request)
 
-            if hasattr(response, 'tool_result') and response.tool_result:
+            if hasattr(response, "tool_result") and response.tool_result:
+                pass  # Tool result available
 
-        except Exception as e:
+        except Exception:
+            pass  # Error handled
 
     # Get TMS stats
     tms = system["tms"]
@@ -274,7 +292,9 @@ async def test_complete_flow_a() -> None:
     print(f"Registered tools: {len(tools)}")
     for tool in tools:
         stats = await tms.get_tool_stats(tool["name"])
-        print(f"  {tool['name']}: {stats.get('total_calls', 0)} calls, {stats.get('successful_calls', 0)} successful")
+        print(
+            f"  {tool['name']}: {stats.get('total_calls', 0)} calls, {stats.get('successful_calls', 0)} successful"
+        )
 
     # Get CRE stats
     cre = system["cre"]
@@ -299,6 +319,7 @@ async def test_complete_flow_a() -> None:
 
     await system["factory"].shutdown_system()
 
+
 async def quick_test() -> None:
     """Quick test of system creation and basic functionality."""
 
@@ -313,6 +334,7 @@ async def quick_test() -> None:
     response = await uig.handle_request(request)
 
     await system["factory"].shutdown_system()
+
 
 if __name__ == "__main__":
     asyncio.run(test_complete_flow_a())

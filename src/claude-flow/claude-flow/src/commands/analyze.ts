@@ -57,12 +57,12 @@ export const analyzeCommand = new Command('analyze')
     const spinner = ora('Initializing analysis...').start();
 
     try {
-        logger.info(chalk.yellow(`\n📋 Valid focuses: ${validFocuses.join(', ')}`);
-        logger.info(chalk.gray(`\n💡 Choose based on your analysis needs:`);
-        logger.info(chalk.gray(`   • quality: Code maintainability and best practices`);
-        logger.info(chalk.gray(`   • security: Vulnerability and security issues`);
-        logger.info(chalk.gray(`   • performance: Performance bottlenecks and optimizations`);
-        logger.info(chalk.gray(`   • architecture: Design patterns and structural issues`);
+        logger.info(chalk.yellow(`\n📋 Valid focuses: ${validFocuses.join(', ')}`));
+        logger.info(chalk.gray(`\n💡 Choose based on your analysis needs:`));
+        logger.info(chalk.gray(`   • quality: Code maintainability and best practices`));
+        logger.info(chalk.gray(`   • security: Vulnerability and security issues`));
+        logger.info(chalk.gray(`   • performance: Performance bottlenecks and optimizations`));
+        logger.info(chalk.gray(`   • architecture: Design patterns and structural issues`));
         console.log(chalk.gray(`   • quality: Code maintainability and best practices`));
         console.log(chalk.gray(`   • security: Vulnerability and security issues`));
         console.log(chalk.gray(`   • performance: Performance bottlenecks and optimizations`));

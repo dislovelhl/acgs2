@@ -303,7 +303,7 @@ class ImpactScorer:
         try:
             # Convert dictionary weights to a matrix/tensor
             weight_list = list(self.feature_weights.values())
-            n = len(weight_list)
+            len(weight_list)
 
             # Create a pseudo-matrix for Sinkhorn (since we have a vector,
             # we can treat it as a diagonal or repeat it to form a square matrix)

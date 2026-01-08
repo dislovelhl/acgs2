@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 # Backend Detection
 try:
-    import numpy as np
     import torch
     from transformers import AutoModel, AutoTokenizer
 
@@ -159,7 +158,7 @@ class ConstitutionalClassifier:
             r"(?i)run.*any.*command",
         ]
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the neural model."""
         if not TRANSFORMERS_AVAILABLE:
             logger.warning("Transformers not available, using pattern-based classification only")

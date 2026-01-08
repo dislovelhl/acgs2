@@ -26,8 +26,6 @@ def generate_performance_overlay():
     with open(output_path, "w") as f:
         json.dump(metrics, f, indent=2)
 
-    print(f"Successfully generated performance overlay at {output_path}")
-
 
 if __name__ == "__main__":
     generate_performance_overlay()

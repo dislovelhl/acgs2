@@ -304,7 +304,7 @@ class DeliberationLayer(OPAGuardMixin):
         """Get the deliberation queue (injected or default)."""
         return self.deliberation_queue
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize async components."""
         if self.enable_redis:
             if self.redis_queue:
@@ -388,7 +388,7 @@ class DeliberationLayer(OPAGuardMixin):
             "constitutional_hash": message.constitutional_hash,
         }
 
-    def _ensure_impact_score(self, message: AgentMessage, context: Dict[str, Any]):
+    def _ensure_impact_score(self, message: AgentMessage, context: Dict[str, Any]) -> None:
         """Ensure impact score is calculated if not present."""
         if message.impact_score is None:
             message.impact_score = self.impact_scorer.calculate_impact_score(
@@ -805,7 +805,9 @@ class DeliberationLayer(OPAGuardMixin):
             logger.error(f"Runtime error submitting agent vote for item {item_id}: {e}")
             return False
 
-    async def _update_deliberation_outcome(self, item_id: str, decision: str, reasoning: str):
+    async def _update_deliberation_outcome(
+        self, item_id: str, decision: str, reasoning: str
+    ) -> None:
         """Update performance feedback for completed deliberation."""
         if not self.enable_learning:
             return
@@ -884,15 +886,15 @@ class DeliberationLayer(OPAGuardMixin):
             logger.error(f"Runtime error getting layer stats: {e}")
             return {"error": f"RuntimeError: {e}"}
 
-    def set_fast_lane_callback(self, callback: Callable):
+    def set_fast_lane_callback(self, callback: Callable[..., Any]) -> None:
         """Set callback for fast lane processing."""
         self.fast_lane_callback = callback
 
-    def set_deliberation_callback(self, callback: Callable):
+    def set_deliberation_callback(self, callback: Callable[..., Any]) -> None:
         """Set callback for deliberation processing."""
         self.deliberation_callback = callback
 
-    def set_guard_callback(self, callback: Callable):
+    def set_guard_callback(self, callback: Callable[..., Any]) -> None:
         """Set callback for OPA guard verification events."""
         self.guard_callback = callback
 
@@ -902,7 +904,7 @@ class DeliberationLayer(OPAGuardMixin):
     # - register_critic_agent(), unregister_critic_agent()
     # - get_guard_audit_log()
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the deliberation layer and cleanup resources."""
         if self.opa_guard:
             await self.opa_guard.close()

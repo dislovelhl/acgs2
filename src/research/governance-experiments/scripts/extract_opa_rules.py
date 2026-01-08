@@ -32,7 +32,6 @@ def main():
     policies = {}
 
     if not policy_dir.exists():
-        print(f"Error: Policy directory {policy_dir} not found.")
         return
 
     for rego_file in policy_dir.glob("**/*.rego"):
@@ -47,9 +46,8 @@ def main():
         os.makedirs(output_file.parent, exist_ok=True)
         with open(output_file, "w") as f:
             f.write(generate_markdown_table(policies))
-        print(f"Successfully extracted rules to {output_file}")
     else:
-        print("No Rego rules found.")
+        pass
 
 
 if __name__ == "__main__":

@@ -56,7 +56,7 @@ except (ImportError, ValueError):
         from memory_profiler import get_memory_profiler  # type: ignore
     except ImportError:
         # Extreme fallback if even absolute import fails
-        def get_memory_profiler(*args, **kwargs):
+        def get_memory_profiler(*args: Any, **kwargs: Any) -> None:
             return None
 
     from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority  # type: ignore
@@ -404,7 +404,7 @@ class MessageProcessor:
             "metering_enabled": self._enable_metering and self._metering_hooks is not None,
         }
 
-    def _set_strategy(self, strategy: ProcessingStrategy):
+    def _set_strategy(self, strategy: ProcessingStrategy) -> None:
         self._processing_strategy = strategy
 
     def _log_decision(self, msg: AgentMessage, result: ValidationResult, span: Any = None) -> None:

@@ -303,8 +303,8 @@ class AuditLedger(AuditLedgerInterface):
 
         Includes statistics on safety decisions, tool executions, and policy adherence.
         """
-        start_time = time_range.get("start")
-        end_time = time_range.get("end")
+        time_range.get("start")
+        time_range.get("end")
 
         # Get entries in time range
         entries = await self.query_entries(time_range=time_range, limit=0)

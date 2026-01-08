@@ -119,7 +119,7 @@ class MACIAgentRoleConfig:
     capabilities: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if isinstance(self.role, str):
             try:
                 self.role = MACIRole(self.role.lower())
@@ -243,7 +243,7 @@ class MACIAgentRecord:
     def can_validate_role(self, target_role: MACIRole) -> bool:
         return target_role in VALIDATION_CONSTRAINTS.get(self.role, set())
 
-    def add_output(self, output_id: str):
+    def add_output(self, output_id: str) -> None:
         if output_id not in self.outputs:
             self.outputs.append(output_id)
 
@@ -306,7 +306,7 @@ class MACIRoleRegistry:
     async def get_agents_by_role(self, role: MACIRole) -> List[MACIAgentRecord]:
         return [a for a in self._agents.values() if a.role == role]
 
-    async def record_output(self, agent_id: str, output_id: str):
+    async def record_output(self, agent_id: str, output_id: str) -> None:
         async with self._lock:
             if agent_id in self._agents:
                 self._agents[agent_id].add_output(output_id)
@@ -416,7 +416,7 @@ class MACIEnforcer:
     def get_validation_log(self) -> List[MACIValidationResult]:
         return self._validation_log
 
-    def clear_validation_log(self):
+    def clear_validation_log(self) -> None:
         self._validation_log = []
 
 

@@ -492,7 +492,7 @@ class AgentEntityWorkflow(WorkflowDefinition[AgentConfig, AgentResult]):
 
         try:
             # Initialize agent
-            init_result = await self.execute_activity(
+            await self.execute_activity(
                 initialize_agent_activity,
                 config,
             )

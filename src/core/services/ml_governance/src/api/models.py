@@ -22,7 +22,7 @@ async def get_model_metrics():
     try:
         # Would fetch metrics from MLflow or internal storage
         metrics = []
-        for model_type, version_id in ml_engine.active_versions.items():
+        for _model_type, version_id in ml_engine.active_versions.items():
             metrics.append(
                 ModelMetrics(
                     version_id=version_id,

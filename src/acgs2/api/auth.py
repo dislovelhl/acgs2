@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 JWT_SECRET_KEY = os.environ.get("ACGS2_JWT_SECRET")
 if not JWT_SECRET_KEY:
     warnings.warn(
-        "ACGS2_JWT_SECRET not set; using insecure default for development only", UserWarning
+        "ACGS2_JWT_SECRET not set; using insecure default for development only",
+        UserWarning,
+        stacklevel=2,
     )
     JWT_SECRET_KEY = "dev-only-insecure-key"
 JWT_ALGORITHM = "HS256"

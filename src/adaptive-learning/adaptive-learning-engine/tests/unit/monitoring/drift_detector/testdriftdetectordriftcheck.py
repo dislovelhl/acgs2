@@ -184,8 +184,8 @@ class TestDriftDetectorDriftCheck:
         # With significantly different distributions, should detect drift
         assert isinstance(result, DriftResult)
         assert result.reference_size == 100
-        assert result.current_size >= len(drifted_data)
-        # Note: Actual drift detection depends on Evidently's algorithms
+        # current_size is limited by current_window_size (50 in fixture)
+        assert result.current_size == min(len(drifted_data), drift_detector.current_window_size)
 
     def test_check_drift_increments_counter(self, drift_detector, reference_data, similar_data):
         """Test that drift check increments check counter."""

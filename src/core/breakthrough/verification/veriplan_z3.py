@@ -139,7 +139,6 @@ class LTLParser:
             return {"type": "empty"}
 
         # Simple recursive descent parser
-        pos = 0
 
         def parse_expr(tokens: List[str], pos: int) -> Tuple[Dict[str, Any], int]:
             if pos >= len(tokens):

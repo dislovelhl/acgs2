@@ -38,6 +38,31 @@ try:
     import src.core.enhanced_agent_bus.utils as _utils
     import src.core.enhanced_agent_bus.validators as _validators
 
+    # Import additional modules needed for MACI integration tests
+    try:
+        import src.core.enhanced_agent_bus.agent_bus as _agent_bus
+
+        sys.modules["agent_bus"] = _agent_bus
+        sys.modules["enhanced_agent_bus.agent_bus"] = _agent_bus
+    except ImportError:
+        _agent_bus = None
+
+    try:
+        import src.core.enhanced_agent_bus.message_processor as _message_processor
+
+        sys.modules["message_processor"] = _message_processor
+        sys.modules["enhanced_agent_bus.message_processor"] = _message_processor
+    except ImportError:
+        _message_processor = None
+
+    try:
+        import src.core.enhanced_agent_bus.processing_strategies as _processing_strategies
+
+        sys.modules["processing_strategies"] = _processing_strategies
+        sys.modules["enhanced_agent_bus.processing_strategies"] = _processing_strategies
+    except ImportError:
+        _processing_strategies = None
+
     # Import online_learning module for ML tests
     try:
         import src.core.enhanced_agent_bus.online_learning as _online_learning

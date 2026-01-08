@@ -255,7 +255,7 @@ class ToolMediationSystem(ToolMediationSystemInterface):
         if tool_name not in self.tool_registry:
             return False
 
-        tool_info = self.tool_registry[tool_name]
+        self.tool_registry[tool_name]
 
         # Basic validation - could be enhanced with JSON schema
         if not isinstance(args, dict):

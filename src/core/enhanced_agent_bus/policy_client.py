@@ -90,16 +90,16 @@ class PolicyRegistryClient:
         self._cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
         self._http_client = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "PolicyRegistryClient":
         """Async context manager entry"""
         await self.initialize()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Async context manager exit"""
         await self.close()
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize HTTP client"""
         if not self._http_client:
             headers = {}
@@ -112,7 +112,7 @@ class PolicyRegistryClient:
                 headers=headers,
             )
 
-    async def close(self):
+    async def close(self) -> None:
         """Close HTTP client"""
         if self._http_client:
             await self._http_client.aclose()
@@ -306,7 +306,7 @@ def get_policy_client(fail_closed: Optional[bool] = None) -> PolicyRegistryClien
 async def initialize_policy_client(
     registry_url: str = "http://localhost:8000",
     fail_closed: bool = True,  # SECURITY: Default to fail-closed for safety
-):
+) -> None:
     """Initialize global policy client"""
     global _policy_client
     _policy_client = PolicyRegistryClient(
@@ -316,7 +316,7 @@ async def initialize_policy_client(
     await _policy_client.initialize()
 
 
-async def close_policy_client():
+async def close_policy_client() -> None:
     """Close global policy client"""
     global _policy_client
     if _policy_client:

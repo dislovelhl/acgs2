@@ -16,6 +16,7 @@ import sys
 import httpx
 import redis.asyncio as redis
 
+
 async def main():
     """Run Redis job tracking verification."""
 
@@ -32,8 +33,7 @@ async def main():
         redis_client = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
         await redis_client.ping()
 
-    except Exception as e:
-
+    except Exception:
         return 1
 
     try:
@@ -59,15 +59,13 @@ async def main():
             )
 
             if response.status_code != 202:
-
                 all_tests_passed = False
                 return 1
 
             job_data = response.json()
             job_id = job_data["job_id"]
 
-    except Exception as e:
-
+    except Exception:
         return 1
 
     try:
@@ -77,10 +75,8 @@ async def main():
         job_json = await redis_client.get(redis_key)
 
         if not job_json:
-
             all_tests_passed = False
         else:
-
             # Parse and validate JSON
             try:
                 job_obj = json.loads(job_json)
@@ -99,23 +95,22 @@ async def main():
                 missing_fields = []
                 for field in required_fields:
                     if field in job_obj:
-
+                        pass  # Field present
                     else:
-
                         missing_fields.append(field)
                         all_tests_passed = False
 
                 if not missing_fields:
-
+                    pass  # All fields present
                 else:
                     print(f"✗ Missing fields: {', '.join(missing_fields)}")
 
-            except json.JSONDecodeError as e:
-
+            except json.JSONDecodeError:
+                pass  # JSON decode error handled
                 all_tests_passed = False
 
-    except Exception as e:
-
+    except Exception:
+        pass  # Exception handled
         all_tests_passed = False
 
     try:
@@ -133,14 +128,11 @@ async def main():
             print("✗ TTL not set (key will never expire)")
             all_tests_passed = False
         elif ttl == -2:
-
             all_tests_passed = False
         else:
-
             all_tests_passed = False
 
-    except Exception as e:
-
+    except Exception:
         all_tests_passed = False
 
     try:
@@ -157,16 +149,15 @@ async def main():
 
                 # Verify it matches what we created
                 if retrieved_job["job_id"] == job_id:
-
+                    pass  # Job ID matches
                 else:
-
                     all_tests_passed = False
             else:
-
+                pass  # Response check failed
                 all_tests_passed = False
 
-    except Exception as e:
-
+    except Exception:
+        pass  # Exception handled
         all_tests_passed = False
 
     # Cleanup
@@ -175,13 +166,12 @@ async def main():
     # Summary
 
     if all_tests_passed:
-
         print("  - TTL is set correctly (24 hours)")
 
         return 0
     else:
-
         return 1
+
 
 if __name__ == "__main__":
     exit_code = asyncio.run(main())

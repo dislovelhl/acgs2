@@ -241,7 +241,7 @@ class AdaptiveRouter:
 
         return routing_decision
 
-    def _record_routing_history(self, message: AgentMessage, routing_decision: JSONDict):
+    def _record_routing_history(self, message: AgentMessage, routing_decision: JSONDict) -> None:
         """Record routing decision for learning."""
         if not self.enable_learning:
             return
@@ -312,7 +312,7 @@ class AdaptiveRouter:
         # Adaptive threshold adjustment (simple version)
         await self._adjust_threshold()
 
-    async def _adjust_threshold(self):
+    async def _adjust_threshold(self) -> None:
         """Adjust impact threshold based on performance feedback."""
         if len(self.routing_history) < 50:  # Need minimum data
             return
@@ -379,7 +379,7 @@ class AdaptiveRouter:
 
         return stats
 
-    def set_impact_threshold(self, threshold: float):
+    def set_impact_threshold(self, threshold: float) -> None:
         """Manually set the impact threshold."""
         self.impact_threshold = max(0.0, min(1.0, threshold))
         logger.info(f"Impact threshold manually set to {self.impact_threshold}")

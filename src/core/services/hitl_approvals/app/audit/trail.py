@@ -84,7 +84,7 @@ class AuditTrail:
         try:
             # In a real implementation, this would write to a structured log file
             # or local database that can be forwarded later if the audit service is down
-            audit_log_entry = json.dumps(event_dict, default=str)
+            json.dumps(event_dict, default=str)
 
         except Exception as e:
             logger.error(f"Error writing local audit log: {e}")

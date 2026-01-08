@@ -27,6 +27,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 class ModelStage(Enum):
     """MLflow model lifecycle stages."""
 
@@ -35,12 +36,14 @@ class ModelStage(Enum):
     PRODUCTION = "Production"
     ARCHIVED = "Archived"
 
+
 class RegistryStatus(Enum):
     """Status of the MLflow registry connection."""
 
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     DEGRADED = "degraded"  # Using local fallback
+
 
 @dataclass
 class ModelVersion:
@@ -57,6 +60,7 @@ class ModelVersion:
     source: Optional[str] = None
     aliases: List[str] = field(default_factory=list)
 
+
 @dataclass
 class RegistrationResult:
     """Result from model registration."""
@@ -67,6 +71,7 @@ class RegistrationResult:
     message: str
     timestamp: float = field(default_factory=time.time)
 
+
 @dataclass
 class RollbackResult:
     """Result from model rollback."""
@@ -76,6 +81,7 @@ class RollbackResult:
     new_version: Optional[str]
     message: str
     timestamp: float = field(default_factory=time.time)
+
 
 @dataclass
 class ModelMetadata:
@@ -90,6 +96,7 @@ class ModelMetadata:
     algorithm: str
     training_timestamp: float
     extra: Dict[str, Any] = field(default_factory=dict)
+
 
 class MLflowRegistry:
     """MLflow model registry client for versioning and rollback.
@@ -410,7 +417,7 @@ class MLflowRegistry:
             try:
                 result = mlflow.register_model(model_uri, self.model_name)
                 version = result.version
-            except Exception as e:
+            except Exception:
                 # Model might not be registered yet, create it
 
                 try:
@@ -1028,6 +1035,7 @@ class MLflowRegistry:
                             )
                             versions.append(version)
                         except Exception as e:
+                            logger.warning(f"Error processing version {version_num}: {e}")
 
             # Sort by version number
             versions.sort(key=lambda v: int(v.version), reverse=True)

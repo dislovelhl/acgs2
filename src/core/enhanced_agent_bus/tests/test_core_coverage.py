@@ -255,11 +255,12 @@ class TestCoreBackwardCompatibility:
     def test_message_priority_deprecated_alias(self):
         """MessagePriority is exported for backward compatibility."""
         try:
-            from src.core.enhanced_agent_bus.core import MessagePriority
+            from src.core.enhanced_agent_bus.core import MessagePriority, Priority
         except ImportError:
-            from core import MessagePriority
+            from core import MessagePriority, Priority
 
-        assert MessagePriority is not None
+        # MessagePriority is now an alias for Priority
+        assert MessagePriority is Priority
 
 
 class TestCoreMeteringExports:

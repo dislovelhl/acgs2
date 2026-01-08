@@ -24,6 +24,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
 from .. import CONSENSUS_THRESHOLD, CONSTITUTIONAL_HASH
+from ..metrics.dfc import DFCCalculator, get_dfc_components_from_context
 
 logger = logging.getLogger(__name__)
 
@@ -391,6 +392,9 @@ class PolisClient:
 class ConstitutionalValidator:
     """Validates principles for technical implementability."""
 
+    def __init__(self, dfc_threshold: float = 0.70):
+        self.dfc_calculator = DFCCalculator(threshold=dfc_threshold)
+
     async def can_implement(self, principle: str) -> bool:
         """Check if a principle can be technically implemented."""
         # Check for obvious non-implementable statements
@@ -405,12 +409,20 @@ class ConstitutionalValidator:
 
     async def fast_validate(self, decision: Decision, time_budget_ms: int) -> Dict[str, Any]:
         """Fast validation within time budget."""
+        # Calculate DFC Diagnostic
+        dfc_components = get_dfc_components_from_context(decision.context)
+        dfc_score = self.dfc_calculator.calculate(dfc_components)
+
         # Quick constitutional check
         return {
             "valid": True,
             "confidence": 0.85,
             "time_used_ms": time_budget_ms // 2,
             "constitutional_hash": CONSTITUTIONAL_HASH,
+            "dfc_diagnostic": {
+                "score": dfc_score,
+                "status": "HEALTHY" if dfc_score >= self.dfc_calculator.threshold else "DEGRADED",
+            },
         }
 
 

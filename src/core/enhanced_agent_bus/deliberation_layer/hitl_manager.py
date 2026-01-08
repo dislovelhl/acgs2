@@ -73,7 +73,7 @@ except ImportError:
     class AuditLedger:  # type: ignore
         """Mock AuditLedger."""
 
-        async def add_validation_result(self, res):
+        async def add_validation_result(self, res: Any) -> str:
             """Mock add."""
             logging.getLogger(__name__).debug(f"Mock audit recorded: {res.to_dict()}")
             return "mock_audit_hash"
@@ -92,7 +92,7 @@ class HITLManager:
         self.queue = deliberation_queue
         self.audit_ledger = audit_ledger or AuditLedger()
 
-    async def request_approval(self, item_id: str, channel: str = "slack"):
+    async def request_approval(self, item_id: str, channel: str = "slack") -> None:
         """
         Notify stakeholders about a pending high-risk action.
         Implements Pillar 2: Enterprise messaging integration.
@@ -137,7 +137,9 @@ class HITLManager:
         # Update status to under review
         item.status = DeliberationStatus.UNDER_REVIEW
 
-    async def process_approval(self, item_id: str, reviewer_id: str, decision: str, reasoning: str):
+    async def process_approval(
+        self, item_id: str, reviewer_id: str, decision: str, reasoning: str
+    ) -> bool:
         """
         Process the human decision and record to audit ledger.
         Implements Pillar 2: Immutable audit metadata.

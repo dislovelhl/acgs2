@@ -315,9 +315,9 @@ class TestCoreModelExports:
 
     def test_message_priority_deprecated_alias(self):
         """MessagePriority is available for backward compatibility."""
-        # MessagePriority should work same as Priority
-        assert MessagePriority is not None
-        # Should have same values
+        # MessagePriority is now an alias for Priority
+        assert MessagePriority is Priority
+        # Should have same attributes
         assert hasattr(MessagePriority, "LOW")
         assert hasattr(MessagePriority, "NORMAL")
         assert hasattr(MessagePriority, "HIGH")

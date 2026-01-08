@@ -516,7 +516,7 @@ class MLGovernanceEngine:
             correct_decision = feedback.correct_decision or prediction_data["decision"]
 
             # Update online learners
-            for learner_name, learner in self.online_learners.items():
+            for _learner_name, learner in self.online_learners.items():
                 if hasattr(learner, "learn_one"):
                     # River-style online learning
                     learner.learn_one(features, correct_decision.value)

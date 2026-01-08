@@ -53,7 +53,7 @@ async def _calculate_kpis_from_ledger(tenant_id: str) -> JSONDict:
     recent_results = ledger.get_recent_anchor_results(50)
 
     # Calculate compliance metrics
-    total_validations = anchor_stats.get("total_anchored", 0)
+    anchor_stats.get("total_anchored", 0)
     successful_anchors = sum(1 for result in recent_results if result.get("success", False))
     failed_anchors = len(recent_results) - successful_anchors
 

@@ -71,7 +71,7 @@ class BundleManifest:
     metadata: Dict[str, Any] = field(default_factory=dict)
     _schema: Optional[Dict[str, Any]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.constitutional_hash != CONSTITUTIONAL_HASH:
             raise ValueError(
                 f"Invalid constitutional hash. Expected {CONSTITUTIONAL_HASH}, "
@@ -79,7 +79,7 @@ class BundleManifest:
             )
         self.validate()
 
-    def validate(self):
+    def validate(self) -> None:
         """Validate manifest against JSON schema."""
         if not self._schema:
             schema_path = os.path.join(
@@ -124,7 +124,7 @@ class BundleManifest:
             metadata=data.get("metadata", {}),
         )
 
-    def add_signature(self, keyid: str, signature: str, algorithm: str = "ed25519"):
+    def add_signature(self, keyid: str, signature: str, algorithm: str = "ed25519") -> None:
         """Add a signature to the manifest."""
         self.signatures.append(
             {
@@ -389,20 +389,20 @@ class OCIRegistryClient:
 
         return cls(registry_url=url, **kwargs)
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "BundleDistributionService":
         await self.initialize()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         await self.close()
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the client session."""
         if not self._session:
             connector = aiohttp.TCPConnector(ssl=self.verify_ssl)
             self._session = aiohttp.ClientSession(timeout=self.timeout, connector=connector)
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the client session."""
         if self._session:
             await self._session.close()
@@ -940,7 +940,7 @@ async def initialize_distribution_service(
     return _distribution_service
 
 
-async def close_distribution_service():
+async def close_distribution_service() -> None:
     """Close the global distribution service."""
     global _distribution_service
     if _distribution_service:

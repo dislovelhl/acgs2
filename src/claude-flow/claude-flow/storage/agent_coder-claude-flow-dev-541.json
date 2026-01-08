@@ -9,10 +9,11 @@
     "coding",
     "development"
   ],
-  "status": "active",
+  "status": "busy",
   "created_at": 1767234615.895747,
-  "last_active": 1767234615.895748,
+  "last_active": 1767783836.251959,
   "tenant_id": "default",
   "swarm_id": null,
-  "persisted_at": 1767234615.895884
+  "persisted_at": 1767234615.895884,
+  "current_task": "eef5b1cb"
 }

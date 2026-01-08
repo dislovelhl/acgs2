@@ -264,7 +264,7 @@ class TestBoundaryValues:
             }
         }
 
-        result = await governance_service.list_approval_requests(page=999)
+        await governance_service.list_approval_requests(page=999)
 
         call_args = mock_client.get.call_args
         assert call_args[1]["params"]["page"] == 999
@@ -286,7 +286,7 @@ class TestBoundaryValues:
             }
         }
 
-        result = await governance_service.list_approval_requests(page_size=1)
+        await governance_service.list_approval_requests(page_size=1)
 
         call_args = mock_client.get.call_args
         assert call_args[1]["params"]["pageSize"] == 1
@@ -308,7 +308,7 @@ class TestBoundaryValues:
             }
         }
 
-        result = await governance_service.list_approval_requests(page_size=1000)
+        await governance_service.list_approval_requests(page_size=1000)
 
         call_args = mock_client.get.call_args
         assert call_args[1]["params"]["pageSize"] == 1000
@@ -572,7 +572,7 @@ class TestSpecialCharacters:
         uuid_id = str(uuid4())
         mock_client.get.return_value = {"data": sample_approval_request_data}
 
-        result = await governance_service.get_approval_request(uuid_id)
+        await governance_service.get_approval_request(uuid_id)
 
         mock_client.get.assert_called_with(f"{GOVERNANCE_ENDPOINT}/approvals/{uuid_id}")
 
@@ -633,7 +633,7 @@ class TestMultipleItems:
         """Test handling large paginated results."""
         # Create list of 100 items
         items = []
-        for i in range(100):
+        for _i in range(100):
             item = sample_approval_request_data.copy()
             item["id"] = str(uuid4())
             items.append(item)
@@ -895,7 +895,7 @@ class TestRealisticScenarios:
 
         # Step 2: Get request details
         mock_client.get.return_value = {"data": sample_approval_request_data}
-        retrieved = await governance_service.get_approval_request(request_id)
+        await governance_service.get_approval_request(request_id)
 
         # Step 3: Submit first decision
         decision = SubmitApprovalDecision(decision="approve", reasoning="Looks good")

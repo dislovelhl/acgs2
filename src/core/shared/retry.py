@@ -80,7 +80,7 @@ async def exponential_backoff(
                 await asyncio.sleep(delay)
     """
     delay = base_delay
-    for attempt in range(max_attempts):
+    for _attempt in range(max_attempts):
         if jitter:
             # Add up to 25% jitter to prevent thundering herd
             jitter_factor = 1.0 + random.uniform(-0.25, 0.25)

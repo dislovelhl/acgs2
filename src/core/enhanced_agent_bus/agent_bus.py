@@ -166,7 +166,7 @@ class EnhancedAgentBus:
         self._agents: Dict[str, AgentInfo] = {}
 
     @property
-    def constitutional_hash(self):
+    def constitutional_hash(self) -> str:
         return self._constitutional_hash
 
     @classmethod
@@ -629,7 +629,7 @@ class EnhancedAgentBus:
             )
         return validate_tenant_consistency(self._agents, from_agent, to_agent, tid)
 
-    async def _start_kafka(self):
+    async def _start_kafka(self) -> None:
         if not self._kafka_bus:
             self._kafka_bus = self._config.get("kafka_bus") or self._config.get("kafka_adapter")
         if not self._kafka_bus and self._config.get("use_kafka") is True:
@@ -646,7 +646,7 @@ class EnhancedAgentBus:
                     await res
             self._kafka_consumer_task = asyncio.create_task(self._poll_kafka_messages())
 
-    async def _poll_kafka_messages(self):
+    async def _poll_kafka_messages(self) -> None:
         if self._kafka_bus:
             # For mocks, we might need to manually trigger a receive simulation
             # if the mock doesn't handle the callback automatically.
@@ -746,13 +746,13 @@ class EnhancedAgentBus:
 _default_bus: Optional[EnhancedAgentBus] = None
 
 
-def get_agent_bus(**kwargs):
+def get_agent_bus(**kwargs: Any) -> EnhancedAgentBus:
     global _default_bus
     if _default_bus is None:
         _default_bus = EnhancedAgentBus(**kwargs)
     return _default_bus
 
 
-def reset_agent_bus():
+def reset_agent_bus() -> None:
     global _default_bus
     _default_bus = None

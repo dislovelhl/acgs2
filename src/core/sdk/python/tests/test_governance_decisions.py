@@ -230,7 +230,7 @@ class TestApprovalRequestListing:
         """Test listing approval requests with custom pagination."""
         mock_client.get.return_value = sample_paginated_response
 
-        result = await governance_service.list_approval_requests(page=2, page_size=25)
+        await governance_service.list_approval_requests(page=2, page_size=25)
 
         call_args = mock_client.get.call_args
         params = call_args[1]["params"]
@@ -247,7 +247,7 @@ class TestApprovalRequestListing:
         """Test listing approval requests filtered by status."""
         mock_client.get.return_value = sample_paginated_response
 
-        result = await governance_service.list_approval_requests(status=ApprovalStatus.PENDING)
+        await governance_service.list_approval_requests(status=ApprovalStatus.PENDING)
 
         call_args = mock_client.get.call_args
         params = call_args[1]["params"]
@@ -263,7 +263,7 @@ class TestApprovalRequestListing:
         """Test listing approval requests filtered by requester."""
         mock_client.get.return_value = sample_paginated_response
 
-        result = await governance_service.list_approval_requests(requester_id="user-001")
+        await governance_service.list_approval_requests(requester_id="user-001")
 
         call_args = mock_client.get.call_args
         params = call_args[1]["params"]
@@ -279,7 +279,7 @@ class TestApprovalRequestListing:
         """Test listing approval requests pending for a specific reviewer."""
         mock_client.get.return_value = sample_paginated_response
 
-        result = await governance_service.list_approval_requests(pending_for="reviewer-001")
+        await governance_service.list_approval_requests(pending_for="reviewer-001")
 
         call_args = mock_client.get.call_args
         params = call_args[1]["params"]
@@ -295,7 +295,7 @@ class TestApprovalRequestListing:
         """Test listing approval requests with all filters combined."""
         mock_client.get.return_value = sample_paginated_response
 
-        result = await governance_service.list_approval_requests(
+        await governance_service.list_approval_requests(
             page=2,
             page_size=10,
             status=ApprovalStatus.ESCALATED,
@@ -624,7 +624,7 @@ class TestGovernanceDecisions:
             }
         }
 
-        result = await governance_service.list_decisions(
+        await governance_service.list_decisions(
             decision="approve",
             request_id=sample_approval_request_id,
             reviewer_id="reviewer-001",
@@ -892,7 +892,7 @@ class TestMetrics:
         """Test retrieving metrics with date range filter."""
         mock_client.get.return_value = {"data": sample_metrics_data}
 
-        result = await governance_service.get_metrics(
+        await governance_service.get_metrics(
             start_date="2024-01-01",
             end_date="2024-01-31",
         )
@@ -912,7 +912,7 @@ class TestMetrics:
         """Test retrieving metrics filtered by policy."""
         mock_client.get.return_value = {"data": sample_metrics_data}
 
-        result = await governance_service.get_metrics(policy_id="policy-001")
+        await governance_service.get_metrics(policy_id="policy-001")
 
         call_args = mock_client.get.call_args
         params = call_args[1]["params"]
@@ -928,7 +928,7 @@ class TestMetrics:
         """Test retrieving metrics with all filters."""
         mock_client.get.return_value = {"data": sample_metrics_data}
 
-        result = await governance_service.get_metrics(
+        await governance_service.get_metrics(
             start_date="2024-01-01",
             end_date="2024-01-31",
             policy_id="policy-001",

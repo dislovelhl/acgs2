@@ -9,7 +9,7 @@ import time
 
 import pytest
 from src.core.enhanced_agent_bus.core import MessageProcessor
-from src.core.enhanced_agent_bus.models import AgentMessage, MessagePriority
+from src.core.enhanced_agent_bus.models import AgentMessage, Priority
 
 # Use DEBUG level to see the circuit breaker transitions
 logging.basicConfig(level=logging.DEBUG)
@@ -63,7 +63,7 @@ async def test_rust_impact_scoring():
         from_agent="security_agent",
         sender_id="security_agent",
         to_agent="ops_agent",
-        priority=MessagePriority.CRITICAL,
+        priority=Priority.CRITICAL,
     )
 
     result = await processor.process(critical_msg)
@@ -207,7 +207,7 @@ async def test_rust_adaptive_governance():
         content={"text": "CRITICAL SECURITY BREACH EMERGENCY"},
         from_agent="agent_a",
         sender_id="agent_a",
-        priority=MessagePriority.CRITICAL,
+        priority=Priority.CRITICAL,
     )
     result_high = await processor.process(msg_high)
     assert result_high.metadata.get("lane") == "deliberation"

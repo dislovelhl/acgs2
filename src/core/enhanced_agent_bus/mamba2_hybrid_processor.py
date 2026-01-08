@@ -10,13 +10,13 @@ Implements Zamba-inspired architecture for O(n) context handling:
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import math
+import logging
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, Tuple, List, Dict, Any
-from dataclasses import dataclass
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ try:
     from src.core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+
 
 @dataclass
 class Mamba2Config:
@@ -53,6 +54,7 @@ class Mamba2Config:
     # Constitutional compliance
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
+
 class Mamba2SSM(nn.Module):
     """
     Mamba-2 State Space Model layer.
@@ -60,7 +62,7 @@ class Mamba2SSM(nn.Module):
     Based on the Mamba-2 paper: https://arxiv.org/abs/2405.21060
     """
 
-    def __init__(self, config: Mamba2Config):
+    def __init__(self, config: Mamba2Config) -> None:
         super().__init__()
         self.config = config
 
@@ -88,7 +90,7 @@ class Mamba2SSM(nn.Module):
         # Initialize parameters
         self._init_weights()
 
-    def _init_weights(self):
+    def _init_weights(self) -> None:
         """Initialize model weights."""
         # A should be negative for stability
         nn.init.normal_(self.A, mean=0.0, std=1.0)
@@ -122,7 +124,12 @@ class Mamba2SSM(nn.Module):
         # State space computation
         # For simplicity, using a basic SSM implementation
         # In production, this would use the full Mamba-2 selective SSM
-        h = torch.zeros(batch, self.config.d_model * self.config.expand_factor, self.config.d_state, device=x.device)
+        h = torch.zeros(
+            batch,
+            self.config.d_model * self.config.expand_factor,
+            self.config.d_state,
+            device=x.device,
+        )
 
         outputs = []
         for t in range(seq_len):
@@ -142,6 +149,7 @@ class Mamba2SSM(nn.Module):
 
         return output
 
+
 class SharedAttention(nn.Module):
     """
     Shared attention layer for precise reasoning.
@@ -149,14 +157,14 @@ class SharedAttention(nn.Module):
     Uses multi-head attention with optional flash attention for efficiency.
     """
 
-    def __init__(self, config: Mamba2Config):
+    def __init__(self, config: Mamba2Config) -> None:
         super().__init__()
         self.config = config
 
         # Multi-head attention
         self.num_heads = 8
         self.head_dim = config.d_model // self.num_heads
-        self.scale = self.head_dim ** -0.5
+        self.scale = self.head_dim**-0.5
 
         self.q_proj = nn.Linear(config.d_model, config.d_model)
         self.k_proj = nn.Linear(config.d_model, config.d_model)
@@ -166,7 +174,7 @@ class SharedAttention(nn.Module):
         # RoPE for positional encoding
         self._init_rope()
 
-    def _init_rope(self):
+    def _init_rope(self) -> None:
         """Initialize Rotary Position Embedding."""
         max_seq_len = self.config.max_seq_len * 4  # Allow for extended context
         theta = 10000.0 ** (-torch.arange(0, self.head_dim, 2).float() / self.head_dim)
@@ -211,7 +219,7 @@ class SharedAttention(nn.Module):
         k = self._apply_rope(k)
 
         # Attention computation
-        if self.config.use_flash_attention and hasattr(F, 'scaled_dot_product_attention'):
+        if self.config.use_flash_attention and hasattr(F, "scaled_dot_product_attention"):
             # Use PyTorch 2.0+ flash attention
             attn_output = F.scaled_dot_product_attention(
                 q.transpose(1, 2),  # (batch, num_heads, seq_len, head_dim)
@@ -226,7 +234,7 @@ class SharedAttention(nn.Module):
             attn_weights = torch.matmul(q, k.transpose(-2, -1)) * self.scale
 
             if mask is not None:
-                attn_weights = attn_weights.masked_fill(mask == 0, float('-inf'))
+                attn_weights = attn_weights.masked_fill(mask == 0, float("-inf"))
 
             attn_weights = F.softmax(attn_weights, dim=-1)
             attn_output = torch.matmul(attn_weights, v)
@@ -236,6 +244,7 @@ class SharedAttention(nn.Module):
         output = self.out_proj(attn_output)
 
         return output
+
 
 class ConstitutionalMambaHybrid(nn.Module):
     """
@@ -248,7 +257,7 @@ class ConstitutionalMambaHybrid(nn.Module):
     - 4M+ token effective context through repetition
     """
 
-    def __init__(self, config: Optional[Mamba2Config] = None):
+    def __init__(self, config: Optional[Mamba2Config] = None) -> None:
         super().__init__()
         self.config = config or Mamba2Config()
 
@@ -256,9 +265,9 @@ class ConstitutionalMambaHybrid(nn.Module):
         self.input_embedding = nn.Embedding(50000, self.config.d_model)  # Basic vocab
 
         # Mamba layers (6 layers as per Zamba optimal ratio)
-        self.mamba_layers = nn.ModuleList([
-            Mamba2SSM(self.config) for _ in range(self.config.num_mamba_layers)
-        ])
+        self.mamba_layers = nn.ModuleList(
+            [Mamba2SSM(self.config) for _ in range(self.config.num_mamba_layers)]
+        )
 
         # Shared attention layer
         self.shared_attention = SharedAttention(self.config)
@@ -272,9 +281,11 @@ class ConstitutionalMambaHybrid(nn.Module):
         # Initialize weights
         self.apply(self._init_weights)
 
-        logger.info(f"ConstitutionalMambaHybrid initialized: {self.config.num_mamba_layers} Mamba layers, {self.config.num_attention_layers} attention layers")
+        logger.info(
+            f"ConstitutionalMambaHybrid initialized: {self.config.num_mamba_layers} Mamba layers, {self.config.num_attention_layers} attention layers"
+        )
 
-    def _init_weights(self, module):
+    def _init_weights(self, module: nn.Module) -> None:
         """Initialize model weights."""
         if isinstance(module, nn.Linear):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
@@ -284,9 +295,7 @@ class ConstitutionalMambaHybrid(nn.Module):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def _prepare_jrt_context(
-        self,
-        input_ids: torch.Tensor,
-        critical_positions: Optional[List[int]] = None
+        self, input_ids: torch.Tensor, critical_positions: Optional[List[int]] = None
     ) -> torch.Tensor:
         """
         Just-Right Token (JRT) context preparation.
@@ -317,8 +326,10 @@ class ConstitutionalMambaHybrid(nn.Module):
         if expanded_input_ids.shape[1] > self.config.max_seq_len:
             # Truncate while preserving critical sections at boundaries
             keep_start = critical_positions[0] * self.config.jrt_repeat_factor
-            keep_end = min(self.config.max_seq_len - keep_start,
-                          len(expanded_input) - critical_positions[-1] * self.config.jrt_repeat_factor)
+            keep_end = min(
+                self.config.max_seq_len - keep_start,
+                len(expanded_input) - critical_positions[-1] * self.config.jrt_repeat_factor,
+            )
 
             middle_trunc = len(expanded_input) - keep_start - keep_end
             if middle_trunc > 0:
@@ -386,8 +397,9 @@ class ConstitutionalMambaHybrid(nn.Module):
                 "d_model": self.config.d_model,
                 "num_mamba_layers": self.config.num_mamba_layers,
                 "max_seq_len": self.config.max_seq_len,
-            }
+            },
         }
+
 
 class ConstitutionalContextManager:
     """
@@ -396,7 +408,7 @@ class ConstitutionalContextManager:
     Enables 4M+ token effective context through intelligent memory management.
     """
 
-    def __init__(self, config: Optional[Mamba2Config] = None):
+    def __init__(self, config: Optional[Mamba2Config] = None) -> None:
         self.config = config or Mamba2Config()
         self.model = ConstitutionalMambaHybrid(self.config)
 
@@ -441,7 +453,7 @@ class ConstitutionalContextManager:
         with torch.no_grad():
             embeddings = self.model(
                 input_ids.unsqueeze(0),  # Add batch dimension
-                critical_positions=critical_positions
+                critical_positions=critical_positions,
             )
 
         # Extract constitutional compliance signal
@@ -501,7 +513,7 @@ class ConstitutionalContextManager:
         compliance_score = min(max(embedding_norms / 10.0, 0.0), 1.0)
         return compliance_score
 
-    def _update_context_memory(self, input_text: str, compliance_score: float):
+    def _update_context_memory(self, input_text: str, compliance_score: float) -> None:
         """Update context memory with new interaction."""
         memory_entry = {
             "text": input_text,
@@ -514,7 +526,7 @@ class ConstitutionalContextManager:
 
         # Maintain memory limits
         if len(self.context_memory) > self.max_memory_entries:
-            self.context_memory = self.context_memory[-self.max_memory_entries:]
+            self.context_memory = self.context_memory[-self.max_memory_entries :]
 
     def get_context_stats(self) -> Dict[str, Any]:
         """Get context memory statistics."""
@@ -531,14 +543,21 @@ class ConstitutionalContextManager:
             "model_memory_usage": self.model.get_memory_usage(),
         }
 
+
 # Convenience functions
-def create_mamba_hybrid_processor(config: Optional[Mamba2Config] = None) -> ConstitutionalMambaHybrid:
+def create_mamba_hybrid_processor(
+    config: Optional[Mamba2Config] = None,
+) -> ConstitutionalMambaHybrid:
     """Create a Mamba-2 Hybrid Processor instance."""
     return ConstitutionalMambaHybrid(config)
 
-def create_constitutional_context_manager(config: Optional[Mamba2Config] = None) -> ConstitutionalContextManager:
+
+def create_constitutional_context_manager(
+    config: Optional[Mamba2Config] = None,
+) -> ConstitutionalContextManager:
     """Create a Constitutional Context Manager instance."""
     return ConstitutionalContextManager(config)
+
 
 __all__ = [
     "CONSTITUTIONAL_HASH",
@@ -549,5 +568,4 @@ __all__ = [
     "ConstitutionalContextManager",
     "create_mamba_hybrid_processor",
     "create_constitutional_context_manager",
-]</contents>
-</xai:function_call">Now let me test the Mamba-2 Hybrid Processor implementation.
+]

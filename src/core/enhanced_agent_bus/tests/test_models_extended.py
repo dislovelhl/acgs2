@@ -285,21 +285,32 @@ class TestValidationStatus:
         assert ValidationStatus.WARNING.value == "warning"
 
 
-class TestMessagePriority:
-    """Test MessagePriority enum."""
+class TestMessagePriorityAlias:
+    """Test MessagePriority alias (deprecated, now points to Priority)."""
 
-    def test_all_priorities(self):
-        """Test all message priorities."""
-        assert MessagePriority.CRITICAL.value == 0
-        assert MessagePriority.HIGH.value == 1
-        assert MessagePriority.NORMAL.value == 2
-        assert MessagePriority.LOW.value == 3
+    def test_message_priority_is_alias_for_priority(self):
+        """Test MessagePriority is an alias for Priority."""
+        assert MessagePriority is Priority
+        assert MessagePriority.CRITICAL is Priority.CRITICAL
+        assert MessagePriority.HIGH is Priority.HIGH
+        assert MessagePriority.NORMAL is Priority.NORMAL
+        assert MessagePriority.LOW is Priority.LOW
+
+    def test_priority_values_ascending(self):
+        """Test priority values are ascending (higher value = higher priority)."""
+        # Note: The old MessagePriority used DESCENDING values (CRITICAL=0, LOW=3)
+        # Priority uses ASCENDING values (LOW=0, CRITICAL=3) which is more intuitive
+        assert Priority.LOW.value == 0
+        assert Priority.NORMAL.value == 1
+        assert Priority.MEDIUM.value == 1  # Alias for NORMAL
+        assert Priority.HIGH.value == 2
+        assert Priority.CRITICAL.value == 3
 
     def test_priority_ordering(self):
-        """Test priority ordering (lower value = higher priority)."""
-        assert MessagePriority.CRITICAL.value < MessagePriority.HIGH.value
-        assert MessagePriority.HIGH.value < MessagePriority.NORMAL.value
-        assert MessagePriority.NORMAL.value < MessagePriority.LOW.value
+        """Test priority ordering (higher value = higher priority)."""
+        assert Priority.LOW.value < Priority.NORMAL.value
+        assert Priority.NORMAL.value < Priority.HIGH.value
+        assert Priority.HIGH.value < Priority.CRITICAL.value
 
 
 class TestMessageStatus:

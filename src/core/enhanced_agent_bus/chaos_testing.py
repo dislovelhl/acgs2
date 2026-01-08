@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Optional, Set
 
 # SECURITY CONSTANTS (VULN-006)
 MAX_LATENCY_MS = 5000  # Prevent total system lockout
@@ -105,7 +105,7 @@ class ChaosScenario:
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     active: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate scenario configuration - SECURITY: VULN-006."""
         # Enforce max duration limit
         if self.duration_s > MAX_DURATION_S:
@@ -221,7 +221,7 @@ class ChaosEngine:
             f"[{self.constitutional_hash}] ChaosEngine initialized with constitutional compliance"
         )
 
-    def emergency_stop(self):
+    def emergency_stop(self) -> None:
         """Emergency stop all chaos injection immediately."""
         logger.critical(
             f"[{self.constitutional_hash}] EMERGENCY STOP activated - stopping all chaos scenarios"
@@ -246,7 +246,7 @@ class ChaosEngine:
         """Check if emergency stop is active."""
         return self._emergency_stop
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset emergency stop and clear all scenarios."""
         logger.info(f"[{self.constitutional_hash}] Resetting chaos engine")
         self._emergency_stop = False
@@ -424,7 +424,7 @@ class ChaosEngine:
 
         return scenario
 
-    async def _schedule_cleanup(self, scenario: ChaosScenario):
+    async def _schedule_cleanup(self, scenario: ChaosScenario) -> None:
         """Schedule automatic cleanup after scenario duration."""
         try:
             await asyncio.sleep(scenario.duration_s)
@@ -439,7 +439,7 @@ class ChaosEngine:
                 f"scenario {scenario.name}: {e}"
             )
 
-    async def deactivate_scenario(self, scenario_name: str):
+    async def deactivate_scenario(self, scenario_name: str) -> None:
         """Deactivate a chaos scenario and perform cleanup."""
         with self._lock:
             if scenario_name not in self._active_scenarios:
@@ -530,7 +530,7 @@ class ChaosEngine:
         return None
 
     @asynccontextmanager
-    async def chaos_context(self, scenario: ChaosScenario):
+    async def chaos_context(self, scenario: ChaosScenario) -> AsyncIterator[ChaosScenario]:
         """
         Context manager for chaos scenario lifecycle.
 
@@ -559,7 +559,7 @@ def get_chaos_engine() -> ChaosEngine:
     return _chaos_engine
 
 
-def reset_chaos_engine():
+def reset_chaos_engine() -> None:
     """Reset global chaos engine instance."""
     global _chaos_engine
     if _chaos_engine:
@@ -568,7 +568,9 @@ def reset_chaos_engine():
 
 
 # Decorator for chaos testing
-def chaos_test(scenario_type: str = "latency", target: str = "message_processor", **kwargs):
+def chaos_test(
+    scenario_type: str = "latency", target: str = "message_processor", **kwargs: Any
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Pytest decorator for easy chaos test creation.
 
@@ -579,9 +581,9 @@ def chaos_test(scenario_type: str = "latency", target: str = "message_processor"
             ...
     """
 
-    def decorator(func: Callable):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        async def async_wrapper(*args, **kwargs_inner):
+        async def async_wrapper(*args: Any, **kwargs_inner: Any) -> Any:
             engine = get_chaos_engine()
 
             # Create scenario based on type
@@ -613,7 +615,7 @@ def chaos_test(scenario_type: str = "latency", target: str = "message_processor"
                 await engine.deactivate_scenario(scenario.name)
 
         @wraps(func)
-        def sync_wrapper(*args, **kwargs_inner):
+        def sync_wrapper(*args: Any, **kwargs_inner: Any) -> NoReturn:
             raise RuntimeError("chaos_test decorator only supports async functions")
 
         import asyncio

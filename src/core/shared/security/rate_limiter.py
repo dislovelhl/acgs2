@@ -651,7 +651,7 @@ def create_rate_limit_middleware(
         Middleware function
     """
     refill_rate = requests_per_minute / 60.0  # Convert to per second
-    effective_burst = int(burst_limit * burst_multiplier)
+    int(burst_limit * burst_multiplier)
 
     async def rate_limit_middleware(request: Request, call_next):
         # Extract identifiers
@@ -669,7 +669,7 @@ def create_rate_limit_middleware(
             ("endpoint", endpoint, requests_per_minute * 3, refill_rate * 3, ""),
         ]
 
-        for limit_type, identifier, capacity, refill, endpoint_key in limits_to_check:
+        for limit_type, identifier, capacity, _refill, endpoint_key in limits_to_check:
             key = f"{limit_type}:{identifier}:{endpoint_key}"
             result = await rate_limiter.is_allowed(
                 key=key,
@@ -726,7 +726,7 @@ def rate_limit(
     Returns:
         Decorator function
     """
-    refill_rate = requests_per_minute / 60.0
+    requests_per_minute / 60.0
 
     def decorator(func):
         async def wrapper(*args, **kwargs):

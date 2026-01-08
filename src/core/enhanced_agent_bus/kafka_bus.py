@@ -45,7 +45,7 @@ class KafkaEventBus:
         self._running = False
         self._ssl_context: Optional[ssl.SSLContext] = self._create_ssl_context()
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the Kafka producer."""
         if not KAFKA_AVAILABLE:
             logger.error("aiokafka not installed. KafkaEventBus unavailable.")
@@ -65,7 +65,7 @@ class KafkaEventBus:
         self._running = True
         logger.info(f"KafkaEventBus started on {self.bootstrap_servers}")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the Kafka producer and all consumers."""
         self._running = False
         if self.producer:
@@ -145,7 +145,9 @@ class KafkaEventBus:
             )
             return False
 
-    async def subscribe(self, tenant_id: str, message_types: List[MessageType], handler: Callable):
+    async def subscribe(
+        self, tenant_id: str, message_types: List[MessageType], handler: Callable
+    ) -> None:
         """Subscribe to topics and process messages."""
         if not KAFKA_AVAILABLE:
             return
@@ -165,7 +167,7 @@ class KafkaEventBus:
         self._consumers[consumer_id] = consumer
         await consumer.start()
 
-        async def consume_loop():
+        async def consume_loop() -> None:
             try:
                 async for msg in consumer:
                     if not self._running:
@@ -265,7 +267,7 @@ class Orchestrator:
         self.bus = bus
         self.tenant_id = tenant_id
 
-    async def dispatch_task(self, task_data: Dict[str, Any], worker_type: str):
+    async def dispatch_task(self, task_data: Dict[str, Any], worker_type: str) -> None:
         """Dispatch a task to a specific worker type."""
         message = AgentMessage(
             message_type=MessageType.TASK_REQUEST,
@@ -287,7 +289,7 @@ class Blackboard:
         self.topic = f"acgs.blackboard.{tenant_id}.{board_name}"
         self.state: Dict[str, Any] = {}
 
-    async def update(self, key: str, value: Any):
+    async def update(self, key: str, value: Any) -> None:
         """Update a value on the blackboard."""
         message = AgentMessage(
             message_type=MessageType.EVENT,

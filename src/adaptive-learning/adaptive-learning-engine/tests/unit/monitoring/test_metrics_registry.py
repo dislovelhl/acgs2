@@ -28,6 +28,9 @@ from src.monitoring.drift_detector import (
 from src.monitoring.metrics import (
     MetricLabel,
     MetricsRegistry,
+)
+
+
 class TestMetricsRegistryInit:
     """Tests for MetricsRegistry initialization."""
 

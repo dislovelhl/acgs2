@@ -385,7 +385,7 @@ class JudicialAgent:
         # For now, assume compliance unless obvious violation
 
         # Check for obvious conflicts
-        action_lower = result.action.lower()
+        result.action.lower()
         rule_lower = rule.lower()
 
         if "prohibited" in rule_lower and result.action in rule_lower:

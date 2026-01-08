@@ -1,18 +1,21 @@
 """
-Safety Models for Adaptive Learning Engine.
-Constitutional Hash: cdd01ef066bc6cf2
+Safety Bounds Checker Models
+=============================
+
+Dataclasses for safety check results, alerts and metrics.
 """
 
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from .enums import CheckResult, SafetyStatus
+# Import enums to avoid duplication
+from src.safety.enums import CheckResult, SafetyStatus
 
 
 @dataclass
 class SafetyCheckResult:
-    """Detailed result of a safety bounds check."""
+    """Result of a safety bounds check."""
 
     passed: bool
     result: CheckResult
@@ -25,6 +28,7 @@ class SafetyCheckResult:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
         return {
             "passed": self.passed,
             "result": self.result.value,
@@ -40,7 +44,7 @@ class SafetyCheckResult:
 
 @dataclass
 class SafetyAlert:
-    """Alert generated when safety bounds are breached."""
+    """Alert generated when safety bounds are violated."""
 
     severity: str  # "warning", "critical"
     message: str
@@ -52,6 +56,7 @@ class SafetyAlert:
     context: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
         return {
             "severity": self.severity,
             "message": self.message,
@@ -66,7 +71,7 @@ class SafetyAlert:
 
 @dataclass
 class SafetyMetrics:
-    """Aggregated safety metrics for tracking and monitoring."""
+    """Metrics for safety bounds checking."""
 
     total_checks: int
     passed_checks: int
@@ -80,6 +85,7 @@ class SafetyMetrics:
     last_failure_time: Optional[float]
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
         return {
             "total_checks": self.total_checks,
             "passed_checks": self.passed_checks,

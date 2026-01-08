@@ -245,7 +245,7 @@ class BiasGuardrail(SafetyGuardrail):
         protected_attrs = {"race", "gender", "age", "religion", "disability", "nationality"}
         used_attrs = set()
 
-        for key, value in proposed_changes.items():
+        for _key, value in proposed_changes.items():
             if isinstance(value, str):
                 for attr in protected_attrs:
                     if attr in value.lower():
@@ -663,7 +663,7 @@ class EvolutionEngine:
             target_policy = policy_store.get(proposal.target_policy_id, {})
 
             # Store rollback point
-            rollback_version = target_policy.copy()
+            target_policy.copy()
 
             # Apply changes based on action type
             if proposal.action == EvolutionAction.PARAMETER_TUNE:

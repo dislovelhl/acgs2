@@ -11,7 +11,14 @@ from core import EnhancedAgentBus, MessageProcessor
 
 # Import from module names that conftest.py patches (models, validators, core)
 # This ensures class identity with the strategies in registry.py
-from models import CONSTITUTIONAL_HASH, AgentMessage, MessagePriority, MessageStatus, MessageType
+from models import (
+    CONSTITUTIONAL_HASH,
+    AgentMessage,
+    MessagePriority,
+    MessageStatus,
+    MessageType,
+    Priority,
+)
 from validators import ValidationResult, validate_constitutional_hash, validate_message_content
 
 
@@ -385,7 +392,7 @@ class TestMessagePriorityAndTypes:
 
     def test_message_priorities(self):
         """Test all message priorities."""
-        for priority in MessagePriority:
+        for priority in Priority:
             message = AgentMessage(
                 from_agent="agent1",
                 to_agent="agent2",
@@ -394,6 +401,10 @@ class TestMessagePriorityAndTypes:
                 priority=priority,
             )
             assert message.priority == priority
+
+    def test_message_priority_alias(self):
+        """Test MessagePriority is an alias for Priority."""
+        assert MessagePriority is Priority
 
     def test_governance_message_types(self):
         """Test governance-specific message types."""

@@ -23,7 +23,7 @@ class TestImpactScorerOptimized:
             {"content": "normal message", "from_agent": "agent2"},
         ]
         # Since _bert_enabled is likely False in this test environment without models
-        scores = scorer.score_batch(messages)
+        scores = scorer.score_messages_batch(messages)
         assert len(scores) == 2
         assert all(isinstance(s, float) for s in scores)
         assert scores[0] > scores[1]

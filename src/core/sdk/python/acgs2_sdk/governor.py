@@ -26,7 +26,7 @@ class Governor:
     and seamless fallback to "Degraded Mode" for 100% availability.
     """
 
-    def __init__(self, project_id: str, const_hash: str, config: ACGS2Config | None = None):
+    def __init__(self, project_id: str, const_hash: str, config: ACGS2Config | None = None) -> None:
         if const_hash != CONSTITUTIONAL_HASH:
             raise ValueError("Invalid Constitutional Hash. High-risk alignment failure detected.")
 
@@ -34,7 +34,7 @@ class Governor:
         self.const_hash = const_hash
         self.config = config or ACGS2Config(base_url="https://api.folo.io")
         self.client = create_client(self.config)
-        self._local_audit_queue = []
+        self._local_audit_queue: list[dict[str, Any]] = []
 
     async def verify(self, ai_output: str, _context: dict[str, Any] | None = None) -> str:
         """
@@ -87,11 +87,11 @@ class Governor:
         )
         return content
 
-    def secure(self) -> Callable:
+    def secure(self) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator for securing agent functions."""
 
-        def decorator(func: Callable) -> Callable:
-            async def wrapper(*args, **kwargs):
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+            async def wrapper(*args: Any, **kwargs: Any) -> str:
                 # Simple wrapper logic
                 result = await func(*args, **kwargs)
                 return await self.verify(result)

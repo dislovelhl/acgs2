@@ -45,21 +45,21 @@ const listCommand = new Command('list')
   .action(async (options) => {
     const spinner = ora('Retrieving coordination tasks...').start();
 
-        logger.info(chalk.yellow(`\n📋 Valid priorities: ${VALID_PRIORITIES.join(', ')}`);
+        logger.info(chalk.yellow(`\n📋 Valid priorities: ${VALID_PRIORITIES.join(', ')}`));
       // Validate filters if provided
       if (options.priority && !validatePriority(options.priority)) {
         spinner.fail(chalk.red(`❌ Invalid priority filter: ${options.priority}`));
         logger.warn('invalid_priority_filter', { priority: options.priority });
         cliOutput(chalk.yellow(`\n📋 Valid priorities: ${VALID_PRIORITIES.join(', ')}`));
         process.exit(1);
-        logger.info(chalk.yellow(`\n📋 Valid agent types: ${VALID_AGENT_TYPES.join(', ')}`);
+        logger.info(chalk.yellow(`\n📋 Valid agent types: ${VALID_AGENT_TYPES.join(', ')}`));
 
       if (options.agentType && !validateAgentType(options.agentType)) {
         spinner.fail(chalk.red(`❌ Invalid agent type filter: ${options.agentType}`));
         logger.warn('invalid_agent_type_filter', { agentType: options.agentType });
         cliOutput(chalk.yellow(`\n📋 Valid agent types: ${VALID_AGENT_TYPES.join(', ')}`));
         process.exit(1);
-        logger.info(chalk.yellow(`\n📋 Valid statuses: ${VALID_STATUSES.join(', ')}`);
+        logger.info(chalk.yellow(`\n📋 Valid statuses: ${VALID_STATUSES.join(', ')}`));
 
       if (options.status && !validateStatus(options.status)) {
         spinner.fail(chalk.red(`❌ Invalid status filter: ${options.status}`));
@@ -94,12 +94,12 @@ const listCommand = new Command('list')
       // Display tasks by priority
       displayTasksByPriority('CRITICAL', criticalTasks, '🚨');
       displayTasksByPriority('HIGH', highTasks, '⚠️');
-      logger.info(chalk.blue(`\n📊 Summary:`);
-      logger.info(chalk.gray(`   Total Tasks: ${tasks.length}`);
-      logger.info(chalk.gray(`   Critical: ${criticalTasks.length}`);
-      logger.info(chalk.gray(`   High: ${highTasks.length}`);
-      logger.info(chalk.gray(`   Medium: ${mediumTasks.length}`);
-      logger.info(chalk.gray(`   Low: ${lowTasks.length}`);
+      logger.info(chalk.blue(`\n📊 Summary:`));
+      logger.info(chalk.gray(`   Total Tasks: ${tasks.length}`));
+      logger.info(chalk.gray(`   Critical: ${criticalTasks.length}`));
+      logger.info(chalk.gray(`   High: ${highTasks.length}`));
+      logger.info(chalk.gray(`   Medium: ${mediumTasks.length}`));
+      logger.info(chalk.gray(`   Low: ${lowTasks.length}`));
       console.log(chalk.gray(`   Critical: ${criticalTasks.length}`));
       console.log(chalk.gray(`   High: ${highTasks.length}`));
       console.log(chalk.gray(`   Medium: ${mediumTasks.length}`));
@@ -123,18 +123,18 @@ function displayTasksByPriority(title: string, tasks: any[], emoji: string) {
   const priorityColors = {
     'CRITICAL': chalk.red,
     'HIGH': chalk.yellow,
-  logger.info(chalk.blue(`\n${emoji} ${title} PRIORITY TASKS:`);
+  logger.info(chalk.blue(`\n${emoji} ${title} PRIORITY TASKS:`));
     'LOW': chalk.gray
   };
 
   cliOutput(chalk.blue(`\n${emoji} ${title} PRIORITY TASKS:`));
 
-    logger.info(color(`${index + 1}. ${task.id}: ${task.task}`);
-    logger.info(chalk.gray(`   Agent: ${task.agent_type} (${task.skills.join(', ')})`);
-    logger.info(chalk.gray(`   Effort: ${task.estimated_effort}`);
-    logger.info(chalk.gray(`   Impact: ${task.impact}`);
-    logger.info(chalk.gray(`   Status: ${statusEmoji} ${task.status}`);
-    logger.info(chalk.gray(`   → ${task.description}`);
+    logger.info(color(`${index + 1}. ${task.id}: ${task.task}`));
+    logger.info(chalk.gray(`   Agent: ${task.agent_type} (${task.skills.join(', ')})`));
+    logger.info(chalk.gray(`   Effort: ${task.estimated_effort}`));
+    logger.info(chalk.gray(`   Impact: ${task.impact}`));
+    logger.info(chalk.gray(`   Status: ${statusEmoji} ${task.status}`));
+    logger.info(chalk.gray(`   → ${task.description}`));
     console.log(chalk.gray(`   Effort: ${task.estimated_effort}`));
     console.log(chalk.gray(`   Impact: ${task.impact}`));
     console.log(chalk.gray(`   Status: ${statusEmoji} ${task.status}`));
@@ -175,30 +175,38 @@ const executeCommand = new Command('execute')
       if (result.success) {
         if (options.dryRun) {
           spinner.succeed(chalk.green(`✅ Dry run completed for task ${taskId}`));
-        logger.info(chalk.blue(`\n📋 Execution Details:`);
-        logger.info(chalk.gray(`   Task ID: ${result.taskId}`);
-        logger.info(chalk.gray(`   Status: ${result.status}`);
+        logger.info(chalk.blue(`\n📋 Execution Details:`));
+        logger.info(chalk.gray(`   Task ID: ${result.taskId}`));
+        logger.info(chalk.gray(`   Status: ${result.status}`));
 
-          logger.info(chalk.gray(`   Execution Time: ${result.executionTime}`);
-        console.log(chalk.gray(`   Task ID: ${result.taskId}`));
-        console.log(chalk.gray(`   Status: ${result.status}`));
-          logger.info(chalk.gray(`   Agent Assigned: ${result.agentAssigned}`);
+        if (result.executionTime) {
+          logger.info(chalk.gray(`   Execution Time: ${result.executionTime}`));
           console.log(chalk.gray(`   Execution Time: ${result.executionTime}`));
         }
+        console.log(chalk.gray(`   Task ID: ${result.taskId}`));
+        console.log(chalk.gray(`   Status: ${result.status}`));
         if (result.agentAssigned) {
-          logger.info(chalk.yellow(`\n🔍 Dry Run Results:`);
-          logger.info(chalk.gray(`   ${result.details || 'No additional details available'}`);
+          logger.info(chalk.gray(`   Agent Assigned: ${result.agentAssigned}`));
+        }
+        if (result.agentAssigned) {
+          logger.info(chalk.yellow(`\n🔍 Dry Run Results:`));
+          logger.info(chalk.gray(`   ${result.details || 'No additional details available'}`));
 
-          logger.info(chalk.green(`\n🚀 Task completed successfully!`);
+          logger.info(chalk.green(`\n🚀 Task completed successfully!`));
           console.log(chalk.yellow(`\n🔍 Dry Run Results:`));
           console.log(chalk.gray(`   ${result.details || 'No additional details available'}`));
         } else {
+          logger.info(chalk.green(`\n🚀 Task completed successfully!`));
           console.log(chalk.green(`\n🚀 Task completed successfully!`));
-        logger.info(chalk.red(`\nError: ${result.error}`);
-
+        }
       } else {
-          logger.info(chalk.yellow(`\n💡 Details: ${result.details}`);
+        logger.info(chalk.red(`\nError: ${result.error}`));
         console.log(chalk.red(`\nError: ${result.error}`));
+
+        if (result.details) {
+          logger.info(chalk.yellow(`\n💡 Details: ${result.details}`));
+          cliOutput(chalk.yellow(`\n💡 Details: ${result.details}`));
+        }
 
         if (result.details) {
           cliOutput(chalk.yellow(`\n💡 Details: ${result.details}`));
@@ -263,68 +271,92 @@ const statusCommand = new Command('status')
       } else if (errorMessage.includes('ACGS-2')) {
         cliOutput(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
       }
-  logger.info(chalk.blue(`\n📊 Coordination Tasks Status:`);
+  logger.info(chalk.blue(`\n📊 Coordination Tasks Status:`));
   });
 
 function displayMultipleTasksStatus(tasks: any[], verbose: boolean, showProgress: boolean) {
   cliOutput(chalk.blue(`\n📊 Coordination Tasks Status:`));
 
   const statusCounts = tasks.reduce((acc, task) => {
-  logger.info(chalk.gray(`\n📈 Overview:`);
-  logger.info(chalk.gray(`   Total Tasks: ${tasks.length}`);
+    acc[task.status] = (acc[task.status] || 0) + 1;
+    return acc;
   }, {});
 
-    logger.info(chalk.gray(`   ${emoji} ${status}: ${count}`);
+  logger.info(chalk.gray(`\n📈 Overview:`));
+  logger.info(chalk.gray(`   Total Tasks: ${tasks.length}`));
+
   console.log(chalk.gray(`   Total Tasks: ${tasks.length}`));
   Object.entries(statusCounts).forEach(([status, count]) => {
     const emoji = getStatusEmoji(status);
+    logger.info(chalk.gray(`   ${emoji} ${status}: ${count}`));
     cliOutput(chalk.gray(`   ${emoji} ${status}: ${count}`));
   });
-    logger.info(chalk.gray(`   📊 Progress: ${progress}% (${completed}/${tasks.length} completed)`);
+
   if (showProgress) {
     const completed = statusCounts.completed || 0;
     const progress = Math.round((completed / tasks.length) * 100);
-    logger.info(chalk.blue(`\n📋 Detailed Status:`);
+    logger.info(chalk.gray(`   📊 Progress: ${progress}% (${completed}/${tasks.length} completed)`));
+    cliOutput(chalk.gray(`   📊 Progress: ${progress}% (${completed}/${tasks.length} completed)`));
   }
 
   if (verbose) {
-    console.log(chalk.blue(`\n📋 Detailed Status:`));
-      logger.info(color(`${index + 1}. ${task.id}: ${statusEmoji} ${task.status}`);
-      const statusEmoji = getStatusEmoji(task.status);
-        logger.info(chalk.gray(`   Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`);
+    logger.info(chalk.blue(`\n📋 Detailed Status:`));
+    cliOutput(chalk.blue(`\n📋 Detailed Status:`));
 
+    tasks.forEach((task, index) => {
+      const statusEmoji = getStatusEmoji(task.status);
+      const color = getStatusColor(task.status);
+
+      logger.info(color(`${index + 1}. ${task.id}: ${statusEmoji} ${task.status}`));
       console.log(color(`${index + 1}. ${task.id}: ${statusEmoji} ${task.status}`));
-        logger.info(chalk.gray(`   Progress: ${task.progress}%`);
+
+      if (task.lastUpdated) {
+        logger.info(chalk.gray(`   Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`));
         console.log(chalk.gray(`   Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`));
       }
+
       if (task.progress) {
+        logger.info(chalk.gray(`   Progress: ${task.progress}%`));
         cliOutput(chalk.gray(`   Progress: ${task.progress}%`));
       }
     });
-  logger.info(chalk.blue(`\n📋 Task Status:`);
+  }
 }
 
 function displaySingleTaskStatus(task: any, verbose: boolean) {
   console.log(chalk.blue(`\n📋 Task Status:`));
-  logger.info(color(`Task ID: ${task.id}`);
-  logger.info(color(`Status: ${statusEmoji} ${task.status}`);
-  logger.info(chalk.gray(`Description: ${task.description}`);
+  logger.info(chalk.blue(`\n📋 Task Status:`));
+
+  const statusEmoji = getStatusEmoji(task.status);
+  const color = getStatusColor(task.status);
+
+  logger.info(color(`Task ID: ${task.id}`));
+  logger.info(color(`Status: ${statusEmoji} ${task.status}`));
+  logger.info(chalk.gray(`Description: ${task.description}`));
 
   console.log(color(`Task ID: ${task.id}`));
-    logger.info(chalk.gray(`Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`);
+  console.log(color(`Status: ${statusEmoji} ${task.status}`));
   console.log(chalk.gray(`Description: ${task.description}`));
 
   if (task.lastUpdated) {
+    logger.info(chalk.gray(`Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`));
     console.log(chalk.gray(`Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`));
-    logger.info(chalk.gray(`Progress: ${progressBar} ${task.progress}%`);
+  }
 
   if (task.progress !== undefined) {
     const progressBar = createProgressBar(task.progress);
-    logger.info(chalk.blue(`\n📊 Detailed Information:`);
+    logger.info(chalk.gray(`Progress: ${progressBar} ${task.progress}%`));
+    console.log(chalk.gray(`Progress: ${progressBar} ${task.progress}%`));
   }
-      logger.info(chalk.gray(`   ${key}: ${value}`);
+
   if (verbose && task.details) {
+    logger.info(chalk.blue(`\n📊 Detailed Information:`));
     cliOutput(chalk.blue(`\n📊 Detailed Information:`));
+    Object.entries(task.details).forEach(([key, value]) => {
+      logger.info(chalk.gray(`   ${key}: ${value}`));
+      cliOutput(chalk.gray(`   ${key}: ${value}`));
+    });
+  }
     Object.entries(task.details).forEach(([key, value]) => {
       cliOutput(chalk.gray(`   ${key}: ${value}`));
     });
@@ -356,7 +388,7 @@ const reportCommand = new Command('report')
   .action(async (options) => {
     const spinner = ora('Generating coordination report...').start();
 
-        logger.info(chalk.yellow(`\n📋 Valid formats: ${VALID_FORMATS.join(', ')}`);
+        logger.info(chalk.yellow(`\n📋 Valid formats: ${VALID_FORMATS.join(', ')}`));
       // Validate format
       if (!validateFormat(options.format)) {
         spinner.fail(chalk.red(`❌ Invalid format: ${options.format}`));

@@ -426,7 +426,6 @@ class PolisDeliberationEngine:
 
         This prevents polarization by ensuring consensus exists across diverse groups.
         """
-        group_consensus = {}
 
         for cluster in clusters:
             group_votes = {}

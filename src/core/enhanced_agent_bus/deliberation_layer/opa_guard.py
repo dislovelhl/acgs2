@@ -680,6 +680,47 @@ class OPAGuard:
                 )
                 return True
 
+    async def evaluate(
+        self, message_data: JSONDict, policy_path: str = "data.acgs.guard.verify"
+    ) -> JSONDict:
+        """
+        Evaluate OPA policy for a message.
+
+        This is a simplified interface for policy evaluation used by workflow components.
+        For full action verification with risk assessment, use verify_action() instead.
+
+        Args:
+            message_data: Message/action data to evaluate
+            policy_path: OPA policy path (default: data.acgs.guard.verify)
+
+        Returns:
+            Dict with 'allow', 'reasons', and 'version' keys
+        """
+        try:
+            # Build input for OPA evaluation
+            input_data = {
+                "message": message_data,
+                "constitutional_hash": GUARD_CONSTITUTIONAL_HASH,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
+            result = await self.opa_client.evaluate_policy(input_data, policy_path)
+
+            return {
+                "allow": result.get("allowed", result.get("allow", True)),
+                "reasons": result.get("reasons", []),
+                "version": result.get("version", "1.0.0"),
+            }
+
+        except Exception as e:
+            logger.error(f"OPA evaluation error: {e}")
+            # Fallback: allow with warning when OPA unavailable
+            return {
+                "allow": not self.fail_closed,
+                "reasons": [f"OPA evaluation error: {str(e)}"],
+                "version": "fallback",
+            }
+
     def get_stats(self) -> JSONDict:
         """Get guard statistics."""
         return {

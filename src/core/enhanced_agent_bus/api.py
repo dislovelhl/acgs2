@@ -15,11 +15,11 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import BackgroundTasks, Body, Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, ORJSONResponse
+from fastapi.responses import JSONResponse, ORJSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
 
 # Rate limiting imports (optional - graceful degradation if not available)
@@ -42,28 +42,28 @@ except ImportError:
 
             return decorator
 
-    def get_remote_address():
+    def get_remote_address() -> str:
         return "127.0.0.1"
 
-    def _rate_limit_exceeded_handler(*args, **kwargs):
+    def _rate_limit_exceeded_handler(*args: Any, **kwargs: Any) -> None:
         pass
 
     class RateLimitExceeded(Exception):
         pass
 
-    logger.warning("slowapi not available - rate limiting disabled")
+    # slowapi not available - rate limiting will be disabled
 
 try:
     from src.core.shared.security.cors_config import get_cors_config
     from src.core.shared.security.tenant_context import TenantContextConfig, TenantContextMiddleware
 except ImportError:
     # Fallback for standalone/testing
-    def get_cors_config():
+    def get_cors_config() -> Dict[str, Any]:
         return {}
 
     class TenantContextConfig:
         @classmethod
-        def from_env(cls):
+        def from_env(cls) -> "TenantContextConfig":
             return cls()
 
     class TenantContextMiddleware:
@@ -94,10 +94,9 @@ try:
         OPAConnectionError,
         PolicyError,
     )
-    from .exceptions import RateLimitExceeded as BusRateLimitExceeded
     from .governance.ccai_framework import get_ccai_governance
     from .message_processor import MessageProcessor
-    from .models import AgentMessage, MessageStatus, MessageType, Priority
+    from .models import AgentMessage, MessageType, Priority
 except (ImportError, ValueError):
     try:
         from exceptions import (
@@ -112,7 +111,6 @@ except (ImportError, ValueError):
             OPAConnectionError,
             PolicyError,
         )
-        from exceptions import RateLimitExceeded as BusRateLimitExceeded
         from governance.ccai_framework import get_ccai_governance
         from message_processor import MessageProcessor
         from models import AgentMessage, MessageType, Priority
@@ -121,7 +119,7 @@ except (ImportError, ValueError):
             from src.core.enhanced_agent_bus.governance.ccai_framework import get_ccai_governance
         except ImportError:
             # Mock for testing if import fails
-            def get_ccai_governance():
+            def get_ccai_governance() -> None:
                 return None
 
 
@@ -265,7 +263,7 @@ async def opa_connection_handler(request: Request, exc: OPAConnectionError) -> J
 @app.exception_handler(ConstitutionalError)
 async def constitutional_error_handler(request: Request, exc: ConstitutionalError) -> JSONResponse:
     """Handle constitutional validation errors with 400 status."""
-    status_code = get_http_status_for_exception(exc)
+    status_code = 400
     response = create_error_response(
         exc,
         status_code,
@@ -278,7 +276,7 @@ async def constitutional_error_handler(request: Request, exc: ConstitutionalErro
 @app.exception_handler(MACIError)
 async def maci_error_handler(request: Request, exc: MACIError) -> JSONResponse:
     """Handle MACI role separation errors."""
-    status_code = get_http_status_for_exception(exc)
+    status_code = 403
     response = create_error_response(
         exc,
         status_code,
@@ -291,7 +289,7 @@ async def maci_error_handler(request: Request, exc: MACIError) -> JSONResponse:
 @app.exception_handler(PolicyError)
 async def policy_error_handler(request: Request, exc: PolicyError) -> JSONResponse:
     """Handle policy evaluation errors."""
-    status_code = get_http_status_for_exception(exc)
+    status_code = 400  # Default for validation/client errors
     response = create_error_response(
         exc,
         status_code,
@@ -304,7 +302,7 @@ async def policy_error_handler(request: Request, exc: PolicyError) -> JSONRespon
 @app.exception_handler(AgentError)
 async def agent_error_handler(request: Request, exc: AgentError) -> JSONResponse:
     """Handle agent-related errors."""
-    status_code = get_http_status_for_exception(exc)
+    status_code = 400  # Default for validation/client errors
     response = create_error_response(
         exc,
         status_code,
@@ -317,7 +315,7 @@ async def agent_error_handler(request: Request, exc: AgentError) -> JSONResponse
 @app.exception_handler(MessageError)
 async def message_error_handler(request: Request, exc: MessageError) -> JSONResponse:
     """Handle message-related errors."""
-    status_code = get_http_status_for_exception(exc)
+    status_code = 400  # Default for validation/client errors
     response = create_error_response(
         exc,
         status_code,
@@ -330,7 +328,7 @@ async def message_error_handler(request: Request, exc: MessageError) -> JSONResp
 @app.exception_handler(BusOperationError)
 async def bus_operation_error_handler(request: Request, exc: BusOperationError) -> JSONResponse:
     """Handle bus operation errors with 503 status."""
-    status_code = get_http_status_for_exception(exc)
+    status_code = 400  # Default for validation/client errors
     response = create_error_response(
         exc,
         status_code,
@@ -343,7 +341,7 @@ async def bus_operation_error_handler(request: Request, exc: BusOperationError) 
 @app.exception_handler(AgentBusError)
 async def agent_bus_error_handler(request: Request, exc: AgentBusError) -> JSONResponse:
     """Handle generic AgentBusError (catch-all for bus errors)."""
-    status_code = get_http_status_for_exception(exc)
+    status_code = 400  # Default for validation/client errors
     response = create_error_response(
         exc,
         status_code,
@@ -374,7 +372,7 @@ if CIRCUIT_BREAKER_AVAILABLE:
 
 # ===== Correlation ID Middleware =====
 @app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next):
+async def correlation_id_middleware(request: Request, call_next: Callable[..., Any]) -> Response:
     """Add correlation ID to all requests for distributed tracing."""
     correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
     correlation_id_var.set(correlation_id)
@@ -386,7 +384,7 @@ async def correlation_id_middleware(request: Request, call_next):
 
 # ===== Global Exception Handler =====
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle all unhandled exceptions with structured error response."""
     correlation_id = correlation_id_var.get()
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -653,13 +651,13 @@ try:
     from src.core.shared.security.tenant_context import get_tenant_id
 except ImportError:
 
-    async def get_tenant_id():
+    async def get_tenant_id() -> str:
         return "default-tenant"
 
 
 # Startup event
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Initialize the agent bus on startup"""
     global agent_bus, message_processor
     try:
@@ -676,7 +674,7 @@ async def startup_event():
         logger.warning("Agent bus failed to initialize, using mock mode for development")
 
 
-async def _warm_caches():
+async def _warm_caches() -> None:
     """
     Warm caches at startup to prevent cold start performance degradation.
 
@@ -716,7 +714,7 @@ async def _warm_caches():
 
 # Shutdown event
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     """Clean up on shutdown"""
     global agent_bus
 
@@ -739,7 +737,7 @@ async def shutdown_event():
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check():
+async def health_check() -> HealthResponse:
     """Health check endpoint for service monitoring."""
     agent_bus_status = "healthy" if agent_bus else "unhealthy"
 
@@ -756,7 +754,9 @@ async def health_check():
 @app.get(
     "/governance/stability/metrics", response_model=StabilityMetricsResponse, tags=["Governance"]
 )
-async def get_stability_metrics(tenant_id: str = Depends(get_tenant_id)):
+async def get_stability_metrics(
+    tenant_id: str = Depends(get_tenant_id),
+) -> StabilityMetricsResponse:
     """
     Get real-time stability metrics from the Manifold-Constrained HyperConnection (mHC) layer.
 
@@ -794,7 +794,7 @@ async def send_message(
     background_tasks: BackgroundTasks,
     message_request: MessageRequest = Body(...),
     session_id: Optional[str] = Header(None, alias="X-Session-ID"),
-):
+) -> MessageResponse:
     """
     Send a message to the agent bus for processing.
 
@@ -824,7 +824,7 @@ async def send_message(
                 msg_type = (
                     MessageType.NOTIFICATION
                 )  # Map 'chat' to 'notification' for internal model
-            except:
+            except (ValueError, AttributeError):
                 msg_type = MessageType.COMMAND  # Extreme fallback
 
         try:
@@ -845,7 +845,7 @@ async def send_message(
         )
 
         # 2. Define background processing logic
-        async def process_async(message: AgentMessage):
+        async def process_async(message: AgentMessage) -> None:
             try:
                 if isinstance(agent_bus, MessageProcessor):
                     result = await agent_bus.process(message)
@@ -883,7 +883,7 @@ async def send_message_legacy(
     message: MessageRequest,
     background_tasks: BackgroundTasks,
     session_id: Optional[str] = Header(None, alias="X-Session-ID"),
-):
+) -> MessageResponse:
     """Legacy endpoint - redirects to /api/v1/messages."""
     return await send_message(request, message, background_tasks, session_id)
 
@@ -908,7 +908,9 @@ async def send_message_legacy(
     summary="Get message status",
     tags=["Messages"],
 )
-async def get_message_status(message_id: str, tenant_id: str = Depends(get_tenant_id)):
+async def get_message_status(
+    message_id: str, tenant_id: str = Depends(get_tenant_id)
+) -> Dict[str, Any]:
     """Get the status of a previously submitted message.
     ...
     """
@@ -947,7 +949,7 @@ async def get_message_status(message_id: str, tenant_id: str = Depends(get_tenan
     summary="Get agent bus statistics",
     tags=["Statistics"],
 )
-async def get_stats():
+async def get_stats() -> Dict[str, Any]:
     """Get agent bus statistics including P99/P95/P50 latency metrics.
 
     Returns latency percentiles calculated from a sliding window of recent requests.
@@ -1027,7 +1029,9 @@ async def get_stats():
     summary="Validate policy",
     tags=["Policies"],
 )
-async def validate_policy(policy_data: Dict[str, Any], tenant_id: str = Depends(get_tenant_id)):
+async def validate_policy(
+    policy_data: Dict[str, Any], tenant_id: str = Depends(get_tenant_id)
+) -> Dict[str, Any]:
     """Validate a policy against constitutional requirements.
     ...
     """

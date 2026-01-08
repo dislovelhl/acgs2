@@ -976,7 +976,7 @@ class FederationGovernor:
             return False
 
         # Phase 2: Challenge-response
-        challenge = self.trust_protocol.create_challenge(leader_identity.org_id)
+        self.trust_protocol.create_challenge(leader_identity.org_id)
         # In real implementation, this would be sent to leader and response received
 
         # Phase 3: Verify compliance

@@ -202,6 +202,7 @@ class ImpactScorer:
         self._agent_rates: Dict[str, int] = {}
         self._agent_history: Dict[str, List[float]] = {}
         self._keyword_embeddings: Optional[np.ndarray] = None
+        self._model_loaded: bool = False
 
     def _ensure_model_loaded(self) -> bool:
         """
@@ -506,12 +507,29 @@ class ImpactScorer:
                         sim = cosine_similarity(
                             emb.reshape(1, -1) if emb.ndim == 1 else emb, kw_emb
                         )
-                        embedding_score = float(np.max(sim))
+                        raw_embedding_score = float(np.max(sim))
                     else:
                         # Manual cosine similarity fallback
                         emb_flat = emb.flatten()
                         sims = [cosine_similarity_fallback(emb_flat, kw) for kw in kw_emb]
-                        embedding_score = max(sims) if sims else 0.0
+                        raw_embedding_score = max(sims) if sims else 0.0
+
+                    # Apply confidence threshold - BERT embeddings can show high similarity
+                    # even for unrelated text. Use stricter threshold when keywords don't match.
+                    # If NO keywords matched (score < 0.3), require very high ML confidence (0.95+)
+                    # to override, as this likely indicates a false positive.
+                    if keyword_score < 0.3:
+                        # No or very few keywords - require very high confidence
+                        embedding_confidence_threshold = 0.95
+                    else:
+                        # Some keywords matched - moderate confidence is OK
+                        embedding_confidence_threshold = 0.85
+
+                    if raw_embedding_score >= embedding_confidence_threshold:
+                        embedding_score = raw_embedding_score
+                    else:
+                        # For moderate similarity, scale down to avoid false positives
+                        embedding_score = raw_embedding_score * 0.3
 
             except Exception as e:
                 logger.error(f"Semantic scoring failure: {e}")
@@ -560,7 +578,62 @@ class ImpactScorer:
             message.impact_score = final
         return final
 
-    def score_batch(self, messages: list) -> list[float]:
+    def calculate_impact_score(
+        self, message: Union[AgentMessage, JSONDict], context: Optional[JSONDict] = None
+    ) -> float:
+        """
+        Synchronous impact score calculation.
+
+        Uses ML-based semantic scoring with fallback to keyword-based heuristics.
+        This is the synchronous version of calculate_impact_score_async.
+
+        Args:
+            message: AgentMessage or dict containing the message content
+            context: Optional context dict with additional scoring parameters
+
+        Returns:
+            Impact score between 0.0 and 1.0
+        """
+        if not message and not context:
+            return 0.1
+
+        agent_id = "anonymous"
+        if context and "agent_id" in context:
+            agent_id = context["agent_id"]
+        elif isinstance(message, dict) and "from_agent" in message:
+            agent_id = message["from_agent"]
+        elif hasattr(message, "from_agent"):
+            agent_id = getattr(message, "from_agent", "anonymous")
+
+        # Use pre-computed semantic score if provided in context
+        if context and "semantic_override" in context:
+            semantic = context["semantic_override"]
+        else:
+            semantic = self._calculate_semantic_score(message)
+
+        scores = {
+            "semantic": semantic,
+            "permission": self._calculate_permission_score(message),
+            "volume": self._calculate_volume_score(agent_id),
+            "context": self._calculate_context_score(message, context),
+            "drift": self._calculate_drift_score(agent_id, semantic),
+            "priority": self._calculate_priority_factor(message, context),
+            "type": self._calculate_type_factor(message, context),
+        }
+
+        weighted = sum(scores[k] * getattr(self.config, f"{k}_weight") for k in scores)
+
+        if scores["priority"] >= 0.9:
+            weighted = max(weighted, self.config.critical_priority_boost)
+        if scores["semantic"] >= 0.8:
+            weighted = max(weighted, self.config.high_semantic_boost)
+
+        final = min(1.0, weighted)
+        if hasattr(message, "impact_score"):
+            message.impact_score = final
+        return final
+
+    def score_messages_batch(self, messages: list) -> list[float]:
         """Process multiple messages efficiently with batching."""
         if not messages:
             return []

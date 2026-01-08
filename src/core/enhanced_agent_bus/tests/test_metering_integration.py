@@ -33,10 +33,10 @@ from metering_integration import (
 
 # Import models for testing
 try:
-    from models import AgentMessage, MessagePriority, MessageType
+    from models import AgentMessage, MessageType, Priority
     from validators import ValidationResult
 except ImportError:
-    from src.core.enhanced_agent_bus.models import AgentMessage, MessagePriority, MessageType
+    from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
     from src.core.enhanced_agent_bus.validators import ValidationResult
 
 # Import metering models with fallback mocks
@@ -108,7 +108,7 @@ def sample_message():
         message_type=MessageType.GOVERNANCE_REQUEST,
         content="Test message content",
         tenant_id="test-tenant",
-        priority=MessagePriority.NORMAL,
+        priority=Priority.NORMAL,
         constitutional_hash=CONSTITUTIONAL_HASH,
     )
 

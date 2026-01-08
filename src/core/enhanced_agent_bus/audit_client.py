@@ -140,7 +140,7 @@ class AuditClient:
         # Recent results for monitoring
         self._recent_results: deque = deque(maxlen=100)
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the background batch worker."""
         if self._running:
             return
@@ -150,7 +150,7 @@ class AuditClient:
             self._batch_worker = asyncio.create_task(self._batch_flush_worker())
             logger.info(f"[{CONSTITUTIONAL_HASH}] AuditClient batch worker started")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the client and flush pending batches."""
         self._running = False
 
@@ -184,6 +184,42 @@ class AuditClient:
         else:
             return await self._submit_single(validation_result)
 
+    async def record(self, message_id: str, workflow_result: Any) -> str:
+        """
+        Record a workflow result to the audit trail.
+
+        This is a convenience method for recording deliberation workflow results.
+        It wraps report_validation with the expected interface.
+
+        Args:
+            message_id: ID of the message being audited
+            workflow_result: Workflow result data to record
+
+        Returns:
+            Audit hash/ID for the recorded entry
+        """
+        import hashlib
+        import json
+        from datetime import datetime, timezone
+
+        # Build audit record
+        audit_record = {
+            "message_id": message_id,
+            "workflow_result": workflow_result,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "constitutional_hash": CONSTITUTIONAL_HASH,
+        }
+
+        # Generate audit hash
+        audit_hash = hashlib.sha256(
+            json.dumps(audit_record, default=str, sort_keys=True).encode()
+        ).hexdigest()[:16]
+
+        # Submit to audit ledger
+        result = await self.report_validation(audit_record)
+
+        return audit_hash if result else audit_hash
+
     async def _queue_for_batch(self, validation_result: Any) -> Optional[str]:
         """Queue a validation result for batch submission."""
         batch_to_send = None
@@ -213,7 +249,7 @@ class AuditClient:
 
         return await self._submit_batch(batch_to_send)
 
-    async def _batch_flush_worker(self):
+    async def _batch_flush_worker(self) -> None:
         """Background worker that periodically flushes batches."""
         while self._running:
             try:
@@ -410,7 +446,7 @@ class AuditClient:
         results = list(self._recent_results)[-n:]
         return [r.to_dict() for r in results]
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the underlying HTTP client."""
         await self.stop()
         await self.client.aclose()
@@ -437,7 +473,7 @@ async def initialize_audit_client(
     return client
 
 
-async def close_audit_client():
+async def close_audit_client() -> None:
     """Close the global audit client."""
     global _global_client
     if _global_client:

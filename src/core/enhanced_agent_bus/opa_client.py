@@ -139,16 +139,16 @@ class OPAClient:
             logger.warning("Embedded mode requested but OPA SDK not available")
             self.mode = "http"
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "OPAClient":
         """Async context manager entry."""
         await self.initialize()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Async context manager exit."""
         await self.close()
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize HTTP client and cache connections."""
         if self.mode in ("http", "fallback"):
             if not self._http_client:
@@ -197,7 +197,7 @@ class OPAClient:
                 logger.warning(f"Redis cache failed: {e}, using memory")
                 self._redis_client = None
 
-    async def close(self):
+    async def close(self) -> None:
         """Close all connections."""
         if self._http_client:
             await self._http_client.aclose()
@@ -239,7 +239,7 @@ class OPAClient:
 
         return None
 
-    async def _set_to_cache(self, cache_key: str, result: Dict[str, Any]):
+    async def _set_to_cache(self, cache_key: str, result: Dict[str, Any]) -> None:
         """Set result in cache."""
         if not self.enable_cache:
             return
@@ -261,7 +261,7 @@ class OPAClient:
             "timestamp": datetime.now(timezone.utc).timestamp(),
         }
 
-    async def clear_cache(self, policy_path: Optional[str] = None):
+    async def clear_cache(self, policy_path: Optional[str] = None) -> None:
         """
         Clear the policy evaluation cache.
 
@@ -334,14 +334,14 @@ class OPAClient:
             logger.error(f"Policy evaluation error: {sanitized_error}")
             return self._handle_evaluation_error(e, policy_path)
 
-    def _validate_policy_path(self, policy_path: str):
+    def _validate_policy_path(self, policy_path: str) -> None:
         """Strict validation of OPA policy path to prevent injection (VULN-009)."""
         if not re.match(r"^[a-zA-Z0-9_.]+$", policy_path):
             raise ValueError(f"Invalid policy path characters: {policy_path}")
         if ".." in policy_path:
             raise ValueError(f"Path traversal detected in policy path: {policy_path}")
 
-    def _validate_input_data(self, input_data: Dict[str, Any]):
+    def _validate_input_data(self, input_data: Dict[str, Any]) -> None:
         """Validate input data size and structure (VULN-009)."""
         if len(json.dumps(input_data)) > 1024 * 512:  # 512KB limit
             raise ValueError("Input data exceeds maximum allowed size")
@@ -690,7 +690,7 @@ async def initialize_opa_client(
     return _opa_client
 
 
-async def close_opa_client():
+async def close_opa_client() -> None:
     """Close global OPA client."""
     global _opa_client
     if _opa_client:

@@ -581,7 +581,7 @@ class CoreReasoningEngine(CoreReasoningEngineInterface):
                     }
 
                 # Checkpoint result to DMS
-                checkpoint_id = (
+                (
                     plan.checkpoints[step_idx]
                     if step_idx < len(plan.checkpoints)
                     else f"step_{step_idx}"
