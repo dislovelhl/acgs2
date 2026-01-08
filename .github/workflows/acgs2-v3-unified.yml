@@ -26,12 +26,10 @@ jobs:
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.80.0
 
       - name: Cargo Audit
         run: |
-          cargo install cargo-audit --version 0.21.1
+          cargo install cargo-audit
           cd src/core/enhanced_agent_bus/rust && cargo audit
 
   test-python:
@@ -48,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test]
-          pip install -r src/core/requirements_optimized.txt
+          pip install -r src/core/config/requirements_optimized.txt
           pip install pytest-cov
       - name: Run All Tests with Coverage
         run: |
@@ -69,15 +67,13 @@ jobs:
             src/core/enhanced_agent_bus/.coverage
 
   test-rust:
-    name: Rust Tests (1.80.0)
+    name: Rust Tests (stable)
     needs: security-audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.80.0
       - name: Cargo Test
         run: |
           cd src/core/enhanced_agent_bus/rust && cargo test

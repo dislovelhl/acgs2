@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test,loadtest]
-          pip install -r src/core/requirements_optimized.txt
+          pip install -r src/core/config/requirements_optimized.txt
 
       - name: Verify Locust installation
         run: |
@@ -109,7 +109,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test,loadtest]
-          pip install -r src/core/requirements_optimized.txt
+          pip install -r src/core/config/requirements_optimized.txt
 
       - name: Set up Rust and build extensions
         uses: dtolnay/rust-toolchain@stable
@@ -184,7 +184,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test,loadtest]
-          pip install -r src/core/requirements_optimized.txt
+          pip install -r src/core/config/requirements_optimized.txt
 
       - name: Set up Rust and build extensions
         uses: dtolnay/rust-toolchain@stable
