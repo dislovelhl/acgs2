@@ -3,8 +3,6 @@ name: Reusable Security Workflow
 on:
   workflow_call:
     secrets:
-      GITHUB_TOKEN:
-        required: true
       SLACK_WEBHOOK:
         required: false
 
@@ -24,16 +22,16 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1

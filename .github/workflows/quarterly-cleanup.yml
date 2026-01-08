@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd src/core
-          pip install -r requirements_optimized.txt
+          pip install -r config/requirements_optimized.txt
           pip install black isort flake8 bandit pip-audit pycln pre-commit
 
       - name: Run import cleanup
@@ -64,7 +64,7 @@ jobs:
           cd src/core
           flake8 --max-line-length=100 --ignore=E501,W503 . || true
           bandit -r . -f json -o security_report.json || true
-          pip-audit --requirement requirements_optimized.txt --format json -o dependency_audit.json || true
+          pip-audit --requirement config/requirements_optimized.txt --format json -o dependency_audit.json || true
 
       - name: Generate cleanup report
         run: |

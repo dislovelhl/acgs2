@@ -3,9 +3,9 @@ name: ACGS2 v3.0.0 Unified CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   security-audit:
@@ -22,7 +22,7 @@ jobs:
       - name: Pip Audit
         run: |
           pip install pip-audit
-          pip-audit -r src/core/requirements_optimized.txt
+          pip-audit -r src/core/config/requirements_optimized.txt
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable

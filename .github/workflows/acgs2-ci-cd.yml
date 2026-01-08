@@ -2,18 +2,18 @@ name: ACGS2 CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths-ignore:
-      - '**.md'
-      - 'docs/**'
+      - "**.md"
+      - "docs/**"
   pull_request:
-    branches: [ main ]
+    branches: [main]
   release:
-    types: [ published ]
+    types: [published]
 
 env:
   REGISTRY: ghcr.io/${{ github.repository_owner }}/acgs2
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: "3.11"
   RUST_VERSION: stable
   COVERAGE_MIN: 90
 
@@ -35,7 +35,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+          cache: "pip"
 
       - name: Install dependencies
         working-directory: ./src/core
@@ -157,13 +157,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          cache: "pip"
           cache-dependency-path: src/core/pyproject.toml
 
-      - name: Install Python deps
-        working-directory: ./src/core
+      - name: Install dependencies
         run: |
-          pip install -r requirements_optimized.txt pytest pytest-cov pytest-asyncio
+          pip install -e .[test]
+          pip install -r src/core/config/requirements_optimized.txt
+          pip install pytest-cov
+          pytest-asyncio
 
       - name: Pytest with coverage
         working-directory: ./src/core
