@@ -47,6 +47,10 @@
 - **[Observability](./observability/)** - Monitoring and logging
 - **[Security Guide](./security/)** - Security best practices
 
+#### For Research Assistance
+
+- **[AI Research Assistant Validation & Verification Guide](./AI_RESEARCH_ASSISTANT_VALIDATION.md)** - Evidence standards, confidence levels, and checklists
+
 #### For Architecture
 
 - **[C4 Documentation](./architecture/c4/)** - Complete C4 model
@@ -149,6 +153,7 @@
 - **Authentication**: [API Reference - Authentication](./api/API_REFERENCE.md#authentication)
 - **Policies**: [API Reference - Policy Registry](./api/API_REFERENCE.md#policy-registry-api)
 - **Agent Communication**: [Integration Guide - Agent Bus](./INTEGRATION_GUIDE.md#agent-bus-integration)
+- **Research Validation**: [AI Research Assistant Validation & Verification Guide](./AI_RESEARCH_ASSISTANT_VALIDATION.md)
 - **Error Handling**: [API Reference - Error Handling](./api/API_REFERENCE.md#error-handling)
 - **Testing**: [Testing Guide](./testing-guide.md)
 - **Deployment**: [Deployment Guide](./deployment/)

@@ -56,3 +56,28 @@ Workflows are saved as markdown files and contain a title, a description and a s
 ### Agent-Generated Workflows
 
 You can also ask Agent to generate Workflows for you! This works particularly well after manually working with Agent through a series of steps since it can use the conversation history to create the Workflow.
+
+## Research Assistant Validation & Verification
+
+Use this section when deploying research-focused agents to ensure responses remain accurate, traceable, and bias-aware.
+
+### Required Behaviors
+
+- Prioritize authoritative sources (peer-reviewed studies, official datasets, standards bodies).
+- Distinguish **established facts**, **supported hypotheses**, and **open questions**.
+- Provide confidence levels for key claims.
+- Surface limitations and uncertainty clearly.
+- Revalidate findings on a regular cadence in fast-moving domains.
+- Capture user feedback and corrections to refine future guidance.
+
+### Quick Workflow (Researcher Agent)
+
+1. **Validate scope**: Confirm question, constraints, and output format.
+2. **Verify sources**: Cross-reference high-impact claims with independent sources.
+3. **Synthesize evidence**: Group findings by method and note divergence.
+4. **Report confidence**: Assign and explain confidence levels.
+5. **Communicate limits**: State gaps, assumptions, and missing evidence.
+
+### Full Guidance
+
+See **[AI Research Assistant Validation & Verification Guide](./AI_RESEARCH_ASSISTANT_VALIDATION.md)** for detailed workflows, checklists, and evidence-quality standards.
