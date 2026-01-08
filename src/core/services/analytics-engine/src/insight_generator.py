@@ -267,6 +267,7 @@ class InsightGenerator:
                         f"retrying in {retry_delay}s..."
                     )
                     import asyncio
+
                     await asyncio.sleep(retry_delay)
                     retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
                 else:
@@ -280,6 +281,7 @@ class InsightGenerator:
                         f"retrying in {retry_delay}s..."
                     )
                     import asyncio
+
                     await asyncio.sleep(retry_delay)
                     retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
                 else:

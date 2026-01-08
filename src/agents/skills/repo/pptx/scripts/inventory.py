@@ -38,12 +38,8 @@ from pptx.shapes.base import BaseShape
 # Type aliases for cleaner signatures
 JsonValue = Union[str, int, float, bool, None]
 ParagraphDict = Dict[str, JsonValue]
-ShapeDict = Dict[
-    str, Union[str, float, bool, List[ParagraphDict], List[str], Dict[str, Any], None]
-]
-InventoryData = Dict[
-    str, Dict[str, "ShapeData"]
-]  # Dict of slide_id -> {shape_id -> ShapeData}
+ShapeDict = Dict[str, Union[str, float, bool, List[ParagraphDict], List[str], Dict[str, Any], None]]
+InventoryData = Dict[str, Dict[str, "ShapeData"]]  # Dict of slide_id -> {shape_id -> ShapeData}
 InventoryDict = Dict[str, Dict[str, ShapeDict]]  # JSON-serializable inventory
 
 
@@ -94,7 +90,6 @@ The output JSON includes:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         save_inventory(inventory, output_path)
-
 
         # Report statistics
         len(inventory)
@@ -148,17 +143,10 @@ class ParagraphData:
         self.line_spacing: Optional[float] = None
 
         # Check for bullet formatting
-        if (
-            hasattr(paragraph, "_p")
-            and paragraph._p is not None
-            and paragraph._p.pPr is not None
-        ):
+        if hasattr(paragraph, "_p") and paragraph._p is not None and paragraph._p.pPr is not None:
             pPr = paragraph._p.pPr
             ns = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
-            if (
-                pPr.find(f"{ns}buChar") is not None
-                or pPr.find(f"{ns}buAutoNum") is not None
-            ):
+            if pPr.find(f"{ns}buChar") is not None or pPr.find(f"{ns}buAutoNum") is not None:
                 self.bullet = True
                 if hasattr(paragraph, "level"):
                     self.level = paragraph.level
@@ -408,9 +396,7 @@ class ShapeData:
 
                 # Get default font size from layout
                 if slide and hasattr(slide, "slide_layout"):
-                    self.default_font_size = self.get_default_font_size(
-                        shape, slide.slide_layout
-                    )
+                    self.default_font_size = self.get_default_font_size(shape, slide.slide_layout)
 
         # Get position information
         # Use absolute positions if provided (for shapes in groups), otherwise use shape's position
@@ -469,9 +455,7 @@ class ShapeData:
     def _get_default_font_size(self) -> int:
         """Get default font size from theme text styles or use conservative default."""
         try:
-            if not (
-                hasattr(self.shape, "part") and hasattr(self.shape.part, "slide_layout")
-            ):
+            if not (hasattr(self.shape, "part") and hasattr(self.shape.part, "slide_layout")):
                 return 14
 
             slide_master = self.shape.part.slide_layout.slide_master  # type: ignore
@@ -662,9 +646,7 @@ class ShapeData:
             text = paragraph.text.strip()
             # Check for manual bullet symbols
             if text and any(text.startswith(symbol + " ") for symbol in bullet_symbols):
-                self.warnings.append(
-                    "manual_bullet_symbol: use proper bullet formatting"
-                )
+                self.warnings.append("manual_bullet_symbol: use proper bullet formatting")
                 break
 
     @property
@@ -782,9 +764,7 @@ def collect_shapes_with_absolute_positions(
         # Process children with accumulated offsets
         for child in shape.shapes:  # type: ignore
             result.extend(
-                collect_shapes_with_absolute_positions(
-                    child, abs_group_left, abs_group_top
-                )
+                collect_shapes_with_absolute_positions(child, abs_group_left, abs_group_top)
             )
         return result
 

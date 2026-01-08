@@ -14,6 +14,7 @@ from collections import deque
 from typing import Any, Deque, Dict, List, Optional, Tuple
 
 from river import metrics, utils
+
 from .enums import ModelState, ModelType
 from .models import ModelMetrics, PredictionResult, TrainingResult
 from .pipeline_builder import PipelineBuilder
@@ -193,6 +194,7 @@ class OnlineLearner:
                     elif sample_weight > 0:
                         # Strategy 2: Probabilistic learning
                         import random
+
                         if random.random() < sample_weight:
                             self._model.learn_one(x, y)
                 else:

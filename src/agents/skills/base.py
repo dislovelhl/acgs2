@@ -52,13 +52,12 @@ class BaseSkill:
                 name=meta_dict.get("name", self.path.name),
                 description=meta_dict.get("description", ""),
                 license=meta_dict.get("license"),
-                extra=meta_dict
+                extra=meta_dict,
             )
         else:
             self.instructions = content
             self.metadata = SkillMetadata(
-                name=self.path.name,
-                description="No description provided"
+                name=self.path.name, description="No description provided"
             )
 
     def get_prompt_augmentation(self) -> str:

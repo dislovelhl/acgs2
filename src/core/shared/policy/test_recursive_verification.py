@@ -18,7 +18,7 @@ async def test_recursive_policy_generation():
         spec_id="recursive_spec_001",
         natural_language="The swarm must recursively adhere to the constitutional hash.",
         domain="swarm_governance",
-        criticality="high"
+        criticality="high",
     )
 
     policy = await generator.generate_verified_policy(spec)
@@ -35,6 +35,7 @@ async def test_recursive_policy_generation():
     print(f"\nPolicy IDs: {policy.policy_id}")
     print(f"Status: {policy.verification_status}")
     print(f"Dafny Output: {policy.verification_result['dafny']['status']}")
+
 
 if __name__ == "__main__":
     asyncio.run(test_recursive_policy_generation())

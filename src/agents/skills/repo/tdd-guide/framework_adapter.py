@@ -11,6 +11,7 @@ from typing import Optional
 
 class Framework(Enum):
     """Supported testing frameworks."""
+
     JEST = "jest"
     VITEST = "vitest"
     PYTEST = "pytest"
@@ -23,6 +24,7 @@ class Framework(Enum):
 
 class Language(Enum):
     """Supported programming languages."""
+
     TYPESCRIPT = "typescript"
     JAVASCRIPT = "javascript"
     PYTHON = "python"
@@ -97,11 +99,7 @@ import static org.testng.Assert.*;"""
         return """import { describe, it, beforeEach, afterEach } from 'mocha';
 import { expect } from 'chai';"""
 
-    def generate_test_suite_wrapper(
-        self,
-        suite_name: str,
-        test_content: str
-    ) -> str:
+    def generate_test_suite_wrapper(self, suite_name: str, test_content: str) -> str:
         """
         Wrap test content in framework-specific suite structure.
 
@@ -137,12 +135,7 @@ import { expect } from 'chai';"""
 
         return test_content
 
-    def generate_test_function(
-        self,
-        test_name: str,
-        test_body: str,
-        description: str = ""
-    ) -> str:
+    def generate_test_function(self, test_name: str, test_body: str, description: str = "") -> str:
         """
         Generate framework-specific test function.
 
@@ -187,7 +180,7 @@ import { expect } from 'chai';"""
 
     def _pytest_test(self, test_name: str, test_body: str, description: str) -> str:
         """Generate Pytest test."""
-        func_name = test_name.replace(' ', '_').replace('-', '_')
+        func_name = test_name.replace(" ", "_").replace("-", "_")
         return f"""def test_{func_name}(self):
     \"\"\"
     {description or test_name}
@@ -228,12 +221,7 @@ public void test{method_name}() {{
 {self._indent(test_body, 2)}
 }});"""
 
-    def generate_assertion(
-        self,
-        actual: str,
-        expected: str,
-        assertion_type: str = "equals"
-    ) -> str:
+    def generate_assertion(self, actual: str, expected: str, assertion_type: str = "equals") -> str:
         """
         Generate framework-specific assertion.
 
@@ -316,76 +304,88 @@ public void test{method_name}() {{
         else:
             return f"expect({actual}).to.equal({expected});"
 
-    def generate_setup_teardown(
-        self,
-        setup_code: str = "",
-        teardown_code: str = ""
-    ) -> str:
+    def generate_setup_teardown(self, setup_code: str = "", teardown_code: str = "") -> str:
         """Generate setup and teardown hooks."""
         result = []
 
         if self.framework in [Framework.JEST, Framework.VITEST, Framework.MOCHA]:
             if setup_code:
-                result.append(f"""beforeEach(() => {{
+                result.append(
+                    f"""beforeEach(() => {{
 {self._indent(setup_code, 2)}
-}});""")
+}});"""
+                )
             if teardown_code:
-                result.append(f"""afterEach(() => {{
+                result.append(
+                    f"""afterEach(() => {{
 {self._indent(teardown_code, 2)}
-}});""")
+}});"""
+                )
 
         elif self.framework == Framework.PYTEST:
             if setup_code:
-                result.append(f"""@pytest.fixture(autouse=True)
+                result.append(
+                    f"""@pytest.fixture(autouse=True)
 def setup_method(self):
 {self._indent(setup_code, 4)}
-    yield""")
+    yield"""
+                )
             if teardown_code:
-                result.append(f"""
-{self._indent(teardown_code, 4)}""")
+                result.append(
+                    f"""
+{self._indent(teardown_code, 4)}"""
+                )
 
         elif self.framework == Framework.UNITTEST:
             if setup_code:
-                result.append(f"""def setUp(self):
-{self._indent(setup_code, 4)}""")
+                result.append(
+                    f"""def setUp(self):
+{self._indent(setup_code, 4)}"""
+                )
             if teardown_code:
-                result.append(f"""def tearDown(self):
-{self._indent(teardown_code, 4)}""")
+                result.append(
+                    f"""def tearDown(self):
+{self._indent(teardown_code, 4)}"""
+                )
 
         elif self.framework in [Framework.JUNIT, Framework.TESTNG]:
             annotation = "@BeforeEach" if self.framework == Framework.JUNIT else "@BeforeMethod"
             if setup_code:
-                result.append(f"""{annotation}
+                result.append(
+                    f"""{annotation}
 public void setUp() {{
 {self._indent(setup_code, 4)}
-}}""")
+}}"""
+                )
 
             annotation = "@AfterEach" if self.framework == Framework.JUNIT else "@AfterMethod"
             if teardown_code:
-                result.append(f"""{annotation}
+                result.append(
+                    f"""{annotation}
 public void tearDown() {{
 {self._indent(teardown_code, 4)}
-}}""")
+}}"""
+                )
 
         return "\n\n".join(result)
 
     def _indent(self, text: str, spaces: int) -> str:
         """Indent text by number of spaces."""
         indent = " " * spaces
-        lines = text.split('\n')
-        return '\n'.join(indent + line if line.strip() else line for line in lines)
+        lines = text.split("\n")
+        return "\n".join(indent + line if line.strip() else line for line in lines)
 
     def _to_camel_case(self, text: str) -> str:
         """Convert text to camelCase."""
-        words = text.replace('-', ' ').replace('_', ' ').split()
+        words = text.replace("-", " ").replace("_", " ").split()
         if not words:
             return text
-        return words[0].lower() + ''.join(word.capitalize() for word in words[1:])
+        return words[0].lower() + "".join(word.capitalize() for word in words[1:])
 
     def _to_class_name(self, text: str) -> str:
         """Convert text to ClassName."""
-        words = text.replace('-', ' ').replace('_', ' ').split()
-        return ''.join(word.capitalize() for word in words)
+        words = text.replace("-", " ").replace("_", " ").split()
+        return "".join(word.capitalize() for word in words)
 
     def detect_framework(self, code: str) -> Optional[Framework]:
         """
@@ -398,31 +398,31 @@ public void tearDown() {{
             Detected framework or None
         """
         # Jest patterns
-        if 'from \'@jest/globals\'' in code or '@jest/' in code:
+        if "from '@jest/globals'" in code or "@jest/" in code:
             return Framework.JEST
 
         # Vitest patterns
-        if 'from \'vitest\'' in code or 'import { vi }' in code:
+        if "from 'vitest'" in code or "import { vi }" in code:
             return Framework.VITEST
 
         # Pytest patterns
-        if 'import pytest' in code or 'def test_' in code and 'pytest.fixture' in code:
+        if "import pytest" in code or "def test_" in code and "pytest.fixture" in code:
             return Framework.PYTEST
 
         # Unittest patterns
-        if 'import unittest' in code and 'unittest.TestCase' in code:
+        if "import unittest" in code and "unittest.TestCase" in code:
             return Framework.UNITTEST
 
         # JUnit patterns
-        if '@Test' in code and 'import org.junit' in code:
+        if "@Test" in code and "import org.junit" in code:
             return Framework.JUNIT
 
         # TestNG patterns
-        if '@Test' in code and 'import org.testng' in code:
+        if "@Test" in code and "import org.testng" in code:
             return Framework.TESTNG
 
         # Mocha patterns
-        if 'from \'mocha\'' in code or ('describe(' in code and 'from \'chai\'' in code):
+        if "from 'mocha'" in code or ("describe(" in code and "from 'chai'" in code):
             return Framework.MOCHA
 
         return None

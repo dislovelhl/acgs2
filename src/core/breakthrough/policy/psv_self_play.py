@@ -464,9 +464,11 @@ class PSVSelfPlay:
 
             try:
                 spec = PolicySpecification(
-                    spec_id=hashlib.sha256(challenge.natural_language_spec.encode()).hexdigest()[:8],
+                    spec_id=hashlib.sha256(challenge.natural_language_spec.encode()).hexdigest()[
+                        :8
+                    ],
                     natural_language=challenge.natural_language_spec,
-                    category=challenge.category
+                    category=challenge.category,
                 )
                 policy = await self.policy_generator.generate_verified_policy(spec)
 

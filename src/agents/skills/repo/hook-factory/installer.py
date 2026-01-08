@@ -23,10 +23,10 @@ class HookInstaller:
     """Handles hook installation to Claude Code settings.json"""
 
     def __init__(self):
-        self.user_settings_path = Path.home() / '.claude' / 'settings.json'
-        self.project_settings_path = Path('.claude') / 'settings.json'
+        self.user_settings_path = Path.home() / ".claude" / "settings.json"
+        self.project_settings_path = Path(".claude") / "settings.json"
 
-    def get_settings_path(self, level: str = 'user') -> Path:
+    def get_settings_path(self, level: str = "user") -> Path:
         """
         Get settings.json path for specified level.
 
@@ -39,9 +39,9 @@ class HookInstaller:
         Raises:
             ValueError: If level is invalid
         """
-        if level == 'user':
+        if level == "user":
             return self.user_settings_path
-        elif level == 'project':
+        elif level == "project":
             return self.project_settings_path
         else:
             raise ValueError(f"Invalid level '{level}'. Must be 'user' or 'project'")
@@ -62,8 +62,8 @@ class HookInstaller:
         if not settings_path.exists():
             return None
 
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_path = settings_path.with_suffix(f'.json.backup.{timestamp}')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = settings_path.with_suffix(f".json.backup.{timestamp}")
 
         shutil.copy2(settings_path, backup_path)
 
@@ -75,7 +75,9 @@ class HookInstaller:
     def _cleanup_old_backups(self, settings_path: Path, keep: int = 5):
         """Keep only the most recent N backups."""
         backup_pattern = f"{settings_path.name}.backup.*"
-        backups = sorted(settings_path.parent.glob(backup_pattern), key=lambda p: p.stat().st_mtime, reverse=True)
+        backups = sorted(
+            settings_path.parent.glob(backup_pattern), key=lambda p: p.stat().st_mtime, reverse=True
+        )
 
         # Remove old backups beyond keep limit
         for old_backup in backups[keep:]:
@@ -95,7 +97,7 @@ class HookInstaller:
             return False
 
         # Determine original settings path
-        settings_path = backup_path.parent / 'settings.json'
+        settings_path = backup_path.parent / "settings.json"
 
         try:
             shutil.copy2(backup_path, settings_path)
@@ -119,24 +121,20 @@ class HookInstaller:
         """
         if not settings_path.exists():
             # Create minimal settings structure
-            return {'hooks': {}}, False
+            return {"hooks": {}}, False
 
         try:
-            with open(settings_path, 'r', encoding='utf-8') as f:
+            with open(settings_path, "r", encoding="utf-8") as f:
                 settings = json.load(f)
 
             # Ensure hooks key exists
-            if 'hooks' not in settings:
-                settings['hooks'] = {}
+            if "hooks" not in settings:
+                settings["hooks"] = {}
 
             return settings, True
 
         except json.JSONDecodeError as e:
-            raise json.JSONDecodeError(
-                f"Malformed JSON in {settings_path}: {e.msg}",
-                e.doc,
-                e.pos
-            )
+            raise json.JSONDecodeError(f"Malformed JSON in {settings_path}: {e.msg}", e.doc, e.pos)
 
     def save_settings(self, settings_path: Path, settings: Dict) -> bool:
         """
@@ -155,18 +153,14 @@ class HookInstaller:
 
             # Write to temporary file first (atomic operation)
             with tempfile.NamedTemporaryFile(
-                mode='w',
-                encoding='utf-8',
-                dir=settings_path.parent,
-                delete=False,
-                suffix='.tmp'
+                mode="w", encoding="utf-8", dir=settings_path.parent, delete=False, suffix=".tmp"
             ) as tmp_file:
                 json.dump(settings, tmp_file, indent=2, ensure_ascii=False)
-                tmp_file.write('\n')  # Add trailing newline
+                tmp_file.write("\n")  # Add trailing newline
                 tmp_path = Path(tmp_file.name)
 
             # Validate JSON before replacing
-            with open(tmp_path, 'r', encoding='utf-8') as f:
+            with open(tmp_path, "r", encoding="utf-8") as f:
                 json.load(f)  # Will raise if invalid
 
             # Atomic rename (replaces existing file)
@@ -175,7 +169,7 @@ class HookInstaller:
 
         except Exception:
             # Clean up temp file if it exists
-            if 'tmp_path' in locals() and tmp_path.exists():
+            if "tmp_path" in locals() and tmp_path.exists():
                 tmp_path.unlink()
             return False
 
@@ -193,16 +187,24 @@ class HookInstaller:
             FileNotFoundError: If hook.json not found
             ValueError: If event type cannot be determined
         """
-        hook_json = hook_path / 'hook.json'
+        hook_json = hook_path / "hook.json"
 
         if not hook_json.exists():
             raise FileNotFoundError(f"hook.json not found in {hook_path}")
 
-        with open(hook_json, 'r', encoding='utf-8') as f:
+        with open(hook_json, "r", encoding="utf-8") as f:
             hook_config = json.load(f)
 
         # Determine event type (top-level key in hook.json)
-        event_types = ['PostToolUse', 'PreToolUse', 'SessionStart', 'Stop', 'PrePush', 'UserPromptSubmit', 'SubagentStop']
+        event_types = [
+            "PostToolUse",
+            "PreToolUse",
+            "SessionStart",
+            "Stop",
+            "PrePush",
+            "UserPromptSubmit",
+            "SubagentStop",
+        ]
         event_type = None
 
         for et in event_types:
@@ -211,11 +213,15 @@ class HookInstaller:
                 break
 
         if not event_type:
-            raise ValueError(f"Could not determine event type from hook.json. Expected one of: {event_types}")
+            raise ValueError(
+                f"Could not determine event type from hook.json. Expected one of: {event_types}"
+            )
 
         return hook_config, event_type
 
-    def install_hook(self, hook_path: str, level: str = 'user', hook_name: Optional[str] = None) -> bool:
+    def install_hook(
+        self, hook_path: str, level: str = "user", hook_name: Optional[str] = None
+    ) -> bool:
         """
         Install hook to settings.json.
 
@@ -244,7 +250,6 @@ class HookInstaller:
 
         settings_path = self.get_settings_path(level)
 
-
         backup_path = None
 
         try:
@@ -260,39 +265,38 @@ class HookInstaller:
 
             # 4. Merge hook into settings
             # Ensure event type array exists in hooks
-            if event_type not in settings['hooks']:
-                settings['hooks'][event_type] = []
+            if event_type not in settings["hooks"]:
+                settings["hooks"][event_type] = []
 
             # Get hook entry for this event type
             hook_entry = hook_config[event_type]
 
             # Check for duplicate (by matcher/command similarity)
-            if self._is_duplicate_hook(settings['hooks'][event_type], hook_entry):
+            if self._is_duplicate_hook(settings["hooks"][event_type], hook_entry):
                 response = input("Replace existing hook? (y/n): ").strip().lower()
-                if response != 'y':
+                if response != "y":
                     return False
 
                 # Remove old version before adding new
-                settings['hooks'][event_type] = [
-                    h for h in settings['hooks'][event_type]
+                settings["hooks"][event_type] = [
+                    h
+                    for h in settings["hooks"][event_type]
                     if not self._is_matching_hook(h, hook_entry)
                 ]
 
             # Add hook(s) to event type array
             if isinstance(hook_entry, list):
-                settings['hooks'][event_type].extend(hook_entry)
+                settings["hooks"][event_type].extend(hook_entry)
             else:
-                settings['hooks'][event_type].append(hook_entry)
+                settings["hooks"][event_type].append(hook_entry)
 
             # 5. Save settings atomically
             if not self.save_settings(settings_path, settings):
                 raise Exception("Failed to save settings")
 
-
             return True
 
         except Exception:
-
             # Rollback from backup if available
             if backup_path and backup_path.exists():
                 self.restore_settings(backup_path)
@@ -312,24 +316,26 @@ class HookInstaller:
     def _is_matching_hook(self, hook1: Dict, hook2: Dict) -> bool:
         """Check if two hooks are similar enough to be duplicates."""
         # Compare matchers
-        matcher1 = hook1.get('matcher', {})
-        matcher2 = hook2.get('matcher', {})
+        matcher1 = hook1.get("matcher", {})
+        matcher2 = hook2.get("matcher", {})
 
         if matcher1 == matcher2:
             # Same matcher - check if commands are similar
-            hooks1 = hook1.get('hooks', [])
-            hooks2 = hook2.get('hooks', [])
+            hooks1 = hook1.get("hooks", [])
+            hooks2 = hook2.get("hooks", [])
 
             if hooks1 and hooks2:
-                cmd1 = hooks1[0].get('command', '').strip()[:50]  # First 50 chars
-                cmd2 = hooks2[0].get('command', '').strip()[:50]
+                cmd1 = hooks1[0].get("command", "").strip()[:50]  # First 50 chars
+                cmd2 = hooks2[0].get("command", "").strip()[:50]
 
                 if cmd1 == cmd2:
                     return True
 
         return False
 
-    def uninstall_hook(self, hook_name: str, level: str = 'user', event_type: Optional[str] = None) -> bool:
+    def uninstall_hook(
+        self, hook_name: str, level: str = "user", event_type: Optional[str] = None
+    ) -> bool:
         """
         Uninstall hook from settings.json.
 
@@ -348,7 +354,6 @@ class HookInstaller:
         if not settings_path.exists():
             return False
 
-
         backup_path = None
 
         try:
@@ -360,21 +365,20 @@ class HookInstaller:
 
             # 3. Find and remove hook
             removed = False
-            event_types_to_check = [event_type] if event_type else settings['hooks'].keys()
+            event_types_to_check = [event_type] if event_type else settings["hooks"].keys()
 
             for et in event_types_to_check:
-                if et not in settings['hooks']:
+                if et not in settings["hooks"]:
                     continue
 
-                original_count = len(settings['hooks'][et])
+                original_count = len(settings["hooks"][et])
 
                 # Remove hooks matching the name
-                settings['hooks'][et] = [
-                    h for h in settings['hooks'][et]
-                    if not self._hook_matches_name(h, hook_name)
+                settings["hooks"][et] = [
+                    h for h in settings["hooks"][et] if not self._hook_matches_name(h, hook_name)
                 ]
 
-                removed_count = original_count - len(settings['hooks'][et])
+                removed_count = original_count - len(settings["hooks"][et])
                 if removed_count > 0:
                     removed = True
 
@@ -388,7 +392,6 @@ class HookInstaller:
             return True
 
         except Exception:
-
             # Rollback
             if backup_path and backup_path.exists():
                 self.restore_settings(backup_path)
@@ -398,14 +401,14 @@ class HookInstaller:
     def _hook_matches_name(self, hook: Dict, name: str) -> bool:
         """Check if hook matches the given name."""
         # Check if name appears in command
-        for h in hook.get('hooks', []):
-            command = h.get('command', '')
+        for h in hook.get("hooks", []):
+            command = h.get("command", "")
             if name.lower() in command.lower():
                 return True
 
         return False
 
-    def list_installed_hooks(self, level: str = 'user') -> List[Dict]:
+    def list_installed_hooks(self, level: str = "user") -> List[Dict]:
         """
         List all installed hooks.
 
@@ -428,22 +431,24 @@ class HookInstaller:
             settings, _ = self.load_settings(settings_path)
             hooks_info = []
 
-            for event_type, hooks in settings.get('hooks', {}).items():
+            for event_type, hooks in settings.get("hooks", {}).items():
                 for hook in hooks:
-                    matcher = hook.get('matcher', {})
-                    hook_commands = hook.get('hooks', [])
+                    matcher = hook.get("matcher", {})
+                    hook_commands = hook.get("hooks", [])
 
                     if hook_commands:
                         first_hook = hook_commands[0]
-                        command = first_hook.get('command', '')[:100]
-                        timeout = first_hook.get('timeout', 60)
+                        command = first_hook.get("command", "")[:100]
+                        timeout = first_hook.get("timeout", 60)
 
-                        hooks_info.append({
-                            'event_type': event_type,
-                            'matcher': matcher,
-                            'command': command,
-                            'timeout': timeout
-                        })
+                        hooks_info.append(
+                            {
+                                "event_type": event_type,
+                                "matcher": matcher,
+                                "command": command,
+                                "timeout": timeout,
+                            }
+                        )
 
             return hooks_info
 
@@ -461,28 +466,28 @@ def main():
     command = sys.argv[1]
     installer = HookInstaller()
 
-    if command == 'install':
+    if command == "install":
         if len(sys.argv) < 3:
             sys.exit(1)
 
         hook_path = sys.argv[2]
-        level = sys.argv[3] if len(sys.argv) > 3 else 'user'
+        level = sys.argv[3] if len(sys.argv) > 3 else "user"
 
         success = installer.install_hook(hook_path, level)
         sys.exit(0 if success else 1)
 
-    elif command == 'uninstall':
+    elif command == "uninstall":
         if len(sys.argv) < 3:
             sys.exit(1)
 
         hook_name = sys.argv[2]
-        level = sys.argv[3] if len(sys.argv) > 3 else 'user'
+        level = sys.argv[3] if len(sys.argv) > 3 else "user"
 
         success = installer.uninstall_hook(hook_name, level)
         sys.exit(0 if success else 1)
 
-    elif command == 'list':
-        level = sys.argv[2] if len(sys.argv) > 2 else 'user'
+    elif command == "list":
+        level = sys.argv[2] if len(sys.argv) > 2 else "user"
 
         hooks = installer.list_installed_hooks(level)
 
@@ -496,5 +501,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

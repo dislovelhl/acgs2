@@ -134,6 +134,7 @@ class AuditTrailManager:
         self._running = True
         if self.config.audit_enabled:
             import asyncio
+
             self._flush_thread = asyncio.create_task(self._background_flush_loop())
             logger.info("Audit trail manager started")
 
@@ -242,6 +243,7 @@ class AuditTrailManager:
     async def _background_flush_loop(self) -> None:
         """Background loop for periodic buffer flushing."""
         import asyncio
+
         while self._running:
             try:
                 await asyncio.sleep(self.config.audit_flush_interval)
@@ -282,6 +284,7 @@ class PolicyLoader:
 
         self._running = True
         import asyncio
+
         self._refresh_thread = asyncio.create_task(self._background_refresh_loop())
         logger.info("Policy loader started")
 
@@ -397,6 +400,7 @@ class PolicyLoader:
     async def _background_refresh_loop(self) -> None:
         """Background loop for periodic policy refresh."""
         import asyncio
+
         while self._running:
             try:
                 await asyncio.sleep(self.config.policy_refresh_interval)

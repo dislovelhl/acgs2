@@ -20,7 +20,7 @@ async def test_policy_generation_and_verification():
         spec_id="test_spec_001",
         natural_language="Admins can read and write, but users can only read.",
         domain="access_control",
-        criticality="high"
+        criticality="high",
     )
 
     policy = await generator.generate_verified_policy(spec)
@@ -31,17 +31,19 @@ async def test_policy_generation_and_verification():
     assert "z3-python" in policy.generation_metadata["backend"]
     assert policy.confidence_score > 0.0
 
+
 @pytest.mark.asyncio
 async def test_critical_path_annotation():
     generator = UnifiedVerifiedPolicyGenerator()
     spec = PolicySpecification(
         spec_id="test_critical",
         natural_language="Emergency governance breach protocol.",
-        domain="emergency"
+        domain="emergency",
     )
 
     policy = await generator.generate_verified_policy(spec)
     assert "[CRITICAL] High-impact governance path" in policy.dafny_spec
+
 
 @pytest.mark.asyncio
 async def test_resource_permission_verification():
@@ -49,13 +51,14 @@ async def test_resource_permission_verification():
     spec = PolicySpecification(
         spec_id="test_resource",
         natural_language="Allow owners to delete their resources, and admins can do everything.",
-        domain="resource_management"
+        domain="resource_management",
     )
 
     policy = await generator.generate_verified_policy(spec)
     assert "[RESOURCE] Fine-grained resource permission model" in policy.dafny_spec
     assert "predicate IsOwner" in policy.dafny_spec
     assert "is_owner" in policy.smt_formulation.lower()
+
 
 if __name__ == "__main__":
     asyncio.run(test_policy_generation_and_verification())

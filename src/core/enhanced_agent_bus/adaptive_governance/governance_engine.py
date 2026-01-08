@@ -304,6 +304,7 @@ class AdaptiveGovernanceEngine:
         # Start background learning
         self.running = True
         import asyncio
+
         self.learning_task = asyncio.create_task(self._background_learning_loop())
         logger.info("Adaptive Governance Engine initialized")
 
@@ -722,6 +723,7 @@ class AdaptiveGovernanceEngine:
     async def _background_learning_loop(self) -> None:
         """Background task for continuous model improvement."""
         import asyncio
+
         while self.running:
             try:
                 await asyncio.sleep(300)  # 5-minute learning cycle

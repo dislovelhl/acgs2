@@ -15,6 +15,7 @@ from src.core.shared.policy.unified_generator import UnifiedVerifiedPolicyGenera
 
 logger = logging.getLogger(__name__)
 
+
 class PSVVerusPolicy:
     """
     Highly secure policy implementation that requires formal proof for all
@@ -36,7 +37,7 @@ class PSVVerusPolicy:
         spec = PolicySpecification(
             spec_id=f"psv_{uuid.uuid4().hex[:8]}",
             natural_language=f"Allow {user_id} to perform {action} if constitutional",
-            context=input_data
+            context=input_data,
         )
 
         try:
@@ -51,12 +52,14 @@ class PSVVerusPolicy:
 
             return {
                 "allow": is_allowed,
-                "reason": verified_policy.verification_result.get("dafny", {}).get("status", "failed"),
+                "reason": verified_policy.verification_result.get("dafny", {}).get(
+                    "status", "failed"
+                ),
                 "policy_id": verified_policy.policy_id,
                 "verification_status": verified_policy.verification_status.value,
                 "confidence": verified_policy.confidence_score,
                 "smt_log": verified_policy.smt_formulation if is_allowed else None,
-                "constitutional_hash": "cdd01ef066bc6cf2"
+                "constitutional_hash": "cdd01ef066bc6cf2",
             }
 
         except Exception as e:
@@ -64,18 +67,16 @@ class PSVVerusPolicy:
             return {
                 "allow": False,
                 "reason": f"Verification error: {str(e)}",
-                "verification_status": VerificationStatus.FAILED.value
+                "verification_status": VerificationStatus.FAILED.value,
             }
+
 
 if __name__ == "__main__":
     import asyncio
 
     async def test():
         policy = PSVVerusPolicy()
-        test_input = {
-            "action": "delete_database",
-            "user": {"id": "admin_user", "role": "admin"}
-        }
+        test_input = {"action": "delete_database", "user": {"id": "admin_user", "role": "admin"}}
         result = await policy.evaluate(test_input)
         print(f"Result: {result}")
 

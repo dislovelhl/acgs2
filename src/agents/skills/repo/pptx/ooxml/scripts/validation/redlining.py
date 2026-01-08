@@ -15,9 +15,7 @@ class RedliningValidator:
         self.unpacked_dir = Path(unpacked_dir)
         self.original_docx = Path(original_docx)
         self.verbose = verbose
-        self.namespaces = {
-            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-        }
+        self.namespaces = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
 
     def validate(self):
         """Main validation method that returns True if valid, False otherwise."""
@@ -95,9 +93,7 @@ class RedliningValidator:
 
             if modified_text != original_text:
                 # Show detailed character-level differences for each paragraph
-                self._generate_detailed_diff(
-                    original_text, modified_text
-                )
+                self._generate_detailed_diff(original_text, modified_text)
                 return False
 
             if self.verbose:

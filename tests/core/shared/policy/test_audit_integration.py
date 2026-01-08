@@ -19,8 +19,7 @@ from src.core.enhanced_agent_bus.ai_assistant.nlu import Intent, NLUResult
 async def test_governance_records_to_audit_ledger():
     # Mock NLU result
     nlu_result = NLUResult(
-        primary_intent=Intent(name="delete_database", confidence=1.0),
-        entities=[]
+        primary_intent=Intent(name="delete_database", confidence=1.0), entities=[]
     )
 
     # Mock context
@@ -29,7 +28,10 @@ async def test_governance_records_to_audit_ledger():
     # Mock AuditLedger
     mock_ledger = AsyncMock()
 
-    with patch("src.core.enhanced_agent_bus.ai_assistant.integration.get_audit_ledger", return_value=mock_ledger):
+    with patch(
+        "src.core.enhanced_agent_bus.ai_assistant.integration.get_audit_ledger",
+        return_value=mock_ledger,
+    ):
         config = IntegrationConfig(enable_governance=True)
         integration = AgentBusIntegration(config)
 
@@ -47,6 +49,7 @@ async def test_governance_records_to_audit_ledger():
         assert "smt_log" in call_args.metadata
         assert "policy_id" in call_args.metadata
         print("✅ Audit Ledger integration verified!")
+
 
 if __name__ == "__main__":
     asyncio.run(test_governance_records_to_audit_ledger())

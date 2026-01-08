@@ -4,7 +4,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import logging
+
 from river import compose, linear_model, optim, preprocessing
+
 from .enums import ModelType
 
 logger = logging.getLogger(__name__)

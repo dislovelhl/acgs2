@@ -65,9 +65,7 @@ LABEL_PADDING_RATIO = 0.4  # Label padding as fraction of font size
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Create thumbnail grids from PowerPoint slides."
-    )
+    parser = argparse.ArgumentParser(description="Create thumbnail grids from PowerPoint slides.")
     parser.add_argument("input", help="Input PowerPoint file (.pptx)")
     parser.add_argument(
         "output_prefix",
@@ -102,16 +100,13 @@ def main():
     # Construct output path (always JPG)
     output_path = Path(f"{args.output_prefix}.jpg")
 
-
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Get placeholder regions if outlining is enabled
             placeholder_regions = None
             slide_dimensions = None
             if args.outline_placeholders:
-                placeholder_regions, slide_dimensions = get_placeholder_regions(
-                    input_path
-                )
+                placeholder_regions, slide_dimensions = get_placeholder_regions(input_path)
                 if placeholder_regions:
                     pass
 
@@ -119,7 +114,6 @@ def main():
             slide_images = convert_to_images(input_path, Path(temp_dir), CONVERSION_DPI)
             if not slide_images:
                 sys.exit(1)
-
 
             # Create grids (max cols×(cols+1) images per grid)
             grid_files = create_grids(
@@ -195,9 +189,7 @@ def convert_to_images(pptx_path, temp_dir, dpi):
 
     # Find hidden slides (1-based indexing for display)
     hidden_slides = {
-        idx + 1
-        for idx, slide in enumerate(prs.slides)
-        if slide.element.get("show") == "0"
+        idx + 1 for idx, slide in enumerate(prs.slides) if slide.element.get("show") == "0"
     }
 
     if hidden_slides:
@@ -273,11 +265,8 @@ def create_grids(
     max_images_per_grid = cols * (cols + 1)
     grid_files = []
 
-
     # Split images into chunks
-    for chunk_idx, start_idx in enumerate(
-        range(0, len(image_paths), max_images_per_grid)
-    ):
+    for chunk_idx, start_idx in enumerate(range(0, len(image_paths), max_images_per_grid)):
         end_idx = min(start_idx + max_images_per_grid, len(image_paths))
         chunk_images = image_paths[start_idx:end_idx]
 
@@ -342,9 +331,7 @@ def create_grid(
     for i, img_path in enumerate(image_paths):
         row, col = i // cols, i % cols
         x = col * width + (col + 1) * GRID_PADDING
-        y_base = (
-            row * (height + font_size + label_padding * 2) + (row + 1) * GRID_PADDING
-        )
+        y_base = row * (height + font_size + label_padding * 2) + (row + 1) * GRID_PADDING
 
         # Add label with actual slide number
         label = f"{start_slide_num + i}"

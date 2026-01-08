@@ -42,11 +42,13 @@ class LLMProposer:
                 f"A policy that extends '{last_policy.specification.natural_language}' "
                 "with additional security constraints."
             )
-        proposals.extend([
-            "A policy ensuring data integrity across high-latency distributed systems.",
-            "A policy with recursive dependency checking for agent operations.",
-            "A temporal policy enforcing 24-hour cooling-off periods for critical resource deletions."
-        ])
+        proposals.extend(
+            [
+                "A policy ensuring data integrity across high-latency distributed systems.",
+                "A policy with recursive dependency checking for agent operations.",
+                "A temporal policy enforcing 24-hour cooling-off periods for critical resource deletions.",
+            ]
+        )
         return proposals
 
 
@@ -78,7 +80,7 @@ class AlphaVerusTranslator:
             conditions.append('input.user.role == "admin"')
 
         if "owner" in nl_lower:
-            conditions.append('input.user.id == input.resource.owner_id')
+            conditions.append("input.user.id == input.resource.owner_id")
 
         if "delete" in nl_lower:
             if "owner" not in nl_lower:
@@ -90,7 +92,7 @@ class AlphaVerusTranslator:
             conditions.append('input.action == "read"')
 
         if "mfa" in nl_lower or "multi-factor" in nl_lower:
-            conditions.append('input.user.mfa_authenticated == true')
+            conditions.append("input.user.mfa_authenticated == true")
 
         cond_str = "\n    ".join(conditions) if conditions else "true"
 
@@ -134,19 +136,27 @@ allow {{
 
         # Core Constitutional Axioms
         smt.append("; Axiom: Critical actions require admin privilege")
-        smt.append("(assert (forall ((u User) (a Action) (r Resource)) (=> (and (is_authorized u a r) (is_critical a)) (is_admin u))))")
+        smt.append(
+            "(assert (forall ((u User) (a Action) (r Resource)) (=> (and (is_authorized u a r) (is_critical a)) (is_admin u))))"
+        )
 
         smt.append("; Axiom: Actions requiring MFA must be MFA verified")
-        smt.append("(assert (forall ((u User) (a Action) (r Resource)) (=> (and (is_authorized u a r) (requires_mfa a)) (mfa_verified u))))")
+        smt.append(
+            "(assert (forall ((u User) (a Action) (r Resource)) (=> (and (is_authorized u a r) (requires_mfa a)) (mfa_verified u))))"
+        )
 
         # Specific Policy Logic
         smt.append(f"; Policy Specification: {spec.natural_language[:100]}")
 
         if "admin" in nl_lower:
-            smt.append("(assert (forall ((u User) (a Action) (r Resource)) (=> (is_admin u) (is_authorized u a r))))")
+            smt.append(
+                "(assert (forall ((u User) (a Action) (r Resource)) (=> (is_admin u) (is_authorized u a r))))"
+            )
 
         if "owner" in nl_lower:
-            smt.append("(assert (forall ((u User) (a Action) (r Resource)) (=> (is_owner u r) (is_authorized u a r))))")
+            smt.append(
+                "(assert (forall ((u User) (a Action) (r Resource)) (=> (is_owner u r) (is_authorized u a r))))"
+            )
 
         if "read" in nl_lower:
             smt.append("(declare-const read_action Action)")
@@ -178,22 +188,34 @@ class DafnyProAnnotator:
     def _sync_with_rust(self) -> set:
         """Reflector: Synchronizes keywords with the Rust ImpactScorer."""
         keywords = {
-            "critical", "emergency", "security", "breach", "violation", "governance",
-            "audit", "blockchain", "unauthorized", "suspicious", "recursive", "swarm",
-            "hierarchy", "sub-agent", "delegate", "child"
+            "critical",
+            "emergency",
+            "security",
+            "breach",
+            "violation",
+            "governance",
+            "audit",
+            "blockchain",
+            "unauthorized",
+            "suspicious",
+            "recursive",
+            "swarm",
+            "hierarchy",
+            "sub-agent",
+            "delegate",
+            "child",
         }
 
         rust_path = os.path.join(
-            os.path.dirname(__file__),
-            "../../enhanced_agent_bus/rust/src/deliberation.rs"
+            os.path.dirname(__file__), "../../enhanced_agent_bus/rust/src/deliberation.rs"
         )
 
         if os.path.exists(rust_path):
             try:
-                with open(rust_path, 'r') as f:
+                with open(rust_path, "r") as f:
                     content = f.read()
                     # Extract keywords from vec![...]
-                    match = re.search(r'high_impact_keywords: vec!\[(.*?)\]', content, re.DOTALL)
+                    match = re.search(r"high_impact_keywords: vec!\[(.*?)\]", content, re.DOTALL)
                     if match:
                         rust_kws = re.findall(r'"(.*?)"', match.group(1))
                         keywords.update(rust_kws)
@@ -205,7 +227,10 @@ class DafnyProAnnotator:
 
     async def annotate(self, rego_policy: str, spec: PolicySpecification) -> str:
         is_critical = any(kw in rego_policy.lower() for kw in self.high_impact_keywords)
-        is_recursive = any(kw in spec.natural_language.lower() for kw in ["recursive", "swarm", "hierarchy", "sub-agent"])
+        is_recursive = any(
+            kw in spec.natural_language.lower()
+            for kw in ["recursive", "swarm", "hierarchy", "sub-agent"]
+        )
 
         critical_tag = "// [CRITICAL] High-impact governance path\n" if is_critical else ""
 
@@ -340,18 +365,17 @@ class UnifiedVerifiedPolicyGenerator:
                     rego_policy=rego,
                     dafny_spec=dafny,
                     smt_formulation=smt,
-                    verification_result={
-                        "z3": z3_result,
-                        "dafny": dafny_result
-                    },
+                    verification_result={"z3": z3_result, "dafny": dafny_result},
                     generation_metadata={
                         "iterations": i + 1,
                         "backend": "z3-python+dafny-cli",
-                        "proven": proven
+                        "proven": proven,
                     },
-                    verification_status=VerificationStatus.PROVEN if proven else VerificationStatus.VERIFIED,
+                    verification_status=VerificationStatus.PROVEN
+                    if proven
+                    else VerificationStatus.VERIFIED,
                     confidence_score=1.0 if proven else (0.8 if success else 0.5),
-                    verified_at=datetime.now(timezone.utc)
+                    verified_at=datetime.now(timezone.utc),
                 )
                 self.verified_corpus.append(best_policy)
                 break
@@ -367,7 +391,7 @@ class UnifiedVerifiedPolicyGenerator:
                 verification_result={"status": "unsat", "error": "Max iterations reached"},
                 generation_metadata={"iterations": self.max_iterations},
                 verification_status=VerificationStatus.FAILED,
-                confidence_score=0.0
+                confidence_score=0.0,
             )
 
         return best_policy
@@ -385,7 +409,7 @@ class UnifiedVerifiedPolicyGenerator:
             return {
                 "status": str(status),
                 "model": str(solver.model()) if status == z3.sat else None,
-                "reason": str(solver.reason_unknown()) if status == z3.unknown else None
+                "reason": str(solver.reason_unknown()) if status == z3.unknown else None,
             }
         except Exception as e:
             return {"status": "error", "error": str(e)}
@@ -403,21 +427,17 @@ class UnifiedVerifiedPolicyGenerator:
                     [self.dafny_path, "verify", tmp_path],
                     capture_output=True,
                     text=True,
-                    timeout=30
+                    timeout=30,
                 )
 
                 if result.returncode == 0:
-                    return {
-                        "status": "verified",
-                        "output": result.stdout,
-                        "verified": True
-                    }
+                    return {"status": "verified", "output": result.stdout, "verified": True}
                 else:
                     return {
                         "status": "failed",
                         "output": result.stdout,
                         "error": result.stderr,
-                        "verified": False
+                        "verified": False,
                     }
             finally:
                 if os.path.exists(tmp_path):

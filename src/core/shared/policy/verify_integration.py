@@ -16,6 +16,7 @@ from src.core.shared.policy.models import VerificationStatus
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 async def verify_proven_integration():
     """
     Verifies that the AgentBusIntegration correctly uses the proven policy generator.
@@ -50,7 +51,10 @@ async def verify_proven_integration():
     logger.info(f"Result: {result_admin}")
 
     assert result_admin["is_allowed"] is True
-    assert result_admin["verification_status"] in [VerificationStatus.VERIFIED.value, VerificationStatus.PROVEN.value]
+    assert result_admin["verification_status"] in [
+        VerificationStatus.VERIFIED.value,
+        VerificationStatus.PROVEN.value,
+    ]
 
     # Test Case 2: Restricted action (should be handled by generator)
     nlu_restricted = MockNLUResult("delete_all_data")
@@ -62,6 +66,7 @@ async def verify_proven_integration():
     assert "policy_id" in result_restricted
 
     logger.info("Shadow Mode Verification Successful!")
+
 
 if __name__ == "__main__":
     asyncio.run(verify_proven_integration())

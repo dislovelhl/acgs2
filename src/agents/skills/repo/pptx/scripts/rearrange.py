@@ -37,9 +37,7 @@ Note: Slide indices are 0-based (first slide is 0, second is 1, etc.)
 
     parser.add_argument("template", help="Path to template PPTX file")
     parser.add_argument("output", help="Path for output PPTX file")
-    parser.add_argument(
-        "sequence", help="Comma-separated sequence of slide indices (0-based)"
-    )
+    parser.add_argument("sequence", help="Comma-separated sequence of slide indices (0-based)")
 
     args = parser.parse_args()
 
@@ -102,9 +100,7 @@ def duplicate_slide(pres, index):
                 # Create a new relationship in the destination slide for this image
                 old_rel = image_rels[old_rId]
                 # get_or_add returns the rId directly, or adds and returns new rId
-                new_rId = new_slide.part.rels.get_or_add(
-                    old_rel.reltype, old_rel._target
-                )
+                new_rId = new_slide.part.rels.get_or_add(old_rel.reltype, old_rel._target)
                 # Update the blip's embed reference to use the new relationship ID
                 blip.set(
                     "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed",

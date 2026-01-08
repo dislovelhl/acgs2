@@ -10,6 +10,7 @@ from .base import BaseSkill
 
 logger = logging.getLogger(__name__)
 
+
 class SkillManager:
     """
     Registry and loader for agent skills.

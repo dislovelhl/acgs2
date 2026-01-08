@@ -319,8 +319,8 @@ class AgentBusIntegration:
                 context={
                     "user_id": context.user_id,
                     "session_id": context.session_id,
-                    "entities": nlu_result.entities if hasattr(nlu_result, 'entities') else []
-                }
+                    "entities": nlu_result.entities if hasattr(nlu_result, "entities") else [],
+                },
             )
 
             # Generate verified policy
@@ -334,10 +334,12 @@ class AgentBusIntegration:
 
             decision = GovernanceDecision(
                 is_allowed=is_allowed,
-                reason="Action verified and proven correct" if is_allowed else "Formal verification failed",
+                reason="Action verified and proven correct"
+                if is_allowed
+                else "Formal verification failed",
                 policy_id=policy.policy_id,
                 confidence=policy.confidence_score,
-                verification_status=policy.verification_status.value
+                verification_status=policy.verification_status.value,
             )
 
             # Record to Audit Ledger if available for third-party auditing
@@ -352,8 +354,8 @@ class AgentBusIntegration:
                             "verification_status": policy.verification_status.value,
                             "smt_log": policy.smt_formulation,
                             "user_id": context.user_id,
-                            "intent": intent_name
-                        }
+                            "intent": intent_name,
+                        },
                     )
                     await ledger.add_validation_result(audit_vr)
                 except Exception as audit_err:

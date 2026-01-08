@@ -29,7 +29,7 @@ class HookFactory:
             project_root = script_dir.parent.parent
 
         self.project_root = Path(project_root)
-        self.output_base = self.project_root / 'generated-hooks'
+        self.output_base = self.project_root / "generated-hooks"
         self.generator = HookGenerator()
         self.validator = HookValidator()
 
@@ -55,8 +55,9 @@ class HookFactory:
 
         return self._process_package(package)
 
-    def create_hook_from_template(self, template_name: str, language: str = 'python',
-                                    hook_name: str = '', **options) -> Optional[dict]:
+    def create_hook_from_template(
+        self, template_name: str, language: str = "python", hook_name: str = "", **options
+    ) -> Optional[dict]:
         """
         Create a hook from explicit template and language.
 
@@ -75,7 +76,7 @@ class HookFactory:
             template_name=template_name,
             language=language,
             hook_name=hook_name,
-            additional_options=options
+            additional_options=options,
         )
 
         try:
@@ -119,9 +120,8 @@ class HookFactory:
         result = self._save_package(package)
 
         # Display success
-        for _file_type, _path in result['files'].items():
+        for _file_type, _path in result["files"].items():
             pass
-
 
         return result
 
@@ -146,7 +146,9 @@ class HookFactory:
             output_dir = output_dir.resolve()
             output_base_resolved = self.output_base.resolve()
             if not str(output_dir).startswith(str(output_base_resolved)):
-                raise ValueError(f"Invalid hook name: path traversal detected in '{package.hook_name}'")
+                raise ValueError(
+                    f"Invalid hook name: path traversal detected in '{package.hook_name}'"
+                )
         except (ValueError, OSError) as e:
             raise ValueError(f"Invalid hook name: {str(e)}")
 
@@ -155,22 +157,18 @@ class HookFactory:
         files = {}
 
         # Save hook.json
-        hook_json_path = output_dir / 'hook.json'
-        with open(hook_json_path, 'w') as f:
+        hook_json_path = output_dir / "hook.json"
+        with open(hook_json_path, "w") as f:
             f.write(package.hook_json)
-        files['hook.json'] = str(hook_json_path)
+        files["hook.json"] = str(hook_json_path)
 
         # Save README.md
-        readme_path = output_dir / 'README.md'
-        with open(readme_path, 'w') as f:
+        readme_path = output_dir / "README.md"
+        with open(readme_path, "w") as f:
             f.write(package.readme_md)
-        files['README.md'] = str(readme_path)
+        files["README.md"] = str(readme_path)
 
-        return {
-            'output_dir': str(output_dir),
-            'hook_name': package.hook_name,
-            'files': files
-        }
+        return {"output_dir": str(output_dir), "hook_name": package.hook_name, "files": files}
 
     def _sanitize_hook_name(self, hook_name: str) -> str:
         """
@@ -188,16 +186,18 @@ class HookFactory:
         import re
 
         # Check for path traversal attempts
-        if '..' in hook_name:
+        if ".." in hook_name:
             raise ValueError(f"Invalid hook name: '..' not allowed in '{hook_name}'")
 
         # Check for absolute paths
-        if hook_name.startswith('/') or (len(hook_name) > 1 and hook_name[1] == ':'):
+        if hook_name.startswith("/") or (len(hook_name) > 1 and hook_name[1] == ":"):
             raise ValueError(f"Invalid hook name: absolute paths not allowed in '{hook_name}'")
 
         # Only allow alphanumeric, hyphens, underscores
-        if not re.match(r'^[a-zA-Z0-9_-]+$', hook_name):
-            raise ValueError(f"Invalid hook name: only alphanumeric, hyphens, and underscores allowed in '{hook_name}'")
+        if not re.match(r"^[a-zA-Z0-9_-]+$", hook_name):
+            raise ValueError(
+                f"Invalid hook name: only alphanumeric, hyphens, and underscores allowed in '{hook_name}'"
+            )
 
         return hook_name
 
@@ -207,8 +207,8 @@ class HookFactory:
         templates = self.generator.list_templates()
 
         for template in templates:
-            if template['use_cases']:
-                for _use_case in template['use_cases']:
+            if template["use_cases"]:
+                for _use_case in template["use_cases"]:
                     pass
 
 
@@ -248,7 +248,7 @@ def interactive_mode(factory: HookFactory) -> int:
         # Summary
 
         confirm = input("\n✅ Generate this hook? (y/n): ").strip().lower()
-        if confirm != 'y':
+        if confirm != "y":
             return 1
 
         # Generate hook name from event and language
@@ -259,11 +259,7 @@ def interactive_mode(factory: HookFactory) -> int:
             template_name=_get_template_for_event(event_type),
             language=language,
             hook_name=hook_name,
-            additional_options={
-                'matcher': matcher,
-                'command': command,
-                'timeout': timeout
-            }
+            additional_options={"matcher": matcher, "command": command, "timeout": timeout},
         )
 
         # Generate hook
@@ -278,8 +274,9 @@ def interactive_mode(factory: HookFactory) -> int:
             if auto_install:
                 try:
                     from installer import HookInstaller
+
                     installer = HookInstaller()
-                    hook_path = result['output_dir']
+                    hook_path = result["output_dir"]
 
                     success = installer.install_hook(hook_path, level=level)
                     if success:
@@ -307,13 +304,13 @@ def _ask_event_type() -> str:
     """Ask user for event type."""
 
     event_map = {
-        '1': 'PostToolUse',
-        '2': 'SubagentStop',
-        '3': 'SessionStart',
-        '4': 'PreToolUse',
-        '5': 'UserPromptSubmit',
-        '6': 'Stop',
-        '7': 'PrePush'
+        "1": "PostToolUse",
+        "2": "SubagentStop",
+        "3": "SessionStart",
+        "4": "PreToolUse",
+        "5": "UserPromptSubmit",
+        "6": "Stop",
+        "7": "PrePush",
     }
 
     while True:
@@ -326,20 +323,18 @@ def _ask_language(event_type: str) -> str:
     """Ask user for programming language with smart defaults."""
 
     # Smart default
-    default = '1' if event_type in ['PostToolUse', 'SubagentStop'] else '6'
-    {
-        '1': 'Python', '2': 'JavaScript', '3': 'TypeScript',
-        '4': 'Rust', '5': 'Go', '6': 'N/A'
-    }[default]
-
+    default = "1" if event_type in ["PostToolUse", "SubagentStop"] else "6"
+    {"1": "Python", "2": "JavaScript", "3": "TypeScript", "4": "Rust", "5": "Go", "6": "N/A"}[
+        default
+    ]
 
     language_map = {
-        '1': 'python',
-        '2': 'javascript',
-        '3': 'typescript',
-        '4': 'rust',
-        '5': 'go',
-        '6': 'generic'
+        "1": "python",
+        "2": "javascript",
+        "3": "typescript",
+        "4": "rust",
+        "5": "go",
+        "6": "generic",
     }
 
     while True:
@@ -352,23 +347,22 @@ def _ask_matcher(event_type: str) -> str:
     """Ask user for tool matcher."""
 
     # Smart defaults
-    if event_type == 'PostToolUse':
+    if event_type == "PostToolUse":
         default = "Edit,Write"
-    elif event_type == 'PreToolUse':
+    elif event_type == "PreToolUse":
         default = "Write,Edit"
-    elif event_type == 'SubagentStop':
+    elif event_type == "SubagentStop":
         default = "*"
     else:
         default = "{}"  # Empty matcher
-
 
     while True:
         answer = input(f"\nYour answer (default={default}): ").strip() or default
 
         # Validation
-        if event_type == 'PreToolUse' and answer == '*':
+        if event_type == "PreToolUse" and answer == "*":
             confirm = input("   Continue anyway? (y/n): ").strip().lower()
-            if confirm != 'y':
+            if confirm != "y":
                 continue
 
         return answer
@@ -379,13 +373,13 @@ def _ask_command(event_type: str, language: str) -> str:
 
     # Smart defaults based on event + language
     defaults = {
-        ('PostToolUse', 'python'): 'black {file_path}',
-        ('PostToolUse', 'javascript'): 'prettier --write {file_path}',
-        ('PostToolUse', 'typescript'): 'prettier --write {file_path}',
-        ('SubagentStop', 'python'): 'pytest tests/',
-        ('SessionStart', 'generic'): 'echo "🚀 Session started at $(date)"',
-        ('Stop', 'generic'): 'echo "👋 Session ended at $(date)"',
-        ('PrePush', 'python'): 'pytest tests/ && echo "✅ Tests passed"'
+        ("PostToolUse", "python"): "black {file_path}",
+        ("PostToolUse", "javascript"): "prettier --write {file_path}",
+        ("PostToolUse", "typescript"): "prettier --write {file_path}",
+        ("SubagentStop", "python"): "pytest tests/",
+        ("SessionStart", "generic"): 'echo "🚀 Session started at $(date)"',
+        ("Stop", "generic"): 'echo "👋 Session ended at $(date)"',
+        ("PrePush", "python"): 'pytest tests/ && echo "✅ Tests passed"',
     }
 
     default = defaults.get((event_type, language), 'echo "Hook triggered"')
@@ -398,10 +392,10 @@ def _ask_command(event_type: str, language: str) -> str:
             continue
 
         # Warn about dangerous commands
-        dangerous = ['rm -rf', 'dd if=', '> /dev/', 'chmod -R 777']
+        dangerous = ["rm -rf", "dd if=", "> /dev/", "chmod -R 777"]
         if any(d in answer for d in dangerous):
             confirm = input("   Continue anyway? (y/n): ").strip().lower()
-            if confirm != 'y':
+            if confirm != "y":
                 continue
 
         return answer
@@ -412,18 +406,17 @@ def _ask_timeout(event_type: str) -> int:
 
     # Smart defaults based on event type
     defaults = {
-        'PreToolUse': '1',      # 5s - blocking
-        'UserPromptSubmit': '1', # 5s - blocking
-        'PostToolUse': '2',      # 10s - formatting
-        'SessionStart': '3',     # 30s - setup
-        'SubagentStop': '4',     # 60s - tests
-        'Stop': '3',             # 30s - cleanup
-        'PrePush': '5'           # 120s - comprehensive
+        "PreToolUse": "1",  # 5s - blocking
+        "UserPromptSubmit": "1",  # 5s - blocking
+        "PostToolUse": "2",  # 10s - formatting
+        "SessionStart": "3",  # 30s - setup
+        "SubagentStop": "4",  # 60s - tests
+        "Stop": "3",  # 30s - cleanup
+        "PrePush": "5",  # 120s - comprehensive
     }
 
-    default = defaults.get(event_type, '3')
-    timeout_map = {'1': 5, '2': 10, '3': 30, '4': 60, '5': 120}
-
+    default = defaults.get(event_type, "3")
+    timeout_map = {"1": 5, "2": 10, "3": 30, "4": 60, "5": 120}
 
     while True:
         choice = input(f"\nYour choice (1-5, default={default}): ").strip() or default
@@ -434,11 +427,10 @@ def _ask_timeout(event_type: str) -> int:
 def _ask_installation_level() -> str:
     """Ask user for installation level."""
 
-
-    level_map = {'1': 'user', '2': 'project'}
+    level_map = {"1": "user", "2": "project"}
 
     while True:
-        choice = input("\nYour choice (1-2, default=1): ").strip() or '1'
+        choice = input("\nYour choice (1-2, default=1): ").strip() or "1"
         if choice in level_map:
             return level_map[choice]
 
@@ -447,23 +439,23 @@ def _ask_auto_install() -> bool:
     """Ask user if auto-install is desired."""
 
     while True:
-        choice = input("Auto-install? (y/n, default=n): ").strip().lower() or 'n'
-        if choice in ['y', 'n', 'yes', 'no']:
-            return choice in ['y', 'yes']
+        choice = input("Auto-install? (y/n, default=n): ").strip().lower() or "n"
+        if choice in ["y", "n", "yes", "no"]:
+            return choice in ["y", "yes"]
 
 
 def _get_template_for_event(event_type: str) -> str:
     """Get appropriate template name for event type."""
     template_map = {
-        'PostToolUse': 'post_tool_use_format',
-        'SubagentStop': 'subagent_stop_test_runner',
-        'SessionStart': 'session_start_load_context',
-        'PreToolUse': 'pre_tool_use_validation',
-        'UserPromptSubmit': 'user_prompt_submit_preprocessor',
-        'Stop': 'stop_session_cleanup',
-        'PrePush': 'pre_push_validation'
+        "PostToolUse": "post_tool_use_format",
+        "SubagentStop": "subagent_stop_test_runner",
+        "SessionStart": "session_start_load_context",
+        "PreToolUse": "pre_tool_use_validation",
+        "UserPromptSubmit": "user_prompt_submit_preprocessor",
+        "Stop": "stop_session_cleanup",
+        "PrePush": "pre_push_validation",
     }
-    return template_map.get(event_type, 'post_tool_use_format')
+    return template_map.get(event_type, "post_tool_use_format")
 
 
 def main():
@@ -471,7 +463,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Hook Factory - Generate Claude Code hooks from templates',
+        description="Hook Factory - Generate Claude Code hooks from templates",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -489,26 +481,20 @@ Examples:
 
   # List available templates
   python hook_factory.py --list
-        """
+        """,
     )
 
-    parser.add_argument('-r', '--request',
-                        help='Natural language request for hook')
-    parser.add_argument('-t', '--template',
-                        help='Template name to use')
-    parser.add_argument('-l', '--language',
-                        default='python',
-                        help='Programming language (default: python)')
-    parser.add_argument('-n', '--name',
-                        help='Custom hook name')
-    parser.add_argument('--list',
-                        action='store_true',
-                        help='List available templates')
-    parser.add_argument('-i', '--interactive',
-                        action='store_true',
-                        help='Interactive mode with guided questions')
-    parser.add_argument('--project-root',
-                        help='Project root directory (default: auto-detect)')
+    parser.add_argument("-r", "--request", help="Natural language request for hook")
+    parser.add_argument("-t", "--template", help="Template name to use")
+    parser.add_argument(
+        "-l", "--language", default="python", help="Programming language (default: python)"
+    )
+    parser.add_argument("-n", "--name", help="Custom hook name")
+    parser.add_argument("--list", action="store_true", help="List available templates")
+    parser.add_argument(
+        "-i", "--interactive", action="store_true", help="Interactive mode with guided questions"
+    )
+    parser.add_argument("--project-root", help="Project root directory (default: auto-detect)")
 
     args = parser.parse_args()
 
@@ -531,9 +517,7 @@ Examples:
     # Generate from template
     if args.template:
         result = factory.create_hook_from_template(
-            template_name=args.template,
-            language=args.language,
-            hook_name=args.name or ''
+            template_name=args.template, language=args.language, hook_name=args.name or ""
         )
         return 0 if result else 1
 
@@ -542,5 +526,5 @@ Examples:
     return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
