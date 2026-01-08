@@ -6,7 +6,7 @@
 
 - **Name**: Quantum Research Module (ACGS-2 Quantum Operations)
 - **Description**: Post-quantum cryptography, quantum error correction, and quantum-inspired governance optimization for next-generation AI governance systems
-- **Location**: `/acgs2-core/quantum_research/`
+- **Location**: `/src/core/quantum_research/`
 - **Language**: Python 3.11+
 - **Purpose**: Implements NIST-approved post-quantum cryptographic algorithms (CRYSTALS-Kyber, CRYSTALS-Dilithium), PAG-QEC neural decoder framework for quantum error correction, and quantum-inspired optimization algorithms for constitutional governance
 - **Constitutional Hash**: `cdd01ef066bc6cf2`

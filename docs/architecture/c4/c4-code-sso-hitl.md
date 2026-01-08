@@ -4,7 +4,7 @@
 
 - **Name**: Single Sign-On (SSO) & Human-In-The-Loop (HITL) Approvals Services
 - **Description**: Enterprise authentication via OIDC/SAML with just-in-time provisioning, coupled with AI governance approval workflows with multi-channel notifications
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/services/auth_sso/` and `/home/dislove/document/acgs2/acgs2-core/services/hitl-approvals/`
+- **Location**: `/home/dislove/document/acgs2/src/core/services/auth_sso/` and `/home/dislove/document/acgs2/src/core/services/hitl-approvals/`
 - **Languages**: Python 3.11+, FastAPI, asyncio
 - **Constitutional Hash**: cdd01ef066bc6cf2
 - **Purpose**: Provide secure, enterprise-grade authentication with role-based access control and AI governance approval workflows with Slack/Teams/PagerDuty notifications

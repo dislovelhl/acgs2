@@ -6,7 +6,7 @@
 
 - **Name**: Policy Marketplace Service
 - **Description**: FastAPI-based marketplace for sharing, rating, and distributing governance policies with community review workflows and comprehensive analytics
-- **Location**: `/acgs2-core/services/policy_marketplace/`
+- **Location**: `/src/core/services/policy_marketplace/`
 - **Language**: Python 3.11+
 - **Framework**: FastAPI 0.115.6+, SQLAlchemy 2.0
 - **Port**: 8003

@@ -13,7 +13,7 @@
 - **Required Coverage:** 40% ✅ **Exceeded**
 
 ### Full Project Scope
-- **Project Coverage:** 46% (acgs2-core + acgs2-observability + acgs2-research)
+- **Project Coverage:** 46% (src/core + acgs2-observability + acgs2-research)
 - **Required Coverage:** 40% ✅ **Exceeded**
 
 ## Coverage by Component

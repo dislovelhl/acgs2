@@ -59,7 +59,7 @@ class QualityMetricsMonitor:
             total_lines = 0
             python_files = 0
 
-            for root, dirs, files in os.walk("acgs2-core"):
+            for root, dirs, files in os.walk("src/core"):
                 # Skip venv and cache directories
                 dirs[:] = [d for d in dirs if d not in ["__pycache__", ".venv", "venv"]]
 
@@ -91,8 +91,8 @@ class QualityMetricsMonitor:
 
         # Try to read coverage reports
         coverage_files = [
-            "acgs2-core/coverage.json",
-            "acgs2-core/htmlcov/coverage.json",
+            "src/core/coverage.json",
+            "src/core/htmlcov/coverage.json",
             ".coverage",
         ]
 

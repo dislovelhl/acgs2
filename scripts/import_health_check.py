@@ -149,7 +149,7 @@ def main():
     print("Constitutional Hash:", CONSTITUTIONAL_HASH)
     print()
 
-    root_path = "acgs2-core"
+    root_path = "src/core"
 
     # Check import health
     health_results = analyze_import_health(root_path)

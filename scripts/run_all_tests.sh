@@ -78,8 +78,8 @@ run_component_tests "Adaptive Learning Tests" "src/adaptive-learning/adaptive-le
 # Performance validation
 echo -e "\n${YELLOW}Running Performance Validation...${NC}"
 TOTAL_COMPONENTS=$((TOTAL_COMPONENTS + 1))
-if [ -f "$PROJECT_ROOT/acgs2-core/testing/comprehensive_profiler.py" ]; then
-    if (cd "$PROJECT_ROOT/acgs2-core" && python testing/comprehensive_profiler.py --iterations 50 --baseline 2>/dev/null); then
+if [ -f "$PROJECT_ROOT/src/core/testing/comprehensive_profiler.py" ]; then
+    if (cd "$PROJECT_ROOT/src/core" && python testing/comprehensive_profiler.py --iterations 50 --baseline 2>/dev/null); then
         echo -e "${GREEN}✅ Performance Validation: PASSED${NC}"
         PASSED_COMPONENTS=$((PASSED_COMPONENTS + 1))
     else

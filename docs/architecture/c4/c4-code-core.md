@@ -4,7 +4,7 @@
 
 - **Name**: Core Agent Bus Implementation
 - **Description**: Core message bus classes providing multi-agent coordination with constitutional compliance validation, message routing, and processing strategies
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/`
 - **Language**: Python 3.11+ (Python 3.13 compatible)
 - **Purpose**: Main bus classes for agent-to-agent communication, message validation, routing, and processing with constitutional hash enforcement (`cdd01ef066bc6cf2`)
 
@@ -1005,13 +1005,13 @@ PENDING → PROCESSING → DELIVERED (or FAILED)
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `core.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/core.py` | Backward compatibility facade |
-| `agent_bus.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/agent_bus.py` | EnhancedAgentBus main class |
-| `message_processor.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/message_processor.py` | MessageProcessor orchestration |
-| `models.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py` | Data models and enumerations |
-| `validators.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/validators.py` | Validation utilities |
-| `exceptions.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/exceptions.py` | Exception hierarchy |
-| `interfaces.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/interfaces.py` | Protocol definitions |
-| `registry.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/registry.py` | Registry implementations |
-| `processing_strategies.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/processing_strategies.py` | Processing strategy implementations |
-| `validation_strategies.py` | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/validation_strategies.py` | Validation strategy implementations |
+| `core.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/core.py` | Backward compatibility facade |
+| `agent_bus.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/agent_bus.py` | EnhancedAgentBus main class |
+| `message_processor.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/message_processor.py` | MessageProcessor orchestration |
+| `models.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py` | Data models and enumerations |
+| `validators.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/validators.py` | Validation utilities |
+| `exceptions.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/exceptions.py` | Exception hierarchy |
+| `interfaces.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/interfaces.py` | Protocol definitions |
+| `registry.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/registry.py` | Registry implementations |
+| `processing_strategies.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/processing_strategies.py` | Processing strategy implementations |
+| `validation_strategies.py` | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/validation_strategies.py` | Validation strategy implementations |

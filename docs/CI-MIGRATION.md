@@ -9,7 +9,7 @@
 | Test | test:unit, enhanced-agent-bus, opa-integration, integration, performance; cargo test | Unit/integration pytest/cargo | test: pytest matrix (3.11/3.12) cov>90%, cargo test [`acgs2-ci-cd.yml`](.github/workflows/acgs2-ci-cd.yml) |
 | Build | build:rust, build:docker multi-service | Build rust/docker multi-service | build: Docker multi-arch (buildx linux/amd64/arm64) to GHCR [`acgs2-ci-cd.yml`](.github/workflows/acgs2-ci-cd.yml) |
 | Chaos | None explicit | None | chaos-validate: yamllint/kubeval on chaos/experiments/ [`acgs2-ci-cd.yml`](.github/workflows/acgs2-ci-cd.yml) |
-| Deploy | deploy:dev/staging/prod manual k8s apply | Deploy k8s params | deploy-staging/prod: Helm upgrade acgs2-core/deploy/helm/acgs2/ env approvals [`acgs2-ci-cd.yml`](.github/workflows/acgs2-ci-cd.yml) |
+| Deploy | deploy:dev/staging/prod manual k8s apply | Deploy k8s params | deploy-staging/prod: Helm upgrade src/core/deploy/helm/acgs2/ env approvals [`acgs2-ci-cd.yml`](.github/workflows/acgs2-ci-cd.yml) |
 | Rollback | rollback:dev/staging/prod manual kubectl undo | Post-failure kubectl undo | rollback: helm rollback on failure/tag prev [`acgs2-ci-cd.yml`](.github/workflows/acgs2-ci-cd.yml) |
 | Notify | notify:slack | Slack post | notify: slack action [`acgs2-ci-cd.yml`](.github/workflows/acgs2-ci-cd.yml) |
 | Deps | None | None | New .github/dependabot.yml: pip/cargo/docker/gha [`dependabot.yml`](.github/dependabot.yml) |
@@ -47,7 +47,7 @@ flowchart TD
 2. **Parity Check**: Compare artifacts (coverage.xml, scan reports) vs legacy runs; smoke test deploy if secrets configured
 3. **Enable on Main**: Merge PR, push to main/develop triggers staging sim
 4. **Production Dry-Run**: Tag v0.0.1-test, manual approve prod (dry-run flag)
-5. **Cutover**: Confirm parity, delete legacy `acgs2-core/.gitlab-ci.yml` + `acgs2-core/Jenkinsfile`, commit "Migrate to unified GHA CI/CD"
+5. **Cutover**: Confirm parity, delete legacy `src/core/.gitlab-ci.yml` + `src/core/Jenkinsfile`, commit "Migrate to unified GHA CI/CD"
 6. **Monitor**: Dependabot PRs auto, watch first prod deploy
 
 ## Verification Steps

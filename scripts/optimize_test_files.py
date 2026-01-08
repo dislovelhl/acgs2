@@ -86,7 +86,6 @@ class TestFileAnalyzer:
 
     def _create_refactor_plan(self, file_path: str, analysis: Dict) -> Dict:
         """Create a major refactoring plan for very large files."""
-        Path(file_path).name
 
         # Group classes by functionality
         classes = analysis["classes"]
@@ -165,7 +164,7 @@ class TestFileAnalyzer:
 
 def main():
     """Main execution."""
-    analyzer = TestFileAnalyzer("acgs2-core")
+    analyzer = TestFileAnalyzer("src/core")
 
     print("🔍 Analyzing test files...")
     test_files = analyzer.analyze_test_files()

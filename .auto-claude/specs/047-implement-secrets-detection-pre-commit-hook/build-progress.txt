@@ -485,7 +485,7 @@ None
   8. VAULT_TOKEN ((hvs\.|s\.)[A-Za-z0-9]{20,})
 - **Integration Points Tested:**
   * scripts/check-secrets-pre-commit.py (main hook script)
-  * acgs2-core/shared/secrets_manager.py (CREDENTIAL_PATTERNS import)
+  * src/core/shared/secrets_manager.py (CREDENTIAL_PATTERNS import)
   * .secrets-allowlist.yaml (configuration loading)
   * tests/fixtures/secrets/ (safe_placeholders.py and unsafe_secrets.py)
   * .gitleaks.toml and .gitleaksignore (gitleaks integration)

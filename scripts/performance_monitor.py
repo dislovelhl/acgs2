@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 # Add project paths
-sys.path.insert(0, str(Path(__file__).parent / "acgs2-core"))
+sys.path.insert(0, str(Path(__file__).parent / "src/core"))
 
 # Configure logging
 logging.basicConfig(
@@ -52,7 +52,7 @@ class PerformanceMonitor:
 
         try:
             # Import and run profiler for baseline
-            sys.path.insert(0, str(Path(__file__).parent / "acgs2-core" / "testing"))
+            sys.path.insert(0, str(Path(__file__).parent / "src/core" / "testing"))
             from comprehensive_profiler import ComprehensiveProfiler
 
             profiler = ComprehensiveProfiler(iterations=100, warmup_iterations=10)

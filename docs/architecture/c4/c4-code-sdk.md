@@ -6,7 +6,7 @@
 
 - **Name**: ACGS-2 Multi-Language SDKs
 - **Description**: Production-ready SDKs for Python, TypeScript, and Go enabling client applications to integrate with the ACGS-2 constitutional governance system. Each SDK provides unified API access with constitutional hash validation, automatic retry logic, and comprehensive error handling.
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/sdk/`
+- **Location**: `/home/dislove/document/acgs2/src/core/sdk/`
 - **Languages**: Python 3.11+, TypeScript (Node.js/ES modules), Go 1.18+
 - **Purpose**: Provide language-native interfaces for constitutional governance, policy management, compliance validation, and multi-agent coordination
 
@@ -27,7 +27,7 @@ The ACGS-2 SDKs implement a **unified gateway pattern** with the following core 
 
 #### Core Client Implementation
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/client.py`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/client.py`
 
 - **`ACGS2Client`** (class)
   - **Purpose**: Main HTTP client for API communication with constitutional validation
@@ -54,7 +54,7 @@ The ACGS-2 SDKs implement a **unified gateway pattern** with the following core 
 
 #### Configuration
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/config.py`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/config.py`
 
 - **`AuthConfig`** (class)
   - **Fields**: type (api_key/bearer/oauth2), api_key, access_token, refresh_token, token_endpoint, client_id, client_secret, scope
@@ -75,7 +75,7 @@ The ACGS-2 SDKs implement a **unified gateway pattern** with the following core 
 
 #### Models and Type Definitions
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/models.py`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/models.py`
 
 **Enums** (Lines 20-117):
 - `MessageType`: command, query, event, response, error
@@ -135,7 +135,7 @@ The ACGS-2 SDKs implement a **unified gateway pattern** with the following core 
 
 #### Exception Hierarchy
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/exceptions.py`
 
 - **`ACGS2Error`** (base Exception)
   - Fields: message, code, constitutional_hash, details
@@ -156,7 +156,7 @@ The ACGS-2 SDKs implement a **unified gateway pattern** with the following core 
 
 #### Services
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/services/`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/services/`
 
 Each service class follows a consistent pattern:
 - Constructor takes ACGS2Client instance
@@ -210,7 +210,7 @@ Each service class follows a consistent pattern:
 
 #### Governor (High-Level Wrapper)
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/governor.py`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/governor.py`
 
 - **`Governor`** (class)
   - **Purpose**: High-level "Governor-in-a-Box" wrapper for startup integration
@@ -233,7 +233,7 @@ Each service class follows a consistent pattern:
 
 #### SDK Exports
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/__init__.py`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/__init__.py`
 
 - **Client**: ACGS2Client, create_client, Governor
 - **Configuration**: ACGS2Config, AuthConfig
@@ -249,7 +249,7 @@ Each service class follows a consistent pattern:
 
 #### Core Client Implementation
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/typescript/src/client/index.ts`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/typescript/src/client/index.ts`
 
 - **`ACGS2Client`** (class)
   - **Purpose**: Axios-based HTTP client with constitutional validation and retry logic
@@ -293,7 +293,7 @@ Each service class follows a consistent pattern:
 
 #### Type Definitions
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/typescript/src/types/` (inferred from index.ts)
+**File**: `/home/dislove/document/acgs2/src/core/sdk/typescript/src/types/` (inferred from index.ts)
 
 - **Enums** (matching Python):
   - `MessageType`, `Priority`, `PolicyStatus`, `ApprovalStatus`, `ComplianceStatus`, `EventSeverity`, `EventCategory`, `ModelTrainingStatus`, `DriftDirection`, `ABNTestStatus`
@@ -320,7 +320,7 @@ Each service class follows a consistent pattern:
 
 #### Services
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/typescript/src/services/`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/typescript/src/services/`
 
 Each service is a class taking ACGS2Client in constructor, matching Python service patterns:
 
@@ -383,7 +383,7 @@ Each service is a class taking ACGS2Client in constructor, matching Python servi
 
 #### Utility Functions
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/typescript/src/utils/`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/typescript/src/utils/`
 
 - **Constitutional Validation**:
   - `validateConstitutionalHash(hash: string): boolean`
@@ -433,7 +433,7 @@ Each service is a class taking ACGS2Client in constructor, matching Python servi
 
 #### SDK Factory
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/typescript/src/index.ts`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/typescript/src/index.ts`
 
 - **`ACGS2SDK`** (interface)
   - Properties:
@@ -473,7 +473,7 @@ Each service is a class taking ACGS2Client in constructor, matching Python servi
 
 #### Core Client Implementation
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/go/client.go`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/go/client.go`
 
 - **`RetryConfig`** (struct)
   - Fields: MaxAttempts (int), BaseDelay (time.Duration), MaxDelay (time.Duration)
@@ -522,7 +522,7 @@ Each service is a class taking ACGS2Client in constructor, matching Python servi
 
 #### Models
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/go/models.go`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/go/models.go`
 
 **Message Types** (Lines 1-12):
 - `MessageType` string enum: command, inquiry, task_request, governance_request, constitutional_validation
@@ -559,7 +559,7 @@ Each service is a class taking ACGS2Client in constructor, matching Python servi
 
 #### Services
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/go/`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/go/`
 
 - **`PolicyRegistryService`** (`policy_registry.go`)
   - Policy CRUD operations
@@ -585,7 +585,7 @@ Each service is a class taking ACGS2Client in constructor, matching Python servi
 
 #### Examples
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/sdk/go/examples/`
+**File**: `/home/dislove/document/acgs2/src/core/sdk/go/examples/`
 
 - `api_gateway_example.go`: API Gateway usage patterns
 - `policy_registry_example.go`: Policy management example

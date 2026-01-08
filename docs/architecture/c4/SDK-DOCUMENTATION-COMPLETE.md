@@ -30,13 +30,13 @@ Comprehensive C4 code-level documentation for ACGS-2 multi-language SDKs has bee
 
 ### 1. Python SDK (252-line analysis)
 **Files Analyzed**:
-- `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/client.py` (255 lines)
-- `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/config.py` (64 lines)
-- `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/models.py` (534 lines)
-- `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/exceptions.py` (156 lines)
-- `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/governor.py` (80 lines)
-- `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/constants.py` (35 lines)
-- `/home/dislove/document/acgs2/acgs2-core/sdk/python/acgs2_sdk/__init__.py` (110 lines)
+- `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/client.py` (255 lines)
+- `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/config.py` (64 lines)
+- `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/models.py` (534 lines)
+- `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/exceptions.py` (156 lines)
+- `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/governor.py` (80 lines)
+- `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/constants.py` (35 lines)
+- `/home/dislove/document/acgs2/src/core/sdk/python/acgs2_sdk/__init__.py` (110 lines)
 - 8 service implementations in `services/` directory
 
 **Components Documented**:
@@ -60,8 +60,8 @@ Comprehensive C4 code-level documentation for ACGS-2 multi-language SDKs has bee
 
 ### 2. TypeScript SDK (10-file analysis)
 **Files Analyzed**:
-- `/home/dislove/document/acgs2/acgs2-core/sdk/typescript/src/client/index.ts`
-- `/home/dislove/document/acgs2/acgs2-core/sdk/typescript/src/index.ts`
+- `/home/dislove/document/acgs2/src/core/sdk/typescript/src/client/index.ts`
+- `/home/dislove/document/acgs2/src/core/sdk/typescript/src/index.ts`
 - 7 service implementations in `services/` directory
 - Types, utilities, and error handling
 
@@ -85,13 +85,13 @@ Comprehensive C4 code-level documentation for ACGS-2 multi-language SDKs has bee
 
 ### 3. Go SDK (6-file analysis)
 **Files Analyzed**:
-- `/home/dislove/document/acgs2/acgs2-core/sdk/go/client.go` (120+ lines)
-- `/home/dislove/document/acgs2/acgs2-core/sdk/go/models.go` (100+ lines)
-- `/home/dislove/document/acgs2/acgs2-core/sdk/go/dispatcher.go`
-- `/home/dislove/document/acgs2/acgs2-core/sdk/go/api_gateway.go`
-- `/home/dislove/document/acgs2/acgs2-core/sdk/go/hitl_approvals.go`
-- `/home/dislove/document/acgs2/acgs2-core/sdk/go/ml_governance.go`
-- `/home/dislove/document/acgs2/acgs2-core/sdk/go/policy_registry.go`
+- `/home/dislove/document/acgs2/src/core/sdk/go/client.go` (120+ lines)
+- `/home/dislove/document/acgs2/src/core/sdk/go/models.go` (100+ lines)
+- `/home/dislove/document/acgs2/src/core/sdk/go/dispatcher.go`
+- `/home/dislove/document/acgs2/src/core/sdk/go/api_gateway.go`
+- `/home/dislove/document/acgs2/src/core/sdk/go/hitl_approvals.go`
+- `/home/dislove/document/acgs2/src/core/sdk/go/ml_governance.go`
+- `/home/dislove/document/acgs2/src/core/sdk/go/policy_registry.go`
 
 **Components Documented**:
 - ACGS2Client: net/http based with retry logic

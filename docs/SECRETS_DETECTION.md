@@ -136,7 +136,7 @@ REDIS_PASSWORD=superSecretPassword2024
 
 ### Integration with secrets_manager.py
 
-The custom ACGS-2 hook uses `CREDENTIAL_PATTERNS` from `acgs2-core/shared/secrets_manager.py` as its **single source of truth**. This ensures:
+The custom ACGS-2 hook uses `CREDENTIAL_PATTERNS` from `src/core/shared/secrets_manager.py` as its **single source of truth**. This ensures:
 
 1. **Consistency**: Same patterns used for validation at commit-time and runtime
 2. **Maintainability**: Update patterns in one place
@@ -177,7 +177,7 @@ REMEDIATION OPTIONS:
   Option 1: Use environment variables + secrets_manager.py (RECOMMENDED)
     - Store secrets in Vault or encrypted local storage
     - Reference via environment variables
-    - See: acgs2-core/shared/secrets_manager.py
+    - See: src/core/shared/secrets_manager.py
 
   Option 2: Use safe placeholder prefixes
     - dev-*, test-*, your-*, example-*, sample-*
@@ -387,7 +387,7 @@ git diff --cached --stat
 
 1. Check if pattern is in `secrets_manager.py`:
    ```bash
-   grep "CREDENTIAL_PATTERNS" acgs2-core/shared/secrets_manager.py
+   grep "CREDENTIAL_PATTERNS" src/core/shared/secrets_manager.py
    ```
 
 2. If missing, add to `secrets_manager.py` (will auto-sync to hook):
@@ -427,7 +427,7 @@ git diff --cached --stat
 
 ### secrets_manager.py
 - **Purpose**: Source of truth for credential patterns
-- **Location**: `acgs2-core/shared/secrets_manager.py`
+- **Location**: `src/core/shared/secrets_manager.py`
 - **Contains**: `CREDENTIAL_PATTERNS` dict with validation regexes
 - **Update when**: Adding new secret types to ACGS-2
 
@@ -459,7 +459,7 @@ cat .secrets-allowlist.yaml
 - **Allow-list Configuration**: `.secrets-allowlist.README.md`
 - **Development Guide**: `docs/DEVELOPMENT.md`
 - **Gitleaks Documentation**: [https://github.com/gitleaks/gitleaks](https://github.com/gitleaks/gitleaks)
-- **Secrets Manager API**: `acgs2-core/shared/secrets_manager.py`
+- **Secrets Manager API**: `src/core/shared/secrets_manager.py`
 
 ### Support
 
@@ -522,7 +522,7 @@ If a secret is accidentally committed:
 
 ```bash
 # 1. Add credential pattern to secrets_manager.py
-# acgs2-core/shared/secrets_manager.py
+# src/core/shared/secrets_manager.py
 CREDENTIAL_PATTERNS = {
     "MY_NEW_API_KEY": r"^myapi-[A-Za-z0-9]{32}$",
     # ...
@@ -541,7 +541,7 @@ pre-commit run --files test.env  # Should fail
 rm test.env
 
 # 5. Commit the configuration
-git add acgs2-core/shared/secrets_manager.py .env.example
+git add src/core/shared/secrets_manager.py .env.example
 git commit -m "feat: add MY_NEW_API integration"
 ```
 

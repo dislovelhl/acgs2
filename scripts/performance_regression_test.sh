@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ACGS2_CORE="$PROJECT_ROOT/acgs2-core"
+ACGS2_CORE="$PROJECT_ROOT/src/core"
 RESULTS_DIR="$PROJECT_ROOT/reports"
 PERF_DIR="$RESULTS_DIR/performance"
 
@@ -65,7 +65,7 @@ done
 
 if [ "$ALL_HEALTHY" = false ]; then
     echo -e "${RED}❌ Services not ready for performance testing${NC}"
-    echo "   Start services with: docker-compose -f acgs2-core/docker-compose.dev.yml up -d"
+    echo "   Start services with: docker-compose -f src/core/docker-compose.dev.yml up -d"
     exit 1
 fi
 

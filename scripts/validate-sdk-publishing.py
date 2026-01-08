@@ -222,7 +222,7 @@ def validate_github_workflows(project_root: Path) -> List[str]:
 
 def main():
     project_root = Path(__file__).parent.parent
-    sdk_base_path = project_root / "acgs2-core" / "sdk"
+    sdk_base_path = project_root / "src/core" / "sdk"
 
     print_header("ACGS-2 SDK Publishing Validation")
 

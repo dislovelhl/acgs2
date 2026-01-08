@@ -262,7 +262,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ## Key Contacts & Resources
 
 - **Constitutional Hash**: `cdd01ef066bc6cf2` - Required in all operations
-- **Repository**: `/home/dislove/document/acgs2/acgs2-core/`
+- **Repository**: `/home/dislove/document/acgs2/src/core/`
 - **Documentation Root**: `/home/dislove/document/acgs2/docs/architecture/c4/`
 - **CI/CD Config**: `.gitlab-ci.yml` and `.github/workflows/`
 - **Docker Config**: `docker-compose.yml` and service Dockerfiles

@@ -4,7 +4,7 @@
 
 - **Name**: Deliberation Layer
 - **Description**: AI-powered decision review system for high-impact governance decisions implementing human-in-the-loop and consensus-based deliberation workflows
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/deliberation_layer/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/deliberation_layer/`
 - **Language**: Python 3.11+
 - **Purpose**: Routes high-impact messages (score ≥ 0.8) through mandatory deliberation workflows including impact assessment, human approval, multi-agent consensus voting, OPA policy verification, and critic agent reviews
 

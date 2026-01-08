@@ -4,7 +4,7 @@
 
 - **Name**: ACGS-2 Shared Services Library
 - **Description**: Cross-service utilities providing common patterns for configuration management, metrics, resilience, security, and audit capabilities across all ACGS-2 microservices.
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/`
 - **Language**: Python 3.11+
 - **Purpose**: Centralized infrastructure for all ACGS-2 services including constitutional validation, Prometheus instrumentation, circuit breaker patterns, Redis configuration, and security controls.
 - **Constitutional Hash**: `cdd01ef066bc6cf2`
@@ -15,7 +15,7 @@
 
 #### `__init__.py`
 - **Description**: Package initialization with re-exports of commonly used utilities
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/__init__.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/__init__.py`
 - **Exports**:
   - `CONSTITUTIONAL_HASH`: System-wide constitutional identifier
   - `DEFAULT_REDIS_URL`: Default Redis connection URL
@@ -32,7 +32,7 @@
 
 #### `constants.py`
 - **Description**: System-wide constants ensuring consistency across all services
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/constants.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/constants.py`
 - **Exports**:
   - `CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"`: Constitutional AI governance identifier
   - `DEFAULT_REDIS_URL = "redis://localhost:6379"`: Default Redis connection URL
@@ -47,7 +47,7 @@
 
 #### `config.py`
 - **Description**: Pydantic-based configuration management with environment variable binding
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/config.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/config.py`
 - **Classes**:
   - `RedisSettings`: Redis connection configuration (url, db, max_connections, socket_timeout, retry_on_timeout)
   - `AISettings`: AI service credentials (openrouter_api_key, hf_token, openai_api_key, constitutional_hash)
@@ -63,7 +63,7 @@
 
 #### `audit_client.py`
 - **Description**: Asynchronous HTTP client for reporting validation results and decisions to the Audit Service
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/audit_client.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/audit_client.py`
 - **Class**: `AuditClient`
   - Constructor: `__init__(service_url: str = "http://localhost:8001")`
   - Methods:
@@ -75,7 +75,7 @@
 
 #### `redis_config.py`
 - **Description**: Centralized Redis configuration adapter bridging legacy and modern settings patterns
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/redis_config.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/redis_config.py`
 - **Class**: `RedisConfig`
   - Class Methods:
     - `get_url(db: int = 0, env_var: str = "REDIS_URL") -> str`: Get Redis URL with optional database number
@@ -90,7 +90,7 @@
 
 #### `circuit_breaker/__init__.py`
 - **Description**: Fault tolerance patterns using pybreaker with ACGS-2 constitutional compliance integration
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/circuit_breaker/__init__.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/circuit_breaker/__init__.py`
 - **Enums**:
   - `CircuitState`: CLOSED (normal), OPEN (failing), HALF_OPEN (testing recovery)
 - **Dataclasses**:
@@ -117,7 +117,7 @@
 
 #### `metrics/__init__.py`
 - **Description**: Prometheus instrumentation for standardized observability across all ACGS-2 services
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/metrics/__init__.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/metrics/__init__.py`
 - **Metric Types** (Fire-and-Forget Pattern for <5μs latency):
   - **HTTP Metrics**:
     - `HTTP_REQUEST_DURATION` (Histogram): Latency in seconds with 14 buckets (5ms to 10s)
@@ -161,12 +161,12 @@
 
 #### `security/__init__.py`
 - **Description**: Security utilities package initialization
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/security/__init__.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/security/__init__.py`
 - **Exports**: Rate limiter and CORS configuration utilities
 
 #### `security/rate_limiter.py`
 - **Description**: Production-grade distributed rate limiting with Redis sliding window algorithm
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/security/rate_limiter.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/security/rate_limiter.py`
 - **Enums**:
   - `RateLimitScope`: IP, TENANT, ENDPOINT, USER, GLOBAL
   - `RateLimitAlgorithm`: SLIDING_WINDOW, TOKEN_BUCKET, FIXED_WINDOW
@@ -198,7 +198,7 @@
 
 #### `security/cors_config.py`
 - **Description**: Secure CORS configuration with environment-specific policies and production safety checks
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/shared/security/cors_config.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/shared/security/cors_config.py`
 - **Enums**:
   - `CORSEnvironment`: DEVELOPMENT, STAGING, PRODUCTION, TEST
 - **Dataclasses**:
@@ -573,12 +573,12 @@ Every module includes constitutional hash in:
 ## Testing Infrastructure
 
 ### Test Files
-- `/home/dislove/document/acgs2/acgs2-core/shared/tests/conftest.py`: Pytest fixtures
-- `/home/dislove/document/acgs2/acgs2-core/shared/tests/test_init.py`: Initialization tests
-- `/home/dislove/document/acgs2/acgs2-core/shared/tests/test_init_extended.py`: Extended tests
-- `/home/dislove/document/acgs2/acgs2-core/shared/tests/test_circuit_breaker.py`: Circuit breaker tests
-- `/home/dislove/document/acgs2/acgs2-core/shared/tests/test_metrics.py`: Metrics tests
-- `/home/dislove/document/acgs2/acgs2-core/shared/tests/test_redis_config.py`: Redis configuration tests
+- `/home/dislove/document/acgs2/src/core/shared/tests/conftest.py`: Pytest fixtures
+- `/home/dislove/document/acgs2/src/core/shared/tests/test_init.py`: Initialization tests
+- `/home/dislove/document/acgs2/src/core/shared/tests/test_init_extended.py`: Extended tests
+- `/home/dislove/document/acgs2/src/core/shared/tests/test_circuit_breaker.py`: Circuit breaker tests
+- `/home/dislove/document/acgs2/src/core/shared/tests/test_metrics.py`: Metrics tests
+- `/home/dislove/document/acgs2/src/core/shared/tests/test_redis_config.py`: Redis configuration tests
 
 ### Test Markers
 - `@pytest.mark.asyncio`: Async function tests

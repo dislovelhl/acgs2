@@ -4,7 +4,7 @@
 
 - **Name**: Enhanced Agent Bus Core
 - **Description**: Core message bus implementation for ACGS-2 constitutional AI governance with agent registration, message routing, validation, and deliberation support
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/`
 - **Language**: Python 3.11+
 - **Constitutional Hash**: `cdd01ef066bc6cf2`
 - **Purpose**: Provides the foundational messaging infrastructure for multi-agent coordination with constitutional compliance, multi-tenant isolation, and comprehensive metrics instrumentation
@@ -14,7 +14,7 @@
 ### Core Classes
 
 #### EnhancedAgentBus
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/agent_bus.py:76-938`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/agent_bus.py:76-938`
 
 Primary entry point for agent communication with constitutional governance.
 
@@ -97,7 +97,7 @@ Primary entry point for agent communication with constitutional governance.
 **Dependencies**: asyncio, logging, time, datetime, Optional, Dict, List, ValidationResult, AgentMessage, MessageType, MessageStatus, CircuitBreaker, PolicyClient, OPAClient, AuditClient, AgentRegistry, MessageRouter, ValidationStrategy, MessageProcessor, MACIEnforcement, MeteringManager
 
 #### MessageProcessor
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/message_processor.py` (referenced in core.py)
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/message_processor.py` (referenced in core.py)
 
 Processes messages with validation and routing logic.
 
@@ -112,7 +112,7 @@ Processes messages with validation and routing logic.
 ### Data Models
 
 #### AgentMessage
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:117-209`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:117-209`
 
 Agent message with constitutional compliance and multi-tenant support.
 
@@ -145,7 +145,7 @@ Agent message with constitutional compliance and multi-tenant support.
 - `from_dict(data: Dict[str, Any]) -> AgentMessage` (classmethod) - Create message from dictionary
 
 #### MessageType (Enum)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:27-39`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:27-39`
 
 Message type enumeration for routing and handling.
 
@@ -163,7 +163,7 @@ Message type enumeration for routing and handling.
 - TASK_RESPONSE = "task_response"
 
 #### Priority (Enum)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:42-55`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:42-55`
 
 Priority levels for message processing (ascending order).
 
@@ -175,7 +175,7 @@ Priority levels for message processing (ascending order).
 - CRITICAL = 3
 
 #### MessageStatus (Enum)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:86-93`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:86-93`
 
 Message processing status throughout lifecycle.
 
@@ -188,7 +188,7 @@ Message processing status throughout lifecycle.
 - PENDING_DELIBERATION = "pending_deliberation"
 
 #### ValidationStatus (Enum)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:58-63`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:58-63`
 
 Message validation status.
 
@@ -199,7 +199,7 @@ Message validation status.
 - WARNING = "warning"
 
 #### RoutingContext
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:97-114`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:97-114`
 
 Context for message routing in the agent bus.
 
@@ -214,7 +214,7 @@ Context for message routing in the agent bus.
 - `constitutional_hash: str` - Constitutional hash
 
 #### DecisionLog
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:212-240`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:212-240`
 
 Structured decision log for compliance and observability.
 
@@ -236,7 +236,7 @@ Structured decision log for compliance and observability.
 ### Validation
 
 #### ValidationResult
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/validators.py:22-69`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/validators.py:22-69`
 
 Result of a validation operation.
 
@@ -255,7 +255,7 @@ Result of a validation operation.
 - `to_dict() -> Dict[str, Any]` - Convert to dictionary
 
 #### Validation Functions
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/validators.py:72-108`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/validators.py:72-108`
 
 - `validate_constitutional_hash(hash_value: str) -> ValidationResult`
   - Validates constitutional hash using constant-time comparison to prevent timing attacks
@@ -268,7 +268,7 @@ Result of a validation operation.
 
 ### Exception Hierarchy
 
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/exceptions.py`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/exceptions.py`
 
 33 typed exception classes for precise error handling (including base classes):
 
@@ -396,7 +396,7 @@ Result of a validation operation.
 ### Policy and OPA Integration
 
 #### OPAClient
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/opa_client.py:66-100`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/opa_client.py:66-100`
 
 Client for OPA (Open Policy Agent) policy evaluation.
 
@@ -428,7 +428,7 @@ Client for OPA (Open Policy Agent) policy evaluation.
 3. Fallback mode - Local validation when OPA unavailable
 
 #### PolicyRegistryClient (PolicyClient)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/policy_client.py:27-75`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/policy_client.py:27-75`
 
 Client for dynamic policy registry service.
 
@@ -463,7 +463,7 @@ Client for dynamic policy registry service.
 ### MACI Role Separation
 
 #### MACIRole (Enum)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:37-42`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:37-42`
 
 MACI framework roles implementing separation of powers (Trias Politica).
 
@@ -473,7 +473,7 @@ MACI framework roles implementing separation of powers (Trias Politica).
 - JUDICIAL = "judicial" - Validates decisions from other roles
 
 #### MACIAction (Enum)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:67-76`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:67-76`
 
 Actions that can be performed by MACI agents.
 
@@ -488,7 +488,7 @@ Actions that can be performed by MACI agents.
 - EMERGENCY_COOLDOWN = "emergency_cooldown" - Initiate emergency system cooldown
 
 #### ROLE_PERMISSIONS (Dict)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:78-87`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:78-87`
 
 Role-to-action mapping.
 
@@ -502,7 +502,7 @@ Role-to-action mapping.
 ```
 
 #### VALIDATION_CONSTRAINTS (Dict)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:77-79`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:77-79`
 
 Cross-role validation constraints.
 
@@ -514,7 +514,7 @@ Cross-role validation constraints.
 ```
 
 #### MACIAgentRecord
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:82-111`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:82-111`
 
 Record of an agent's MACI role and outputs.
 
@@ -533,7 +533,7 @@ Record of an agent's MACI role and outputs.
 - `can_validate_role(target_role: MACIRole) -> bool` - Check if can validate target role
 
 #### MACIValidationContext
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:113-123`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:113-123`
 
 Context for MACI validation operations.
 
@@ -547,7 +547,7 @@ Context for MACI validation operations.
 - `constitutional_hash: str` - Constitutional hash
 
 #### MACIValidationResult
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:126-146`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:126-146`
 
 Result of MACI role validation.
 
@@ -562,12 +562,12 @@ Result of MACI role validation.
 - `to_dict() -> Dict[str, Any]` - Convert to dictionary
 
 #### MACIRoleRegistry
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:149-` (continues)
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:149-` (continues)
 
 Registry for MACI agent roles and outputs (referenced but partially shown).
 
 #### MACIEnforcer
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:` (referenced in agent_bus.py)
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/maci_enforcement.py:` (referenced in agent_bus.py)
 
 Enforcer for MACI role separation validation.
 
@@ -576,7 +576,7 @@ Enforcer for MACI role separation validation.
 ### Processing Strategies
 
 #### HandlerExecutorMixin
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/processing_strategies.py:48-107`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/processing_strategies.py:48-107`
 
 Mixin providing common handler execution logic.
 
@@ -588,7 +588,7 @@ Mixin providing common handler execution logic.
   - Returns: ValidationResult
 
 #### PythonProcessingStrategy
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/processing_strategies.py:110-150`
+**File**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/processing_strategies.py:110-150`
 
 Python-based processing strategy with static hash validation.
 
@@ -1123,7 +1123,7 @@ enhanced_agent_bus/
 
 ## Related Documentation
 
-- **Enhanced Agent Bus**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
+- **Enhanced Agent Bus**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/`
 - **Deliberation Layer**: Integration with impact scoring and HITL approval
 - **MACI Framework**: Role-based separation for Gödel bypass prevention
 - **Constitutional Framework**: Overall governance principles and hash validation

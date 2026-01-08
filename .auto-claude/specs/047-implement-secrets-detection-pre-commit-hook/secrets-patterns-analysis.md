@@ -12,7 +12,7 @@ This document extracts and analyzes all credential validation patterns from `sec
 
 ## 1. CREDENTIAL_PATTERNS Extraction
 
-**Source:** `acgs2-core/shared/secrets_manager.py` (lines 33-42)
+**Source:** `src/core/shared/secrets_manager.py` (lines 33-42)
 
 ### Complete Pattern List
 
@@ -48,7 +48,7 @@ This document extracts and analyzes all credential validation patterns from `sec
 
 ## 2. SECRET_CATEGORIES Organization
 
-**Source:** `acgs2-core/shared/secrets_manager.py` (lines 45-69)
+**Source:** `src/core/shared/secrets_manager.py` (lines 45-69)
 
 ### Category Breakdown
 
@@ -474,7 +474,7 @@ def validate_format(self, name: str, value: str) -> bool:
 **Usage in Pre-commit Hook:**
 ```python
 # Import patterns from secrets_manager
-from acgs2-core.shared.secrets_manager import CREDENTIAL_PATTERNS, SECRET_CATEGORIES
+from src/core.shared.secrets_manager import CREDENTIAL_PATTERNS, SECRET_CATEGORIES
 
 def check_secret_in_file(file_path: str):
     """Check file for secrets using CREDENTIAL_PATTERNS."""

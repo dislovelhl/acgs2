@@ -54,9 +54,9 @@ setup_test_env() {
     cp "$PROJECT_ROOT/.gitleaksignore" .
     cp "$PROJECT_ROOT/.secrets-allowlist.yaml" .
 
-    # Create symlinks to scripts and acgs2-core
+    # Create symlinks to scripts and src/core
     ln -s "$PROJECT_ROOT/scripts" scripts
-    ln -s "$PROJECT_ROOT/acgs2-core" acgs2-core
+    ln -s "$PROJECT_ROOT/src/core" src/core
 
     echo -e "${GREEN}✅ Test environment ready${NC}"
     echo ""

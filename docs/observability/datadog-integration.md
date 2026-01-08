@@ -312,7 +312,7 @@ spec:
 For development or direct integration without the Datadog Agent:
 
 ```python
-# acgs2-core/shared/logging_datadog.py
+# src/core/shared/logging_datadog.py
 """Direct Datadog log submission processor for structlog."""
 import os
 import json
@@ -1048,7 +1048,7 @@ Create a dedicated dashboard for tracing individual requests:
 ACGS-2 logs include OpenTelemetry trace IDs that can be correlated with Datadog APM. Configure the Python services:
 
 ```python
-# acgs2-core/shared/logging_config.py (addition)
+# src/core/shared/logging_config.py (addition)
 import os
 
 # Enable Datadog trace injection

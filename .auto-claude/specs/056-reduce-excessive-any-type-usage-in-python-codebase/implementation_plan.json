@@ -1,6 +1,6 @@
 {
   "feature": "Reduce Excessive 'Any' Type Usage in Python Codebase",
-  "description": "Found 373 occurrences of ': Any' type annotations across 120+ Python files, with high concentrations in integration-service (16 occurrences), acgs2-core/breakthrough (79 occurrences), and acgs2-core/enhanced_agent_bus (50+ occurrences). Excessive use of 'Any' defeats the purpose of type hints and can mask type-related bugs.",
+  "description": "Found 373 occurrences of ': Any' type annotations across 120+ Python files, with high concentrations in integration-service (16 occurrences), src/core/breakthrough (79 occurrences), and src/core/enhanced_agent_bus (50+ occurrences). Excessive use of 'Any' defeats the purpose of type hints and can mask type-related bugs.",
   "created_at": "2026-01-03T21:27:53.177Z",
   "updated_at": "2026-01-04T10:38:55.218Z",
   "status": "done",
@@ -8,9 +8,9 @@
   "workflow_type": "development",
   "services_involved": [
     "integration-service",
-    "acgs2-core/breakthrough",
-    "acgs2-core/enhanced_agent_bus",
-    "acgs2-core/services/*",
+    "src/core/breakthrough",
+    "src/core/enhanced_agent_bus",
+    "src/core/services/*",
     "adaptive-learning-engine",
     "claude-flow"
   ],
@@ -43,14 +43,14 @@
           "files": [
             "mypy.ini",
             "integration-service/mypy.ini",
-            "acgs2-core/mypy.ini"
+            "src/core/mypy.ini"
           ],
           "acceptance_criteria": [
             "mypy configuration files created with appropriate strictness levels",
             "Baseline established for current type coverage",
             "CI/CD integration plan documented"
           ],
-          "notes": "Successfully configured mypy for incremental type checking adoption. Created mypy.ini configurations for root, integration-service, and acgs2-core with appropriate strictness levels. Established baseline type coverage metrics (371 'Any' occurrences across 118 files). Documented comprehensive CI/CD integration plan with phased rollout strategy. Ready for Phase 2 implementation.",
+          "notes": "Successfully configured mypy for incremental type checking adoption. Created mypy.ini configurations for root, integration-service, and src/core with appropriate strictness levels. Established baseline type coverage metrics (371 'Any' occurrences across 118 files). Documented comprehensive CI/CD integration plan with phased rollout strategy. Ready for Phase 2 implementation.",
           "updated_at": "2026-01-03T22:41:57.419880+00:00"
         },
         {
@@ -60,14 +60,14 @@
           "status": "completed",
           "files": [
             "integration-service/src/types.py",
-            "acgs2-core/shared/types.py"
+            "src/core/shared/types.py"
           ],
           "acceptance_criteria": [
             "Type alias definitions for common patterns",
             "Documentation on when to use each alias",
             "Import examples for consistency"
           ],
-          "notes": "Successfully created comprehensive type alias libraries for both integration-service and acgs2-core. Files created:\n\n- integration-service/src/types.py (7.4KB): Defines 40+ type aliases including JSONDict, EventData, ConfigDict, TicketData, SIEMEvent, WebhookPayload, and integration-specific types. Includes 4 Protocol types for structural typing and 7 TypeVar definitions.\n\n- acgs2-core/shared/types.py (13KB): Defines 80+ type aliases including agent/workflow types (AgentContext, WorkflowContext, ContextData), policy types, message bus types, ML/AI types, and observability types. Includes 6 Protocol types and 10 TypeVar definitions.\n\nBoth files include:\n- Comprehensive inline documentation\n- Usage guidelines explaining when to use each alias\n- When to (sparingly) use 'Any'\n- Import examples\n- Protocol types for structural typing\n\nAlso created type-aliases-guide.md with usage examples, before/after comparisons, and reference tables.\n\nFixed .pre-commit-config.yaml by removing duplicate ruff configuration.\n\nAll pre-commit hooks passed (ruff, bandit, yaml checks). Ready for use in Phase 2+ implementations.",
+          "notes": "Successfully created comprehensive type alias libraries for both integration-service and src/core. Files created:\n\n- integration-service/src/types.py (7.4KB): Defines 40+ type aliases including JSONDict, EventData, ConfigDict, TicketData, SIEMEvent, WebhookPayload, and integration-specific types. Includes 4 Protocol types for structural typing and 7 TypeVar definitions.\n\n- src/core/shared/types.py (13KB): Defines 80+ type aliases including agent/workflow types (AgentContext, WorkflowContext, ContextData), policy types, message bus types, ML/AI types, and observability types. Includes 6 Protocol types and 10 TypeVar definitions.\n\nBoth files include:\n- Comprehensive inline documentation\n- Usage guidelines explaining when to use each alias\n- When to (sparingly) use 'Any'\n- Import examples\n- Protocol types for structural typing\n\nAlso created type-aliases-guide.md with usage examples, before/after comparisons, and reference tables.\n\nFixed .pre-commit-config.yaml by removing duplicate ruff configuration.\n\nAll pre-commit hooks passed (ruff, bandit, yaml checks). Ready for use in Phase 2+ implementations.",
           "updated_at": "2026-01-03T22:47:47.660618+00:00"
         }
       ]
@@ -172,7 +172,7 @@
     {
       "phase": 3,
       "title": "Breakthrough Module Type Improvements",
-      "description": "Replace 79 'Any' occurrences in acgs2-core/breakthrough with specific types",
+      "description": "Replace 79 'Any' occurrences in src/core/breakthrough with specific types",
       "status": "pending",
       "subtasks": [
         {
@@ -181,9 +181,9 @@
           "description": "Type the MACI (Multi-Agent Constitutional Interface) verification system",
           "status": "completed",
           "files": [
-            "acgs2-core/breakthrough/verification/maci_roles.py",
-            "acgs2-core/breakthrough/verification/sagallm_transactions.py",
-            "acgs2-core/breakthrough/verification/z3_smt_verifier.py"
+            "src/core/breakthrough/verification/maci_roles.py",
+            "src/core/breakthrough/verification/sagallm_transactions.py",
+            "src/core/breakthrough/verification/z3_smt_verifier.py"
           ],
           "acceptance_criteria": [
             "Role context uses TypedDict or Pydantic models",
@@ -192,7 +192,7 @@
             "Z3 verification inputs/outputs typed",
             "All verification tests pass"
           ],
-          "notes": "Successfully typed the MACI (Multi-Agent Constitutional Interface) verification system. Replaced 'Any' type annotations with specific types from acgs2-core/shared/types.py:\n\n**maci_roles.py (25 replacements):**\n- ConstitutionalDecision.content: Any → DecisionData\n- ConstitutionalDecision.audit_trail: List[Dict[str, Any]] → AuditTrail\n- All context parameters: Any → ConstitutionalContext (9 occurrences)\n- ExecutiveAgent.enforcement_actions: List[Dict[str, Any]] → List[JSONDict]\n- ExecutiveAgent.execute_decision return type: Dict[str, Any] → JSONDict\n- ExecutiveAgent._perform_execution return type: Any → JSONDict\n- LegislativeAgent.proposed_policies: List[Dict[str, Any]] → List[JSONDict]\n- LegislativeAgent.active_policies: Dict[str, Dict[str, Any]] → Dict[str, PolicyData]\n- LegislativeAgent.propose_policy policy_content: Any → PolicyData\n- LegislativeAgent.amend_policy amendments: Dict[str, Any] → PolicyData\n- JudicialAgent.review_cases: List[Dict[str, Any]] → List[JSONDict]\n- JudicialAgent.resolved_disputes: List[Dict[str, Any]] → List[JSONDict]\n- MACIOrchestrator.process_decision_request content: Any → DecisionData\n- MACIOrchestrator.get_system_status return type: Dict[str, Any] → JSONDict\n\n**sagallm_transactions.py (24 replacements):**\n- CompensableOperation.forward_action: Callable[[Any], Awaitable[Any]] → Callable[[JSONValue], Awaitable[JSONValue]]\n- CompensableOperation.compensate_action: Callable[[Any], Awaitable[Any]] → Callable[[JSONDict], Awaitable[JSONValue]]\n- CompensableOperation.forward_data: Any → JSONValue\n- CompensableOperation.compensate_data: Any → JSONValue\n- OperationResult.result: Any → JSONValue\n- OperationResult.compensation_result: Optional[Any] → Optional[JSONValue]\n- SagaTransaction.compensation_log: List[Dict[str, Any]] → AuditTrail\n- TransactionCoordinator._execute_compensation return type: Any → JSONValue\n- TransactionCoordinator.get_transaction_status return type: Optional[Dict[str, Any]] → Optional[JSONDict]\n- TransactionCoordinator.get_system_status return type: Dict[str, Any] → JSONDict\n- All factory operation methods: Dict[str, Any] → JSONDict (policy_data, execution_data, validation_data parameters and return types)\n- SagaLLMOrchestrator methods: action_data and policy_data parameters: Dict[str, Any] → JSONDict\n- SagaLLMOrchestrator.get_system_health return type: Dict[str, Any] → JSONDict\n\n**z3_smt_verifier.py (9 replacements):**\n- VerificationResult.counterexample: Optional[Dict[str, Any]] → Optional[JSONDict]\n- Z3PolicyVerifier.verify_policy context parameter: Optional[Dict[str, Any]] → Optional[JSONDict]\n- Z3PolicyVerifier._add_policy_constraints context parameter: Optional[Dict[str, Any]] → Optional[JSONDict]\n- Z3PolicyVerifier._extract_model return type: Dict[str, Any] → JSONDict\n- Z3PolicyVerifier._get_cache_key context parameter: Optional[Dict[str, Any]] → Optional[JSONDict]\n- Z3PolicyVerifier.get_verification_stats return type: Dict[str, Any] → JSONDict\n- ConstitutionalVerifier.verify_constitutional_compliance context: Optional[Dict[str, Any]] → Optional[JSONDict]\n- ConstitutionalVerifier.verify_governance_decision decision_data: Dict[str, Any] → PolicyData\n- ConstitutionalVerifier.get_verifier_status return type: Dict[str, Any] → JSONDict\n\n**Intentional 'Any' Usage (properly documented):**\n- PolicySpecification.variables, preconditions, postconditions, invariants: Dict[str, Any], List[Any] - Z3 library constraint objects\n- _add_policy_constraints solver parameter: Any - Z3 Solver object (third-party library type)\n- _extract_model model parameter: Any - Z3 Model object (third-party library type)\n- _parse_constraint return type: Any - Z3 constraint object (third-party library type)\n\n**Code Quality:**\n- Added explicit Z3 imports instead of star imports to fix F405 linting errors\n- Fixed bare except clauses (E722) with specific Exception handling\n- Fixed unused loop variables (B007) by renaming with underscore prefix\n- Added nosec B307 comment for eval() usage in Z3 constraint parsing (not user input)\n- All pre-commit hooks passed (ruff, bandit, yaml/json checks)\n- No remaining unintentional 'Any' type annotations\n\nTotal: 58+ 'Any' type annotations replaced with specific, well-documented types. MACI verification system now has comprehensive type safety for constitutional governance operations.",
+          "notes": "Successfully typed the MACI (Multi-Agent Constitutional Interface) verification system. Replaced 'Any' type annotations with specific types from src/core/shared/types.py:\n\n**maci_roles.py (25 replacements):**\n- ConstitutionalDecision.content: Any → DecisionData\n- ConstitutionalDecision.audit_trail: List[Dict[str, Any]] → AuditTrail\n- All context parameters: Any → ConstitutionalContext (9 occurrences)\n- ExecutiveAgent.enforcement_actions: List[Dict[str, Any]] → List[JSONDict]\n- ExecutiveAgent.execute_decision return type: Dict[str, Any] → JSONDict\n- ExecutiveAgent._perform_execution return type: Any → JSONDict\n- LegislativeAgent.proposed_policies: List[Dict[str, Any]] → List[JSONDict]\n- LegislativeAgent.active_policies: Dict[str, Dict[str, Any]] → Dict[str, PolicyData]\n- LegislativeAgent.propose_policy policy_content: Any → PolicyData\n- LegislativeAgent.amend_policy amendments: Dict[str, Any] → PolicyData\n- JudicialAgent.review_cases: List[Dict[str, Any]] → List[JSONDict]\n- JudicialAgent.resolved_disputes: List[Dict[str, Any]] → List[JSONDict]\n- MACIOrchestrator.process_decision_request content: Any → DecisionData\n- MACIOrchestrator.get_system_status return type: Dict[str, Any] → JSONDict\n\n**sagallm_transactions.py (24 replacements):**\n- CompensableOperation.forward_action: Callable[[Any], Awaitable[Any]] → Callable[[JSONValue], Awaitable[JSONValue]]\n- CompensableOperation.compensate_action: Callable[[Any], Awaitable[Any]] → Callable[[JSONDict], Awaitable[JSONValue]]\n- CompensableOperation.forward_data: Any → JSONValue\n- CompensableOperation.compensate_data: Any → JSONValue\n- OperationResult.result: Any → JSONValue\n- OperationResult.compensation_result: Optional[Any] → Optional[JSONValue]\n- SagaTransaction.compensation_log: List[Dict[str, Any]] → AuditTrail\n- TransactionCoordinator._execute_compensation return type: Any → JSONValue\n- TransactionCoordinator.get_transaction_status return type: Optional[Dict[str, Any]] → Optional[JSONDict]\n- TransactionCoordinator.get_system_status return type: Dict[str, Any] → JSONDict\n- All factory operation methods: Dict[str, Any] → JSONDict (policy_data, execution_data, validation_data parameters and return types)\n- SagaLLMOrchestrator methods: action_data and policy_data parameters: Dict[str, Any] → JSONDict\n- SagaLLMOrchestrator.get_system_health return type: Dict[str, Any] → JSONDict\n\n**z3_smt_verifier.py (9 replacements):**\n- VerificationResult.counterexample: Optional[Dict[str, Any]] → Optional[JSONDict]\n- Z3PolicyVerifier.verify_policy context parameter: Optional[Dict[str, Any]] → Optional[JSONDict]\n- Z3PolicyVerifier._add_policy_constraints context parameter: Optional[Dict[str, Any]] → Optional[JSONDict]\n- Z3PolicyVerifier._extract_model return type: Dict[str, Any] → JSONDict\n- Z3PolicyVerifier._get_cache_key context parameter: Optional[Dict[str, Any]] → Optional[JSONDict]\n- Z3PolicyVerifier.get_verification_stats return type: Dict[str, Any] → JSONDict\n- ConstitutionalVerifier.verify_constitutional_compliance context: Optional[Dict[str, Any]] → Optional[JSONDict]\n- ConstitutionalVerifier.verify_governance_decision decision_data: Dict[str, Any] → PolicyData\n- ConstitutionalVerifier.get_verifier_status return type: Dict[str, Any] → JSONDict\n\n**Intentional 'Any' Usage (properly documented):**\n- PolicySpecification.variables, preconditions, postconditions, invariants: Dict[str, Any], List[Any] - Z3 library constraint objects\n- _add_policy_constraints solver parameter: Any - Z3 Solver object (third-party library type)\n- _extract_model model parameter: Any - Z3 Model object (third-party library type)\n- _parse_constraint return type: Any - Z3 constraint object (third-party library type)\n\n**Code Quality:**\n- Added explicit Z3 imports instead of star imports to fix F405 linting errors\n- Fixed bare except clauses (E722) with specific Exception handling\n- Fixed unused loop variables (B007) by renaming with underscore prefix\n- Added nosec B307 comment for eval() usage in Z3 constraint parsing (not user input)\n- All pre-commit hooks passed (ruff, bandit, yaml/json checks)\n- No remaining unintentional 'Any' type annotations\n\nTotal: 58+ 'Any' type annotations replaced with specific, well-documented types. MACI verification system now has comprehensive type safety for constitutional governance operations.",
           "updated_at": "2026-01-03T23:25:40.315681+00:00"
         },
         {
@@ -201,7 +201,7 @@
           "description": "Type the runtime safety and guardrails system",
           "status": "completed",
           "files": [
-            "acgs2-core/breakthrough/integrations/runtime_guardrails.py"
+            "src/core/breakthrough/integrations/runtime_guardrails.py"
           ],
           "acceptance_criteria": [
             "SanitizationResult.sanitized uses Union of allowed types",
@@ -209,7 +209,7 @@
             "SandboxResult action/result fields typed",
             "Async methods maintain type safety"
           ],
-          "notes": "Successfully typed the runtime safety and guardrails system in acgs2-core/breakthrough/integrations/runtime_guardrails.py:\n\n**Type Improvements:**\n- SanitizationResult.sanitized: Any → JSONValue\n- SandboxResult.output: Any → Optional[JSONValue]\n- GuardrailResult.action: Any → Union[Callable, JSONValue]\n- GuardrailResult.result: Any → Optional[JSONValue]\n- GuardrailResult.to_dict(): Dict[str, Any] → JSONDict\n- InputSanitizer.sanitize() parameter: Any → JSONValue\n- PolicyEngine._policies type: Dict[str, Callable[[Any, Dict], bool]] → Dict[str, Callable[[Union[Callable, JSONValue], ContextData], bool]]\n- PolicyEngine.evaluate() parameters: Any, Dict[str, Any] → Union[Callable, JSONValue], ContextData\n- Sandbox.execute() parameter: Any → Union[Callable, JSONValue]\n- OutputVerifier.verify() parameter: Any → Optional[JSONValue]\n- EscalationHandler._escalation_log: List[Dict[str, Any]] → List[JSONDict]\n- EscalationHandler.escalate() parameters and return: Any, Dict[str, Any] → Union[Callable, JSONValue], JSONDict\n- AuditLog._logs: List[Dict[str, Any]] → AuditTrail\n- AuditLog.record() parameters: Any, Any, Optional[Dict[str, Any]] → Union[Callable, JSONValue], Union[str, JSONValue], Optional[MetadataDict]\n- AuditLog.get_logs() return: List[Dict[str, Any]] → AuditTrail\n- ConstitutionalGuardrails.enforce() parameters: Any, Optional[Dict[str, Any]] → Union[Callable, JSONValue], Optional[ContextData]\n- ConstitutionalGuardrails.get_stats() return: Dict[str, Any] → JSONDict\n\n**Total Changes:**\n- 19 'Any' type annotations replaced with specific types\n- All types imported from acgs2-core/shared/types.py for consistency\n- Used Union[Callable, JSONValue] for actions that can be either callable functions or data values\n- Used ContextData for context dictionaries\n- Used JSONDict, JSONValue for JSON-like data structures\n- Used AuditTrail for audit log lists\n- Used MetadataDict for metadata fields\n\n**Code Quality:**\n- All pre-commit hooks passed (ruff, bandit, yaml/json checks)\n- Import order fixed to match ruff requirements\n- No remaining 'Any' type annotations in the file\n- Maintained full backward compatibility\n- Improved type safety for IDE support and static analysis\n\nAll acceptance criteria met:\n✓ SanitizationResult.sanitized uses Union of allowed types (JSONValue)\n✓ SandboxResult.output typed appropriately (Optional[JSONValue])\n✓ Action/result fields properly typed (Union[Callable, JSONValue])\n✓ Async methods maintain type safety",
+          "notes": "Successfully typed the runtime safety and guardrails system in src/core/breakthrough/integrations/runtime_guardrails.py:\n\n**Type Improvements:**\n- SanitizationResult.sanitized: Any → JSONValue\n- SandboxResult.output: Any → Optional[JSONValue]\n- GuardrailResult.action: Any → Union[Callable, JSONValue]\n- GuardrailResult.result: Any → Optional[JSONValue]\n- GuardrailResult.to_dict(): Dict[str, Any] → JSONDict\n- InputSanitizer.sanitize() parameter: Any → JSONValue\n- PolicyEngine._policies type: Dict[str, Callable[[Any, Dict], bool]] → Dict[str, Callable[[Union[Callable, JSONValue], ContextData], bool]]\n- PolicyEngine.evaluate() parameters: Any, Dict[str, Any] → Union[Callable, JSONValue], ContextData\n- Sandbox.execute() parameter: Any → Union[Callable, JSONValue]\n- OutputVerifier.verify() parameter: Any → Optional[JSONValue]\n- EscalationHandler._escalation_log: List[Dict[str, Any]] → List[JSONDict]\n- EscalationHandler.escalate() parameters and return: Any, Dict[str, Any] → Union[Callable, JSONValue], JSONDict\n- AuditLog._logs: List[Dict[str, Any]] → AuditTrail\n- AuditLog.record() parameters: Any, Any, Optional[Dict[str, Any]] → Union[Callable, JSONValue], Union[str, JSONValue], Optional[MetadataDict]\n- AuditLog.get_logs() return: List[Dict[str, Any]] → AuditTrail\n- ConstitutionalGuardrails.enforce() parameters: Any, Optional[Dict[str, Any]] → Union[Callable, JSONValue], Optional[ContextData]\n- ConstitutionalGuardrails.get_stats() return: Dict[str, Any] → JSONDict\n\n**Total Changes:**\n- 19 'Any' type annotations replaced with specific types\n- All types imported from src/core/shared/types.py for consistency\n- Used Union[Callable, JSONValue] for actions that can be either callable functions or data values\n- Used ContextData for context dictionaries\n- Used JSONDict, JSONValue for JSON-like data structures\n- Used AuditTrail for audit log lists\n- Used MetadataDict for metadata fields\n\n**Code Quality:**\n- All pre-commit hooks passed (ruff, bandit, yaml/json checks)\n- Import order fixed to match ruff requirements\n- No remaining 'Any' type annotations in the file\n- Maintained full backward compatibility\n- Improved type safety for IDE support and static analysis\n\nAll acceptance criteria met:\n✓ SanitizationResult.sanitized uses Union of allowed types (JSONValue)\n✓ SandboxResult.output typed appropriately (Optional[JSONValue])\n✓ Action/result fields properly typed (Union[Callable, JSONValue])\n✓ Async methods maintain type safety",
           "updated_at": "2026-01-03T23:30:21.578516+00:00"
         },
         {
@@ -218,8 +218,8 @@
           "description": "Type the temporal workflow execution system",
           "status": "completed",
           "files": [
-            "acgs2-core/breakthrough/integrations/temporal_execution.py",
-            "acgs2-core/breakthrough/temporal/abl_refl_handler.py"
+            "src/core/breakthrough/integrations/temporal_execution.py",
+            "src/core/breakthrough/temporal/abl_refl_handler.py"
           ],
           "acceptance_criteria": [
             "WorkflowStep parameter field uses Union of temporal types",
@@ -227,7 +227,7 @@
             "Timeline data structures use specific types",
             "Temporal tests verify type correctness"
           ],
-          "notes": "Successfully typed the temporal workflow execution system in acgs2-core/breakthrough/integrations/temporal_execution.py and acgs2-core/breakthrough/temporal/abl_refl_handler.py:\\n\\n**temporal_execution.py (27 replacements):**\\n- TemporalConstraintSpec.parameter: Any → Union[int, float, datetime]\\n- WorkflowStep.executor: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]] → Callable[[WorkflowStateData], Awaitable[StepResult]]\\n- WorkflowStep.retry_policy: Dict[str, Any] → ConfigDict\\n- WorkflowStep.compensator: Callable[[Dict[str, Any]], Awaitable[None]] → Callable[[WorkflowStateData], Awaitable[None]]\\n- ExecutionSnapshot.execution_data: Dict[str, Any] → WorkflowStateData\\n- ExecutionSnapshot.temporal_violations: List[Dict[str, Any]] → List[JSONDict]\\n- ExecutionSnapshot.adaptation_history: List[Dict[str, Any]] → AuditTrail\\n- AdaptationStrategy.adaptation_action: Awaitable[Dict[str, Any]] → Awaitable[JSONDict]\\n- All adaptation functions: Dict[str, Any] → JSONDict\\n- execute_workflow: initial_data and return types updated to WorkflowStateData/StepResult\\n- _execute_with_adaptation, _execute_step_with_recovery: Dict[str, Any] → StepResult\\n- _validate_constitutional_compliance: result parameter Any → StepResult\\n- _check_temporal_constraints: List[Dict[str, Any]] → List[JSONDict]\\n- _attempt_adaptation: Optional[Dict[str, Any]] → Optional[JSONDict]\\n- resume_execution: adaptations and return types updated to JSONDict/StepResult\\n- get_execution_status, get_engine_stats, analyze_antifragility: Dict[str, Any] → JSONDict\\n\\n**abl_refl_handler.py (36 replacements):**\\n- ReflectionStep fields: system1_response (Any → JSONValue), system2_analysis (Any → JSONDict), constitutional_check (Dict[str, Any] → VerificationResult), final_decision (Any → DecisionData)\\n- EdgeCasePattern.detection_criteria: Callable[[Any], bool] → Callable[[ContextData], bool]\\n- All detection methods (_detect_*): context parameter Any → ContextData\\n- process_request: request (Any → JSONValue), context (Optional[ContextData]), return type (Tuple[DecisionData, CognitiveState])\\n- _system1_process: request (Any → JSONValue), context (Optional[ContextData]), return type (Tuple[DecisionData, float])\\n- _detect_reflection_triggers: request (Any → JSONValue), context (Optional[ContextData]), system1_response (Any → DecisionData)\\n- _system2_reflect: request (Any → JSONValue), context (Optional[ContextData]), system1_response (Any → DecisionData), return type (Tuple[DecisionData, JSONDict])\\n- _analyze_system1_response: system1_response (Any → DecisionData), return type (Dict[str, Any] → JSONDict)\\n- _perform_constitutional_review: request (Any → JSONValue), response (Any → DecisionData), return type (Dict[str, Any] → VerificationResult)\\n- _deliberative_reasoning: request (Any → JSONValue), context (Optional[ContextData]), all parameters and return type updated\\n- _generate_reflected_decision: all parameters updated, return type (Any → DecisionData)\\n- get_reflection_stats: Dict[str, Any] → JSONDict\\n\\n**Total Changes:**\\n- 63 'Any' type annotations replaced with specific types\\n- All types imported from acgs2-core/shared/types.py for consistency\\n- Imported WorkflowState as WorkflowStateData to avoid naming conflict with WorkflowState enum\\n- Temporal workflow execution system and ABL-Refl cognitive reflection handler now have comprehensive type safety\\n- All acceptance criteria met:\\n  ✓ WorkflowStep parameter field uses Union of temporal types\\n  ✓ Validation results properly typed\\n  ✓ Timeline data structures use specific types\\n  ✓ Temporal tests verify type correctness (existing tests remain compatible)\\n\\nCommitted to git with detailed commit message.",
+          "notes": "Successfully typed the temporal workflow execution system in src/core/breakthrough/integrations/temporal_execution.py and src/core/breakthrough/temporal/abl_refl_handler.py:\\n\\n**temporal_execution.py (27 replacements):**\\n- TemporalConstraintSpec.parameter: Any → Union[int, float, datetime]\\n- WorkflowStep.executor: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]] → Callable[[WorkflowStateData], Awaitable[StepResult]]\\n- WorkflowStep.retry_policy: Dict[str, Any] → ConfigDict\\n- WorkflowStep.compensator: Callable[[Dict[str, Any]], Awaitable[None]] → Callable[[WorkflowStateData], Awaitable[None]]\\n- ExecutionSnapshot.execution_data: Dict[str, Any] → WorkflowStateData\\n- ExecutionSnapshot.temporal_violations: List[Dict[str, Any]] → List[JSONDict]\\n- ExecutionSnapshot.adaptation_history: List[Dict[str, Any]] → AuditTrail\\n- AdaptationStrategy.adaptation_action: Awaitable[Dict[str, Any]] → Awaitable[JSONDict]\\n- All adaptation functions: Dict[str, Any] → JSONDict\\n- execute_workflow: initial_data and return types updated to WorkflowStateData/StepResult\\n- _execute_with_adaptation, _execute_step_with_recovery: Dict[str, Any] → StepResult\\n- _validate_constitutional_compliance: result parameter Any → StepResult\\n- _check_temporal_constraints: List[Dict[str, Any]] → List[JSONDict]\\n- _attempt_adaptation: Optional[Dict[str, Any]] → Optional[JSONDict]\\n- resume_execution: adaptations and return types updated to JSONDict/StepResult\\n- get_execution_status, get_engine_stats, analyze_antifragility: Dict[str, Any] → JSONDict\\n\\n**abl_refl_handler.py (36 replacements):**\\n- ReflectionStep fields: system1_response (Any → JSONValue), system2_analysis (Any → JSONDict), constitutional_check (Dict[str, Any] → VerificationResult), final_decision (Any → DecisionData)\\n- EdgeCasePattern.detection_criteria: Callable[[Any], bool] → Callable[[ContextData], bool]\\n- All detection methods (_detect_*): context parameter Any → ContextData\\n- process_request: request (Any → JSONValue), context (Optional[ContextData]), return type (Tuple[DecisionData, CognitiveState])\\n- _system1_process: request (Any → JSONValue), context (Optional[ContextData]), return type (Tuple[DecisionData, float])\\n- _detect_reflection_triggers: request (Any → JSONValue), context (Optional[ContextData]), system1_response (Any → DecisionData)\\n- _system2_reflect: request (Any → JSONValue), context (Optional[ContextData]), system1_response (Any → DecisionData), return type (Tuple[DecisionData, JSONDict])\\n- _analyze_system1_response: system1_response (Any → DecisionData), return type (Dict[str, Any] → JSONDict)\\n- _perform_constitutional_review: request (Any → JSONValue), response (Any → DecisionData), return type (Dict[str, Any] → VerificationResult)\\n- _deliberative_reasoning: request (Any → JSONValue), context (Optional[ContextData]), all parameters and return type updated\\n- _generate_reflected_decision: all parameters updated, return type (Any → DecisionData)\\n- get_reflection_stats: Dict[str, Any] → JSONDict\\n\\n**Total Changes:**\\n- 63 'Any' type annotations replaced with specific types\\n- All types imported from src/core/shared/types.py for consistency\\n- Imported WorkflowState as WorkflowStateData to avoid naming conflict with WorkflowState enum\\n- Temporal workflow execution system and ABL-Refl cognitive reflection handler now have comprehensive type safety\\n- All acceptance criteria met:\\n  ✓ WorkflowStep parameter field uses Union of temporal types\\n  ✓ Validation results properly typed\\n  ✓ Timeline data structures use specific types\\n  ✓ Temporal tests verify type correctness (existing tests remain compatible)\\n\\nCommitted to git with detailed commit message.",
           "updated_at": "2026-01-03T23:38:14.069963+00:00"
         },
         {
@@ -236,9 +236,9 @@
           "description": "Type the context management and memory systems",
           "status": "completed",
           "files": [
-            "acgs2-core/breakthrough/context/memory_system.py",
-            "acgs2-core/breakthrough/context/jrt_context.py",
-            "acgs2-core/breakthrough/context/mamba_hybrid.py"
+            "src/core/breakthrough/context/memory_system.py",
+            "src/core/breakthrough/context/jrt_context.py",
+            "src/core/breakthrough/context/mamba_hybrid.py"
           ],
           "acceptance_criteria": [
             "Memory structures use TypedDict or dataclasses",
@@ -246,7 +246,7 @@
             "Hybrid system maintains type safety",
             "Memory tests validate type correctness"
           ],
-          "notes": "Successfully typed the context management and memory systems in acgs2-core/breakthrough/context. Replaced 41 'Any' type annotations across 3 files:\n\n**memory_system.py (17 replacements):**\n- MemoryEntry.content: Any → JSONValue\n- MemoryEntry.metadata: Dict[str, Any] → MetadataDict\n- All to_dict() methods: Dict[str, Any] → JSONDict (4 occurrences)\n- GovernanceCase.context: Dict[str, Any] → ContextData\n- filter_criteria parameters: Optional[Dict[str, Any]] → Optional[MetadataDict] (2 occurrences)\n- store_principle metadata: Optional[Dict[str, Any]] → Optional[MetadataDict]\n- store_knowledge content: Any → JSONValue\n- WorkingMemory.store content: Any → JSONValue\n- WorkingMemory.get() return: Optional[Any] → Optional[JSONValue]\n- _audit_log: List[Dict[str, Any]] → AuditTrail\n- store_context/get_context: Any → JSONValue, Optional[JSONValue]\n- get_stats() return: Dict[str, Any] → JSONDict\n\n**jrt_context.py (7 replacements):**\n- ContextSection.content: Any → JSONValue\n- PreparedContext.original/prepared: Any → JSONValue (2 occurrences)\n- prepare() context parameter: Any → JSONValue\n- _identify_sections() context parameter: Any → JSONValue\n- _apply_jrt() context parameter and return: Any → JSONValue, Tuple[JSONValue, ...]\n- _compute_critical_positions() prepared parameter: Any → JSONValue\n\n**mamba_hybrid.py (17 replacements):**\n- ProcessingResult.output: Any → JSONValue\n- MambaLayer.forward() x, state, return types: Any → JSONValue, JSONDict (3 occurrences)\n- _init_state() return: Any → JSONDict\n- _ssm_forward() all parameters and return: Any → JSONValue, JSONDict (3 occurrences)\n- _update_state() all parameters and return: Any → JSONDict, JSONValue (3 occurrences)\n- SharedAttentionLayer.forward() x, mask, return: Any → JSONValue, JSONDict (3 occurrences)\n- _focused_attention() x and return: Any → JSONValue (2 occurrences)\n- _context_cache: Dict[str, Any] → Dict[str, JSONValue]\n- process() x parameter: Any → JSONValue\n- _prepare_jrt_context() x and return: Any → JSONValue (2 occurrences)\n- _compute_cache_key(), _get_context_length(), validate_constitutional_compliance() x parameter: Any → JSONValue (3 occurrences)\n- _update_cache() value parameter: Any → JSONValue\n- get_stats() return: Dict[str, Any] → JSONDict\n\nAll types imported from acgs2-core/shared/types.py for consistency (JSONValue, JSONDict, ContextData, MetadataDict, AuditTrail).\n\nCode Quality: Fixed import ordering, added missing Tuple import, added strict=True to zip() call, renamed unused variable. All pre-commit hooks passed.\n\nAll acceptance criteria met:\n✓ Memory structures use TypedDict or dataclasses\n✓ Context data properly typed\n✓ Hybrid system maintains type safety\n✓ No remaining 'Any' type annotations in context management files",
+          "notes": "Successfully typed the context management and memory systems in src/core/breakthrough/context. Replaced 41 'Any' type annotations across 3 files:\n\n**memory_system.py (17 replacements):**\n- MemoryEntry.content: Any → JSONValue\n- MemoryEntry.metadata: Dict[str, Any] → MetadataDict\n- All to_dict() methods: Dict[str, Any] → JSONDict (4 occurrences)\n- GovernanceCase.context: Dict[str, Any] → ContextData\n- filter_criteria parameters: Optional[Dict[str, Any]] → Optional[MetadataDict] (2 occurrences)\n- store_principle metadata: Optional[Dict[str, Any]] → Optional[MetadataDict]\n- store_knowledge content: Any → JSONValue\n- WorkingMemory.store content: Any → JSONValue\n- WorkingMemory.get() return: Optional[Any] → Optional[JSONValue]\n- _audit_log: List[Dict[str, Any]] → AuditTrail\n- store_context/get_context: Any → JSONValue, Optional[JSONValue]\n- get_stats() return: Dict[str, Any] → JSONDict\n\n**jrt_context.py (7 replacements):**\n- ContextSection.content: Any → JSONValue\n- PreparedContext.original/prepared: Any → JSONValue (2 occurrences)\n- prepare() context parameter: Any → JSONValue\n- _identify_sections() context parameter: Any → JSONValue\n- _apply_jrt() context parameter and return: Any → JSONValue, Tuple[JSONValue, ...]\n- _compute_critical_positions() prepared parameter: Any → JSONValue\n\n**mamba_hybrid.py (17 replacements):**\n- ProcessingResult.output: Any → JSONValue\n- MambaLayer.forward() x, state, return types: Any → JSONValue, JSONDict (3 occurrences)\n- _init_state() return: Any → JSONDict\n- _ssm_forward() all parameters and return: Any → JSONValue, JSONDict (3 occurrences)\n- _update_state() all parameters and return: Any → JSONDict, JSONValue (3 occurrences)\n- SharedAttentionLayer.forward() x, mask, return: Any → JSONValue, JSONDict (3 occurrences)\n- _focused_attention() x and return: Any → JSONValue (2 occurrences)\n- _context_cache: Dict[str, Any] → Dict[str, JSONValue]\n- process() x parameter: Any → JSONValue\n- _prepare_jrt_context() x and return: Any → JSONValue (2 occurrences)\n- _compute_cache_key(), _get_context_length(), validate_constitutional_compliance() x parameter: Any → JSONValue (3 occurrences)\n- _update_cache() value parameter: Any → JSONValue\n- get_stats() return: Dict[str, Any] → JSONDict\n\nAll types imported from src/core/shared/types.py for consistency (JSONValue, JSONDict, ContextData, MetadataDict, AuditTrail).\n\nCode Quality: Fixed import ordering, added missing Tuple import, added strict=True to zip() call, renamed unused variable. All pre-commit hooks passed.\n\nAll acceptance criteria met:\n✓ Memory structures use TypedDict or dataclasses\n✓ Context data properly typed\n✓ Hybrid system maintains type safety\n✓ No remaining 'Any' type annotations in context management files",
           "updated_at": "2026-01-03T23:42:49.505934+00:00"
         },
         {
@@ -255,9 +255,9 @@
           "description": "Complete breakthrough module typing improvements",
           "status": "completed",
           "files": [
-            "acgs2-core/breakthrough/policy/psv_self_play.py",
-            "acgs2-core/breakthrough/symbolic/edge_case_handler.py",
-            "acgs2-core/breakthrough/integrations/mcp_server.py"
+            "src/core/breakthrough/policy/psv_self_play.py",
+            "src/core/breakthrough/symbolic/edge_case_handler.py",
+            "src/core/breakthrough/integrations/mcp_server.py"
           ],
           "acceptance_criteria": [
             "All 79 'Any' occurrences in breakthrough replaced",
@@ -266,7 +266,7 @@
             "MCP server protocol types defined",
             "Full breakthrough test suite passes"
           ],
-          "notes": "Successfully completed breakthrough module typing improvements. Replaced 47 'Any' type annotations across 3 files (psv_self_play.py, edge_case_handler.py, mcp_server.py) with specific types from acgs2-core/shared/types.py.\n\n**Files Updated:**\n- acgs2-core/breakthrough/policy/psv_self_play.py (12 replacements)\n- acgs2-core/breakthrough/symbolic/edge_case_handler.py (22 replacements)  \n- acgs2-core/breakthrough/integrations/mcp_server.py (13 replacements)\n\n**Key Type Improvements:**\n- Dict[str, Any] → JSONDict for JSON-like dictionaries\n- Any → ContextData for context parameters\n- Any → JSONValue for JSON values\n- Any → VerifiedPolicy for policy objects\n- Any → Callable[[ContextData], bool] for check functions\n\n**Quality Assurance:**\n- All pre-commit hooks passed (ruff, bandit, yaml/json checks)\n- No remaining 'Any' type annotations in modified files\n- Import order fixed per isort/ruff requirements\n- Maintained full backward compatibility\n- Improved type safety for IDE support and static analysis\n\nCommitted to git with hash df0e3c467. Phase 3 (Breakthrough Module Type Improvements) is now complete with all 79 'Any' occurrences addressed across all subtasks (3.1-3.5).",
+          "notes": "Successfully completed breakthrough module typing improvements. Replaced 47 'Any' type annotations across 3 files (psv_self_play.py, edge_case_handler.py, mcp_server.py) with specific types from src/core/shared/types.py.\n\n**Files Updated:**\n- src/core/breakthrough/policy/psv_self_play.py (12 replacements)\n- src/core/breakthrough/symbolic/edge_case_handler.py (22 replacements)  \n- src/core/breakthrough/integrations/mcp_server.py (13 replacements)\n\n**Key Type Improvements:**\n- Dict[str, Any] → JSONDict for JSON-like dictionaries\n- Any → ContextData for context parameters\n- Any → JSONValue for JSON values\n- Any → VerifiedPolicy for policy objects\n- Any → Callable[[ContextData], bool] for check functions\n\n**Quality Assurance:**\n- All pre-commit hooks passed (ruff, bandit, yaml/json checks)\n- No remaining 'Any' type annotations in modified files\n- Import order fixed per isort/ruff requirements\n- Maintained full backward compatibility\n- Improved type safety for IDE support and static analysis\n\nCommitted to git with hash df0e3c467. Phase 3 (Breakthrough Module Type Improvements) is now complete with all 79 'Any' occurrences addressed across all subtasks (3.1-3.5).",
           "updated_at": "2026-01-03T23:50:03.704913+00:00"
         }
       ]
@@ -274,7 +274,7 @@
     {
       "phase": 4,
       "title": "Core Services Type Improvements",
-      "description": "Replace 'Any' types in acgs2-core services (policy_registry, hitl-approvals, ml_governance, etc.)",
+      "description": "Replace 'Any' types in src/core services (policy_registry, hitl-approvals, ml_governance, etc.)",
       "status": "pending",
       "subtasks": [
         {
@@ -283,10 +283,10 @@
           "description": "Type the policy registry service including ABAC models and Vault integration",
           "status": "completed",
           "files": [
-            "acgs2-core/services/policy_registry/advanced_rbac/models/abac_models.py",
-            "acgs2-core/services/policy_registry/advanced_rbac/policies/abac_engine.py",
-            "acgs2-core/services/policy_registry/app/services/vault_kv.py",
-            "acgs2-core/services/policy_registry/app/services/vault_transit.py"
+            "src/core/services/policy_registry/advanced_rbac/models/abac_models.py",
+            "src/core/services/policy_registry/advanced_rbac/policies/abac_engine.py",
+            "src/core/services/policy_registry/app/services/vault_kv.py",
+            "src/core/services/policy_registry/app/services/vault_transit.py"
           ],
           "acceptance_criteria": [
             "ABAC attribute models use specific types",
@@ -294,7 +294,7 @@
             "Vault response data typed with TypedDict",
             "Policy registry tests pass"
           ],
-          "notes": "Successfully typed the policy registry service including ABAC models and Vault integration. Replaced 34 'Any' type annotations with specific types from acgs2-core/shared/types.py:\n\n**abac_models.py (18 replacements):**\n- Attribute.value: Any → JSONValue\n- Attribute.metadata: Dict[str, Any] → MetadataDict\n- AttributeCondition.expected_value: Any → JSONValue\n- ABACRule/ABACPolicy/DelegationGrant metadata: Dict[str, Any] → MetadataDict\n- PolicyDecision.obligations: List[Dict[str, Any]] → List[JSONDict]\n- DelegationGrant.constraints: Dict[str, Any] → JSONDict\n- AttributeSource.config: Dict[str, Any] → ConfigDict\n- ABACAuditEvent.attributes_used: Dict[str, Any] → AttributeMap\n- Updated all Pydantic models (AttributeModel, AttributeConditionModel, ABACRuleModel, ABACPolicyModel, DelegationGrantModel, AttributeSourceModel)\n\n**abac_engine.py (6 replacements):**\n- _get_attribute_value return type: Any → JSONValue\n- _equals_comparison/_contains_comparison parameters: Any → JSONValue\n- get_cache_stats/get_policy_stats return types: Dict[str, Any] → JSONDict\n\n**vault_kv.py (7 replacements):**\n- Added VaultHttpClient Protocol type for http_client parameter\n- put method data parameter and payload: Dict[str, Any] → JSONDict\n- get/list_secrets/get_metadata return types: Dict[str, Any] → JSONDict\n\n**vault_transit.py (3 replacements):**\n- Added VaultHttpClient Protocol type for http_client parameter\n- get_key_info return type: Dict[str, Any] → JSONDict\n\nAll acceptance criteria met:\n✓ ABAC attribute models use specific types (JSONValue, MetadataDict, ConfigDict)\n✓ Policy evaluation results properly typed (JSONDict)\n✓ Vault response data typed with Protocol and JSONDict\n✓ All pre-commit hooks passed (ruff, bandit, quality gate)\n\nCommitted to git with hash 44428fa90.",
+          "notes": "Successfully typed the policy registry service including ABAC models and Vault integration. Replaced 34 'Any' type annotations with specific types from src/core/shared/types.py:\n\n**abac_models.py (18 replacements):**\n- Attribute.value: Any → JSONValue\n- Attribute.metadata: Dict[str, Any] → MetadataDict\n- AttributeCondition.expected_value: Any → JSONValue\n- ABACRule/ABACPolicy/DelegationGrant metadata: Dict[str, Any] → MetadataDict\n- PolicyDecision.obligations: List[Dict[str, Any]] → List[JSONDict]\n- DelegationGrant.constraints: Dict[str, Any] → JSONDict\n- AttributeSource.config: Dict[str, Any] → ConfigDict\n- ABACAuditEvent.attributes_used: Dict[str, Any] → AttributeMap\n- Updated all Pydantic models (AttributeModel, AttributeConditionModel, ABACRuleModel, ABACPolicyModel, DelegationGrantModel, AttributeSourceModel)\n\n**abac_engine.py (6 replacements):**\n- _get_attribute_value return type: Any → JSONValue\n- _equals_comparison/_contains_comparison parameters: Any → JSONValue\n- get_cache_stats/get_policy_stats return types: Dict[str, Any] → JSONDict\n\n**vault_kv.py (7 replacements):**\n- Added VaultHttpClient Protocol type for http_client parameter\n- put method data parameter and payload: Dict[str, Any] → JSONDict\n- get/list_secrets/get_metadata return types: Dict[str, Any] → JSONDict\n\n**vault_transit.py (3 replacements):**\n- Added VaultHttpClient Protocol type for http_client parameter\n- get_key_info return type: Dict[str, Any] → JSONDict\n\nAll acceptance criteria met:\n✓ ABAC attribute models use specific types (JSONValue, MetadataDict, ConfigDict)\n✓ Policy evaluation results properly typed (JSONDict)\n✓ Vault response data typed with Protocol and JSONDict\n✓ All pre-commit hooks passed (ruff, bandit, quality gate)\n\nCommitted to git with hash 44428fa90.",
           "updated_at": "2026-01-04T05:44:15.417816+00:00"
         },
         {
@@ -303,10 +303,10 @@
           "description": "Type the human-in-the-loop approval system",
           "status": "completed",
           "files": [
-            "acgs2-core/services/hitl-approvals/app/core/approval_engine.py",
-            "acgs2-core/services/hitl-approvals/app/core/kafka_client.py",
-            "acgs2-core/services/hitl-approvals/app/core/opa_client.py",
-            "acgs2-core/services/hitl-approvals/app/notifications/retry.py"
+            "src/core/services/hitl-approvals/app/core/approval_engine.py",
+            "src/core/services/hitl-approvals/app/core/kafka_client.py",
+            "src/core/services/hitl-approvals/app/core/opa_client.py",
+            "src/core/services/hitl-approvals/app/notifications/retry.py"
           ],
           "acceptance_criteria": [
             "Approval decisions use typed models",
@@ -314,7 +314,7 @@
             "OPA policy responses typed",
             "Retry mechanisms maintain type safety"
           ],
-          "notes": "Successfully typed the human-in-the-loop approval system. Replaced 'Any' type annotations with specific types from acgs2-core/shared/types.py:\n\n**approval_engine.py (5 replacements):**\n- decision_context: Dict[str, Any] → JSONDict\n- get_statistics() return: Dict[str, Any] → JSONDict (2 occurrences)\n- notification_callback: Callable → Callable[[NotificationPayload], None]\n- audit_callback: Callable → Callable[[AuditEvent], None]\n- _record_audit_event details: Optional[Dict[str, Any]] → Optional[ErrorDetails]\n\n**kafka_client.py (11 replacements):**\n- HITLEvent.payload: Dict[str, Any] → JSONDict\n- to_dict() return: Dict[str, Any] → JSONDict\n- from_dict() parameter: Dict[str, Any] → JSONDict\n- create() payload and kwargs: Optional[Dict[str, Any]], **kwargs: Any → Optional[JSONDict], **kwargs: KwargsType\n- publish_approval_requested metadata: Optional[Dict[str, Any]] → Optional[JSONDict]\n- publish_escalation metadata: Optional[Dict[str, Any]] → Optional[JSONDict]\n- publish_approval_completed metadata: Optional[Dict[str, Any]] → Optional[JSONDict]\n- publish_sla_breach metadata: Optional[Dict[str, Any]] → Optional[JSONDict]\n- _serialize_event parameter: Dict[str, Any] → JSONDict\n- EventHandler maintains Coroutine[Any, Any, None] (standard typing convention)\n- Added nosec B110 comment for intentional try/except/pass\n\n**opa_client.py (15 replacements):**\n- _memory_cache: Dict[str, Dict[str, Any]] → Dict[str, JSONDict]\n- _generate_cache_key input_data: Dict[str, Any] → JSONDict\n- _get_from_cache return: Optional[Dict[str, Any]] → Optional[JSONDict]\n- _set_to_cache result: Dict[str, Any] → JSONDict\n- _validate_input_data input_data: Dict[str, Any] → JSONDict\n- evaluate_policy input_data and return: Dict[str, Any] → JSONDict, PolicyData\n- _process_opa_result: opa_result: Any → Union[bool, JSONDict, JSONValue, None], return: Dict[str, Any] → PolicyData\n- _handle_unavailable return: Dict[str, Any] → PolicyData\n- evaluate_routing context and return: Optional[Dict[str, Any]], Dict[str, Any] → Optional[JSONDict], PolicyData\n- evaluate_authorization context: Optional[Dict[str, Any]] → Optional[JSONDict]\n- evaluate_escalation context and return: Optional[Dict[str, Any]], Dict[str, Any] → Optional[JSONDict], PolicyData\n- health_check return: Dict[str, Any] → JSONDict\n- get_stats return: Dict[str, Any] → JSONDict\n- initialize_opa_client **kwargs: Any → **kwargs: KwargsType\n\n**retry.py (7 replacements):**\n- to_dict() return: Dict[str, Any] → JSONDict\n- wrapper self: Any → \"NotificationProvider\" (using TYPE_CHECKING to avoid circular import)\n- wrapper *args, **kwargs: Any, Any → ArgsType, KwargsType\n- RetryableNotificationSender.send provider: Any → \"NotificationProvider\"\n- RetryableNotificationSender.send_to_multiple providers: List[Any] → List[\"NotificationProvider\"]\n\n**Total Changes:**\n- 38 'Any' type annotations replaced with specific types\n- Used TYPE_CHECKING pattern to avoid circular imports\n- All types imported from acgs2-core/shared/types.py for consistency\n- All pre-commit hooks passed (ruff, bandit, yaml/json checks)\n- No remaining 'Any' type annotations in modified files\n\nAll acceptance criteria met:\n✓ Approval decisions use typed models (JSONDict, ErrorDetails)\n✓ Kafka message payloads typed (JSONDict, KwargsType)\n✓ OPA policy responses typed (PolicyData, JSONDict)\n✓ Retry mechanisms maintain type safety (ArgsType, KwargsType, TYPE_CHECKING pattern)\n\nCommitted to git with hash 8c1689793.",
+          "notes": "Successfully typed the human-in-the-loop approval system. Replaced 'Any' type annotations with specific types from src/core/shared/types.py:\n\n**approval_engine.py (5 replacements):**\n- decision_context: Dict[str, Any] → JSONDict\n- get_statistics() return: Dict[str, Any] → JSONDict (2 occurrences)\n- notification_callback: Callable → Callable[[NotificationPayload], None]\n- audit_callback: Callable → Callable[[AuditEvent], None]\n- _record_audit_event details: Optional[Dict[str, Any]] → Optional[ErrorDetails]\n\n**kafka_client.py (11 replacements):**\n- HITLEvent.payload: Dict[str, Any] → JSONDict\n- to_dict() return: Dict[str, Any] → JSONDict\n- from_dict() parameter: Dict[str, Any] → JSONDict\n- create() payload and kwargs: Optional[Dict[str, Any]], **kwargs: Any → Optional[JSONDict], **kwargs: KwargsType\n- publish_approval_requested metadata: Optional[Dict[str, Any]] → Optional[JSONDict]\n- publish_escalation metadata: Optional[Dict[str, Any]] → Optional[JSONDict]\n- publish_approval_completed metadata: Optional[Dict[str, Any]] → Optional[JSONDict]\n- publish_sla_breach metadata: Optional[Dict[str, Any]] → Optional[JSONDict]\n- _serialize_event parameter: Dict[str, Any] → JSONDict\n- EventHandler maintains Coroutine[Any, Any, None] (standard typing convention)\n- Added nosec B110 comment for intentional try/except/pass\n\n**opa_client.py (15 replacements):**\n- _memory_cache: Dict[str, Dict[str, Any]] → Dict[str, JSONDict]\n- _generate_cache_key input_data: Dict[str, Any] → JSONDict\n- _get_from_cache return: Optional[Dict[str, Any]] → Optional[JSONDict]\n- _set_to_cache result: Dict[str, Any] → JSONDict\n- _validate_input_data input_data: Dict[str, Any] → JSONDict\n- evaluate_policy input_data and return: Dict[str, Any] → JSONDict, PolicyData\n- _process_opa_result: opa_result: Any → Union[bool, JSONDict, JSONValue, None], return: Dict[str, Any] → PolicyData\n- _handle_unavailable return: Dict[str, Any] → PolicyData\n- evaluate_routing context and return: Optional[Dict[str, Any]], Dict[str, Any] → Optional[JSONDict], PolicyData\n- evaluate_authorization context: Optional[Dict[str, Any]] → Optional[JSONDict]\n- evaluate_escalation context and return: Optional[Dict[str, Any]], Dict[str, Any] → Optional[JSONDict], PolicyData\n- health_check return: Dict[str, Any] → JSONDict\n- get_stats return: Dict[str, Any] → JSONDict\n- initialize_opa_client **kwargs: Any → **kwargs: KwargsType\n\n**retry.py (7 replacements):**\n- to_dict() return: Dict[str, Any] → JSONDict\n- wrapper self: Any → \"NotificationProvider\" (using TYPE_CHECKING to avoid circular import)\n- wrapper *args, **kwargs: Any, Any → ArgsType, KwargsType\n- RetryableNotificationSender.send provider: Any → \"NotificationProvider\"\n- RetryableNotificationSender.send_to_multiple providers: List[Any] → List[\"NotificationProvider\"]\n\n**Total Changes:**\n- 38 'Any' type annotations replaced with specific types\n- Used TYPE_CHECKING pattern to avoid circular imports\n- All types imported from src/core/shared/types.py for consistency\n- All pre-commit hooks passed (ruff, bandit, yaml/json checks)\n- No remaining 'Any' type annotations in modified files\n\nAll acceptance criteria met:\n✓ Approval decisions use typed models (JSONDict, ErrorDetails)\n✓ Kafka message payloads typed (JSONDict, KwargsType)\n✓ OPA policy responses typed (PolicyData, JSONDict)\n✓ Retry mechanisms maintain type safety (ArgsType, KwargsType, TYPE_CHECKING pattern)\n\nCommitted to git with hash 8c1689793.",
           "updated_at": "2026-01-04T05:49:52.382852+00:00"
         },
         {
@@ -323,11 +323,11 @@
           "description": "Type the ML governance engine and compliance document generators",
           "status": "pending",
           "files": [
-            "acgs2-core/services/ml_governance/src/core/engine.py",
-            "acgs2-core/services/compliance_docs/src/template_engine.py",
-            "acgs2-core/services/compliance_docs/src/generators/docx_generator.py",
-            "acgs2-core/services/compliance_docs/src/generators/pdf_generator.py",
-            "acgs2-core/services/compliance_docs/src/generators/xlsx_generator.py"
+            "src/core/services/ml_governance/src/core/engine.py",
+            "src/core/services/compliance_docs/src/template_engine.py",
+            "src/core/services/compliance_docs/src/generators/docx_generator.py",
+            "src/core/services/compliance_docs/src/generators/pdf_generator.py",
+            "src/core/services/compliance_docs/src/generators/xlsx_generator.py"
           ],
           "acceptance_criteria": [
             "ML governance decisions typed",
@@ -342,9 +342,9 @@
           "description": "Type the code analysis service utilities",
           "status": "pending",
           "files": [
-            "acgs2-core/services/core/code-analysis/code_analysis_service/app/services/cache_service.py",
-            "acgs2-core/services/core/code-analysis/code_analysis_service/app/middleware/performance.py",
-            "acgs2-core/services/core/code-analysis/code_analysis_service/app/utils/logging.py"
+            "src/core/services/core/code-analysis/code_analysis_service/app/services/cache_service.py",
+            "src/core/services/core/code-analysis/code_analysis_service/app/middleware/performance.py",
+            "src/core/services/core/code-analysis/code_analysis_service/app/utils/logging.py"
           ],
           "acceptance_criteria": [
             "Cache service values properly typed",
@@ -359,8 +359,8 @@
           "description": "Complete core services typing improvements",
           "status": "pending",
           "files": [
-            "acgs2-core/services/core/constraint_generation_system/language_constraints.py",
-            "acgs2-core/services/auth_sso/oidc_provider.py"
+            "src/core/services/core/constraint_generation_system/language_constraints.py",
+            "src/core/services/auth_sso/oidc_provider.py"
           ],
           "acceptance_criteria": [
             "Constraint definitions use typed structures",
@@ -382,10 +382,10 @@
           "description": "Type the main agent bus components",
           "status": "pending",
           "files": [
-            "acgs2-core/enhanced_agent_bus/agent_bus.py",
-            "acgs2-core/enhanced_agent_bus/message_processor.py",
-            "acgs2-core/enhanced_agent_bus/kafka_bus.py",
-            "acgs2-core/enhanced_agent_bus/config.py"
+            "src/core/enhanced_agent_bus/agent_bus.py",
+            "src/core/enhanced_agent_bus/message_processor.py",
+            "src/core/enhanced_agent_bus/kafka_bus.py",
+            "src/core/enhanced_agent_bus/config.py"
           ],
           "acceptance_criteria": [
             "Message types use Protocol or TypedDict",
@@ -400,12 +400,12 @@
           "description": "Type workflow orchestration and saga transaction systems",
           "status": "pending",
           "files": [
-            "acgs2-core/enhanced_agent_bus/workflows/workflow_base.py",
-            "acgs2-core/enhanced_agent_bus/workflows/agent_entity_workflow.py",
-            "acgs2-core/enhanced_agent_bus/workflows/graph_workflow.py",
-            "acgs2-core/enhanced_agent_bus/workflows/hp_governance_workflow.py",
-            "acgs2-core/enhanced_agent_bus/verification/saga_transaction.py",
-            "acgs2-core/enhanced_agent_bus/verification/sagallm_transactions.py"
+            "src/core/enhanced_agent_bus/workflows/workflow_base.py",
+            "src/core/enhanced_agent_bus/workflows/agent_entity_workflow.py",
+            "src/core/enhanced_agent_bus/workflows/graph_workflow.py",
+            "src/core/enhanced_agent_bus/workflows/hp_governance_workflow.py",
+            "src/core/enhanced_agent_bus/verification/saga_transaction.py",
+            "src/core/enhanced_agent_bus/verification/sagallm_transactions.py"
           ],
           "acceptance_criteria": [
             "Workflow state uses typed structures",
@@ -420,12 +420,12 @@
           "description": "Type the deliberation queue and intent classification systems",
           "status": "pending",
           "files": [
-            "acgs2-core/enhanced_agent_bus/deliberation_layer/deliberation_queue.py",
-            "acgs2-core/enhanced_agent_bus/deliberation_layer/intent_classifier.py",
-            "acgs2-core/enhanced_agent_bus/deliberation_layer/impact_scorer.py",
-            "acgs2-core/enhanced_agent_bus/deliberation_layer/interfaces.py",
-            "acgs2-core/enhanced_agent_bus/deliberation_layer/redis_integration.py",
-            "acgs2-core/enhanced_agent_bus/deliberation_layer/workflows/constitutional_saga.py"
+            "src/core/enhanced_agent_bus/deliberation_layer/deliberation_queue.py",
+            "src/core/enhanced_agent_bus/deliberation_layer/intent_classifier.py",
+            "src/core/enhanced_agent_bus/deliberation_layer/impact_scorer.py",
+            "src/core/enhanced_agent_bus/deliberation_layer/interfaces.py",
+            "src/core/enhanced_agent_bus/deliberation_layer/redis_integration.py",
+            "src/core/enhanced_agent_bus/deliberation_layer/workflows/constitutional_saga.py"
           ],
           "acceptance_criteria": [
             "Queue items use typed models",
@@ -440,11 +440,11 @@
           "description": "Type the AI assistant components and MCP server protocol",
           "status": "pending",
           "files": [
-            "acgs2-core/enhanced_agent_bus/ai_assistant/nlu.py",
-            "acgs2-core/enhanced_agent_bus/ai_assistant/response.py",
-            "acgs2-core/enhanced_agent_bus/ai_assistant/context.py",
-            "acgs2-core/enhanced_agent_bus/mcp_server/protocol/types.py",
-            "acgs2-core/enhanced_agent_bus/mcp_server/adapters/agent_bus.py"
+            "src/core/enhanced_agent_bus/ai_assistant/nlu.py",
+            "src/core/enhanced_agent_bus/ai_assistant/response.py",
+            "src/core/enhanced_agent_bus/ai_assistant/context.py",
+            "src/core/enhanced_agent_bus/mcp_server/protocol/types.py",
+            "src/core/enhanced_agent_bus/mcp_server/adapters/agent_bus.py"
           ],
           "acceptance_criteria": [
             "NLU results use typed structures",
@@ -459,13 +459,13 @@
           "description": "Complete enhanced_agent_bus typing improvements",
           "status": "pending",
           "files": [
-            "acgs2-core/enhanced_agent_bus/runtime_security.py",
-            "acgs2-core/enhanced_agent_bus/runtime_safety_guardrails.py",
-            "acgs2-core/enhanced_agent_bus/security_helpers.py",
-            "acgs2-core/enhanced_agent_bus/security/injection_detector.py",
-            "acgs2-core/enhanced_agent_bus/observability/telemetry.py",
-            "acgs2-core/enhanced_agent_bus/utils.py",
-            "acgs2-core/enhanced_agent_bus/validation_strategies.py"
+            "src/core/enhanced_agent_bus/runtime_security.py",
+            "src/core/enhanced_agent_bus/runtime_safety_guardrails.py",
+            "src/core/enhanced_agent_bus/security_helpers.py",
+            "src/core/enhanced_agent_bus/security/injection_detector.py",
+            "src/core/enhanced_agent_bus/observability/telemetry.py",
+            "src/core/enhanced_agent_bus/utils.py",
+            "src/core/enhanced_agent_bus/validation_strategies.py"
           ],
           "acceptance_criteria": [
             "Security check results typed",
@@ -488,14 +488,14 @@
           "description": "Type shared utility modules (caching, logging, middleware)",
           "status": "pending",
           "files": [
-            "acgs2-core/shared/tiered_cache.py",
-            "acgs2-core/shared/l1_cache.py",
-            "acgs2-core/shared/cache_warming.py",
-            "acgs2-core/shared/structured_logging.py",
-            "acgs2-core/shared/logging_config.py",
-            "acgs2-core/shared/logging/__init__.py",
-            "acgs2-core/shared/json_utils.py",
-            "acgs2-core/shared/middleware/correlation_id.py"
+            "src/core/shared/tiered_cache.py",
+            "src/core/shared/l1_cache.py",
+            "src/core/shared/cache_warming.py",
+            "src/core/shared/structured_logging.py",
+            "src/core/shared/logging_config.py",
+            "src/core/shared/logging/__init__.py",
+            "src/core/shared/json_utils.py",
+            "src/core/shared/middleware/correlation_id.py"
           ],
           "acceptance_criteria": [
             "Cache value types use generics",
@@ -510,11 +510,11 @@
           "description": "Type authentication handlers and secrets management",
           "status": "pending",
           "files": [
-            "acgs2-core/shared/auth/saml_config.py",
-            "acgs2-core/shared/auth/saml_handler.py",
-            "acgs2-core/shared/auth/oidc_handler.py",
-            "acgs2-core/shared/secrets_manager.py",
-            "acgs2-core/shared/audit_client.py"
+            "src/core/shared/auth/saml_config.py",
+            "src/core/shared/auth/saml_handler.py",
+            "src/core/shared/auth/oidc_handler.py",
+            "src/core/shared/secrets_manager.py",
+            "src/core/shared/audit_client.py"
           ],
           "acceptance_criteria": [
             "SAML/OIDC token data typed",
@@ -529,9 +529,9 @@
           "description": "Type the Python SDK for ACGS2",
           "status": "pending",
           "files": [
-            "acgs2-core/sdk/python/acgs2_sdk/client.py",
-            "acgs2-core/sdk/python/acgs2_sdk/models.py",
-            "acgs2-core/sdk/python/acgs2_sdk/services/audit.py"
+            "src/core/sdk/python/acgs2_sdk/client.py",
+            "src/core/sdk/python/acgs2_sdk/models.py",
+            "src/core/sdk/python/acgs2_sdk/services/audit.py"
           ],
           "acceptance_criteria": [
             "Client method signatures fully typed",
@@ -546,10 +546,10 @@
           "description": "Type the NEMO agent integration toolkit",
           "status": "pending",
           "files": [
-            "acgs2-core/integrations/nemo_agent_toolkit/agent_wrapper.py",
-            "acgs2-core/integrations/nemo_agent_toolkit/constitutional_guardrails.py",
-            "acgs2-core/integrations/nemo_agent_toolkit/mcp_bridge.py",
-            "acgs2-core/integrations/nemo_agent_toolkit/profiler.py"
+            "src/core/integrations/nemo_agent_toolkit/agent_wrapper.py",
+            "src/core/integrations/nemo_agent_toolkit/constitutional_guardrails.py",
+            "src/core/integrations/nemo_agent_toolkit/mcp_bridge.py",
+            "src/core/integrations/nemo_agent_toolkit/profiler.py"
           ],
           "acceptance_criteria": [
             "Agent interface properly typed",
@@ -627,7 +627,7 @@
           "status": "pending",
           "files": [
             "acgs2-observability/monitoring/__init__.py",
-            "acgs2-core/cli/opa_service.py"
+            "src/core/cli/opa_service.py"
           ],
           "acceptance_criteria": [
             "Monitoring metrics typed",
@@ -641,10 +641,10 @@
           "description": "Type development tools and test utilities",
           "status": "pending",
           "files": [
-            "acgs2-core/tools/fix_corrupted_syntax.py",
-            "acgs2-core/tools/fix_kwarg_type_hints.py",
-            "acgs2-core/tests/integration/test_redis.py",
-            "acgs2-core/tests/playground/test_app.py"
+            "src/core/tools/fix_corrupted_syntax.py",
+            "src/core/tools/fix_kwarg_type_hints.py",
+            "src/core/tests/integration/test_redis.py",
+            "src/core/tests/playground/test_app.py"
           ],
           "acceptance_criteria": [
             "Tool functions properly typed",
@@ -680,7 +680,7 @@
           "files": [],
           "acceptance_criteria": [
             "Mypy passes on integration-service with strict mode",
-            "Mypy passes on acgs2-core/breakthrough with strict mode",
+            "Mypy passes on src/core/breakthrough with strict mode",
             "Mypy passes on all modified files",
             "Type coverage report shows significant improvement"
           ]
@@ -693,7 +693,7 @@
           "files": [],
           "acceptance_criteria": [
             "All integration-service tests pass",
-            "All acgs2-core tests pass",
+            "All src/core tests pass",
             "All adaptive-learning-engine tests pass",
             "No new test failures introduced"
           ]
@@ -825,8 +825,8 @@
     "total_files_affected": 120,
     "high_priority_areas": [
       "integration-service (16 occurrences)",
-      "acgs2-core/breakthrough (79 occurrences)",
-      "acgs2-core/enhanced_agent_bus (50+ occurrences)"
+      "src/core/breakthrough (79 occurrences)",
+      "src/core/enhanced_agent_bus (50+ occurrences)"
     ],
     "estimated_effort": "Large - 2-3 weeks with thorough testing",
     "risk_level": "Medium - Type changes may expose hidden bugs",

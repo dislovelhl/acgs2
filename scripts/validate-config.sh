@@ -92,7 +92,7 @@ echo ""
 # Check Python config
 echo "🐍 Validating Python configuration..."
 if command -v python3 &> /dev/null; then
-    cd acgs2-core 2>/dev/null || cd .
+    cd src/core 2>/dev/null || cd .
     if python3 -c "
 import sys
 sys.path.insert(0, '.')

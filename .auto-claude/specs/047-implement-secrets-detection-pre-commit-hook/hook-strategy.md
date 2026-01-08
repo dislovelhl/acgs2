@@ -55,7 +55,7 @@ The strategy balances security with developer experience, ensuring <5s commit ti
 
 **Configuration:**
 - Python script: `scripts/check-secrets-pre-commit.py`
-- Import patterns directly from `acgs2-core/shared/secrets_manager.py`
+- Import patterns directly from `src/core/shared/secrets_manager.py`
 - Allow-list configuration for known-safe values
 
 **Strengths:**
@@ -271,8 +271,8 @@ service-*/.env
 
 **Development Certificates (with explicit allow-list):**
 ```
-acgs2-core/shared/auth/certs/sp.key
-acgs2-core/shared/auth/certs/sp.crt
+src/core/shared/auth/certs/sp.key
+src/core/shared/auth/certs/sp.crt
 ```
 
 **Rationale:** Already in `.gitleaksignore`, development-only, self-signed
@@ -702,7 +702,7 @@ def report_secret_found(secret_name: str, file_path: str, line_num: int):
 **Examples:**
 ```
 # Development SAML certificate (safe, self-signed)
-acgs2-core/shared/auth/certs/sp.key:private-key:1
+src/core/shared/auth/certs/sp.key:private-key:1
 
 # Test fixture for secret validation (documented)
 tests/fixtures/test_secrets.py:anthropic-api-key:42

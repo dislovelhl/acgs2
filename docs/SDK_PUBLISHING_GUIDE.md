@@ -67,7 +67,7 @@ pip install build twine
 
 2. Build the package:
 ```bash
-cd acgs2-core/sdk/python
+cd src/core/sdk/python
 python -m build
 ```
 
@@ -85,7 +85,7 @@ twine upload dist/*
 
 1. Install dependencies:
 ```bash
-cd acgs2-core/sdk/typescript
+cd src/core/sdk/typescript
 npm ci
 ```
 
@@ -124,8 +124,8 @@ All SDKs use semantic versioning: `MAJOR.MINOR.PATCH`
 
 ### Version Files
 Update version numbers in:
-- Python: `acgs2-core/sdk/python/pyproject.toml`
-- TypeScript: `acgs2-core/sdk/typescript/package.json`
+- Python: `src/core/sdk/python/pyproject.toml`
+- TypeScript: `src/core/sdk/typescript/package.json`
 - Go: Tag-based versioning (no version file needed)
 
 ## GitHub Secrets Configuration
@@ -147,14 +147,14 @@ TEST_PYPI_API_TOKEN=your_test_pypi_token
 
 ### Python SDK Testing
 ```bash
-cd acgs2-core/sdk/python
+cd src/core/sdk/python
 pip install -e ".[dev]"
 pytest
 ```
 
 ### TypeScript SDK Testing
 ```bash
-cd acgs2-core/sdk/typescript
+cd src/core/sdk/typescript
 npm install
 npm test
 npm run build
@@ -162,7 +162,7 @@ npm run build
 
 ### Go SDK Testing
 ```bash
-cd acgs2-core/sdk/go
+cd src/core/sdk/go
 go test -v ./...
 go build ./...
 ```
@@ -223,9 +223,9 @@ go list -m github.com/acgs2/sdk/go@v2.0.0
 
 Maintain changelogs in each SDK directory:
 
-- `acgs2-core/sdk/python/CHANGELOG.md`
-- `acgs2-core/sdk/typescript/CHANGELOG.md`
-- `acgs2-core/sdk/go/CHANGELOG.md`
+- `src/core/sdk/python/CHANGELOG.md`
+- `src/core/sdk/typescript/CHANGELOG.md`
+- `src/core/sdk/go/CHANGELOG.md`
 
 Format follows [Keep a Changelog](https://keepachangelog.com/):
 

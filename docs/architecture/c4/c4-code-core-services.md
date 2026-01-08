@@ -4,7 +4,7 @@
 
 - **Name**: ACGS-2 Core Platform Services
 - **Description**: Foundational microservices implementing constitutional AI governance, constraint generation, code analysis, usage metering, and compliance validation for the ACGS-2 system
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/services/core/`, `/home/dislove/document/acgs2/acgs2-core/services/metering/`, etc.
+- **Location**: `/home/dislove/document/acgs2/src/core/services/core/`, `/home/dislove/document/acgs2/src/core/services/metering/`, etc.
 - **Language**: Python 3.11+ with TypeScript/Rust integration
 - **Purpose**: Provide enterprise-grade core services for constitutional governance, machine learning operations, and system-wide compliance tracking with sub-5ms latency
 - **Constitutional Hash**: `cdd01ef066bc6cf2`
@@ -23,7 +23,7 @@ The core platform services are organized into six major functional areas:
 
 ### 1. Constraint Generation System
 
-**Location**: `/home/dislove/document/acgs2/acgs2-core/services/core/constraint_generation_system/`
+**Location**: `/home/dislove/document/acgs2/src/core/services/core/constraint_generation_system/`
 
 #### Classes
 
@@ -106,7 +106,7 @@ The core platform services are organized into six major functional areas:
 
 ### 2. Constitutional Retrieval System
 
-**Location**: `/home/dislove/document/acgs2/acgs2-core/services/core/constitutional-retrieval-system/`
+**Location**: `/home/dislove/document/acgs2/src/core/services/core/constitutional-retrieval-system/`
 
 #### Classes
 
@@ -166,7 +166,7 @@ The core platform services are organized into six major functional areas:
 
 ### 3. Code Analysis Engine
 
-**Location**: `/home/dislove/document/acgs2/acgs2-core/services/core/code-analysis/`
+**Location**: `/home/dislove/document/acgs2/src/core/services/core/code-analysis/`
 
 #### Classes
 
@@ -261,7 +261,7 @@ The core platform services are organized into six major functional areas:
 
 ### 4. Usage Metering Service
 
-**Location**: `/home/dislove/document/acgs2/acgs2-core/services/metering/`
+**Location**: `/home/dislove/document/acgs2/src/core/services/metering/`
 
 #### Classes
 

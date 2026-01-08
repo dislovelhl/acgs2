@@ -98,7 +98,7 @@ def main():
     parser.add_argument(
         "--apply", action="store_true", help="Actually modify files (default: dry run)"
     )
-    parser.add_argument("--path", default="acgs2-core", help="Path to scan")
+    parser.add_argument("--path", default="src/core", help="Path to scan")
     args = parser.parse_args()
 
     base_path = Path(args.path)

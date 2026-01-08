@@ -6,7 +6,7 @@
 
 - **Name**: Policy and Governance Services
 - **Description**: Comprehensive policy management, storage, versioning, and governance evaluation system for constitutional AI policies
-- **Location**: `/acgs2-core/services/`
+- **Location**: `/src/core/services/`
 - **Language**: Python 3.11+
 - **Purpose**: Provide dynamic policy storage with cryptographic signatures, OPA-based policy evaluation, caching, and governance workflows
 

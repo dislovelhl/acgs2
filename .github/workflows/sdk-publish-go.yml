@@ -1,10 +1,11 @@
 name: Publish Go SDK
 
 on:
-  release:
-    types: [published]
+  push:
     tags:
       - "sdk/go/v*"
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:

@@ -54,11 +54,11 @@ Gitleaks is currently integrated into CI/CD via GitHub Actions but **NOT** in pr
 # Development SAML SP certificates (self-signed, for testing only)
 # These are NOT used in production - production deployments generate their own certificates
 # Fingerprint format: file:rule:line
-acgs2-core/shared/auth/certs/sp.key:private-key:1
+src/core/shared/auth/certs/sp.key:private-key:1
 ```
 
 **Currently Ignored Secrets:**
-1. **SAML SP Private Key** (`acgs2-core/shared/auth/certs/sp.key`)
+1. **SAML SP Private Key** (`src/core/shared/auth/certs/sp.key`)
    - **Rule:** private-key
    - **Line:** 1
    - **Justification:** Self-signed development certificate, not used in production
@@ -80,7 +80,7 @@ acgs2-core/shared/auth/certs/sp.key:private-key:1
 
 ## 3. Secrets Manager Integration Opportunities
 
-**File:** `acgs2-core/shared/secrets_manager.py`
+**File:** `src/core/shared/secrets_manager.py`
 
 ### CREDENTIAL_PATTERNS Defined
 
@@ -186,7 +186,7 @@ Based on secrets_manager.py and common patterns:
 ## 7. Currently Ignored Secrets Inventory
 
 ### Explicit Ignores (.gitleaksignore):
-1. ✅ `acgs2-core/shared/auth/certs/sp.key` - Development SAML certificate
+1. ✅ `src/core/shared/auth/certs/sp.key` - Development SAML certificate
 
 ### Implicit Ignores (Not Currently Caught):
 Based on default gitleaks rules, these may NOT be caught:
@@ -304,7 +304,7 @@ Create `.gitleaks.toml` with custom rules for ACGS-2 specific patterns from secr
 ### Secrets that appear in codebase and are SAFE:
 
 1. **Development SAML Certificate:**
-   - Location: `acgs2-core/shared/auth/certs/sp.key`
+   - Location: `src/core/shared/auth/certs/sp.key`
    - Status: Already in .gitleaksignore
    - Justification: Self-signed, dev-only
 

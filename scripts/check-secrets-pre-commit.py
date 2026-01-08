@@ -7,7 +7,7 @@ Pre-commit hook to detect ACGS-2-specific secrets using patterns from secrets_ma
 Complements gitleaks with project-specific credential validation.
 
 Configuration:
-    - Patterns: acgs2-core/shared/secrets_manager.py (CREDENTIAL_PATTERNS)
+    - Patterns: src/core/shared/secrets_manager.py (CREDENTIAL_PATTERNS)
     - Allow-list: .secrets-allowlist.yaml (placeholder patterns, safe values)
 
 Usage:
@@ -32,7 +32,7 @@ except ImportError:
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root / "acgs2-core"))
+sys.path.insert(0, str(project_root / "src/core"))
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 ALLOWLIST_CONFIG_PATH = project_root / ".secrets-allowlist.yaml"
@@ -42,7 +42,7 @@ try:
     from src.core.shared.secrets_manager import CREDENTIAL_PATTERNS, SECRET_CATEGORIES
 except ImportError:
     print("❌ ERROR: Cannot import from secrets_manager.py")  # noqa: T201
-    print("   Ensure acgs2-core/shared/secrets_manager.py exists")  # noqa: T201
+    print("   Ensure src/core/shared/secrets_manager.py exists")  # noqa: T201
     sys.exit(1)
 
 
@@ -415,7 +415,7 @@ def report_findings(
     print("=" * 80)  # noqa: T201
     print()  # noqa: T201
     print("📚 Documentation: docs/SECRETS_DETECTION.md")  # noqa: T201
-    print("🔧 Pattern source: acgs2-core/shared/secrets_manager.py")  # noqa: T201
+    print("🔧 Pattern source: src/core/shared/secrets_manager.py")  # noqa: T201
     print("⚙️  Allow-list config: .secrets-allowlist.yaml")  # noqa: T201
     print(f"🏛️  Constitutional Hash: {CONSTITUTIONAL_HASH}")  # noqa: T201
     print()  # noqa: T201

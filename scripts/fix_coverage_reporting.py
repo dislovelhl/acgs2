@@ -21,7 +21,7 @@ def analyze_coverage_accuracy():
     # Check for coverage data files
     coverage_files = [
         "coverage.json",
-        "acgs2-core/enhanced_agent_bus/coverage_actual.json",
+        "src/core/enhanced_agent_bus/coverage_actual.json",
         ".coverage",
     ]
 
@@ -52,8 +52,8 @@ def analyze_coverage_accuracy():
         # Determine component
         if "enhanced_agent_bus" in file_path:
             component = "enhanced_agent_bus"
-        elif "acgs2-core" in file_path:
-            component = "acgs2-core"
+        elif "src/core" in file_path:
+            component = "src/core"
         elif "acgs2-observability" in file_path:
             component = "acgs2-observability"
         elif "acgs2-research" in file_path:
@@ -112,8 +112,8 @@ def update_documentation():
     # Update any coverage references in documentation
     docs_to_update = [
         "README.md",
-        "acgs2-core/README.md",
-        "acgs2-core/enhanced_agent_bus/README.md",
+        "src/core/README.md",
+        "src/core/enhanced_agent_bus/README.md",
     ]
 
     coverage_note = """

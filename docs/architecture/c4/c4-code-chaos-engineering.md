@@ -4,7 +4,7 @@
 
 - **Name**: ACGS-2 Chaos Engineering Framework
 - **Description**: Enterprise-grade chaos engineering platform for testing system resilience with constitutional compliance, regulatory governance, and automated recovery orchestration
-- **Location**: `/acgs2-core/chaos/`
+- **Location**: `/src/core/chaos/`
 - **Language**: Python 3.11+
 - **Purpose**: Implement controlled failure injection, monitoring, recovery, and enterprise governance for chaos experiments
 - **Constitutional Hash**: `cdd01ef066bc6cf2`

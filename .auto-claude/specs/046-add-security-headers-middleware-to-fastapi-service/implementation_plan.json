@@ -17,11 +17,11 @@
       "subtasks": [
         {
           "subtask_id": "1.1",
-          "description": "Create security_headers.py module in acgs2-core/shared/security/",
+          "description": "Create security_headers.py module in src/core/shared/security/",
           "status": "completed",
           "dependencies": [],
           "acceptance_criteria": [
-            "File created at acgs2-core/shared/security/security_headers.py",
+            "File created at src/core/shared/security/security_headers.py",
             "Module includes SecurityHeadersConfig dataclass for configuration",
             "Module includes SecurityHeadersMiddleware class",
             "Middleware implements all required headers: Content-Security-Policy, X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, X-XSS-Protection, Referrer-Policy",
@@ -33,7 +33,7 @@
         },
         {
           "subtask_id": "1.2",
-          "description": "Update acgs2-core/shared/security/__init__.py to export security headers middleware",
+          "description": "Update src/core/shared/security/__init__.py to export security headers middleware",
           "status": "completed",
           "dependencies": [
             "1.1"
@@ -53,7 +53,7 @@
             "1.1"
           ],
           "acceptance_criteria": [
-            "Create test file at acgs2-core/shared/security/tests/test_security_headers.py",
+            "Create test file at src/core/shared/security/tests/test_security_headers.py",
             "Test all security headers are present in responses",
             "Test environment-specific configurations (dev vs prod)",
             "Test custom CSP directives",
@@ -114,7 +114,7 @@
       "subtasks": [
         {
           "subtask_id": "3.1",
-          "description": "Integrate security headers middleware into acgs2-core/services/compliance_docs/src/main.py",
+          "description": "Integrate security headers middleware into src/core/services/compliance_docs/src/main.py",
           "status": "completed",
           "dependencies": [
             "1.1",
@@ -138,7 +138,7 @@
             "3.1"
           ],
           "acceptance_criteria": [
-            "Create or update acgs2-core/services/compliance_docs/tests/test_security_headers.py",
+            "Create or update src/core/services/compliance_docs/tests/test_security_headers.py",
             "Test GET /health endpoint returns all security headers",
             "Test GET /ready endpoint returns all security headers",
             "Test GET / root endpoint returns all security headers",
@@ -290,8 +290,8 @@
     "All tests pass successfully"
   ],
   "implementation_notes": [
-    "The acgs2-core/shared/security/__init__.py already mentions 'Security headers enforcement' but it's not implemented yet",
-    "Need to handle import paths correctly for acgs2-observability which is outside acgs2-core",
+    "The src/core/shared/security/__init__.py already mentions 'Security headers enforcement' but it's not implemented yet",
+    "Need to handle import paths correctly for acgs2-observability which is outside src/core",
     "CSP needs to be tailored for each service: integration-service needs external API access, observability needs WebSocket support",
     "HSTS should have different settings for development (shorter max-age or disabled) vs production (longer max-age)",
     "Consider making headers configurable via environment variables for flexibility",

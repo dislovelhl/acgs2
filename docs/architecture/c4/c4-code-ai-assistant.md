@@ -6,7 +6,7 @@
 
 - **Name**: ACGS-2 AI Assistant Framework
 - **Description**: Production-ready AI assistant with constitutional governance integration, providing natural language understanding (NLU), dialog management, response generation, and agent bus integration with constitutional validation
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/ai_assistant/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/ai_assistant/`
 - **Language**: Python 3.11+
 - **Purpose**: Orchestrates all AI assistant components (NLU, Dialog Management, Response Generation) with real-time constitutional governance validation and agent bus integration for enterprise conversational AI
 

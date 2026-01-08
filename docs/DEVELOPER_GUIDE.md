@@ -530,7 +530,7 @@ terraform plan -var-file=production.tfvars
 terraform apply -var-file=production.tfvars
 
 # Deploy application via GitOps
-kubectl apply -f ../../gitops/argocd/applications/acgs2-core.yaml
+kubectl apply -f ../../gitops/argocd/applications/src/core.yaml
 ```
 
 ---

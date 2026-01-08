@@ -10,7 +10,7 @@
 
 - **Name**: Cross-Organization Governance Federation Service
 - **Description**: Implements federated governance across organizational boundaries, enabling shared governance policies, mutual compliance recognition, and cross-organization audit trails
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/services/governance_federation/`
+- **Location**: `/home/dislove/document/acgs2/src/core/services/governance_federation/`
 - **Language**: Python 3.11+
 - **Purpose**: Enable trusted federation relationships between organizations with constitutional compliance validation, policy synchronization, and distributed audit logging
 
@@ -1127,7 +1127,7 @@ sequenceDiagram
 ## File Structure
 
 ```
-/home/dislove/document/acgs2/acgs2-core/services/governance_federation/
+/home/dislove/document/acgs2/src/core/services/governance_federation/
 ├── __init__.py (42 lines)
 │   └── Exports all public classes and enums
 └── federation_protocol.py (1,108 lines)

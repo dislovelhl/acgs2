@@ -22,7 +22,7 @@ Comprehensive C4 code-level documentation for the ACGS-2 multi-language SDKs cov
 
 ## Coverage by Language
 
-### Python SDK (`acgs2-core/sdk/python/`)
+### Python SDK (`src/core/sdk/python/`)
 
 **Core Components**:
 - ACGS2Client (async HTTP client with retry logic)
@@ -51,7 +51,7 @@ Comprehensive C4 code-level documentation for the ACGS-2 multi-language SDKs cov
 - Multi-tenant support
 - Callback-based event handling
 
-### TypeScript SDK (`acgs2-core/sdk/typescript/`)
+### TypeScript SDK (`src/core/sdk/typescript/`)
 
 **Core Components**:
 - ACGS2Client (axios-based HTTP with interceptors)
@@ -78,7 +78,7 @@ Comprehensive C4 code-level documentation for the ACGS-2 multi-language SDKs cov
 - Built-in logger with silent mode
 - Full TypeScript type safety
 
-### Go SDK (`acgs2-core/sdk/go/`)
+### Go SDK (`src/core/sdk/go/`)
 
 **Core Components**:
 - ACGS2Client (net/http based)

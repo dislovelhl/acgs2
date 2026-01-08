@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 
 # Add the enhanced_agent_bus to path
-sys.path.insert(0, "/home/dislove/document/acgs2/acgs2-core")
+sys.path.insert(0, "/home/dislove/document/acgs2/src/core")
 
 # Mock missing dependencies
 sys.modules["litellm"] = type(sys)("litellm")

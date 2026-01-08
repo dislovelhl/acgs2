@@ -39,7 +39,7 @@ ModuleNotFoundError: No module named 'shared'
 ### Diagnosis
 ```bash
 # Check if shared module exists
-ls -la acgs2-core/shared/config.py
+ls -la src/core/shared/config.py
 
 # Check PYTHONPATH
 echo $PYTHONPATH
@@ -47,11 +47,11 @@ echo $PYTHONPATH
 
 ### Solution
 ```bash
-# Set PYTHONPATH to include acgs2-core
-export PYTHONPATH=/path/to/acgs2/acgs2-core:$PYTHONPATH
+# Set PYTHONPATH to include src/core
+export PYTHONPATH=/path/to/acgs2/src/core:$PYTHONPATH
 
 # Or run with explicit path
-PYTHONPATH=acgs2-core python your_script.py
+PYTHONPATH=src/core python your_script.py
 
 # For Docker, ensure volume mount includes shared folder
 ```
@@ -194,7 +194,7 @@ grep CONSTITUTIONAL_HASH .env
 python -c "from shared.config import settings; print(settings.ai.constitutional_hash)"
 
 # Check code hash
-grep -r "cdd01ef066bc6cf2" acgs2-core/shared/config.py
+grep -r "cdd01ef066bc6cf2" src/core/shared/config.py
 ```
 
 ### Solution
@@ -386,7 +386,7 @@ pip list | grep pydantic-settings
 pip install pydantic-settings
 
 # Or install full development dependencies
-pip install -e ./acgs2-core[dev]
+pip install -e ./src/core[dev]
 ```
 
 Note: The system includes a dataclass fallback for environments without pydantic-settings, but pydantic-settings is recommended for production.
@@ -399,7 +399,7 @@ Use this checklist when debugging configuration issues:
 
 - [ ] `.env` file exists and is readable
 - [ ] `CONSTITUTIONAL_HASH=cdd01ef066bc6cf2` is set correctly
-- [ ] `PYTHONPATH` includes `acgs2-core` directory
+- [ ] `PYTHONPATH` includes `src/core` directory
 - [ ] Required services (Redis, OPA) are running
 - [ ] URLs use correct hostnames (localhost vs Docker service names)
 - [ ] Secrets meet minimum length requirements (32+ chars)

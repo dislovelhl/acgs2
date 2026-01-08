@@ -6,7 +6,7 @@
 
 - **Name**: ACGS-2 Infrastructure Layer
 - **Description**: Comprehensive infrastructure code for deployment, monitoring, health checking, security, and operational governance of the ACGS-2 Constitutional AI Governance System
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/`
+- **Location**: `/home/dislove/document/acgs2/src/core/`
 - **Language**: Python, Docker, YAML, Rego (OPA), Bash
 - **Purpose**: Provides containerization, orchestration, monitoring, fault tolerance, and constitutional validation infrastructure for enterprise-scale AI governance operations
 
@@ -48,7 +48,7 @@ The ACGS-2 infrastructure layer implements a multi-tiered deployment architectur
 ### 1. Configuration & Constants Module
 
 #### `shared/constants.py`
-- **File**: `/home/dislove/document/acgs2/acgs2-core/shared/constants.py`
+- **File**: `/home/dislove/document/acgs2/src/core/shared/constants.py`
 - **Description**: Central repository for all system-wide constants used across ACGS-2 services
 - **Key Constants**:
   - `CONSTITUTIONAL_HASH: str = "cdd01ef066bc6cf2"` - Constitutional governance hash
@@ -63,7 +63,7 @@ The ACGS-2 infrastructure layer implements a multi-tiered deployment architectur
   - `COMPLIANCE_TARGET: float = 1.0` - Constitutional compliance target (100%)
 
 #### `shared/__init__.py`
-- **File**: `/home/dislove/document/acgs2/acgs2-core/shared/__init__.py`
+- **File**: `/home/dislove/document/acgs2/src/core/shared/__init__.py`
 - **Description**: Shared module initialization with re-exports of common infrastructure components
 - **Exports**:
   - `CONSTITUTIONAL_HASH`, `DEFAULT_REDIS_URL` (from constants)
@@ -74,7 +74,7 @@ The ACGS-2 infrastructure layer implements a multi-tiered deployment architectur
 ### 2. Redis Configuration Module
 
 #### `shared/redis_config.py`
-- **File**: `/home/dislove/document/acgs2/acgs2-core/shared/redis_config.py`
+- **File**: `/home/dislove/document/acgs2/src/core/shared/redis_config.py`
 - **Description**: Centralized Redis configuration management for all services
 - **Classes**:
   - `RedisConfig(dataclass)`
@@ -89,7 +89,7 @@ The ACGS-2 infrastructure layer implements a multi-tiered deployment architectur
 ### 3. Circuit Breaker Fault Tolerance Module
 
 #### `shared/circuit_breaker/__init__.py`
-- **File**: `/home/dislove/document/acgs2/acgs2-core/shared/circuit_breaker/__init__.py`
+- **File**: `/home/dislove/document/acgs2/src/core/shared/circuit_breaker/__init__.py`
 - **Description**: Circuit breaker pattern implementation with ACGS-2 constitutional validation enhancements
 - **Enums**:
   - `CircuitState` - States: CLOSED (normal), OPEN (failing), HALF_OPEN (testing recovery)
@@ -120,7 +120,7 @@ The ACGS-2 infrastructure layer implements a multi-tiered deployment architectur
 ### 4. Container & Deployment Configuration
 
 #### `docker-compose.yml`
-- **File**: `/home/dislove/document/acgs2/acgs2-core/docker-compose.yml`
+- **File**: `/home/dislove/document/acgs2/src/core/docker-compose.yml`
 - **Description**: Docker Compose orchestration for all ACGS-2 microservices
 - **Services** (6 core services):
   1. **rust-message-bus** (Port 8080)
@@ -151,7 +151,7 @@ The ACGS-2 infrastructure layer implements a multi-tiered deployment architectur
 - **Volumes**: acgs2-data (local driver)
 
 #### `Dockerfile.optimized`
-- **File**: `/home/dislove/document/acgs2/acgs2-core/Dockerfile.optimized`
+- **File**: `/home/dislove/document/acgs2/src/core/Dockerfile.optimized`
 - **Description**: Optimized multi-stage Docker build for production deployment
 - **Build Stages**:
   1. **Builder Stage** (python:3.11-slim)
@@ -180,7 +180,7 @@ The ACGS-2 infrastructure layer implements a multi-tiered deployment architectur
 ### 5. CI/CD Pipeline Configuration
 
 #### `.gitlab-ci.yml`
-- **File**: `/home/dislove/document/acgs2/acgs2-core/.gitlab-ci.yml`
+- **File**: `/home/dislove/document/acgs2/src/core/.gitlab-ci.yml`
 - **Description**: GitLab CI/CD pipeline with security, validation, and deployment stages
 - **Pipeline Stages** (6 stages):
   1. **validate** - Constitutional hash validation, Python syntax checking, OPA policy validation

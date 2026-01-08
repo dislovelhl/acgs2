@@ -1,6 +1,6 @@
 {
   "feature": "Split Large adaptive_governance.py into Domain Modules",
-  "description": "The file acgs2-core/enhanced_agent_bus/adaptive_governance.py has grown to 1768 lines and handles multiple responsibilities: impact scoring, threshold management, governance decisions, model training, and feedback handling. This violates the Single Responsibility Principle and makes the code difficult to navigate, test, and maintain.",
+  "description": "The file src/core/enhanced_agent_bus/adaptive_governance.py has grown to 1768 lines and handles multiple responsibilities: impact scoring, threshold management, governance decisions, model training, and feedback handling. This violates the Single Responsibility Principle and makes the code difficult to navigate, test, and maintain.",
   "created_at": "2026-01-03T21:27:52.693Z",
   "updated_at": "2026-01-04T10:38:57.894Z",
   "status": "done",
@@ -48,7 +48,7 @@
           "id": "phase-2-task-1",
           "description": "Create adaptive_governance directory under enhanced_agent_bus",
           "status": "completed",
-          "notes": "Directory created at acgs2-core/enhanced_agent_bus/adaptive_governance/",
+          "notes": "Directory created at src/core/enhanced_agent_bus/adaptive_governance/",
           "updated_at": "2026-01-03T22:28:48.449402+00:00"
         },
         {
@@ -376,7 +376,7 @@
           "id": "phase-10-task-5",
           "description": "Update README.md if it references adaptive_governance.py",
           "status": "pending",
-          "notes": "Check acgs2-core/README.md"
+          "notes": "Check src/core/README.md"
         }
       ]
     }

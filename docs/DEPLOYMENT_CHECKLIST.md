@@ -129,7 +129,7 @@
 
 1. **🔴 Syntax Errors (162)**
    - **Impact**: Deployment blocking
-   - **Location**: `acgs2-core` modules
+   - **Location**: `src/core` modules
    - **Resolution**: Manual code review and fixes required
    - **Timeline**: 1-2 days with development team
 
@@ -153,7 +153,7 @@
 
 ```bash
 # 1. Fix syntax errors
-find acgs2-core -name "*.py" -exec python -m py_compile {} \;
+find src/core -name "*.py" -exec python -m py_compile {} \;
 
 # 2. Configure security environment variables
 export ACGS2_JWT_SECRET="$(openssl rand -base64 32)"
@@ -166,10 +166,10 @@ export CORS_ALLOWED_ORIGINS="https://your-domain.com,https://admin.your-domain.c
 ./scripts/quality_gate.sh
 
 # 5. Fix remaining bare except clauses
-grep -r "except:" acgs2-core/ --include="*.py" | grep -v "#"
+grep -r "except:" src/core/ --include="*.py" | grep -v "#"
 
 # 6. Convert print statements
-grep -r "print(" acgs2-core/ --include="*.py" | grep -v test
+grep -r "print(" src/core/ --include="*.py" | grep -v test
 
 # 7. Final security and quality check
 ./scripts/security_verification.sh && ./scripts/quality_gate.sh
@@ -213,7 +213,7 @@ curl -X POST http://acgs2-gateway/api/v1/auth/login -d '{"username":"test","pass
 python scripts/quality_metrics_monitor.py
 
 # 5. Chaos testing
-python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
+python src/core/chaos/experiments/advanced-chaos-scenarios.py
 ```
 
 ---
@@ -287,7 +287,7 @@ python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
 
 ### **Documentation**
 - **Operations Guide**: `OPERATIONS_GUIDE.md`
-- **Performance Guide**: `acgs2-core/scripts/README_performance.md`
+- **Performance Guide**: `src/core/scripts/README_performance.md`
 - **Deployment Guide**: `acgs2-infra/deploy/README.md`
 
 ---

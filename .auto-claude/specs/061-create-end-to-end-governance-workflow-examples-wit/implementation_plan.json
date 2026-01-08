@@ -554,8 +554,8 @@
             "5.4"
           ],
           "files": [
-            "./acgs2-core/docs/README.md",
-            "./acgs2-core/docs/user-guides/README.md"
+            "./src/core/docs/README.md",
+            "./src/core/docs/user-guides/README.md"
           ],
           "acceptance_criteria": [
             "Example linked from main docs",

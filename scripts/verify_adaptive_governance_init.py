@@ -10,8 +10,8 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add acgs2-core to path
-sys.path.insert(0, str(Path(__file__).parent / "acgs2-core"))
+# Add src/core to path
+sys.path.insert(0, str(Path(__file__).parent / "src/core"))
 
 
 async def test_adaptive_governance_import():

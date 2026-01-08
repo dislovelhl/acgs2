@@ -1,5 +1,5 @@
 {
-  "file_path": "acgs2-core/docs/security/README.md",
+  "file_path": "src/core/docs/security/README.md",
   "main_branch_history": [],
   "task_views": {
     "046-add-security-headers-middleware-to-fastapi-service": {

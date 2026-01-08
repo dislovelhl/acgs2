@@ -19,7 +19,7 @@ The fastest way to explore ACGS-2 is via the local development setup.
 
 ```bash
 git clone https://github.com/ACGS-Project/ACGS-2.git
-cd ACGS-2/acgs2-core
+cd ACGS-2/src/core
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ```

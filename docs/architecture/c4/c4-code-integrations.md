@@ -4,7 +4,7 @@
 
 - **Name**: External Integrations Layer
 - **Description**: Integration adapters and bridges connecting ACGS-2 constitutional governance with external systems, protocols, and frameworks including NeMo-Agent-Toolkit, OPA (Open Policy Agent), Z3 SMT solver, blockchain platforms, and enterprise search infrastructure.
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/integrations/` and `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/acl_adapters/` and `/home/dislove/document/acgs2/acgs2-core/services/`
+- **Location**: `/home/dislove/document/acgs2/src/core/integrations/` and `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/acl_adapters/` and `/home/dislove/document/acgs2/src/core/services/`
 - **Language**: Python 3.11+
 - **Purpose**: Provide seamless integration between ACGS-2's constitutional AI governance framework and third-party platforms while maintaining constitutional hash validation (`cdd01ef066bc6cf2`) across all external communication boundaries.
 - **Constitutional Hash**: `cdd01ef066bc6cf2`

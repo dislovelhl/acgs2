@@ -45,14 +45,14 @@ source .venv/bin/activate  # Linux/Mac
 # .venv\Scripts\activate   # Windows
 
 # Install core package
-pip install -e acgs2-core/enhanced_agent_bus
+pip install -e src/core/enhanced_agent_bus
 ```
 
 ### Step 2: Verify Installation
 
 ```bash
 # Run minimal tests (no external dependencies)
-cd acgs2-core/enhanced_agent_bus
+cd src/core/enhanced_agent_bus
 python3 -m pytest tests/test_validators.py tests/test_models.py -v
 
 # Expected: All tests pass
@@ -138,7 +138,7 @@ docker run -d --name postgres \
 
 ```bash
 # Install with all dependencies
-pip install -e "acgs2-core/enhanced_agent_bus[all]"
+pip install -e "src/core/enhanced_agent_bus[all]"
 
 # Or selectively
 pip install redis aioredis fakeredis httpx
@@ -164,7 +164,7 @@ JWT_SECRET=your-secret-key-min-32-chars-long
 ### Step 3: Start Policy Registry
 
 ```bash
-cd acgs2-core/services/policy_registry
+cd src/core/services/policy_registry
 
 # Install dependencies
 pip install -r requirements.txt
@@ -190,7 +190,7 @@ curl http://localhost:8000/health
 ### Step 5: Run Integration Tests
 
 ```bash
-cd acgs2-core/enhanced_agent_bus
+cd src/core/enhanced_agent_bus
 
 # Run with Redis available
 REDIS_URL=redis://localhost:6379 python3 -m pytest tests/test_agent_bus.py -v
@@ -258,11 +258,11 @@ asyncio.run(main())
 # OPA (Open Policy Agent)
 docker run -d --name opa \
   -p 8181:8181 \
-  -v $(pwd)/acgs2-core/policies/rego:/policies \
+  -v $(pwd)/src/core/policies/rego:/policies \
   openpolicyagent/opa:latest run --server /policies
 
 # Full docker-compose (recommended)
-cd acgs2-core
+cd src/core
 docker-compose up -d
 ```
 
@@ -289,7 +289,7 @@ docker-compose up -d
 ### Docker Compose Deployment
 
 ```bash
-cd acgs2-core
+cd src/core
 
 # Start all services
 docker-compose up -d
@@ -349,7 +349,7 @@ echo "All services healthy!"
 
 ```bash
 # Run all tests
-cd acgs2-core/enhanced_agent_bus
+cd src/core/enhanced_agent_bus
 REDIS_URL=redis://localhost:6379 \
 POLICY_REGISTRY_URL=http://localhost:8000 \
 OPA_URL=http://localhost:8181 \
@@ -607,7 +607,7 @@ livenessProbe:
 
 ```bash
 # Start minimal
-pip install -e acgs2-core/enhanced_agent_bus
+pip install -e src/core/enhanced_agent_bus
 python3 -m pytest tests/test_validators.py -v
 
 # Start with Redis
@@ -619,7 +619,7 @@ docker-compose up -d
 ./health-check.sh
 
 # Run all tests
-PYTHONPATH=. python3 -m pytest acgs2-core/enhanced_agent_bus/tests/ -v
+PYTHONPATH=. python3 -m pytest src/core/enhanced_agent_bus/tests/ -v
 ```
 
 ### Essential URLs

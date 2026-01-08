@@ -165,8 +165,8 @@ def main():
     print("Constitutional Hash:", CONSTITUTIONAL_HASH)
     print()
 
-    # Find all Python files in acgs2-core (excluding venv)
-    project_root = Path("acgs2-core")
+    # Find all Python files in src/core (excluding venv)
+    project_root = Path("src/core")
     python_files = []
 
     for root, dirs, files in os.walk(project_root):

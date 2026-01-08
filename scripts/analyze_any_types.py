@@ -254,9 +254,9 @@ class AnyTypeAnalyzer:
             p in file_path
             for p in [
                 "integration-service/src/integrations/",
-                "acgs2-core/breakthrough/",
-                "acgs2-core/enhanced_agent_bus/",
-                "acgs2-core/sdk/",
+                "src/core/breakthrough/",
+                "src/core/enhanced_agent_bus/",
+                "src/core/sdk/",
             ]
         ):
             if category not in ["wrapper_function", "logging", "test_utility"]:

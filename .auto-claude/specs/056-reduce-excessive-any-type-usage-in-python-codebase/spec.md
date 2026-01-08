@@ -2,7 +2,7 @@
 
 ## Overview
 
-Found 90 occurrences of ': Any' type annotations across 30+ Python files, with high concentrations in integration-service (16 occurrences) and acgs2-core/breakthrough (37 occurrences). Excessive use of 'Any' defeats the purpose of type hints and can mask type-related bugs.
+Found 90 occurrences of ': Any' type annotations across 30+ Python files, with high concentrations in integration-service (16 occurrences) and src/core/breakthrough (37 occurrences). Excessive use of 'Any' defeats the purpose of type hints and can mask type-related bugs.
 
 ## Rationale
 

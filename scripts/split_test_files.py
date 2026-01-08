@@ -202,7 +202,7 @@ Focused tests for {group_name} functionality.
 
 def main():
     """Main execution."""
-    splitter = TestFileSplitter("acgs2-core")
+    splitter = TestFileSplitter("src/core")
     splitter.split_test_agent_bus()
 
 

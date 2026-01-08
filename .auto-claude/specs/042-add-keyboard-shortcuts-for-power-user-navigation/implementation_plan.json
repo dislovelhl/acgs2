@@ -15,7 +15,7 @@
       "Maintain accessibility and prevent conflicts with existing browser/app shortcuts"
     ],
     "affected_components": [
-      "acgs2-core/playground/frontend (Policy Playground - Vanilla JS)",
+      "src/core/playground/frontend (Policy Playground - Vanilla JS)",
       "acgs2-observability/monitoring/dashboard (Monitoring Dashboard - React/TypeScript)"
     ]
   },
@@ -31,7 +31,7 @@
           "title": "Add Escape key handler for clearing editors",
           "description": "Implement Escape key handler that clears the currently focused editor (policy or input) in the Policy Playground. Should also clear results and reset status.",
           "files_to_modify": [
-            "acgs2-core/playground/frontend/app.js"
+            "src/core/playground/frontend/app.js"
           ],
           "acceptance_criteria": [
             "Pressing Escape when policy editor is focused clears policy content",
@@ -49,7 +49,7 @@
           "title": "Add R key handler for refreshing connection",
           "description": "Implement R key handler that refreshes the OPA connection status and reloads examples in the Policy Playground.",
           "files_to_modify": [
-            "acgs2-core/playground/frontend/app.js"
+            "src/core/playground/frontend/app.js"
           ],
           "acceptance_criteria": [
             "Pressing R key triggers connection check",
@@ -67,8 +67,8 @@
           "title": "Add keyboard shortcuts help panel for Policy Playground",
           "description": "Create a help panel/modal that displays all available keyboard shortcuts. Should be toggleable with ? key or Help button.",
           "files_to_modify": [
-            "acgs2-core/playground/frontend/app.js",
-            "acgs2-core/playground/frontend/index.html"
+            "src/core/playground/frontend/app.js",
+            "src/core/playground/frontend/index.html"
           ],
           "acceptance_criteria": [
             "Pressing ? or Shift+/ shows keyboard shortcuts help modal",
@@ -272,7 +272,7 @@
           "title": "Update project documentation",
           "description": "Update README files and user guides to document the new keyboard shortcuts feature.",
           "files_to_modify": [
-            "acgs2-core/playground/README.md",
+            "src/core/playground/README.md",
             "acgs2-observability/monitoring/dashboard/README.md",
             "docs/user-guide/keyboard-shortcuts.md"
           ],
@@ -304,7 +304,7 @@
           "description": "Implement visual feedback (toast notifications, status indicators, animations) when keyboard shortcuts are triggered.",
           "files_to_modify": [
             "acgs2-observability/monitoring/dashboard/src/components/Dashboard.tsx",
-            "acgs2-core/playground/frontend/app.js"
+            "src/core/playground/frontend/app.js"
           ],
           "acceptance_criteria": [
             "Brief visual feedback appears when R is pressed",
@@ -324,7 +324,7 @@
           "files_to_modify": [
             "acgs2-observability/monitoring/dashboard/src/components/KeyboardShortcutsModal.tsx",
             "acgs2-observability/monitoring/dashboard/src/components/Dashboard.tsx",
-            "acgs2-core/playground/frontend/index.html"
+            "src/core/playground/frontend/index.html"
           ],
           "acceptance_criteria": [
             "Help buttons have proper ARIA labels",
@@ -344,7 +344,7 @@
           "files_to_modify": [
             "acgs2-observability/monitoring/dashboard/src/hooks/useKeyboardShortcuts.ts",
             "acgs2-observability/monitoring/dashboard/src/components/Dashboard.tsx",
-            "acgs2-core/playground/frontend/app.js"
+            "src/core/playground/frontend/app.js"
           ],
           "acceptance_criteria": [
             "Debouncing prevents multiple rapid triggers",

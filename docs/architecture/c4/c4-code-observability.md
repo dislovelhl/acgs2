@@ -4,7 +4,7 @@
 
 - **Name**: ACGS-2 Observability & Profiling Infrastructure
 - **Description**: Comprehensive observability, profiling, and metrics collection infrastructure for ML model inference evaluation, performance monitoring, and GPU acceleration decision-making
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/` and `/home/dislove/document/acgs2/acgs2-core/shared/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/` and `/home/dislove/document/acgs2/src/core/shared/`
 - **Language**: Python 3.11+
 - **Purpose**: Enable real-time observability of constitutional AI governance operations, profile ML model performance characteristics, identify GPU acceleration opportunities, and collect metrics for distributed tracing and monitoring
 
@@ -1187,14 +1187,14 @@ The timeout budget manager helps maintain ACGS-2 performance targets:
 
 | Component | File Path |
 |-----------|-----------|
-| ModelProfiler | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/profiling/model_profiler.py` |
-| GPUBenchmark | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/profiling/benchmark_gpu_decision.py` |
-| Profiling __init__ | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/profiling/__init__.py` |
-| Telemetry | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/observability/telemetry.py` |
-| Decorators | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/observability/decorators.py` |
-| Timeout Budget | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/observability/timeout_budget.py` |
-| Observability __init__ | `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/observability/__init__.py` |
-| Prometheus Metrics | `/home/dislove/document/acgs2/acgs2-core/shared/metrics/__init__.py` |
+| ModelProfiler | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/profiling/model_profiler.py` |
+| GPUBenchmark | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/profiling/benchmark_gpu_decision.py` |
+| Profiling __init__ | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/profiling/__init__.py` |
+| Telemetry | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/observability/telemetry.py` |
+| Decorators | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/observability/decorators.py` |
+| Timeout Budget | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/observability/timeout_budget.py` |
+| Observability __init__ | `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/observability/__init__.py` |
+| Prometheus Metrics | `/home/dislove/document/acgs2/src/core/shared/metrics/__init__.py` |
 
 ---
 

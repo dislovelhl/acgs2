@@ -280,7 +280,7 @@ else
 fi
 
 # Check required directories
-for dir in "notebooks" "examples" "acgs2-core/enhanced_agent_bus/policies"; do
+for dir in "notebooks" "examples" "src/core/enhanced_agent_bus/policies"; do
     if [ -d "$dir" ]; then
         pass "Directory exists: $dir"
     else

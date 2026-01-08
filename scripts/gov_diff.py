@@ -8,7 +8,7 @@ def get_governance_diffs():
     try:
         base_ref = os.environ.get("GITHUB_BASE_REF", "develop")
         diff_output = subprocess.check_output(
-            ["git", "diff", f"origin/{base_ref}...HEAD", "--", "acgs2-core/policies/"]
+            ["git", "diff", f"origin/{base_ref}...HEAD", "--", "src/core/policies/"]
         ).decode("utf-8")
 
         if not diff_output:

@@ -214,7 +214,7 @@ class PrintStatementFixer:
 
 
 def main():
-    base_dir = "acgs2-core/enhanced_agent_bus"
+    base_dir = "src/core/enhanced_agent_bus"
 
     if not os.path.exists(base_dir):
         logger.error(f"Directory {base_dir} not found")

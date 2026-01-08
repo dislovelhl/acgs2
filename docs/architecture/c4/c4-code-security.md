@@ -9,7 +9,7 @@
 
 - **Name**: ACGS-2 Security Infrastructure
 - **Description**: Comprehensive security framework implementing authentication, authorization, cryptography, rate limiting, CORS protection, and permission scoping for the ACGS-2 constitutional AI governance platform
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/`
+- **Location**: `/home/dislove/document/acgs2/src/core/`
 - **Language**: Python 3.11+
 - **Purpose**: Provide enterprise-grade security controls with constitutional compliance, zero-trust architecture, and defense-in-depth protection across all ACGS-2 microservices
 

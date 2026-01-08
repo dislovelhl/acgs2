@@ -90,7 +90,7 @@ echo "--------------------------------------"
 
 # Check Python config loads
 ORIG_DIR=$(pwd)
-cd acgs2-core 2>/dev/null || cd .
+cd src/core 2>/dev/null || cd .
 test_step "Python shared.config imports" "python3 -c 'import sys; sys.path.insert(0, \".\"); from shared.config import settings; print(settings.env)'" || true
 test_step "Constitutional hash accessible via settings.ai" "python3 -c 'import sys; sys.path.insert(0, \".\"); from shared.config import settings; assert settings.ai.constitutional_hash == \"cdd01ef066bc6cf2\"'" || true
 cd "$ORIG_DIR" > /dev/null 2>&1 || true

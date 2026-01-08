@@ -138,11 +138,11 @@ app.add_middleware(CORSMiddleware, allow_origins=allowed_origins)
 
 ## Using the Shared CORS Configuration Module
 
-### For Services in acgs2-core
+### For Services in src/core
 
-All services within `acgs2-core/services/` MUST use the shared CORS configuration module.
+All services within `src/core/services/` MUST use the shared CORS configuration module.
 
-**Location**: `acgs2-core/shared/security/cors_config.py`
+**Location**: `src/core/shared/security/cors_config.py`
 
 ### Basic Usage
 
@@ -270,12 +270,12 @@ CONSTITUTIONAL_HASH=cdd01ef066bc6cf2
 
 ### Pattern 1: Core Services (Preferred)
 
-**For services in `acgs2-core/services/`**
+**For services in `src/core/services/`**
 
 Use the shared CORS configuration module:
 
 ```python
-# File: acgs2-core/services/my_service/src/main.py
+# File: src/core/services/my_service/src/main.py
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -292,7 +292,7 @@ app.add_middleware(CORSMiddleware, **get_cors_config())
 
 ### Pattern 2: External Services (Inline Implementation)
 
-**For services outside `acgs2-core/` without shared module access**
+**For services outside `src/core/` without shared module access**
 
 Implement inline environment-aware CORS logic:
 
@@ -403,7 +403,7 @@ Test your CORS configuration with the shared module tests:
 
 ```bash
 # Run shared CORS config tests
-cd acgs2-core
+cd src/core
 python -m pytest tests/security/test_cors_config.py -v
 
 # Run integration tests
@@ -611,7 +611,7 @@ mode is 'include'.
 **Diagnosis**:
 ```bash
 # Check if allow_credentials is enabled
-grep -r "allow_credentials" acgs2-core/services/*/src/main.py
+grep -r "allow_credentials" src/core/services/*/src/main.py
 
 # Test credentials header
 curl -v -H "Origin: http://localhost:3000" \
@@ -662,7 +662,7 @@ ModuleNotFoundError: No module named 'shared'
 **Diagnosis**:
 ```bash
 # Check if shared module exists
-ls -la acgs2-core/shared/security/cors_config.py
+ls -la src/core/shared/security/cors_config.py
 
 # Check PYTHONPATH
 echo $PYTHONPATH
@@ -674,14 +674,14 @@ pwd
 **Solution**:
 ```bash
 # For local development, set PYTHONPATH
-export PYTHONPATH=/path/to/acgs2/acgs2-core:$PYTHONPATH
+export PYTHONPATH=/path/to/acgs2/src/core:$PYTHONPATH
 
-# For Docker, ensure volume mount includes acgs2-core
+# For Docker, ensure volume mount includes src/core
 # In docker-compose.yml:
 volumes:
-  - ./acgs2-core:/app
+  - ./src/core:/app
 
-# For services outside acgs2-core, use inline implementation (Pattern 2)
+# For services outside src/core, use inline implementation (Pattern 2)
 ```
 
 ### Issue 6: Different Origins on Different Ports
@@ -764,7 +764,7 @@ When reviewing CORS changes, check:
 2. **Shared module usage**
    ```bash
    # Core services should use get_cors_config()
-   grep -r "get_cors_config" acgs2-core/services/*/src/main.py
+   grep -r "get_cors_config" src/core/services/*/src/main.py
    ```
 
 3. **Environment validation**
@@ -872,10 +872,10 @@ https://folo.example.com
 ### Services Using CORS Configuration
 
 **Core Services** (using shared module):
-1. `acgs2-core/services/compliance_docs` - Port 8002
-2. `acgs2-core/services/ml_governance` - Port 8003
-3. `acgs2-core/services/hitl_approvals` - Port 8004
-4. `acgs2-core/services/analytics-api` - Port 8001
+1. `src/core/services/compliance_docs` - Port 8002
+2. `src/core/services/ml_governance` - Port 8003
+3. `src/core/services/hitl_approvals` - Port 8004
+4. `src/core/services/analytics-api` - Port 8001
 
 **External Services** (inline implementation):
 5. `integration-service` - Port 8005
@@ -884,9 +884,9 @@ https://folo.example.com
 
 ### Related Documentation
 
-- **Shared CORS Module**: `acgs2-core/shared/security/cors_config.py`
-- **CORS Unit Tests**: `acgs2-core/tests/security/test_cors_config.py`
-- **CORS Integration Tests**: `acgs2-core/tests/security/test_service_cors_integration.py`
+- **Shared CORS Module**: `src/core/shared/security/cors_config.py`
+- **CORS Unit Tests**: `src/core/tests/security/test_cors_config.py`
+- **CORS Integration Tests**: `src/core/tests/security/test_service_cors_integration.py`
 - **Manual Testing Guide**: `.auto-claude/specs/043-fix-wildcard-cors-configuration-in-production-serv/MANUAL_CORS_TESTING_GUIDE.md`
 - **Configuration Troubleshooting**: `docs/CONFIGURATION_TROUBLESHOOTING.md`
 
@@ -941,7 +941,7 @@ allow_origins = [request.headers.get("Origin")]
 curl -v -H "Origin: http://localhost:3000" -X OPTIONS http://localhost:8080/health
 
 # Run CORS tests
-pytest acgs2-core/tests/security/test_cors_config.py -v
+pytest src/core/tests/security/test_cors_config.py -v
 
 # Check for wildcards
 grep -r "allow_origins.*\*" . --exclude-dir=docs

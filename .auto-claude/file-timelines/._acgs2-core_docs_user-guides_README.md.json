@@ -1,5 +1,5 @@
 {
-  "file_path": "./acgs2-core/docs/user-guides/README.md",
+  "file_path": "./src/core/docs/user-guides/README.md",
   "main_branch_history": [],
   "task_views": {
     "061-create-end-to-end-governance-workflow-examples-wit": {

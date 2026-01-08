@@ -6,7 +6,7 @@
 
 - **Name**: Analytics Services (Analytics API + Analytics Engine)
 - **Description**: Integrated governance analytics platform providing real-time insights, anomaly detection, violation forecasting, and executive reporting for constitutional AI governance decisions
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/services/analytics-api/` and `/home/dislove/document/acgs2/acgs2-core/services/analytics-engine/`
+- **Location**: `/home/dislove/document/acgs2/src/core/services/analytics-api/` and `/home/dislove/document/acgs2/src/core/services/analytics-engine/`
 - **Language**: Python 3.11+ (FastAPI, Pandas, scikit-learn, Prophet, OpenAI SDK)
 - **Purpose**: Process governance events, detect anomalies, forecast violations, generate AI insights, and produce PDF executive reports with constitutional compliance validation
 

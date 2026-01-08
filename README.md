@@ -264,7 +264,7 @@ terraform plan -var-file=production.tfvars
 terraform apply -var-file=production.tfvars
 
 # Deploy application via GitOps
-kubectl apply -f ../../gitops/argocd/applications/acgs2-core.yaml
+kubectl apply -f ../../gitops/argocd/applications/src/core.yaml
 ```
 
 ## 📊 Monitoring & Observability
@@ -368,7 +368,7 @@ cd acgs2-neural-mcp && npm test -- --coverage
 
 ```bash
 # Automated performance benchmarking
-cd acgs2-core/scripts
+cd src/core/scripts
 python performance_benchmark.py --comprehensive --report
 
 # Results saved to: performance_benchmark_report.json

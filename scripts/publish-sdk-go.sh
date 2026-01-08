@@ -7,7 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-SDK_DIR="$PROJECT_ROOT/acgs2-core/sdk/go"
+SDK_DIR="$PROJECT_ROOT/src/core/sdk/go"
 
 echo "=========================================="
 echo "ACGS-2 Go SDK Publishing Script"

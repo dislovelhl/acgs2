@@ -17,7 +17,7 @@ def update_file_paths(filepath):
     # Define path replacement patterns
     replacements = [
         # Directory moves
-        (r"\./acgs2-core/", r"./src/core/"),
+        (r"\./src/core/", r"./src/core/"),
         (r"\./acgs2-infra/", r"./src/infra/"),
         (r"\./acgs2-observability/", r"./src/observability/"),
         (r"\./acgs2-research/", r"./src/research/"),

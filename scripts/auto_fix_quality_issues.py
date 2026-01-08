@@ -156,7 +156,7 @@ class QualityAutoFixer:
 
 def main():
     """Main execution."""
-    fixer = QualityAutoFixer("acgs2-core")
+    fixer = QualityAutoFixer("src/core")
     fixer.run_auto_fixes()
 
 

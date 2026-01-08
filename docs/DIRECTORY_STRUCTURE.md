@@ -39,7 +39,7 @@ This document describes the reorganized directory structure of the ACGS-2 projec
 ├── CONTRIBUTING.md, LICENSE
 │
 ├── src/                              # 🧠 ALL SOURCE CODE CONSOLIDATED
-│   ├── core/                         # Main backend (from acgs2-core/)
+│   ├── core/                         # Main backend (from src/core/)
 │   │   ├── enhanced_agent_bus/
 │   │   ├── services/
 │   │   ├── shared/
@@ -107,7 +107,7 @@ This document describes the reorganized directory structure of the ACGS-2 projec
 Consolidated source code with clear separation by component type.
 
 #### **src/core/** (Main Backend Services)
-**From**: `acgs2-core/` - Core intelligence layer with ML-powered governance.
+**From**: `src/core/` - Core intelligence layer with ML-powered governance.
 
 | Subdirectory | Purpose | Key Components |
 |--------------|---------|----------------|
@@ -220,7 +220,7 @@ Organized test structure with comprehensive coverage.
 | `*.json` | `performance_benchmark_report.json` | Structured report data |
 
 ### 🛠️ **scripts/** (Utility Scripts)
-**From**: Root level scripts + `acgs2-core/scripts/`.
+**From**: Root level scripts + `src/core/scripts/`.
 
 | Script Type | Examples | Purpose |
 |-------------|----------|---------|

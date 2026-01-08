@@ -4,7 +4,7 @@
 
 - **Name**: Orchestration and Execution Layer
 - **Description**: Core orchestration and execution components for ACGS-2 Enhanced Agent Bus, handling message routing, workflow orchestration, task decomposition, recovery coordination, and multi-agent communication patterns.
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/`
 - **Language**: Python 3.11+ with optional Rust backend
 - **Purpose**: Provide production-grade orchestration for constitutional AI governance with sub-5ms P99 latency, fault tolerance, recovery coordination, and comprehensive metrics instrumentation.
 - **Constitutional Hash**: `cdd01ef066bc6cf2`
@@ -24,7 +24,7 @@ The orchestration layer implements a multi-layered execution model supporting:
 ### 1. Enhanced Agent Bus (`agent_bus.py`)
 
 **Class**: `EnhancedAgentBus`
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/agent_bus.py:118-926`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/agent_bus.py:118-926`
 - **Type**: Primary orchestration class
 - **Purpose**: Main agent communication bus with constitutional compliance, multi-tenant isolation, and comprehensive metrics
 
@@ -104,7 +104,7 @@ The orchestration layer implements a multi-layered execution model supporting:
 ### 2. Message Processor (`message_processor.py`)
 
 **Class**: `MessageProcessor`
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/message_processor.py:211-600+`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/message_processor.py:211-600+`
 - **Type**: Message validation and processing orchestrator
 - **Purpose**: Process messages with constitutional validation, support multiple strategies, metering, and MACI enforcement
 
@@ -160,7 +160,7 @@ The orchestration layer implements a multi-layered execution model supporting:
 ### 3. Recovery Orchestrator (`recovery_orchestrator.py`)
 
 **Class**: `RecoveryOrchestrator`
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/recovery_orchestrator.py:230-600+`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/recovery_orchestrator.py:230-600+`
 - **Type**: Service recovery coordination
 - **Purpose**: Automated recovery orchestration when circuit breakers open, providing priority-based recovery with configurable strategies
 
@@ -250,7 +250,7 @@ The orchestration layer implements a multi-layered execution model supporting:
 ### 4. Constitutional Saga Workflow (`deliberation_layer/workflows/constitutional_saga.py`)
 
 **Class**: `BaseSaga`
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/deliberation_layer/workflows/constitutional_saga.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/deliberation_layer/workflows/constitutional_saga.py`
 - **Type**: Distributed transaction orchestration
 - **Purpose**: Saga pattern implementation with LIFO compensation for all-or-nothing semantics
 
@@ -341,7 +341,7 @@ result = await saga.execute()
 ### 5. Processing Strategies (`processing_strategies.py`)
 
 **Base Class**: `ProcessingStrategy` (Abstract)
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/processing_strategies.py`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/processing_strategies.py`
 - **Purpose**: Pluggable message processing implementations
 
 **Mixin Class**: `HandlerExecutorMixin`

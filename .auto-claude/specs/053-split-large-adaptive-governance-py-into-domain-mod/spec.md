@@ -2,7 +2,7 @@
 
 ## Overview
 
-The file acgs2-core/enhanced_agent_bus/adaptive_governance.py has grown to 1768 lines and handles multiple responsibilities: impact scoring, threshold management, governance decisions, model training, and feedback handling. This violates the Single Responsibility Principle and makes the code difficult to navigate, test, and maintain.
+The file src/core/enhanced_agent_bus/adaptive_governance.py has grown to 1768 lines and handles multiple responsibilities: impact scoring, threshold management, governance decisions, model training, and feedback handling. This violates the Single Responsibility Principle and makes the code difficult to navigate, test, and maintain.
 
 ## Rationale
 

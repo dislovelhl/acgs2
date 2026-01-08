@@ -240,7 +240,7 @@ verify_certificate = true
 For development or direct integration, configure services to send logs directly to HEC:
 
 ```python
-# acgs2-core/shared/logging_splunk.py
+# src/core/shared/logging_splunk.py
 import os
 import requests
 import structlog

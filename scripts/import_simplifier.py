@@ -147,11 +147,11 @@ def main():
 
     # Focus on the most critical files from the refactoring plan
     critical_files = [
-        "acgs2-core/enhanced_agent_bus/message_processor.py",
-        "acgs2-core/enhanced_agent_bus/agent_bus.py",
-        "acgs2-core/enhanced_agent_bus/core.py",
-        "acgs2-core/enhanced_agent_bus/registry.py",
-        "acgs2-core/enhanced_agent_bus/opa_client.py",
+        "src/core/enhanced_agent_bus/message_processor.py",
+        "src/core/enhanced_agent_bus/agent_bus.py",
+        "src/core/enhanced_agent_bus/core.py",
+        "src/core/enhanced_agent_bus/registry.py",
+        "src/core/enhanced_agent_bus/opa_client.py",
     ]
 
     print(f"🎯 Processing {len(critical_files)} critical files")

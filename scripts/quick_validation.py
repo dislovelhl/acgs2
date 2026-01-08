@@ -46,7 +46,7 @@ def main():
     # Check MessageProcessor optimization
     total_checks += 1
     if check_file_contains(
-        "/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/message_processor.py",
+        "/home/dislove/document/acgs2/src/core/enhanced_agent_bus/message_processor.py",
         "if profiler and profiler.config.enabled",
         "MessageProcessor memory profiling optimization",
     ):
@@ -55,7 +55,7 @@ def main():
     # Check JSON optimization
     total_checks += 1
     if check_file_exists(
-        "/home/dislove/document/acgs2/acgs2-core/shared/json_utils.py",
+        "/home/dislove/document/acgs2/src/core/shared/json_utils.py",
         "JSON serialization optimization",
     ):
         checks_passed += 1
@@ -71,7 +71,7 @@ def main():
     # Check audit client improvements
     total_checks += 1
     if check_file_contains(
-        "/home/dislove/document/acgs2/acgs2-core/shared/audit_client.py",
+        "/home/dislove/document/acgs2/src/core/shared/audit_client.py",
         "response = await self.client.post",
         "Audit client real service integration",
     ):
@@ -80,7 +80,7 @@ def main():
     # Check audit client fallback
     total_checks += 1
     if check_file_contains(
-        "/home/dislove/document/acgs2/acgs2-core/shared/audit_client.py",
+        "/home/dislove/document/acgs2/src/core/shared/audit_client.py",
         "simulated_",
         "Audit client fallback mechanism",
     ):
@@ -89,7 +89,7 @@ def main():
     # Check audit service URL update
     total_checks += 1
     if check_file_contains(
-        "/home/dislove/document/acgs2/acgs2-core/shared/audit_client.py",
+        "/home/dislove/document/acgs2/src/core/shared/audit_client.py",
         'service_url: str = "http://localhost:8300"',
         "Audit service URL configuration",
     ):

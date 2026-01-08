@@ -10,7 +10,12 @@ on:
       performance_test:
         description: "Run performance regression tests"
         required: false
-        default: "false"
+        default: false
+        type: boolean
+      chaos_test:
+        description: "Run chaos engineering experiments"
+        required: false
+        default: false
         type: boolean
 
 jobs:
@@ -112,7 +117,11 @@ jobs:
         image: openpolicyagent/opa:latest
         ports:
           - 8181:8181
-        command: ["run", "--server", "--log-level=info"]
+        options: >-
+          --health-cmd "opa health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -129,12 +138,12 @@ jobs:
 
       - name: Install ACGS-2 services
         run: |
-          cd acgs2-core
+          cd src/core
           pip install -e .[dev]
 
       - name: Start ACGS-2 services
         run: |
-          cd acgs2-core
+          cd src/core
           docker-compose -f docker-compose.dev.yml up -d --wait
           sleep 30
 
@@ -153,7 +162,7 @@ jobs:
         with:
           name: performance-results
           path: |
-            acgs2-core/scripts/performance_benchmark_report.json
+            src/core/scripts/performance_benchmark_report.json
             reports/performance/
 
   chaos-engineering:
@@ -194,12 +203,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd acgs2-core
+          cd src/core
           pip install -e .[dev]
 
       - name: Start ACGS-2 services
         run: |
-          cd acgs2-core
+          cd src/core
           docker-compose -f docker-compose.dev.yml up -d --wait
           sleep 30
 

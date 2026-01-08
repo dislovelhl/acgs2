@@ -9,7 +9,7 @@ function set_dev_mode() {
     case $mode in
         policy)
             alias test="pytest tests/governance/"
-            alias lint="ruff check acgs2-core/policies/"
+            alias lint="ruff check src/core/policies/"
             export DEV_ROLE="POLICY_ENGINEER"
             ;;
         chain)

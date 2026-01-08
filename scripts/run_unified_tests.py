@@ -39,33 +39,33 @@ class UnifiedTestRunner:
 
         self.test_components = {
             "enhanced_agent_bus": {
-                "path": "acgs2-core/enhanced_agent_bus/tests",
+                "path": "src/core/enhanced_agent_bus/tests",
                 "expected_count": 4570,
-                "working_dir": "acgs2-core/enhanced_agent_bus",
+                "working_dir": "src/core/enhanced_agent_bus",
                 "source": "enhanced_agent_bus",
             },
             "policy_registry": {
-                "path": "acgs2-core/services/policy_registry/tests",
+                "path": "src/core/services/policy_registry/tests",
                 "expected_count": 120,
-                "working_dir": "acgs2-core",
+                "working_dir": "src/core",
                 "source": "services/policy_registry",
             },
             "metering": {
-                "path": "acgs2-core/services/metering/tests",
+                "path": "src/core/services/metering/tests",
                 "expected_count": 9,
-                "working_dir": "acgs2-core",
+                "working_dir": "src/core",
                 "source": "services/metering",
             },
             "shared": {
-                "path": "acgs2-core/shared/tests",
+                "path": "src/core/shared/tests",
                 "expected_count": None,  # Unknown count
-                "working_dir": "acgs2-core",
+                "working_dir": "src/core",
                 "source": "shared",
             },
             "core": {
-                "path": "acgs2-core/tests",
+                "path": "src/core/tests",
                 "expected_count": None,  # Unknown count
-                "working_dir": "acgs2-core",
+                "working_dir": "src/core",
                 "source": ".",
             },
             "observability": {

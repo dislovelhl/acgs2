@@ -22,7 +22,7 @@ Allowing a "simulated" validation state creates an authentication bypass vulnera
 
 ## Implementation Details
 
-### Hardening `acgs2-core/services/policy_registry/app/middleware/rbac.py`
+### Hardening `src/core/services/policy_registry/app/middleware/rbac.py`
 
 1.  **Remove Simulation**: Delete the `_simulate_validation` method and its calls.
 2.  **Environment Check**:
@@ -35,13 +35,13 @@ Allowing a "simulated" validation state creates an authentication bypass vulnera
 
 ### Configuration Validation
 
-Update `acgs2-core/shared/config/security_settings.py` (or equivalent) to add a validator that checks `JWT_SECRET` complexity.
+Update `src/core/shared/config/security_settings.py` (or equivalent) to add a validator that checks `JWT_SECRET` complexity.
 
 ## Verification Plan
 
 ### Automated Tests
 
-1.  **Security Unit Test (`acgs2-core/services/policy_registry/tests/test_rbac_hardening.py`)**:
+1.  **Security Unit Test (`src/core/services/policy_registry/tests/test_rbac_hardening.py`)**:
     - Mock `ENVIRONMENT="production"` and `JWT_SECRET="dev-secret"`. Verify service initialization fails.
     - Attempt to access a protected endpoint without a token when simulation is "enabled" in config. Verify it returns `401 Unauthorized` instead of simulated claims.
 2.  **Regression Test**: Ensure valid JWTs are still correctly processed and claims are correctly extracted.

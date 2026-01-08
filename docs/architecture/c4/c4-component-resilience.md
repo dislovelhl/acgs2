@@ -8,7 +8,7 @@
 - **Description**: Production-grade resilience infrastructure providing real-time health monitoring, automated recovery orchestration, controlled chaos testing, and non-blocking metering for ACGS-2 Enhanced Agent Bus
 - **Type**: Infrastructure Service Component
 - **Technology**: Python 3.11+, asyncio, pybreaker, Redis
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/` and `/home/dislove/document/acgs2/acgs2-core/shared/circuit_breaker/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/` and `/home/dislove/document/acgs2/src/core/shared/circuit_breaker/`
 
 ## Purpose
 

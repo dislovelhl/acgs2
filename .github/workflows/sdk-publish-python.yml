@@ -1,10 +1,11 @@
 name: Publish Python SDK
 
 on:
-  release:
-    types: [published]
+  push:
     tags:
       - "sdk/python/v*"
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:

@@ -402,7 +402,7 @@ def generate_consolidation_report(opportunities: Dict[str, List[ConsolidationOpp
 
 def main():
     """Main analysis entry point."""
-    analyzer = CodebaseConsolidationAnalyzer("/home/dislove/document/acgs2/acgs2-core")
+    analyzer = CodebaseConsolidationAnalyzer("/home/dislove/document/acgs2/src/core")
 
     try:
         opportunities = analyzer.analyze_codebase()

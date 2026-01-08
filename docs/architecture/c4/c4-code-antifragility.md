@@ -4,7 +4,7 @@
 
 - **Name**: Antifragility Components - System Resilience and Self-Healing
 - **Description**: Production-ready antifragility infrastructure providing circuit breaker health monitoring, priority-based recovery orchestration, controlled chaos testing, and fire-and-forget metering integration. Designed to maintain P99 latency < 1.31ms while ensuring 10/10 antifragility score.
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/`
 - **Language**: Python 3.11+
 - **Purpose**: Provide comprehensive resilience capabilities including health aggregation, automated recovery, chaos injection for testing, and non-blocking metering with constitutional compliance validation throughout
 

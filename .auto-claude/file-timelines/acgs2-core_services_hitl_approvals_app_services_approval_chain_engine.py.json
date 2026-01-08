@@ -1,5 +1,5 @@
 {
-  "file_path": "acgs2-core/services/hitl_approvals/app/services/approval_chain_engine.py",
+  "file_path": "src/core/services/hitl_approvals/app/services/approval_chain_engine.py",
   "main_branch_history": [],
   "task_views": {
     "060-document-error-codes-and-troubleshooting-for-commo": {

@@ -4,7 +4,7 @@
 
 - **Name**: ACL Adapters (Anti-Corruption Layer)
 - **Description**: Comprehensive adapter framework for integrating external policy evaluation systems with built-in circuit breaker protection, rate limiting, timeout management, and graceful degradation
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/acl_adapters/`
+- **Location**: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/acl_adapters/`
 - **Language**: Python 3.11+
 - **Purpose**: Provides abstract base class and concrete implementations for Z3 SMT solver integration and OPA (Open Policy Agent) policy evaluation with enterprise-grade resilience patterns
 - **Constitutional Hash**: `cdd01ef066bc6cf2`

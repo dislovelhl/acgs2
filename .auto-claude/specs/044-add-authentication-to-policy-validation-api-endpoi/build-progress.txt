@@ -9,14 +9,14 @@ Phase 2: Setup and Dependencies
 
 [COMPLETED] Subtask 2.1: Verify shared auth module accessibility
 -----------------------------------------------------------------
-Task: Ensure integration-service can import from acgs2-core/shared/security/auth.py
+Task: Ensure integration-service can import from src/core/shared/security/auth.py
 
 Verification completed successfully:
 
 1. Python Path Setup ✓
-   - integration-service/src/__init__.py adds acgs2-core to sys.path (line 14)
-   - integration-service/src/main.py also adds acgs2-core to sys.path (line 17)
-   - integration-service/tests/conftest.py adds acgs2-core to sys.path (line 16)
+   - integration-service/src/__init__.py adds src/core to sys.path (line 14)
+   - integration-service/src/main.py also adds src/core to sys.path (line 17)
+   - integration-service/tests/conftest.py adds src/core to sys.path (line 16)
 
 2. Existing Import Usage ✓
    - integration-service/src/api/auth.py successfully imports from shared.security.auth
@@ -47,11 +47,11 @@ Verification completed successfully:
 
 5. Import Path Mechanism ✓
    The import chain works as follows:
-   integration-service/src/__init__.py → adds acgs2-core to sys.path
+   integration-service/src/__init__.py → adds src/core to sys.path
    → allows "from shared.security.auth import ..."
-   → acgs2-core/shared/security/auth.py provides all authentication components
+   → src/core/shared/security/auth.py provides all authentication components
 
-CONCLUSION: Integration-service CAN successfully import from acgs2-core/shared/security/auth.py
+CONCLUSION: Integration-service CAN successfully import from src/core/shared/security/auth.py
 The Python path is properly configured in multiple locations for runtime and test execution.
 
 Status: VERIFIED AND WORKING ✓
@@ -99,7 +99,7 @@ Implementation completed successfully:
    - This ensures all tests have access to JWT_SECRET without manual setup
 
 3. Shared Configuration Integration ✓
-   - Integration service uses shared config (acgs2-core/shared/config.py)
+   - Integration service uses shared config (src/core/shared/config.py)
    - SecuritySettings.jwt_secret reads from JWT_SECRET environment variable
    - Production validation enforces JWT_SECRET is set (raises ValueError if missing)
 
@@ -136,8 +136,8 @@ Files Verified (No Changes Needed):
 - integration-service/docs/JWT_CONFIGURATION.md (comprehensive guide exists)
 - integration-service/tests/conftest.py (JWT fixtures already in place)
 - integration-service/tests/test_shared_import.py (JWT tests exist)
-- acgs2-core/shared/config.py (JWT_SECRET configuration exists)
-- acgs2-core/shared/security/auth.py (JWT auth implementation exists)
+- src/core/shared/config.py (JWT_SECRET configuration exists)
+- src/core/shared/security/auth.py (JWT auth implementation exists)
 
 CONCLUSION: JWT_SECRET configuration is fully implemented and documented.
 The integration service can access JWT configuration through the shared config module.

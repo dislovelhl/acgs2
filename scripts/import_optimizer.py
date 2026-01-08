@@ -242,7 +242,7 @@ def main():
     print("Constitutional Hash:", CONSTITUTIONAL_HASH)
     print()
 
-    root_path = "acgs2-core"
+    root_path = "src/core"
 
     # Find files needing optimization
     files_needing_optimization = find_files_needing_optimization(root_path)

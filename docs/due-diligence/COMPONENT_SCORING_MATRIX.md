@@ -284,7 +284,7 @@ Each component is evaluated on a 1-10 scale across six dimensions:
 | File | License | Issue |
 |------|---------|-------|
 | `README.md` | "All rights reserved" | Blocks external use |
-| `acgs2-core/LICENSE` | Apache 2.0 | Permissive |
+| `src/core/LICENSE` | Apache 2.0 | Permissive |
 
 **Impact**: Legal ambiguity prevents open-source adoption and enterprise use
 **Action Required**: Unify to Apache 2.0 across all files

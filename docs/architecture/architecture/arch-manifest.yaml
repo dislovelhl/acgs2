@@ -11,13 +11,13 @@ system:
     constitutional_hash: "cdd01ef066bc6cf2"
 
 sources:
-  - path: acgs2-core/services
+  - path: src/core/services
     type: microservices
-  - path: acgs2-core/enhanced_agent_bus
+  - path: src/core/enhanced_agent_bus
     type: agent-modules
-  - path: acgs2-core/orchestrators
+  - path: src/core/orchestrators
     type: orchestrator-modules
-  - path: acgs2-core/policies
+  - path: src/core/policies
     type: governance-artifacts
   - path: acgs2-infra
     type: infrastructure-as-code

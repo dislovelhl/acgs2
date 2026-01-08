@@ -589,7 +589,7 @@ All integration components run within the main ACGS-2 container, with optional e
 
 ```yaml
 services:
-  acgs2-core:
+  src/core:
     image: acgs2/core:latest
     environment:
       - OPA_URL=http://opa:8181
@@ -620,7 +620,7 @@ spec:
   template:
     spec:
       containers:
-      - name: acgs2-core
+      - name: src/core
         image: acgs2/core:latest
         env:
         - name: OPA_URL

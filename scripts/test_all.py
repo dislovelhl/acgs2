@@ -29,8 +29,8 @@ def main():
             print(f"--- {name} Tests FAILED ---\n")
             return False
 
-    core_path = os.path.join(root, "acgs2-core")
-    core_path = os.path.join(root, "acgs2-core")
+    core_path = os.path.join(root, "src/core")
+    core_path = os.path.join(root, "src/core")
 
     # 1. Agent Workflows
     wf_passed = run_test(

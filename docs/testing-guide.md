@@ -49,7 +49,7 @@ The following modules require **95% minimum coverage**:
 python scripts/run_unified_tests.py --run --coverage --parallel
 
 # Or use pytest directly
-cd acgs2-core
+cd src/core
 pytest -n auto --cov=acgs2_core --cov-branch --cov-report=term-missing --cov-fail-under=85
 ```
 
@@ -85,7 +85,7 @@ coverage xml -o coverage.xml
 ## Test Organization
 
 ```
-acgs2-core/
+src/core/
 ├── tests/
 │   ├── unit/                    # Unit tests
 │   │   ├── __init__.py
@@ -374,7 +374,7 @@ Coverage is automatically collected and uploaded in CI/CD:
 
 - name: Run Python tests with coverage
   run: |
-    cd acgs2-core
+    cd src/core
     pytest -n auto --dist=loadscope \
       --cov=acgs2_core \
       --cov-branch \
@@ -387,7 +387,7 @@ Coverage is automatically collected and uploaded in CI/CD:
   uses: codecov/codecov-action@v4
   with:
     files: ./src/core/coverage.xml
-    flags: acgs2-core,claude-flow,neural-mcp
+    flags: src/core,claude-flow,neural-mcp
     fail_ci_if_error: true
   env:
     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -417,7 +417,7 @@ All services report to a unified Codecov dashboard with service-specific flags:
 
 | Flag | Service | Reports |
 |------|---------|---------|
-| `acgs2-core` | Python core services | `coverage.xml` |
+| `src/core` | Python core services | `coverage.xml` |
 | `claude-flow` | Claude Flow CLI | `cobertura-coverage.xml` |
 | `neural-mcp` | Neural MCP Server | `cobertura-coverage.xml` |
 
@@ -439,9 +439,9 @@ coverage:
         target: 80%
 
 flags:
-  acgs2-core:
+  src/core:
     paths:
-      - acgs2-core/
+      - src/core/
     carryforward: true
   claude-flow:
     paths:

@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 # Add the enhanced_agent_bus to path
-sys.path.insert(0, str(Path(__file__).parent / "acgs2-core"))
+sys.path.insert(0, str(Path(__file__).parent / "src/core"))
 
 
 # Mock the missing dependencies

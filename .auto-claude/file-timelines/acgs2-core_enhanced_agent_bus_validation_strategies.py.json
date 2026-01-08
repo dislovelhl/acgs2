@@ -1,5 +1,5 @@
 {
-  "file_path": "acgs2-core/enhanced_agent_bus/validation_strategies.py",
+  "file_path": "src/core/enhanced_agent_bus/validation_strategies.py",
   "main_branch_history": [],
   "task_views": {
     "056-reduce-excessive-any-type-usage-in-python-codebase": {
@@ -12,7 +12,7 @@
       "worktree_state": null,
       "task_intent": {
         "title": "056-reduce-excessive-any-type-usage-in-python-codebase",
-        "description": "Found 373 occurrences of ': Any' type annotations across 120+ Python files, with high concentrations in integration-service (16 occurrences), acgs2-core/breakthrough (79 occurrences), and acgs2-core/enhanced_agent_bus (50+ occurrences). Excessive use of 'Any' defeats the purpose of type hints and can mask type-related bugs.",
+        "description": "Found 373 occurrences of ': Any' type annotations across 120+ Python files, with high concentrations in integration-service (16 occurrences), src/core/breakthrough (79 occurrences), and src/core/enhanced_agent_bus (50+ occurrences). Excessive use of 'Any' defeats the purpose of type hints and can mask type-related bugs.",
         "from_plan": true
       },
       "commits_behind_main": 0,

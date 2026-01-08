@@ -27,7 +27,7 @@
         {
           "subtask_id": "1.2",
           "title": "Review existing authentication patterns",
-          "description": "Study acgs2-core/shared/security/auth.py to understand JWT authentication implementation, user claims, and FastAPI dependency patterns",
+          "description": "Study src/core/shared/security/auth.py to understand JWT authentication implementation, user claims, and FastAPI dependency patterns",
           "status": "completed",
           "notes": "Found JWT-based auth with get_current_user dependency, tenant isolation, role/permission checks. Uses HTTPBearer security scheme."
         },
@@ -48,9 +48,9 @@
         {
           "subtask_id": "2.1",
           "title": "Verify shared auth module accessibility",
-          "description": "Ensure integration-service can import from acgs2-core/shared/security/auth.py",
+          "description": "Ensure integration-service can import from src/core/shared/security/auth.py",
           "status": "completed",
-          "notes": "Verified import path is properly configured. integration-service/src/__init__.py, main.py, and tests/conftest.py all add acgs2-core to sys.path. Existing test file (test_shared_import.py) confirms all imports work correctly. integration-service/src/api/auth.py successfully imports and re-exports all authentication components from shared.security.auth."
+          "notes": "Verified import path is properly configured. integration-service/src/__init__.py, main.py, and tests/conftest.py all add src/core to sys.path. Existing test file (test_shared_import.py) confirms all imports work correctly. integration-service/src/api/auth.py successfully imports and re-exports all authentication components from shared.security.auth."
         },
         {
           "subtask_id": "2.2",

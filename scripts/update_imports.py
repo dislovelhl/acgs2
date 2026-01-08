@@ -3,7 +3,7 @@
 Script to update import statements after directory reorganization.
 
 This script updates Python import statements to reflect the new directory structure:
-- acgs2-core/ -> src/core/
+- src/core/ -> src/core/
 - acgs2-frontend/ -> src/frontend/
 - etc.
 """

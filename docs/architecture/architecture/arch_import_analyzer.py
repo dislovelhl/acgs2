@@ -11,7 +11,7 @@ import ast
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -51,9 +51,9 @@ class ImportAnalyzer(ast.NodeVisitor):
     def get_module_name(self) -> str:
         """Convert file path to module name."""
         path = Path(self.file_path)
-        if "acgs2-core" in str(path):
+        if "src/core" in str(path):
             # Convert to module path
-            parts = path.relative_to(Path("acgs2-core")).parts
+            parts = path.relative_to(Path("src/core")).parts
             if parts[-1].endswith(".py"):
                 parts = parts[:-1] + (parts[-1][:-3],)
             return ".".join(parts)
@@ -103,10 +103,10 @@ class CircularDependencyDetector:
 
         return cycles
 
-    def get_dependency_metrics(self) -> Dict[str, any]:
+    def get_dependency_metrics(self) -> Dict[str, Any]:
         """Calculate various dependency metrics."""
         # Most imported modules
-        import_counts = defaultdict(int)
+        import_counts: Dict[str, int] = defaultdict(int)
         for deps in self.graph.values():
             for dep in deps:
                 import_counts[dep] += 1
@@ -134,7 +134,7 @@ class ImportStructureAnalyzer:
         self.analyzers: Dict[str, ImportAnalyzer] = {}
         self.detector = CircularDependencyDetector()
 
-    def analyze_codebase(self) -> Dict[str, any]:
+    def analyze_codebase(self) -> Dict[str, Any]:
         """Analyze the entire codebase for import relationships."""
 
         # Find all Python files
@@ -273,7 +273,7 @@ def main():
     """Main ARCH-001 analysis execution."""
 
     # Analyze the codebase
-    analyzer = ImportStructureAnalyzer("acgs2-core")
+    analyzer = ImportStructureAnalyzer("src/core")
     results = analyzer.analyze_codebase()
 
     # Show metrics

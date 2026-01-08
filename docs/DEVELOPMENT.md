@@ -40,7 +40,7 @@ ACGS-2 uses a **centralized configuration system** powered by Pydantic-settings.
 | `.env.dev` | Development defaults | Local Docker development |
 | `.env.staging` | Staging environment | Pre-production testing |
 | `.env.production` | Production template | Production deployment (use secrets manager) |
-| `acgs2-core/shared/config.py` | Type-safe config schema | Python applications |
+| `src/core/shared/config.py` | Type-safe config schema | Python applications |
 
 ### Environment File Structure
 
@@ -124,14 +124,14 @@ source .venv/bin/activate  # Linux/Mac
 # .venv\Scripts\activate   # Windows
 
 # Install dependencies
-pip install -e ./acgs2-core[dev]
+pip install -e ./src/core[dev]
 
 # Copy and customize environment
 cp .env.dev .env
 # Edit .env to use localhost instead of Docker hostnames
 
 # Run services individually
-cd acgs2-core/enhanced_agent_bus
+cd src/core/enhanced_agent_bus
 python -m uvicorn api:app --reload --port 8000
 ```
 
@@ -149,7 +149,7 @@ KAFKA_BOOTSTRAP=localhost:19092
 EOF
 
 # Run Python service locally
-cd acgs2-core/enhanced_agent_bus
+cd src/core/enhanced_agent_bus
 PYTHONPATH=.. python -m uvicorn api:app --reload --port 8000
 ```
 
@@ -158,7 +158,7 @@ PYTHONPATH=.. python -m uvicorn api:app --reload --port 8000
 ### Run All Tests
 
 ```bash
-cd acgs2-core/enhanced_agent_bus
+cd src/core/enhanced_agent_bus
 PYTHONPATH=.. python -m pytest tests/ -v --tb=short
 ```
 
@@ -230,7 +230,7 @@ SEARCH_PLATFORM_MAX_CONNECTIONS=100
 2. **Import errors for shared.config**
    ```bash
    # Ensure PYTHONPATH includes the shared module
-   export PYTHONPATH=/path/to/acgs2/acgs2-core:$PYTHONPATH
+   export PYTHONPATH=/path/to/acgs2/src/core:$PYTHONPATH
    ```
 
 3. **Docker network issues**
@@ -246,7 +246,7 @@ SEARCH_PLATFORM_MAX_CONNECTIONS=100
 |-------|-------|----------|
 | `ConnectionRefusedError: Redis` | Redis not running | Start Docker services |
 | `ValidationError: JWT_SECRET` | Secret too short | Use 32+ character secret |
-| `ImportError: shared.config` | PYTHONPATH not set | Add acgs2-core to PYTHONPATH |
+| `ImportError: shared.config` | PYTHONPATH not set | Add src/core to PYTHONPATH |
 | `CONSTITUTIONAL_HASH mismatch` | Hash validation failed | Ensure hash is `cdd01ef066bc6cf2` |
 
 ## Next Steps

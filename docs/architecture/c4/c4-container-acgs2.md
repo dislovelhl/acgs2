@@ -110,7 +110,7 @@ This container deploys the following components:
 #### Infrastructure
 
 - **Deployment Config**:
-  - Dockerfile: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/rust/Dockerfile`
+  - Dockerfile: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/rust/Dockerfile`
   - Docker Compose service: `rust-message-bus`
   - Kubernetes deployment: `acgs2-agent-bus-deployment.yaml`
 - **Scaling**:
@@ -211,7 +211,7 @@ This container deploys the following components:
 #### Infrastructure
 
 - **Deployment Config**:
-  - Dockerfile: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/Dockerfile`
+  - Dockerfile: `/home/dislove/document/acgs2/src/core/services/policy_registry/Dockerfile`
   - Docker Compose service: `adaptive-governance`
   - Kubernetes deployment: `acgs2-policy-services-deployment.yaml`
 - **Scaling**:
@@ -311,7 +311,7 @@ The following logical containers are now embedded as libraries within the 3 prim
 #### Infrastructure
 
 - **Deployment Config**: Embedded as shared library in each microservice
-- **Library Location**: `/home/dislove/document/acgs2/acgs2-core/shared/` and `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
+- **Library Location**: `/home/dislove/document/acgs2/src/core/shared/` and `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/`
 - **Integration**: FastAPI middleware stack in each service
 - **Resources**: Minimal (<100ms total security overhead, P99 <2ms)
 
@@ -571,7 +571,7 @@ Key modules:
 
 #### Infrastructure
 
-- **Deployment Config**: Shared library in `/home/dislove/document/acgs2/acgs2-core/shared/`
+- **Deployment Config**: Shared library in `/home/dislove/document/acgs2/src/core/shared/`
 - **Integration**: Imported by all microservices
 - **Resources**: Minimal (pure library with no runtime overhead)
 
@@ -629,7 +629,7 @@ C4Container
 
 ### Docker Compose Deployment (Development)
 
-**Configuration**: `/home/dislove/document/acgs2/acgs2-core/docker-compose.yml`
+**Configuration**: `/home/dislove/document/acgs2/src/core/docker-compose.yml`
 
 ```yaml
 version: "3.8"

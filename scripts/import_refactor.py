@@ -207,7 +207,7 @@ def main():
     print("Constitutional Hash:", CONSTITUTIONAL_HASH)
     print()
 
-    root_path = "acgs2-core"
+    root_path = "src/core"
 
     # Identify refactoring candidates
     candidates = identify_refactoring_candidates(root_path)

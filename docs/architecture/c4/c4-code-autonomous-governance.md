@@ -6,7 +6,7 @@
 
 - **Name**: Autonomous Governance Service
 - **Description**: Self-evolving governance systems that autonomously adapt policies based on emerging risks, regulatory changes, and operational feedback without human intervention, with appropriate safety bounds and human override capabilities.
-- **Location**: `/acgs2-core/services/autonomous_governance/`
+- **Location**: `/src/core/services/autonomous_governance/`
 - **Language**: Python 3.11+
 - **Purpose**: Implement next-generation AI governance capabilities with autonomous policy evolution, safety guardrails, risk detection, and ethics integration.
 - **Phase**: 5 - Next-Generation Governance

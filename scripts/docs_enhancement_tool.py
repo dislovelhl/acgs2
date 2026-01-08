@@ -486,7 +486,7 @@ class DocumentationEnhancer:
 
 def main():
     """Main DOCS-001 execution."""
-    enhancer = DocumentationEnhancer("acgs2-core")
+    enhancer = DocumentationEnhancer("src/core")
     results = enhancer.enhance_documentation()
 
     print("📊 ENHANCEMENT SUMMARY")

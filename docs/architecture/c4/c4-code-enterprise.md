@@ -4,7 +4,7 @@
 
 - **Name**: Enterprise & SaaS Platform Architecture
 - **Description**: Multi-tenant SaaS platform with enterprise-grade governance, security, and compliance capabilities. Implements constitutional AI governance across multiple tenants with complete isolation, RBAC enforcement, and audit trails.
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/`
+- **Location**: `/home/dislove/document/acgs2/src/core/`
 - **Language**: Python 3.11+
 - **Purpose**: Provide enterprise-ready multi-tenant SaaS capabilities with constitutional compliance, role-based access control, tenant isolation, and comprehensive security frameworks
 - **Constitutional Hash**: `cdd01ef066bc6cf2`
@@ -17,14 +17,14 @@
 
 - `AgentMessage.tenant_id: str`
   - Description: Tenant identifier for message isolation and routing constraints
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:135`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:135`
   - Type: String field in dataclass
   - Dependencies: Core message routing, validation, and access control
   - Constraint: Must match sender's tenant_id during cross-tenant access validation
 
 - `EnhancedAgentBus.send_message(message: AgentMessage) -> ValidationResult`
   - Description: Routes messages with tenant isolation enforcement, validates sender and recipient are in same tenant
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/agent_bus.py:118+`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/agent_bus.py:118+`
   - Parameters: AgentMessage with tenant_id context
   - Returns: ValidationResult with is_valid flag and error list
   - Dependencies: AgentRegistry, ValidationStrategy, OPA client, circuit breaker
@@ -32,13 +32,13 @@
 
 - `DirectMessageRouter.route(message: AgentMessage, registry: AgentRegistry) -> Optional[str]`
   - Description: Routes messages between agents with tenant boundary enforcement
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/registry.py`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/registry.py`
   - Validation: Returns None if recipient's tenant_id != message.tenant_id
   - Error Handling: Silent rejection of cross-tenant routes (by design)
 
 - `test_tenant_isolation.py`
   - Description: Comprehensive test suite for tenant isolation (8 test cases)
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/tests/test_tenant_isolation.py`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/tests/test_tenant_isolation.py`
   - Tests:
     1. `test_send_message_denies_cross_tenant_recipient` - Prevents messages crossing tenant boundaries
     2. `test_send_message_denies_missing_message_tenant_for_sender` - Requires tenant_id in message
@@ -49,7 +49,7 @@
 
 - `RBACMiddleware`
   - Description: Enterprise-grade RBAC enforcement middleware for FastAPI with JWT validation, tenant isolation, and rate limiting
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:479-722`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:479-722`
   - Key Methods:
     - `__init__(config: Optional[RBACConfig])`
     - `get_claims(request: Request) -> TokenClaims` - Extracts and validates JWT claims
@@ -63,7 +63,7 @@
 
 - `Role` (Enum)
   - Description: System roles for RBAC hierarchy
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:41-48`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:41-48`
   - Values:
     - `SYSTEM_ADMIN` - All permissions (supersedes all constraints)
     - `TENANT_ADMIN` - Full tenant management, policy, and agent control
@@ -74,7 +74,7 @@
 
 - `Permission` (Enum)
   - Description: Granular permissions for RBAC
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:51-90`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:51-90`
   - Permission Categories:
     - Tenant: create, read, update, delete, list
     - Policy: create, read, update, delete, activate, list
@@ -85,7 +85,7 @@
 
 - `ROLE_PERMISSIONS: Dict[Role, Set[Permission]]`
   - Description: Mapping of roles to their permissions with inheritance
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:93-157`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:93-157`
   - Structure: System admin gets all permissions; others have hierarchical subsets
   - Examples:
     - TENANT_ADMIN: 17 permissions (all policy/agent/message operations)
@@ -94,7 +94,7 @@
 
 - `TokenClaims`
   - Description: Parsed JWT token with all security context
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:167-227`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:167-227`
   - Fields:
     - `subject: str` - User identifier
     - `issuer: str` - Token issuer
@@ -113,7 +113,7 @@
 
 - `TokenValidator`
   - Description: JWT token validation and claims extraction with constitutional hash enforcement
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:287-403`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:287-403`
   - Methods:
     - `validate_token(token: str) -> TokenClaims` - Validates and extracts claims
     - `_parse_claims(payload: Dict) -> TokenClaims` - Parses JWT payload
@@ -123,7 +123,7 @@
 
 - `RateLimiter`
   - Description: In-memory rate limiter per tenant and user with role-based limits
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:406-451`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:406-451`
   - Methods:
     - `check_rate_limit(claims: TokenClaims) -> bool` - Async rate limit check
   - Features: Per-minute windows, per-role limits, tenant+user key separation
@@ -131,7 +131,7 @@
 
 - `AuditLogger`
   - Description: Logs all RBAC decisions for compliance and audit trails
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:453-477`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:453-477`
   - Methods:
     - `log_decision(decision: AccessDecision, request: Request)` - Logs access decision
   - Output: JSON audit logs with decision, user, tenant, roles, IP, method, path
@@ -141,7 +141,7 @@
 
 - `Settings` (Pydantic Model)
   - Description: Configuration for policy registry service with multi-tenant support
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/config/settings.py:16-68`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/config/settings.py:16-68`
   - Configuration Categories:
     - Service: name, version, constitutional_hash
     - Server: host (0.0.0.0), port (8000), debug mode
@@ -158,13 +158,13 @@
 
 - `OPAValidationStrategy`
   - Description: Validates messages against OPA policies with constitutional hash enforcement
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/registry.py`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/registry.py`
   - Features: Policy evaluation, decision caching, fail_closed mode
   - Policies: Multi-tenant isolation (multitenant.rego), role-based access, constitutional compliance
 
 - `multitenant.rego` (OPA Policy)
   - Description: OPA Rego policy for multi-tenant isolation enforcement
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/policies/multitenant.rego`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/policies/multitenant.rego`
   - Rules:
     1. Same-tenant access: `agent_tenant_id == resource_tenant_id` (always allowed)
     2. Cross-tenant with permission: Requires explicit `cross_tenant_permission == true`
@@ -174,7 +174,7 @@
 
 - `OPAClient`
   - Description: HTTP client for OPA server communication with caching
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/policy_client.py`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/policy_client.py`
   - Methods:
     - `evaluate_policy(input_data: Dict) -> Dict` - Evaluates policy and returns decision
   - Features: Connection pooling, decision caching, policy bundling support
@@ -184,7 +184,7 @@
 
 - `AgentMessage` (Dataclass)
   - Description: Complete message model with tenant isolation, security context, and constitutional compliance
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/models.py:117-200+`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/models.py:117-200+`
   - Fields:
     - **Identification**: message_id (UUID), conversation_id (UUID)
     - **Content**: content, payload (Dict[str, Any])
@@ -199,7 +199,7 @@
 
 - `MessageProcessor`
   - Description: Core message processing with validation, routing, and constitutional compliance
-  - Location: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/message_processor.py`
+  - Location: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/message_processor.py`
   - Key Methods:
     - `process(message: AgentMessage) -> ProcessingResult`
     - `validate_constitutional_hash(message: AgentMessage) -> bool`
@@ -212,7 +212,7 @@
 
 - `RBACConfig`
   - Description: Configuration for RBAC middleware with security settings
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:254-285`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:254-285`
   - Parameters:
     - `jwt_secret: Optional[str]` - JWT signing secret (env: JWT_SECRET)
     - `jwt_algorithm: str` - Algorithm (default: HS256)
@@ -227,13 +227,13 @@
 
 - `AccessDecision`
   - Description: Result of access control decision with audit trail
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:229-252`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:229-252`
   - Fields: allowed (bool), reason (str), claims (TokenClaims), decision_time, request_id
   - Methods: `to_audit_dict() -> Dict[str, Any]` - Serializes to audit format
 
 - `Scope` (Enum)
   - Description: Access control scope hierarchy
-  - Location: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py:160-165`
+  - Location: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py:160-165`
   - Values:
     - `GLOBAL` - System-wide access (system_admin only)
     - `TENANT` - Tenant-scoped access (tenant_admin and above)
@@ -592,11 +592,11 @@ export POLICY_REGISTRY_DATABASE_URL=postgresql://user:pass@postgres/acgs2
 ---
 
 **File Paths**:
-- Enhanced Agent Bus Core: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
-- Policy Registry Service: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/`
-- RBAC Middleware: `/home/dislove/document/acgs2/acgs2-core/services/policy_registry/app/middleware/rbac.py`
-- OPA Policies: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/policies/multitenant.rego`
-- Tenant Tests: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/tests/test_tenant_isolation.py`
+- Enhanced Agent Bus Core: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/`
+- Policy Registry Service: `/home/dislove/document/acgs2/src/core/services/policy_registry/`
+- RBAC Middleware: `/home/dislove/document/acgs2/src/core/services/policy_registry/app/middleware/rbac.py`
+- OPA Policies: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/policies/multitenant.rego`
+- Tenant Tests: `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/tests/test_tenant_isolation.py`
 
 **Revision**: 1.0.0
 **Last Updated**: 2025-12-29

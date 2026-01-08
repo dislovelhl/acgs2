@@ -39,7 +39,7 @@ Wildcard CORS with credentials (`allow_credentials=True`) is a catastrophic secu
 
 ## Implementation Details
 
-### Centralized Hub (`acgs2-core/shared/security/cors_config.py`)
+### Centralized Hub (`src/core/shared/security/cors_config.py`)
 
 Modify `get_cors_config` to:
 
@@ -62,10 +62,10 @@ app.add_middleware(CORSMiddleware, **get_cors_config())
 
 ### Automated Tests
 
-1.  **Unit Test (`acgs2-core/shared/security/tests/test_cors_config_strict.py`)**:
+1.  **Unit Test (`src/core/shared/security/tests/test_cors_config_strict.py`)**:
     - Assert `get_cors_config(env="production")` raises `ValueError` when `CORS_ORIGINS="*"` or is unset.
     - Assert it returns correct list for explicit origins.
-2.  **Integration Test (`acgs2-core/tests/security/test_global_cors_compliance.py`)**:
+2.  **Integration Test (`src/core/tests/security/test_global_cors_compliance.py`)**:
     - Programmatically check all `main.py` files for `CORSMiddleware` configuration.
     - Simulate OPTIONS requests to key services (Gateway, Bus) and verify `Access-Control-Allow-Origin` is NOT `*`.
 

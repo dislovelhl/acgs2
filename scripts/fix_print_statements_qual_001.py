@@ -397,7 +397,7 @@ def main():
     print()
 
     # Find all Python files with print statements
-    project_root = Path(__file__).parent / "acgs2-core"
+    project_root = Path(__file__).parent / "src/core"
     python_files = []
 
     for root, dirs, files in os.walk(project_root):

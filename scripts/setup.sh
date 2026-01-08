@@ -310,8 +310,8 @@ validate_config() {
 
     # Check for required directories
     local required_dirs=(
-        "acgs2-core"
-        "acgs2-core/enhanced_agent_bus"
+        "src/core"
+        "src/core/enhanced_agent_bus"
         "scripts"
     )
 
@@ -358,8 +358,8 @@ setup_python_env() {
     pip install --upgrade pip --quiet
 
     # Install core dependencies
-    if [[ -f "$PROJECT_ROOT/acgs2-core/enhanced_agent_bus/pyproject.toml" ]]; then
-        pip install -e "$PROJECT_ROOT/acgs2-core/enhanced_agent_bus" --quiet 2>/dev/null || \
+    if [[ -f "$PROJECT_ROOT/src/core/enhanced_agent_bus/pyproject.toml" ]]; then
+        pip install -e "$PROJECT_ROOT/src/core/enhanced_agent_bus" --quiet 2>/dev/null || \
             warn "Some optional dependencies may not have installed"
     fi
 
@@ -446,9 +446,9 @@ final_validation() {
     local all_good=true
 
     # Quick smoke test
-    if [[ -f "$PROJECT_ROOT/acgs2-core/enhanced_agent_bus/tests/test_config.py" ]]; then
+    if [[ -f "$PROJECT_ROOT/src/core/enhanced_agent_bus/tests/test_config.py" ]]; then
         info "Running quick smoke test..."
-        cd "$PROJECT_ROOT/acgs2-core/enhanced_agent_bus"
+        cd "$PROJECT_ROOT/src/core/enhanced_agent_bus"
         if python3 -m pytest tests/test_config.py -v --tb=short -q 2>/dev/null; then
             success "Smoke tests passed"
         else
@@ -457,7 +457,7 @@ final_validation() {
     fi
 
     # Validate constitutional hash
-    if grep -r "cdd01ef066bc6cf2" "$PROJECT_ROOT/acgs2-core/shared/config.py" > /dev/null 2>&1; then
+    if grep -r "cdd01ef066bc6cf2" "$PROJECT_ROOT/src/core/shared/config.py" > /dev/null 2>&1; then
         success "Constitutional hash verified: cdd01ef066bc6cf2"
     else
         warn "Could not verify constitutional hash"

@@ -12,7 +12,7 @@
 - **Description**: Enterprise-grade security framework providing authentication, authorization, cryptography, rate limiting, CORS protection, and permission scoping for the ACGS-2 constitutional AI governance platform
 - **Type**: Security Service Component
 - **Technology**: Python 3.11+, FastAPI/Starlette middleware, Redis, PyJWT, Ed25519, HashiCorp Vault
-- **Location**: `/home/dislove/document/acgs2/acgs2-core/`
+- **Location**: `/home/dislove/document/acgs2/src/core/`
 
 ## Purpose
 

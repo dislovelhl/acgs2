@@ -22,7 +22,7 @@ Both pre-commit hooks and CI use the **same configuration files** to ensure cons
 | `.gitleaks.toml` | Custom gitleaks rules for ACGS-2 specific patterns | Pre-commit + CI |
 | `.gitleaksignore` | Fingerprint-based exceptions for known safe secrets | Pre-commit + CI |
 | `.secrets-allowlist.yaml` | Allow-list for ACGS-2 custom secrets detection | Pre-commit only |
-| `acgs2-core/shared/secrets_manager.py` | Source of truth for CREDENTIAL_PATTERNS | Pre-commit only |
+| `src/core/shared/secrets_manager.py` | Source of truth for CREDENTIAL_PATTERNS | Pre-commit only |
 
 ### Why This Matters
 

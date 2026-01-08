@@ -8,7 +8,7 @@ This guide provides comprehensive operational procedures for maintaining ACGS-2'
 
 ## ✅ Validation & Verification Standards
 
-**Validation** confirms we are building and operating the right system (requirements, policies, and governance intent).  
+**Validation** confirms we are building and operating the right system (requirements, policies, and governance intent).
 **Verification** confirms we built the system right (implementation, configuration, and runtime behavior).
 
 ### Evidence Requirements
@@ -172,7 +172,7 @@ docker stats acgs2-agent-bus-1 acgs2-api-gateway-1
 git log --oneline -10
 
 # 5. Run chaos test to verify resilience
-python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
+python src/core/chaos/experiments/advanced-chaos-scenarios.py
 ```
 
 ### **Quality Gate Failure**
@@ -198,7 +198,7 @@ python scripts/quality_metrics_monitor.py
 
 ```bash
 # 1. Check test execution
-cd acgs2-core/enhanced_agent_bus
+cd src/core/enhanced_agent_bus
 python -m pytest tests/ -v
 
 # 2. Run test optimization analysis
@@ -226,7 +226,7 @@ python ../../../scripts/split_test_files.py
 
 ```bash
 # 1. Run performance benchmark
-cd acgs2-core/scripts
+cd src/core/scripts
 python performance_benchmark.py
 
 # 2. Analyze bottlenecks
@@ -249,10 +249,10 @@ python performance_benchmark.py
 
 ```bash
 # Weekly chaos testing
-python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
+python src/core/chaos/experiments/advanced-chaos-scenarios.py
 
 # Network chaos (monthly)
-kubectl apply -f acgs2-core/chaos/experiments/network-chaos.yaml
+kubectl apply -f src/core/chaos/experiments/network-chaos.yaml
 ```
 
 ### **Chaos Test Scenarios**
@@ -408,10 +408,10 @@ vim reports/monitoring/config.json
 docker ps | grep acgs2
 
 # 2. Restart services
-docker-compose -f acgs2-core/docker-compose.dev.yml restart
+docker-compose -f src/core/docker-compose.dev.yml restart
 
 # 3. Check logs
-docker-compose -f acgs2-core/docker-compose.dev.yml logs
+docker-compose -f src/core/docker-compose.dev.yml logs
 
 # 4. Run health checks
 ./scripts/health_check.sh
@@ -472,13 +472,13 @@ kubectl top pods
 ./scripts/quality_gate.sh
 
 # Check code quality
-ruff check acgs2-core --select E,F,B,I
+ruff check src/core --select E,F,B,I
 
 # Type checking
-mypy acgs2-core --ignore-missing-imports
+mypy src/core --ignore-missing-imports
 
 # Security scanning
-bandit -r acgs2-core -f json
+bandit -r src/core -f json
 ```
 
 ### **Performance Monitoring**
@@ -496,7 +496,7 @@ python scripts/quality_metrics_monitor.py
 ### **Testing**
 ```bash
 # Run test suite
-cd acgs2-core/enhanced_agent_bus && python -m pytest tests/ -v
+cd src/core/enhanced_agent_bus && python -m pytest tests/ -v
 
 # Test optimization analysis
 python ../../../scripts/optimize_test_files.py
@@ -508,10 +508,10 @@ python ../../../scripts/split_test_files.py
 ### **Chaos Engineering**
 ```bash
 # Run chaos scenarios
-python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
+python src/core/chaos/experiments/advanced-chaos-scenarios.py
 
 # Network chaos
-kubectl apply -f acgs2-core/chaos/experiments/network-chaos.yaml
+kubectl apply -f src/core/chaos/experiments/network-chaos.yaml
 ```
 
 ---

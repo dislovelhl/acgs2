@@ -9,7 +9,7 @@
 **Quick Links:**
 - Full Documentation: [`SECRETS_DETECTION.md`](./SECRETS_DETECTION.md)
 - Allow-list Configuration: [`.secrets-allowlist.README.md`](../.secrets-allowlist.README.md)
-- Secrets Manager: [`acgs2-core/shared/secrets_manager.py`](../src/core/shared/secrets_manager.py)
+- Secrets Manager: [`src/core/shared/secrets_manager.py`](../src/core/shared/secrets_manager.py)
 
 ---
 

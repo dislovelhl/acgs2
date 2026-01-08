@@ -19,7 +19,7 @@ def get_changed_files():
 def check_policy_gates():
     changed_files = get_changed_files()
 
-    policy_changed = any(f.startswith("acgs2-core/policies/") for f in changed_files)
+    policy_changed = any(f.startswith("src/core/policies/") for f in changed_files)
     changelog_updated = "docs/GOVERNANCE_CHANGELOG.md" in changed_files
 
     if policy_changed and not changelog_updated:
