@@ -77,6 +77,7 @@ src/core/enhanced_agent_bus/test_venv/
 *_clean.py
 *.py.backup
 *.txt
+!requirements_optimized.txt
 *.json
 !composer.json
 !package.json
