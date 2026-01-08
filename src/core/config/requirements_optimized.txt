@@ -24,7 +24,7 @@ neo4j==5.25.0
 
 # Additional ML Libraries for Breakthrough Components
 scikit-learn==1.5.2
-numpy==1.26.4
+numpy==2.4.0
 pandas==2.2.3
 
 # Async and Networking
