@@ -10,7 +10,7 @@ help:
 
 setup:
 	@echo "Starting project setup..."
-	pip install -r requirements.txt || pip install .
+	pip install -r src/core/config/requirements_optimized.txt || pip install -e "src/core[dev,test]"
 	pre-commit install
 	@echo "Seeding test wallets..."
 	# Placeholder for wallet seeding logic

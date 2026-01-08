@@ -11,7 +11,7 @@ updates:
       - "github-actions"
 
   - package-ecosystem: "pip"
-    directory: "/acgs2-core"
+    directory: "/src/core"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 5
@@ -24,7 +24,7 @@ updates:
         versions: [">=62.0.0"]
 
   - package-ecosystem: "cargo"
-    directory: "/acgs2-core/enhanced_agent_bus/rust"
+    directory: "/src/core/enhanced_agent_bus/rust"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
@@ -34,7 +34,7 @@ updates:
       - "rust"
 
   - package-ecosystem: "docker"
-    directory: "/acgs2-core"
+    directory: "/src/core"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5

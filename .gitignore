@@ -111,3 +111,10 @@ firebase-debug.log
 # Context and index files
 context.json
 project_index.json
+# Hygiene: experimental results and large templates
+mlruns/
+docs/templates/nvidia/*.pptx
+
+# SAML Certificates
+src/core/shared/auth/certs/*.key
+src/core/shared/auth/certs/*.crt

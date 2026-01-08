@@ -52,6 +52,15 @@ repos:
 
   - repo: local
     hooks:
+      - id: check-secrets-acgs2
+        name: ACGS-2 Secrets Detection
+        entry: python3 scripts/security/check_secrets_pre_commit.py
+        language: python
+        types: [text]
+        exclude: ^(\.gitleaksignore|\.secrets-allowlist\.yaml|tests/fixtures/secrets/)
+        additional_dependencies: [pyyaml]
+        pass_filenames: false
+
       - id: check-commit-msg
         name: Enforce Semantic Commits
         entry: python3 scripts/check_commit_msg.py

@@ -26,13 +26,13 @@ coverage:
         only_pulls: false
 
       # Service-specific targets
-      acgs2-core:
+      core:
         target: 85%
         threshold: 1%
         flags:
-          - acgs2-core
+          - core
         paths:
-          - "acgs2-core/**"
+          - "src/core/**"
 
       claude-flow:
         target: 85%
@@ -48,7 +48,7 @@ coverage:
         flags:
           - neural-mcp
         paths:
-          - "acgs2-neural-mcp/**"
+          - "src/neural-mcp/**"
 
     # Patch coverage for PRs
     patch:
@@ -70,9 +70,9 @@ flag_management:
         target: 80%
 
   individual_flags:
-    - name: acgs2-core
+    - name: core
       paths:
-        - acgs2-core/
+        - src/core/
       carryforward: true
       after_n_builds: 1
 
@@ -84,7 +84,7 @@ flag_management:
 
     - name: neural-mcp
       paths:
-        - acgs2-neural-mcp/
+        - src/neural-mcp/
       carryforward: true
       after_n_builds: 1
 
@@ -109,9 +109,9 @@ ignore:
 
 # Path remapping for consistent coverage across environments
 fixes:
-  - "acgs2-core/src/::acgs2-core/src/"
+  - "src/core/src/::src/core/src/"
   - "claude-flow/src/::claude-flow/src/"
-  - "acgs2-neural-mcp/src/::acgs2-neural-mcp/src/"
+  - "src/neural-mcp/src/::src/neural-mcp/src/"
 
 # Comment configuration for PRs
 comment:

@@ -27,16 +27,16 @@ class TestServiceCORSIntegration:
 
     # Services that should use shared CORS config module
     SHARED_MODULE_SERVICES = [
-        "acgs2-core/services/compliance_docs/src/main.py",
-        "acgs2-core/services/ml_governance/src/main.py",
-        "acgs2-core/services/hitl_approvals/src/main.py",
-        "acgs2-core/services/analytics-api/src/main.py",
+        "src/core/services/compliance_docs/src/main.py",
+        "src/core/services/ml_governance/src/main.py",
+        "src/core/services/hitl_approvals/src/main.py",
+        "src/core/services/analytics-api/src/main.py",
     ]
 
     # Services with inline CORS implementation
     INLINE_CORS_SERVICES = [
-        "integration-service/src/main.py",
-        "adaptive-learning-engine/src/main.py",
+        "src/integration-service/integration-service/src/main.py",
+        "src/adaptive-learning/adaptive-learning-engine/src/main.py",
         "examples/02-ai-model-approval/app.py",
     ]
 
@@ -189,7 +189,7 @@ class TestServiceCORSIntegration:
             pytest.fail(error_msg)
 
     def test_shared_module_services_use_get_cors_config(self):
-        """Verify services in acgs2-core use shared CORS config module."""
+        """Verify services in the core package use shared CORS config module."""
         for service_path in self.SHARED_MODULE_SERVICES:
             content = self._read_service_file(service_path)
             if content is None:
@@ -234,10 +234,9 @@ class TestServiceCORSIntegration:
         import sys
         from pathlib import Path
 
-        # Add acgs2-core to path
+        # Add repo root to path for src.core imports
         repo_root = self._get_repo_root()
-        acgs2_core_path = repo_root / "acgs2-core"
-        sys.path.insert(0, str(acgs2_core_path))
+        sys.path.insert(0, str(repo_root))
 
         try:
             from src.core.shared.security.cors_config import CORSConfig, CORSEnvironment
@@ -263,15 +262,14 @@ class TestServiceCORSIntegration:
 
             assert "Wildcard origins not allowed in production" in str(exc_info.value)
         finally:
-            sys.path.remove(str(acgs2_core_path))
+            sys.path.remove(str(repo_root))
 
     def test_shared_cors_module_allows_localhost_in_development(self, monkeypatch):
         """Test that shared CORS module allows localhost in development."""
         import sys
 
         repo_root = self._get_repo_root()
-        acgs2_core_path = repo_root / "acgs2-core"
-        sys.path.insert(0, str(acgs2_core_path))
+        sys.path.insert(0, str(repo_root))
 
         try:
             from src.core.shared.security.cors_config import get_cors_config
@@ -289,15 +287,14 @@ class TestServiceCORSIntegration:
             # Should not include wildcard
             assert "*" not in config["allow_origins"]
         finally:
-            sys.path.remove(str(acgs2_core_path))
+            sys.path.remove(str(repo_root))
 
     def test_shared_cors_module_respects_env_override(self, monkeypatch):
         """Test that CORS_ALLOWED_ORIGINS env var overrides defaults."""
         import sys
 
         repo_root = self._get_repo_root()
-        acgs2_core_path = repo_root / "acgs2-core"
-        sys.path.insert(0, str(acgs2_core_path))
+        sys.path.insert(0, str(repo_root))
 
         try:
             from src.core.shared.security.cors_config import get_cors_config
@@ -312,7 +309,7 @@ class TestServiceCORSIntegration:
             assert "https://custom1.example.com" in config["allow_origins"]
             assert "https://custom2.example.com" in config["allow_origins"]
         finally:
-            sys.path.remove(str(acgs2_core_path))
+            sys.path.remove(str(repo_root))
 
     def test_environment_files_have_no_wildcard(self):
         """Verify .env.dev and docker-compose have no wildcard CORS."""
@@ -397,7 +394,9 @@ class TestInlineServiceCORSBehavior:
         from pathlib import Path
 
         repo_root = TestServiceCORSIntegration._get_repo_root()
-        integration_service_path = repo_root / "integration-service" / "src"
+        integration_service_path = (
+            repo_root / "src" / "integration-service" / "integration-service" / "src"
+        )
 
         if not integration_service_path.exists():
             pytest.skip("integration-service not found")
@@ -429,7 +428,9 @@ class TestInlineServiceCORSBehavior:
         import sys
 
         repo_root = TestServiceCORSIntegration._get_repo_root()
-        integration_service_path = repo_root / "integration-service" / "src"
+        integration_service_path = (
+            repo_root / "src" / "integration-service" / "integration-service" / "src"
+        )
 
         if not integration_service_path.exists():
             pytest.skip("integration-service not found")
@@ -465,15 +466,14 @@ class TestConstitutionalCompliance:
         import sys
 
         repo_root = TestServiceCORSIntegration._get_repo_root()
-        acgs2_core_path = repo_root / "acgs2-core"
-        sys.path.insert(0, str(acgs2_core_path))
+        sys.path.insert(0, str(repo_root))
 
         try:
             from src.core.shared.security.cors_config import CONSTITUTIONAL_HASH
 
             assert CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
         finally:
-            sys.path.remove(str(acgs2_core_path))
+            sys.path.remove(str(repo_root))
 
     def test_constitutional_hash_in_test_file(self):
         """Verify this test file has constitutional hash."""

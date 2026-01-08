@@ -5,6 +5,7 @@ Get started with ACGS-2 (Advanced Constitutional Governance System) in under 30 
 ## 📋 Prerequisites
 
 Before you begin, ensure you have:
+
 - **Docker & Docker Compose** (v20.10+)
 - **Python 3.11+** (optional, for local development)
 - **Git** (for cloning repositories)
@@ -16,8 +17,8 @@ Before you begin, ensure you have:
 
 ```bash
 # Clone the repository
-git clone https://github.com/acgs2/acgs2-core.git
-cd acgs2-core
+git clone https://github.com/acgs2/ACGS-PGP2.git
+cd ACGS-PGP2
 
 # Start the complete development environment
 docker-compose up -d
@@ -35,17 +36,17 @@ That's it! ACGS-2 is now running with all services operational.
 
 ```bash
 # Clone and setup
-git clone https://github.com/acgs2/acgs2-core.git
-cd acgs2-core
+git clone https://github.com/acgs2/ACGS-PGP2.git
+cd ACGS-PGP2
 
 # Install dependencies
-pip install -r requirements-dev.txt
+pip install -r src/core/config/requirements_optimized.txt
 
 # Start infrastructure services
 docker-compose up -d redis kafka opa
 
 # Run the API Gateway locally
-cd services/api_gateway
+cd src/core/services/api_gateway
 uvicorn main:app --reload --host 0.0.0.0 --port 8080
 ```
 
@@ -220,6 +221,7 @@ curl -X POST http://localhost:8000/api/v1/policies/evaluate \
 ## 📚 Example Projects
 
 ### Basic Intent Classification
+
 ```python
 from acgs2_sdk import GovernanceClient
 
@@ -238,6 +240,7 @@ print(f"Allowed: {evaluation['allow']}")
 ```
 
 ### Advanced Multi-turn Conversation
+
 ```python
 # Track conversation context
 conversation = client.create_conversation()

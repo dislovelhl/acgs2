@@ -11,7 +11,6 @@ Comprehensive test coverage for GovernanceService including:
 - All decision branches and paths
 """
 
-
 import pytest
 
 from acgs2_sdk.constants import CONSTITUTIONAL_HASH, GOVERNANCE_ENDPOINT

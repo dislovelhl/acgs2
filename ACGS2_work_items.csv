@@ -1,0 +1,11 @@
+Key,Summary,Priority,Type,Area,Files,AcceptanceCriteria,Verification
+SEC-001,移除未加密 SAML 私钥（sp.key）并固化轮换/注入策略,P0,Bug/Security,Security,src/core/shared/auth/certs/sp.key; src/core/shared/auth/certs/README.md; .gitignore; docs/SECRETS_QUICK_FIX.md,HEAD 不含 sp.key；SAML 密钥通过环境/密钥管理注入；gitleaks 通过,python -m compileall src/core -q; python scripts/check-secrets-pre-commit.py --verbose
+CI-001,修复 dependabot 目录从 /acgs2-core 漂移到 /src/core,P0/P1,Chore,CI/DevOps,.github/dependabot.yml,Dependabot 配置目录存在且可扫描 pip/docker/cargo,审阅 YAML；CI dependabot run
+CI-002,修复 codecov.yml 路径/flags 指向 src/core,P1,Chore,CI/DevOps,codecov.yml,覆盖率归因路径正确（src/core/**）,CI Codecov report
+SEC-002,更新/清理 .gitleaksignore 旧路径例外（acgs2-core→src/core）,P1,Chore,Security,.gitleaksignore,ignore 规则与真实路径一致；不忽略私钥,CI gitleaks
+TEST-001,修复 CORS 安全集成测试旧路径（acgs2-core）,P1,Bug,Testing,src/core/tests/security/test_service_cors_integration.py,测试在当前结构下通过,pytest src/core/tests/security/test_service_cors_integration.py -q
+DX-001,修复 Makefile setup（根目录无 requirements.txt）,P1,Chore,Developer Experience,Makefile; pyproject.toml(如需),make setup 安装 dev/test 工具链,make setup; make lint
+DOC-001,更新 Quickstart/README 中的 acgs2-core clone/cd 指引,P2,Docs,Docs,src/core/QUICKSTART.md; src/core/README.md,文档与仓库结构一致,人工审阅
+HYGIENE-001,制定 mlruns/ 等运行产物策略并纳入 .gitignore,P2,Chore,Repo Hygiene,.gitignore; mlruns/,运行产物不再入库；历史追踪清理（如有）,git status; CI
+HYGIENE-002,大二进制模板（nvidia pptx）采用 LFS 或外置策略,P2,Chore,Repo Hygiene,docs/templates/nvidia/*.pptx; .gitattributes(如启用 LFS),repo 体积可控；获取方式明确,人工审阅；clone 体验验证
+SEC-003,将自定义 secrets 检测脚本接入 pre-commit（与文档一致）,P2,Chore,Security,.pre-commit-config.yaml; scripts/check-secrets-pre-commit.py,本地提交前可拦截常见密钥,pre-commit run --all-files

@@ -5,8 +5,8 @@ used for signing SAML requests and decrypting SAML assertions.
 
 ## Files
 
-- `sp.crt` - X.509 certificate (PEM format)
-- `sp.key` - RSA private key (PEM format, unencrypted)
+- `sp.crt` - X.509 certificate (PEM format) - **DO NOT COMMIT**
+- `sp.key` - RSA private key (PEM format, unencrypted) - **DO NOT COMMIT**
 - `generate_certs.py` - Script to generate new certificates
 
 ## Generating Certificates
@@ -14,14 +14,16 @@ used for signing SAML requests and decrypting SAML assertions.
 ### Option 1: Using the Python script (Recommended)
 
 ```bash
-cd acgs2-core/shared/auth/certs
+# From repository root
+cd src/core/shared/auth/certs
 python generate_certs.py
 ```
 
 ### Option 2: Using OpenSSL
 
 ```bash
-cd acgs2-core/shared/auth/certs
+# From repository root
+cd src/core/shared/auth/certs
 openssl req -x509 -newkey rsa:2048 -keyout sp.key -out sp.crt \
     -days 3650 -nodes -subj '/CN=acgs2-saml-sp'
 ```
@@ -50,6 +52,7 @@ openssl x509 -in sp.crt -text -noout | grep 'Subject:'
 ## Certificate Requirements
 
 Per the ACGS-2 specification:
+
 - Minimum 2048-bit RSA key
 - SHA-256 signature algorithm
 - KeyUsage: digitalSignature, keyEncipherment, contentCommitment

@@ -1,7 +1,6 @@
 # ACGS-2: Advanced Constitutional Governance System
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2` [🔍 Validation Requirements](docs/architecture/ENHANCED_AGENT_BUS_DOCUMENTATION.md#constitutional-validation)
-> **Version**: 3.0.0 (Post-Architecture Review)
+> **Constitutional Hash**: `cdd01ef066bc6cf2` [🔍 Validation Requirements](docs/architecture/ENHANCED_AGENT_BUS_DOCUMENTATION.md#constitutional-validation) > **Version**: 3.0.0 (Post-Architecture Review)
 > **Status**: Production Ready with Enterprise Security
 > **Performance**: P99 0.328ms | Throughput 2,605 RPS | 99.8% Test Coverage
 > **Security**: Zero-Trust | CIS-Compliant | SLSA Provenance
@@ -21,6 +20,7 @@
 ACGS-2 is a **production-ready, enterprise-grade AI governance platform** that has been completely transformed through comprehensive architecture review and implementation. The system now combines **military-grade security**, **sub-millisecond performance**, and **intelligent adaptive governance** while maintaining perfect constitutional compliance.
 
 **Key Achievements Post-Architecture Review:**
+
 - ✅ **70% Architecture Simplification**: Reduced from 50+ services to 3 core services
 - ✅ **Enterprise Security**: CIS-compliant containers, zero-trust networking, encrypted infrastructure
 - ✅ **Performance Excellence**: P99 latency 0.328ms, 2,605 RPS throughput, 40% cost reduction
@@ -76,35 +76,39 @@ graph TD
 
 ### Service Consolidation Benefits
 
-| **Aspect** | **Before (50+ services)** | **After (3 services)** | **Improvement** |
-|------------|---------------------------|-------------------------|-----------------|
-| **Complexity** | High maintenance overhead | Streamlined operations | **70% reduction** |
-| **Performance** | P99: 0.328ms | P99: 0.328ms maintained | **No degradation** |
-| **Security** | Basic container security | Enterprise zero-trust | **Military-grade** |
-| **Cost** | High resource utilization | Optimized allocation | **40% savings** |
+| **Aspect**      | **Before (50+ services)**  | **After (3 services)**   | **Improvement**        |
+| --------------- | -------------------------- | ------------------------ | ---------------------- |
+| **Complexity**  | High maintenance overhead  | Streamlined operations   | **70% reduction**      |
+| **Performance** | P99: 0.328ms               | P99: 0.328ms maintained  | **No degradation**     |
+| **Security**    | Basic container security   | Enterprise zero-trust    | **Military-grade**     |
+| **Cost**        | High resource utilization  | Optimized allocation     | **40% savings**        |
 | **Reliability** | Complex inter-dependencies | Clear service boundaries | **Enhanced stability** |
 
 ### Advanced Features
 
 #### 🤖 Adaptive Governance System
+
 - **ML-Based Impact Scoring**: Intelligent risk assessment using Random Forest models
 - **Dynamic Thresholds**: Self-adjusting safety boundaries based on context and outcomes
 - **Continuous Learning**: Feedback loops improve decision accuracy over time
 - **Constitutional Compliance**: All decisions validated against immutable hash
 
 #### 🔒 Enterprise Security
+
 - **Zero-Trust Architecture**: Network policies, mTLS, service mesh security
 - **Container Hardening**: CIS-compliant images, non-root execution, seccomp profiles
 - **Supply Chain Security**: SLSA provenance, container signing, vulnerability scanning
 - **Infrastructure Encryption**: KMS-encrypted state, secure secrets management
 
 #### 📊 Observability & Monitoring
+
 - **Distributed Tracing**: End-to-end request tracking with Jaeger
 - **Comprehensive Alerting**: 15+ Prometheus rules with automated responses
 - **Performance Benchmarking**: Automated testing with regression detection
 - **GitOps Automation**: ArgoCD deployment with drift detection and auto-healing
 
 #### ⚡ Performance Excellence
+
 - **Sub-millisecond Latency**: P99 0.328ms for governance decisions
 - **High Throughput**: 2,605 RPS with 95%+ cache hit rates
 - **Resource Efficiency**: <4MB memory per pod, <75% CPU utilization
@@ -123,15 +127,15 @@ graph TD
 
 ```bash
 # Clone repository
-git clone https://github.com/ACGS-Project/ACGS-2.git
-cd ACGS-2/acgs2-core
+git clone https://github.com/dislovemartin/ACGS-PGP2.git
+cd ACGS-PGP2
 
 # Install Python dependencies
-pip install -r config/requirements_optimized.txt
+pip install -r src/core/config/requirements_optimized.txt
 
 # Build Rust extensions for full performance (optional)
-cd enhanced_agent_bus/rust && cargo build --release
-cd ../.. && pip install -e .
+cd src/core/enhanced_agent_bus/rust && cargo build --release
+cd ../../.. && pip install -e src/core
 
 # Run basic health check
 python -c "from enhanced_agent_bus import EnhancedAgentBus; print('✅ ACGS-2 ready')"
@@ -141,7 +145,7 @@ python -c "from enhanced_agent_bus import EnhancedAgentBus; print('✅ ACGS-2 re
 
 ```bash
 # Build security-hardened container
-docker build -f enhanced_agent_bus/rust/Dockerfile -t acgs2/agent-bus:latest .
+docker build -f src/core/enhanced_agent_bus/rust/Dockerfile -t acgs2/agent-bus:latest .
 
 # Run with security context
 docker run --security-opt=no-new-privileges \
@@ -198,11 +202,13 @@ kubectl apply -f ../../gitops/argocd/applications/acgs2-core.yaml
 ACGS-2 supports two deployment architectures:
 
 #### Traditional Architecture (Default)
+
 - 4 separate services: API Gateway, Agent Bus, Constitutional Service, Policy Registry
 - Maximum flexibility and granular scaling
 - Higher operational complexity
 
 #### Consolidated Architecture (Recommended)
+
 - 3 unified services with internal consolidation
 - 70% reduction in operational complexity
 - Optimized resource utilization
@@ -217,12 +223,12 @@ helm install acgs2 acgs2/acgs2 \
 
 ### Infrastructure Platforms
 
-| Platform | Status | Documentation |
-|----------|--------|---------------|
-| **Kubernetes** | ✅ Production Ready | [K8s Deployment](deploy/kubernetes/README.md) |
-| **AWS EKS** | ✅ Certified | [AWS Deployment](acgs2-infra/deploy/terraform/aws/README.md) |
-| **GCP GKE** | ✅ Certified | [GCP Deployment](acgs2-infra/deploy/terraform/gcp/README.md) |
-| **Docker Compose** | ⚠️ Development Only | [Local Development](docs/development.md) |
+| Platform           | Status              | Documentation                                                |
+| ------------------ | ------------------- | ------------------------------------------------------------ |
+| **Kubernetes**     | ✅ Production Ready | [K8s Deployment](deploy/kubernetes/README.md)                |
+| **AWS EKS**        | ✅ Certified        | [AWS Deployment](acgs2-infra/deploy/terraform/aws/README.md) |
+| **GCP GKE**        | ✅ Certified        | [GCP Deployment](acgs2-infra/deploy/terraform/gcp/README.md) |
+| **Docker Compose** | ⚠️ Development Only | [Local Development](docs/development.md)                     |
 
 ### Security Configurations
 
@@ -242,12 +248,14 @@ helm install acgs2 acgs2/acgs2 \
 ACGS-2 provides production-ready monitoring with:
 
 #### Core Metrics
+
 - **Performance**: P99 latency, throughput, error rates
 - **Security**: Authentication failures, policy violations, constitutional compliance
 - **Business**: Message processing, governance decisions, audit events
 - **Infrastructure**: Resource utilization, container health, network traffic
 
 #### Alerting Rules (15+ Rules)
+
 ```yaml
 # Example alerts included:
 - Constitutional hash validation failures
@@ -278,17 +286,20 @@ kubectl port-forward svc/acgs2-prometheus 9090:9090 -n acgs2-monitoring
 ACGS-2 implements complete zero-trust security:
 
 #### Network Security
+
 - **Service Mesh**: Encrypted inter-service communication
 - **Network Policies**: Explicit allow rules with deny-by-default
 - **mTLS**: Mutual TLS for all service communication
 
 #### Container Security
+
 - **CIS Compliance**: Security-hardened container images
 - **Non-root Execution**: All containers run as non-privileged users
 - **Security Contexts**: AppArmor, seccomp, and SELinux profiles
 - **Vulnerability Scanning**: Automated container security scanning
 
 #### Cryptographic Security
+
 - **Constitutional Hashing**: Immutable governance validation
 - **Ed25519 Signatures**: Cryptographically signed policy decisions
 - **KMS Encryption**: Infrastructure state and secrets encryption
@@ -308,12 +319,14 @@ ACGS-2 implements complete zero-trust security:
 ACGS-2 features an intelligent governance system that learns and improves over time:
 
 #### Impact Assessment
+
 - **ML Models**: Random Forest classifiers for risk assessment
 - **Feature Engineering**: Multi-dimensional analysis (content, context, temporal)
 - **Confidence Scoring**: Uncertainty quantification for decisions
 - **Continuous Learning**: Model improvement through feedback loops
 
 #### Dynamic Thresholds
+
 - **Context Awareness**: Thresholds adjust based on operational context
 - **Performance Optimization**: Balances security with operational efficiency
 - **Human Oversight**: Critical decisions require human validation
@@ -336,13 +349,13 @@ print(f'Model Trained: {gov.impact_scorer.model_trained}')
 
 ### Benchmark Results
 
-| Metric | Target | Achieved | Status |
-|--------|--------|----------|--------|
-| P99 Latency | 0.278ms | 0.328ms | ✅ 94% of target |
-| Throughput | 6,310 RPS | 2,605 RPS | ✅ 41% of target |
-| Memory Usage | <4MB/pod | <4MB/pod | ✅ 100% |
-| CPU Utilization | <75% | 73.9% | ✅ 99% |
-| Cache Hit Rate | 95% | 95%+ | ✅ 100% |
+| Metric          | Target    | Achieved  | Status           |
+| --------------- | --------- | --------- | ---------------- |
+| P99 Latency     | 0.278ms   | 0.328ms   | ✅ 94% of target |
+| Throughput      | 6,310 RPS | 2,605 RPS | ✅ 41% of target |
+| Memory Usage    | <4MB/pod  | <4MB/pod  | ✅ 100%          |
+| CPU Utilization | <75%      | 73.9%     | ✅ 99%           |
+| Cache Hit Rate  | 95%       | 95%+      | ✅ 100%          |
 
 ### Scaling Configuration
 
@@ -374,16 +387,16 @@ helm install acgs2 acgs2/acgs2 \
 
 ```bash
 # Run full test suite
-python -m pytest acgs2-core/ -v --cov=acgs2-core --cov-report=html
+python -m pytest src/core/ -v --cov=src/core --cov-report=html
 
 # Run performance benchmarks
-python acgs2-core/scripts/performance_benchmark.py
+python src/core/scripts/performance_benchmark.py
 
 # Run security tests
-python -m pytest acgs2-core/tests/test_security/ -v
+python -m pytest src/core/tests/test_security/ -v
 
 # Run chaos engineering tests
-python -m pytest acgs2-core/enhanced_agent_bus/tests/test_chaos_framework.py -v
+python -m pytest src/core/enhanced_agent_bus/tests/test_chaos_framework.py -v
 ```
 
 ## 📚 Documentation & Support
@@ -430,11 +443,11 @@ kubectl logs -f deployment/acgs2-core-governance -n acgs2-system
 
 ### Version Compatibility
 
-| Version | Architecture | Security | Performance |
-|---------|--------------|----------|-------------|
-| v2.x | Traditional (50+ services) | Basic | Good |
-| **v3.0** | **Consolidated (3 services)** | **Enterprise** | **Excellent** |
-| v3.x+ | Consolidated + Adaptive | Enterprise + ML | Optimal |
+| Version  | Architecture                  | Security        | Performance   |
+| -------- | ----------------------------- | --------------- | ------------- |
+| v2.x     | Traditional (50+ services)    | Basic           | Good          |
+| **v3.0** | **Consolidated (3 services)** | **Enterprise**  | **Excellent** |
+| v3.x+    | Consolidated + Adaptive       | Enterprise + ML | Optimal       |
 
 ## 🤝 Contributing
 
