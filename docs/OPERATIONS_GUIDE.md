@@ -6,12 +6,44 @@
 
 This guide provides comprehensive operational procedures for maintaining ACGS-2's production excellence through automated quality assurance, performance monitoring, and continuous improvement.
 
+## ✅ Validation & Verification Standards
+
+**Validation** confirms we are building and operating the right system (requirements, policies, and governance intent).  
+**Verification** confirms we built the system right (implementation, configuration, and runtime behavior).
+
+### Evidence Requirements
+
+| Evidence Type | Validation Goal | Verification Goal | Minimum Artifact |
+| ------------ | --------------- | ----------------- | ---------------- |
+| Requirements | Confirm governance scope and acceptance criteria | Requirements traceability to tests | `docs/DEPLOYMENT_CHECKLIST.md` |
+| Tests | Ensure scenarios match real-world operations | Prove behavior matches spec | `reports/coverage/coverage_summary.txt` |
+| Observability | Confirm monitoring aligns to SLOs | Prove metrics are accurate and complete | `reports/monitoring/*` |
+| Security | Confirm threat model coverage | Prove controls are enforced | `scripts/security_verification.sh` output |
+
+### Confidence Levels
+
+| Confidence | Definition | Minimum Signals |
+| ---------- | ---------- | --------------- |
+| High | Multiple independent checks confirm expected behavior | Tests + metrics + audit evidence |
+| Medium | Single source of truth but complete coverage | Tests or metrics only |
+| Low | Partial signal or missing evidence | Manual check or sampled data |
+
+### Verification Cadence
+
+1. **Daily**: Run automated quality gates + performance regression.
+2. **Weekly**: Cross-check observability metrics against test baselines.
+3. **Monthly**: Revalidate governance requirements and update thresholds.
+4. **Quarterly**: Independent verification review with audit artifacts.
+
+> **Note**: When evidence is incomplete, record the limitation and track a remediation task.
+
 ## 🏗️ Operational Components
 
 ### 1. **Quality Gates & CI/CD**
 - **Pre-commit Hooks**: Automated code quality checks
 - **GitHub Actions**: CI/CD pipeline with quality validation
 - **Quality Gate Script**: Manual and automated quality assessment
+- **Traceability Review**: Link requirements → tests → metrics
 
 ### 2. **Performance Monitoring**
 - **Automated Regression Testing**: Daily performance validation
@@ -97,7 +129,10 @@ curl -f http://localhost:8181/health  # OPA
 # 3. Check performance metrics
 ./scripts/performance_regression_test.sh
 
-# 4. Review alerts
+# 4. Verify audit trail continuity
+./scripts/health-check.sh
+
+# 5. Review alerts
 cat reports/monitoring/performance_alerts.txt
 ```
 
@@ -150,6 +185,7 @@ python acgs2-core/chaos/experiments/advanced-chaos-scenarios.py
 # - Syntax errors: Fix immediately
 # - Bare except clauses: Add specific exception handling
 # - Print statements: Replace with logging
+# - Missing evidence: Add tests or observability signals
 
 # 3. Run pre-commit hooks
 pre-commit run --all-files
@@ -290,6 +326,15 @@ Penalties:
 - **60-69**: Requires improvement
 - **<60**: Critical issues, immediate action required
 
+### **Validation & Verification Coverage**
+
+| Layer | Validation Check | Verification Check | Owner |
+| ----- | ---------------- | ------------------ | ----- |
+| Governance | Policy intent review | Constitutional hash enforcement | Security |
+| Data | Input/output requirements review | Schema and contract tests | Platform |
+| Runtime | SLO alignment review | Telemetry consistency check | SRE |
+| Security | Threat model alignment | Control enforcement tests | Security |
+
 ---
 
 ## 🔄 Continuous Improvement
@@ -334,6 +379,11 @@ vim reports/monitoring/config.json
    - Add new failure scenarios
    - Improve recovery procedures
    - Update blast radius assessments
+
+5. **Verification Gap Review**
+   - Identify checks with Medium/Low confidence
+   - Add missing evidence sources
+   - Update runbooks and thresholds
 
 ### **Quarterly Architecture Review**
 
