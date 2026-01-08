@@ -56,6 +56,14 @@ repos:
         name: Check import sorting
         description: Check that imports are properly sorted
 
+  # Python linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
   # Local hooks for ACGS-2 specific checks
   - repo: local
     hooks:
@@ -85,14 +93,6 @@ repos:
         entry: python3 -m py_compile
         language: system
         types: [python]
-
-  # Ruff linter
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.4
-    hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-      - id: ruff-format
 
       # Constitutional compliance counter
       - id: constitutional-compliance-count
