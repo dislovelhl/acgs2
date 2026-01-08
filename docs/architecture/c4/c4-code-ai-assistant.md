@@ -10,6 +10,27 @@
 - **Language**: Python 3.11+
 - **Purpose**: Orchestrates all AI assistant components (NLU, Dialog Management, Response Generation) with real-time constitutional governance validation and agent bus integration for enterprise conversational AI
 
+## Validation & Verification Principles for Research Assistance
+
+The AI Assistant module emphasizes reliability-focused research support. When configured for research workflows, response generation and governance checks should enforce the following principles:
+
+1. **Accuracy First**: Prioritize factual correctness over completeness; avoid speculation unless clearly labeled.
+2. **Authoritative Sources**: Prefer primary literature, curated datasets, and reputable institutional sources; track provenance for every claim.
+3. **Citations for Verification**: Provide citations or traceable references for key assertions; surface source metadata in `ProcessingResult.metadata`.
+4. **Bias and Misinformation Controls**: Flag potentially biased or low-quality sources and request clarification when evidence is weak or conflicting.
+5. **Regular Knowledge Updates**: Encourage refresh cycles when evidence may be outdated; include last-reviewed timestamps in response metadata where possible.
+6. **Fact vs. Hypothesis Separation**: Distinguish established facts from hypotheses or preliminary findings with explicit labeling.
+7. **Confidence Levels**: Provide confidence estimates per claim; align with underlying evidence quality and study design.
+8. **Study Design Awareness**: Highlight study types (e.g., RCT, observational, meta-analysis) and statistical limitations.
+9. **Synthesis and Gap Identification**: Summarize evidence across sources and note missing data or open research questions.
+10. **Limitations and Uncertainty**: Clearly state what is unknown, ambiguous, or outside scope.
+11. **Cross-Referencing**: Cross-check claims against multiple sources; log discrepancies for follow-up.
+12. **User Feedback Loops**: Capture corrections and user-provided sources to improve future responses.
+13. **Customizable Retrieval**: Support adjustable search filters (date ranges, domains, evidence tiers) for targeted research.
+14. **Contextual Awareness**: Maintain dialogue context to tailor evidence depth, formatting, and follow-up questions.
+
+These principles guide the `ResponseGenerator` and `AgentBusIntegration` behaviors when supporting research tasks, enabling validation-focused outputs that are traceable, verifiable, and aligned with governance requirements.
+
 ## Code Elements
 
 ### Core Classes
