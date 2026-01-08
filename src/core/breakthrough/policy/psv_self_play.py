@@ -25,13 +25,16 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set
 
+from src.core.shared.policy.models import (
+    PolicySpecification,
+    VerifiedPolicy,
+)
+from src.core.shared.policy.unified_generator import (
+    UnifiedVerifiedPolicyGenerator,
+)
+
 from ...shared.types import JSONDict
 from .. import CONSTITUTIONAL_HASH
-from .verified_policy_generator import (
-    PolicyVerificationError,
-    VerifiedPolicy,
-    VerifiedPolicyGenerator,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +140,7 @@ class PSVSelfPlay:
 
     def __init__(
         self,
-        policy_generator: VerifiedPolicyGenerator,
+        policy_generator: UnifiedVerifiedPolicyGenerator,
         max_rounds_per_session: int = 10,
         improvement_threshold: float = 0.05,  # 5% improvement required
         adaptation_enabled: bool = True,
@@ -460,10 +463,12 @@ class PSVSelfPlay:
             attempts += 1
 
             try:
-                # Use the policy generator to solve the challenge
-                policy = await self.policy_generator.generate_verified_policy(
-                    challenge.natural_language_spec
+                spec = PolicySpecification(
+                    spec_id=hashlib.sha256(challenge.natural_language_spec.encode()).hexdigest()[:8],
+                    natural_language=challenge.natural_language_spec,
+                    category=challenge.category
                 )
+                policy = await self.policy_generator.generate_verified_policy(spec)
 
                 # Validate against success criteria
                 validation_result = await self._validate_solution(policy, challenge)
@@ -478,7 +483,8 @@ class PSVSelfPlay:
                         "validation": validation_result,
                     }
 
-            except PolicyVerificationError:
+            except Exception as e:
+                logger.error(f"Error in challenge attempt: {str(e)}")
                 continue
 
             except Exception as e:

@@ -502,11 +502,9 @@ def main():
         else:
             pass
     else:
-
         # Create sample pipelines
         cicd.create_sample_jenkins_pipeline()
         cicd.create_sample_github_actions_pipeline()
-
 
 
 if __name__ == "__main__":

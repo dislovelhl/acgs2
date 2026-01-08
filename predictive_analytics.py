@@ -487,7 +487,6 @@ def main():
         else:
             pass
     else:
-
         analytics.analyze_historical_patterns()
 
 

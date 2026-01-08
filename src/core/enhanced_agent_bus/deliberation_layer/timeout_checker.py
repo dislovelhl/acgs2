@@ -8,7 +8,7 @@ Background task to check election expiration and trigger escalation events.
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 try:
     from .redis_election_store import get_election_store

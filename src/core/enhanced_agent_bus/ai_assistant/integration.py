@@ -7,6 +7,7 @@ Handles constitutional validation, message routing, and governance.
 """
 
 import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -17,9 +18,20 @@ except ImportError:
     JSONDict = Dict[str, Any]  # type: ignore
     JSONValue = Any  # type: ignore
 
+
+# Policy imports
+from src.core.shared.policy.models import PolicySpecification, VerificationStatus
+from src.core.shared.policy.unified_generator import UnifiedVerifiedPolicyGenerator
+
 from .context import ConversationContext
 from .dialog import ActionType, DialogAction
 from .nlu import NLUResult
+
+# Audit imports
+try:
+    from src.core.services.audit_service.core.audit_ledger import get_audit_ledger
+except ImportError:
+    get_audit_ledger = None
 
 # Import centralized constitutional hash with fallback
 try:
@@ -60,6 +72,30 @@ class IntegrationConfig:
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
 
+@dataclass
+class GovernanceDecision:
+    """Represents a decision made by the governance system."""
+
+    is_allowed: bool
+    reason: str
+    policy_id: Optional[str] = None
+    verification_status: Optional[str] = None
+    confidence: float = 0.0
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "is_allowed": self.is_allowed,
+            "reason": self.reason,
+            "policy_id": self.policy_id,
+            "verification_status": self.verification_status,
+            "confidence": self.confidence,
+            "metadata": self.metadata,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
+
 class AgentBusIntegration:
     """
     Integration layer for the Enhanced Agent Bus.
@@ -69,6 +105,7 @@ class AgentBusIntegration:
         self.config = config or IntegrationConfig()
         self.agent_bus = agent_bus
         self.handlers: Dict[str, Callable] = {}
+        self.policy_generator = UnifiedVerifiedPolicyGenerator()
 
     async def initialize(self) -> bool:
         """Initialize the integration layer."""
@@ -267,7 +304,63 @@ class AgentBusIntegration:
         nlu_result: NLUResult,
         context: ConversationContext,
     ) -> Dict[str, Any]:
-        """Perform governance check on intent and entities."""
-        # This would call the real governance service
-        # For now, we simulate success
-        return {"is_allowed": True}
+        """Perform governance check on intent and entities using unified policy generator."""
+        if not self.config.enable_governance:
+            return {"is_allowed": True}
+
+        try:
+            primary_intent = nlu_result.primary_intent
+            intent_name = primary_intent.name if primary_intent else "unknown"
+
+            # Create policy specification from NLU result
+            spec = PolicySpecification(
+                spec_id=f"gov_{uuid.uuid4().hex[:8]}",
+                natural_language=f"Verify if intent '{intent_name}' is allowed for user {context.user_id}",
+                context={
+                    "user_id": context.user_id,
+                    "session_id": context.session_id,
+                    "entities": nlu_result.entities if hasattr(nlu_result, 'entities') else []
+                }
+            )
+
+            # Generate verified policy
+            policy = await self.policy_generator.generate_verified_policy(spec)
+
+            # Check verification status
+            is_allowed = policy.verification_status in (
+                VerificationStatus.VERIFIED,
+                VerificationStatus.PROVEN,
+            )
+
+            decision = GovernanceDecision(
+                is_allowed=is_allowed,
+                reason="Action verified and proven correct" if is_allowed else "Formal verification failed",
+                policy_id=policy.policy_id,
+                confidence=policy.confidence_score,
+                verification_status=policy.verification_status.value
+            )
+
+            # Record to Audit Ledger if available for third-party auditing
+            if get_audit_ledger:
+                try:
+                    ledger = await get_audit_ledger()
+                    audit_vr = ValidationResult(
+                        is_valid=is_allowed,
+                        metadata={
+                            "type": "governance_psv_verus",
+                            "policy_id": policy.policy_id,
+                            "verification_status": policy.verification_status.value,
+                            "smt_log": policy.smt_formulation,
+                            "user_id": context.user_id,
+                            "intent": intent_name
+                        }
+                    )
+                    await ledger.add_validation_result(audit_vr)
+                except Exception as audit_err:
+                    logger.warning(f"Failed to record governance audit: {audit_err}")
+
+            return decision.to_dict()
+        except Exception as e:
+            logger.error(f"Governance check failed: {e}")
+            # Fail closed for safety in governance
+            return {"is_allowed": False, "reason": f"Governance system error: {str(e)}"}

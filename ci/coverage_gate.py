@@ -22,7 +22,6 @@ def check_coverage(file_path, threshold):
             # Fallback for other formats if necessary
             sys.exit(1)
 
-
         if rate >= threshold:
             sys.exit(0)
         else:

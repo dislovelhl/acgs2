@@ -122,7 +122,7 @@ class AuditTrailManager:
         self.config = config
         self._buffer: List[AuditEntry] = []
         self._lock = threading.Lock()
-        self._flush_thread: Optional[threading.Thread] = None
+        self._flush_thread: Optional[asyncio.Task] = None
         self._running = False
         self._persistence_handler: Optional[Callable[[List[AuditEntry]], bool]] = None
 
@@ -133,15 +133,21 @@ class AuditTrailManager:
 
         self._running = True
         if self.config.audit_enabled:
-            self._flush_thread = threading.Thread(target=self._background_flush_loop, daemon=True)
-            self._flush_thread.start()
+            import asyncio
+            self._flush_thread = asyncio.create_task(self._background_flush_loop())
             logger.info("Audit trail manager started")
 
     def stop(self) -> None:
         """Stop the audit trail manager."""
         self._running = False
-        if self._flush_thread and self._flush_thread.is_alive():
-            self._flush_thread.join(timeout=5)
+        if self._flush_thread:
+            self._flush_thread.cancel()
+            try:
+                # We don't necessarily need to await here if called from synchronous cleanup,
+                # but in async context it should be awaited.
+                pass
+            except asyncio.CancelledError:
+                pass
         # Final flush
         self._flush_buffer()
         logger.info("Audit trail manager stopped")
@@ -233,15 +239,16 @@ class AuditTrailManager:
                 with self._lock:
                     self._buffer.extend(entries_to_flush)
 
-    def _background_flush_loop(self) -> None:
-        """Background thread for periodic buffer flushing."""
+    async def _background_flush_loop(self) -> None:
+        """Background loop for periodic buffer flushing."""
+        import asyncio
         while self._running:
             try:
-                time.sleep(self.config.audit_flush_interval)
+                await asyncio.sleep(self.config.audit_flush_interval)
                 self._flush_buffer()
             except Exception as e:
                 logger.error(f"Background flush error: {e}")
-                time.sleep(5)  # Back off on errors
+                await asyncio.sleep(5)  # Back off on errors
 
 
 class PolicyLoader:
@@ -254,7 +261,7 @@ class PolicyLoader:
         self._status = PolicyLoadStatus.NOT_LOADED
         self._last_refresh: Optional[datetime] = None
         self._policy_source: Optional[Callable[[], List[Dict]]] = None
-        self._refresh_thread: Optional[threading.Thread] = None
+        self._refresh_thread: Optional[asyncio.Task] = None
         self._running = False
 
     @property
@@ -274,15 +281,15 @@ class PolicyLoader:
             return
 
         self._running = True
-        self._refresh_thread = threading.Thread(target=self._background_refresh_loop, daemon=True)
-        self._refresh_thread.start()
+        import asyncio
+        self._refresh_thread = asyncio.create_task(self._background_refresh_loop())
         logger.info("Policy loader started")
 
     def stop(self) -> None:
         """Stop the policy loader."""
         self._running = False
-        if self._refresh_thread and self._refresh_thread.is_alive():
-            self._refresh_thread.join(timeout=5)
+        if self._refresh_thread:
+            self._refresh_thread.cancel()
         logger.info("Policy loader stopped")
 
     def set_policy_source(self, source: Callable[[], List[Dict]]) -> None:
@@ -387,26 +394,20 @@ class PolicyLoader:
                 return True
         return False
 
-    def _background_refresh_loop(self) -> None:
-        """Background thread for periodic policy refresh."""
+    async def _background_refresh_loop(self) -> None:
+        """Background loop for periodic policy refresh."""
+        import asyncio
         while self._running:
             try:
-                time.sleep(self.config.policy_refresh_interval)
+                await asyncio.sleep(self.config.policy_refresh_interval)
 
                 # Check if refresh is needed
                 if self._should_refresh():
-                    import asyncio
-
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        loop.run_until_complete(self.load_policies())
-                    finally:
-                        loop.close()
+                    await self.load_policies()
 
             except Exception as e:
                 logger.error(f"Policy refresh error: {e}")
-                time.sleep(30)  # Back off on errors
+                await asyncio.sleep(30)  # Back off on errors
 
     def _should_refresh(self) -> bool:
         """Check if policies should be refreshed."""

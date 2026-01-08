@@ -219,7 +219,6 @@ class TaskMonitor:
             while update_count < max_updates:
                 report = self.get_task_completion_report()
 
-
                 if report["active_tasks"]:
                     for _task in report["active_tasks"][:2]:  # Show first 2 active tasks
                         pass
@@ -234,7 +233,6 @@ class TaskMonitor:
 
         except KeyboardInterrupt:
             pass
-
 
 
 def main():

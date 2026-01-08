@@ -21,7 +21,6 @@ Key Features:
 """
 
 import logging
-import threading
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -213,8 +212,8 @@ class AdaptiveGovernanceEngine:
         self.feedback_window = 3600  # 1 hour learning window
         self.performance_target = 0.95  # 95% accuracy target
 
-        # Background learning thread
-        self.learning_thread: Optional[threading.Thread] = None
+        # Background learning task
+        self.learning_task: Optional[asyncio.Task] = None
         self.running = False
 
         # Drift detection configuration
@@ -304,10 +303,8 @@ class AdaptiveGovernanceEngine:
 
         # Start background learning
         self.running = True
-        self.learning_thread = threading.Thread(target=self._background_learning_loop)
-        self.learning_thread.daemon = True
-        self.learning_thread.start()
-
+        import asyncio
+        self.learning_task = asyncio.create_task(self._background_learning_loop())
         logger.info("Adaptive Governance Engine initialized")
 
     async def evaluate_governance_decision(
@@ -722,11 +719,12 @@ class AdaptiveGovernanceEngine:
                 recent_decisions
             )
 
-    def _background_learning_loop(self) -> None:
-        """Background thread for continuous model improvement."""
+    async def _background_learning_loop(self) -> None:
+        """Background task for continuous model improvement."""
+        import asyncio
         while self.running:
             try:
-                time.sleep(300)  # 5-minute learning cycle
+                await asyncio.sleep(300)  # 5-minute learning cycle
 
                 # Analyze recent performance
                 self._analyze_performance_trends()
@@ -744,7 +742,7 @@ class AdaptiveGovernanceEngine:
 
             except Exception as e:
                 logger.error(f"Background learning error: {e}")
-                time.sleep(60)  # Back off on errors
+                await asyncio.sleep(60)  # Back off on errors
 
     def _run_scheduled_drift_detection(self) -> None:
         """Run drift detection if the scheduled interval has elapsed."""

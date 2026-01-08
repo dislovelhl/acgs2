@@ -17,6 +17,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
+from src.agents.skills import SkillManager
+
 # Core AI Infrastructure Imports
 try:
     from src.core.services.core.constitutional_retrieval_system.document_processor import (
@@ -77,6 +79,9 @@ class AgentConfig:
     constitutional_hash: Optional[str] = None
     dfc_threshold: float = 0.70
 
+    # Skills
+    skills: List[str] = field(default_factory=list)
+
 
 @dataclass
 class AgentResult:
@@ -131,6 +136,10 @@ class BaseGovernanceAgent(ABC):
         self.llm_reasoner: Optional[LLMReasoner] = None
         self.retrieval_engine: Optional[RetrievalEngine] = None
 
+        # Skill Management
+        self.skill_manager = SkillManager()
+        self._skill_system_prompt: Optional[str] = None
+
         logger.info(f"Agent {name} initialized.")
 
     @property
@@ -144,6 +153,13 @@ class BaseGovernanceAgent(ABC):
     def system_prompt(self) -> str:
         """Return agent system prompt."""
         pass
+
+    def get_effective_system_prompt(self) -> str:
+        """Return system prompt augmented with skill instructions."""
+        base_prompt = self.system_prompt
+        if self.config.skills:
+            return self.skill_manager.augment_prompt(base_prompt, self.config.skills)
+        return base_prompt
 
     def register_hook(self, hook_type: str, callback: Callable) -> None:
         """

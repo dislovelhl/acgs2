@@ -8,6 +8,7 @@ impact level, and user roles.
 
 import logging
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 import httpx
 from src.core.shared.audit_client import AuditClient

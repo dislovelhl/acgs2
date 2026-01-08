@@ -107,14 +107,12 @@ class PromptOptimizer:
         current_metrics = None
 
         for iteration in range(max_iterations):
-
             # Evaluate current prompt
             # Bolt Optimization: Avoid re-evaluating if we already have metrics from previous iteration
             if current_metrics:
                 metrics = current_metrics
             else:
                 metrics = self.evaluate_prompt(current_prompt)
-
 
             # Track results
             self.results_history.append(
@@ -246,7 +244,6 @@ def main():
         base_prompt = "Classify the sentiment of: {text}\nSentiment:"
 
         optimizer.optimize(base_prompt)
-
 
         optimizer.export_results("optimization_results.json")
     finally:

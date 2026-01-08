@@ -135,7 +135,6 @@ def main():
 
     all_passed = True
     for _i, test in enumerate(test_cases, 1):
-
         try:
             # Query the allow rule
             result = evaluate_policy(f"{POLICY_PATH}/allow", test["input"])

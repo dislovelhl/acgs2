@@ -203,8 +203,8 @@ class TestJailbreakPrevention:
             # Third request should be blocked
             context3 = {"trace_id": "test3", "user_id": client_id}
             result3 = await guardrails.process_request("test", context3)
-            assert (
-                not result3.get("allowed", True)
+            assert not result3.get(
+                "allowed", True
             ), "Third request should be blocked by rate limiting"
 
             print("✅ Rate limiting working correctly")

@@ -61,9 +61,7 @@ class StringOptimizer:
 
             # Suggest using join() instead of +=
             if " += " in content:
-                content.replace(" += ", " = ").replace(
-                    "str_var", "parts.append(str_var)"
-                )
+                content.replace(" += ", " = ").replace("str_var", "parts.append(str_var)")
                 optimizations.append(
                     {
                         "file": file_path,

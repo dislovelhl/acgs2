@@ -592,7 +592,6 @@ def main():
         else:
             pass
     else:
-
         dashboards.generate_executive_dashboard()
 
 

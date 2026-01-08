@@ -9,7 +9,6 @@ import hashlib
 import json
 import logging
 import os
-import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -222,7 +221,7 @@ class InsightGenerator:
             "data": data,
         }
 
-    def _call_openai_with_retry(
+    async def _call_openai_with_retry(
         self,
         messages: List[Dict[str, str]],
         model: str,
@@ -267,7 +266,8 @@ class InsightGenerator:
                         f"Rate limit hit (attempt {attempt}/{self.max_retries}), "
                         f"retrying in {retry_delay}s..."
                     )
-                    time.sleep(retry_delay)
+                    import asyncio
+                    await asyncio.sleep(retry_delay)
                     retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
                 else:
                     logger.error(f"Rate limit exceeded after {self.max_retries} retries: {e}")
@@ -279,7 +279,8 @@ class InsightGenerator:
                         f"API connection error (attempt {attempt}/{self.max_retries}), "
                         f"retrying in {retry_delay}s..."
                     )
-                    time.sleep(retry_delay)
+                    import asyncio
+                    await asyncio.sleep(retry_delay)
                     retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
                 else:
                     logger.error(f"API connection failed after {self.max_retries} retries: {e}")
@@ -337,7 +338,7 @@ Respond ONLY with the JSON object, no additional text."""
 
         return prompt
 
-    def generate_insight(
+    async def generate_insight(
         self,
         governance_data: Dict[str, Any],
     ) -> InsightGenerationResult:
@@ -396,7 +397,7 @@ Respond ONLY with the JSON object, no additional text."""
             {"role": "user", "content": prompt},
         ]
 
-        response = self._call_openai_with_retry(
+        response = await self._call_openai_with_retry(
             messages=messages,
             model=self.insight_model,
             temperature=self.INSIGHT_TEMPERATURE,
@@ -467,7 +468,7 @@ Respond ONLY with the JSON object, no additional text."""
                 error_message="Failed to parse AI response",
             )
 
-    def process_natural_language_query(
+    async def process_natural_language_query(
         self,
         query: str,
         governance_context: Optional[Dict[str, Any]] = None,
@@ -542,7 +543,7 @@ Respond ONLY with the JSON object."""
             {"role": "user", "content": prompt},
         ]
 
-        response = self._call_openai_with_retry(
+        response = await self._call_openai_with_retry(
             messages=messages,
             model=self.query_model,
             temperature=self.QUERY_TEMPERATURE,
@@ -592,7 +593,7 @@ Respond ONLY with the JSON object."""
                 generated_at=now,
             )
 
-    def generate_report_narrative(
+    async def generate_report_narrative(
         self,
         governance_data: Dict[str, Any],
         include_recommendations: bool = True,
@@ -630,7 +631,7 @@ Write in a professional, executive-friendly tone suitable for a governance repor
                 {"role": "user", "content": prompt},
             ]
 
-            response = self._call_openai_with_retry(
+            response = await self._call_openai_with_retry(
                 messages=messages,
                 model=self.insight_model,
                 temperature=self.INSIGHT_TEMPERATURE,

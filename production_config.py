@@ -604,7 +604,6 @@ def create_production_config() -> ProductionConfig:
 def main():
     """Main deployment function"""
 
-
     # Create production configuration
     config = create_production_config()
 

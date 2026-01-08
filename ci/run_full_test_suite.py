@@ -400,7 +400,6 @@ class FullTestSuiteRunner:
         with open(report_file, "w") as f:
             json.dump(report, f, indent=2)
 
-
         return summary["overall_status"] == "PASSED"
 
 

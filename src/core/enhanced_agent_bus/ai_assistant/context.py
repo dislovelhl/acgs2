@@ -14,6 +14,8 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
+logger = logging.getLogger(__name__)
+
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
@@ -47,8 +49,6 @@ try:
     from src.core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
-
-logger = logging.getLogger(__name__)
 
 
 class ConversationState(Enum):

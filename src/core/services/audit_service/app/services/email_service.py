@@ -13,7 +13,6 @@ import logging
 import os
 import smtplib
 import ssl
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.mime.application import MIMEApplication
@@ -697,7 +696,8 @@ Constitutional Hash: cdd01ef066bc6cf2
                     recipient,
                     attempt + 2,
                 )
-                time.sleep(delay)
+                import asyncio
+                await asyncio.sleep(delay)
 
         # All retries exhausted
         error_msg = (

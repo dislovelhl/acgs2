@@ -151,7 +151,6 @@ class ImportStructureAnalyzer:
                 if file.endswith(".py"):
                     python_files.append(Path(root) / file)
 
-
         # Analyze each file
         for file_path in python_files:
             try:
@@ -270,14 +269,12 @@ class ImportStructureAnalyzer:
         plt.close()
 
 
-
 def main():
     """Main ARCH-001 analysis execution."""
 
     # Analyze the codebase
     analyzer = ImportStructureAnalyzer("acgs2-core")
     results = analyzer.analyze_codebase()
-
 
     # Show metrics
     metrics = results["metrics"]
@@ -296,7 +293,6 @@ def main():
             pass
     else:
         pass
-
 
     # Generate visualization if networkx is available
     try:

@@ -72,7 +72,6 @@ def main():
     planner = RefactoringPlanner(Path("."))
     large_files = planner.analyze_large_files()
 
-
     with open("refactoring_recommendations.md", "w") as f:
         f.write("# ACGS-2 Large File Refactoring Plan\n\n")
         f.write(f"Generated for {len(large_files)} oversized files\n\n")
@@ -80,7 +79,6 @@ def main():
         for i, file_info in enumerate(large_files[:10], 1):  # Top 10
             file_path = file_info["file"]
             relative_path = Path(file_path).relative_to(Path("."))
-
 
             suggestions = planner.suggest_refactoring(file_info)
             if suggestions:
@@ -99,7 +97,6 @@ def main():
                 for suggestion in suggestions:
                     f.write(f"- {suggestion}\n")
                 f.write("\n")
-
 
 
 if __name__ == "__main__":
