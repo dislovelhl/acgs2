@@ -10,7 +10,7 @@ on:
 jobs:
   security-audit:
     name: Security Audit (SCA)
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +35,7 @@ jobs:
   test-python:
     name: Python Tests with Coverage (3.12)
     needs: security-audit
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -69,7 +69,7 @@ jobs:
   test-rust:
     name: Rust Tests (stable)
     needs: security-audit
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
@@ -81,7 +81,7 @@ jobs:
   test-adaptive-learning:
     name: Adaptive Learning Engine Tests (3.12)
     needs: security-audit
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -99,7 +99,7 @@ jobs:
   build-and-scan:
     name: Build and Trivy Scan
     needs: [test-python, test-rust, test-adaptive-learning]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build Optimized Image
@@ -116,7 +116,7 @@ jobs:
   kyverno-test:
     name: Kyverno Policy Test
     needs: build-and-scan
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install Kyverno CLI
@@ -132,7 +132,7 @@ jobs:
   slsa-provenance:
     name: SLSA Provenance (Structure)
     needs: build-and-scan
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Generate SLSA Metadata
         run: |

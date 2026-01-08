@@ -25,7 +25,7 @@ env:
 jobs:
   performance-baseline:
     name: Performance Baseline Check
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -51,7 +51,7 @@ jobs:
 
   rust-extensions:
     name: Build Rust Extensions
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -85,7 +85,7 @@ jobs:
   performance-smoke-test:
     name: Performance Smoke Test
     needs: [performance-baseline, rust-extensions]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     services:
       redis:
         image: redis:7-alpine
@@ -159,7 +159,7 @@ jobs:
   performance-regression:
     name: Performance Regression Gate
     needs: performance-smoke-test
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     services:
       redis:

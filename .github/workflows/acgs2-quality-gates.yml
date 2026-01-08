@@ -20,7 +20,7 @@ on:
 
 jobs:
   quality-gate:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -79,7 +79,7 @@ jobs:
           name: codecov-umbrella
 
   performance-regression:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     needs: quality-gate
     if: github.event.inputs.performance_test == 'true' || github.event_name == 'workflow_dispatch'
     services:
@@ -167,7 +167,7 @@ jobs:
             reports/performance/
 
   chaos-engineering:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     needs: quality-gate
     if: github.event_name == 'schedule' || github.event.inputs.chaos_test == 'true'
     services:

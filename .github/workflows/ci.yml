@@ -16,7 +16,7 @@ env:
 
 jobs:
   policy-compliance:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
           make verify-policy
 
   test-and-validate:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -120,7 +120,7 @@ jobs:
           path: src/core/test_summary.md
 
   performance-monitoring:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     needs: test-and-validate
 
     steps:
@@ -149,7 +149,7 @@ jobs:
           python testing/comprehensive_profiler.py --iterations 100 --baseline 2>&1 | grep -A 10 "Performance Summary"
 
   security-audit:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     needs: test-and-validate
 
     steps:
@@ -166,7 +166,7 @@ jobs:
           VALIDATE_PYTHON_ISORT: false
 
   constitutional-validation:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     needs: [test-and-validate, performance-monitoring]
 
     steps:
@@ -195,7 +195,7 @@ jobs:
           echo "✅ Constitutional validation passed"
 
   deploy-validation:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     needs:
       [
         test-and-validate,

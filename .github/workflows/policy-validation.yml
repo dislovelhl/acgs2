@@ -23,7 +23,7 @@ env:
 jobs:
   validate-policies:
     name: Validate Policy Files
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -183,7 +183,7 @@ jobs:
 
   shadow-mode-execution:
     name: Shadow Mode Policy Execution
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     needs: validate-policies
     if: github.event_name == 'pull_request'
     steps:
@@ -212,7 +212,7 @@ jobs:
 
   policy-bundle-build:
     name: Build Policy Bundle
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     needs: validate-policies
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     steps:
