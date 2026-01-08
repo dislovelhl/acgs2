@@ -31,7 +31,7 @@ jobs:
 
       - name: Cargo Audit
         run: |
-          cargo install cargo-audit
+          cargo install cargo-audit --version 0.21.1
           cd src/core/enhanced_agent_bus/rust && cargo audit
 
   test-python:

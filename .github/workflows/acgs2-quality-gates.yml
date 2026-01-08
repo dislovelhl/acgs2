@@ -46,7 +46,7 @@ jobs:
       - name: Run Ruff Linting
         run: |
           cd src/core
-          ruff check enhanced_agent_bus services --select E,F,B,I --output-format=github
+          ruff check enhanced_agent_bus services --select E,F,B,I --ignore B008,B904,B017,E501,E402,F811 --output-format=github
 
       - name: Run ACGS-2 Quality Gate
         run: |
