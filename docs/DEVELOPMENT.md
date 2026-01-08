@@ -19,7 +19,7 @@ This guide covers local development setup, configuration management, and best pr
 
 ```bash
 # Clone and setup
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 cd ACGS-2
 
 # Copy environment configuration

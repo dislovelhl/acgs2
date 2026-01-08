@@ -5,14 +5,18 @@ This directory contains deployment configurations and artifacts for the ACGS-2 c
 ## Contents
 
 ### Container Configuration
+
 - `Dockerfile.optimized` - Optimized multi-stage Dockerfile for production builds
 - `docker-compose.yml` - Docker Compose configuration for local development and testing
 
 ### Deployment Documentation
+
 - `deployment_guide.md` - Comprehensive deployment guide with step-by-step instructions
 
 ### Helm Charts
+
 Located in `helm/` subdirectory:
+
 - Kubernetes deployment manifests
 - Service configurations
 - ConfigMaps and Secrets templates
@@ -21,25 +25,29 @@ Located in `helm/` subdirectory:
 ## Usage
 
 ### Local Development
+
 ```bash
 # Start all services locally
 docker-compose -f deploy/docker-compose.yml up -d
 
 # Build optimized production image
-docker build -f deploy/Dockerfile.optimized -t acgs2-core:latest .
+docker build -f deploy/Dockerfile.optimized -t acgs-core:latest .
 ```
 
 ### Production Deployment
+
 ```bash
 # Deploy using Helm
-helm install acgs2-core deploy/helm/acgs2/
+helm install acgs-core deploy/helm/acgs2/
 
 # Or apply Kubernetes manifests directly
 kubectl apply -f deploy/helm/acgs2/templates/
 ```
 
 ### Deployment Guide
+
 See `deployment_guide.md` for detailed deployment procedures including:
+
 - Prerequisites and system requirements
 - Environment-specific configurations
 - Troubleshooting common deployment issues
@@ -48,16 +56,19 @@ See `deployment_guide.md` for detailed deployment procedures including:
 ## Deployment Environments
 
 ### Development
+
 - Local Docker Compose setup
 - Minimal resource requirements
 - Full debugging capabilities
 
 ### Staging
+
 - Kubernetes deployment with Helm
 - Intermediate resource allocation
 - Pre-production validation
 
 ### Production
+
 - Optimized Docker images
 - High availability configuration
 - Monitoring and alerting integration
@@ -71,16 +82,19 @@ All deployment configurations must maintain constitutional governance and includ
 ## Maintenance
 
 ### Image Updates
+
 - Regularly rebuild Docker images with security patches
 - Update base images to latest stable versions
 - Optimize image size and build times
 
 ### Configuration Management
+
 - Use Helm values files for environment-specific configurations
 - Implement ConfigMaps for non-sensitive configuration
 - Use Secrets for sensitive data (API keys, certificates)
 
 ### Deployment Automation
+
 - Integrate with CI/CD pipelines for automated deployments
 - Implement blue-green deployment strategies
 - Include health checks and rollback procedures

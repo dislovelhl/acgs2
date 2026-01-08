@@ -249,7 +249,7 @@ stopwords = [
 # 1. .gitleaksignore - For specific fingerprint-based exceptions
 # 2. .pre-commit-config.yaml - For pre-commit hook integration
 # 3. scripts/check-secrets-pre-commit.py - Custom ACGS-2 validation
-# 4. acgs2-core/shared/secrets_manager.py - Source of truth for patterns
+# 4. src/core/shared/secrets_manager.py - Source of truth for patterns
 #
 # Maintenance:
 # - When adding new secrets to CREDENTIAL_PATTERNS in secrets_manager.py,

@@ -13,7 +13,7 @@ These tests verify:
 
 Usage:
     # Run with mock (offline mode - default)
-    pytest acgs2-core/tests/integration/test_kafka.py -v
+    pytest src/core/tests/integration/test_kafka.py -v
 
     # Run against live Kafka service (requires Kafka on localhost:29092)
     SKIP_LIVE_TESTS=false KAFKA_BOOTSTRAP=localhost:29092 pytest -v -m integration
@@ -714,7 +714,7 @@ class TestKafkaLiveService:
     These tests are skipped by default. To run them:
     1. Start Kafka service on localhost:29092
     2. Set SKIP_LIVE_TESTS=false
-    3. Run: pytest acgs2-core/tests/integration/test_kafka.py -v -k "Live"
+    3. Run: pytest src/core/tests/integration/test_kafka.py -v -k "Live"
     """
 
     @pytest.mark.integration

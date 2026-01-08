@@ -290,8 +290,8 @@ denial_reasons contains reason if {
 
 ### Community
 
-- [GitHub Issues](https://github.com/ACGS-Project/ACGS-2/issues) - Bug reports, feature requests
-- [GitHub Discussions](https://github.com/ACGS-Project/ACGS-2/discussions) - Q&A, ideas
+- [GitHub Issues](https://github.com/dislovelhl/acgs2/issues) - Bug reports, feature requests
+- [GitHub Discussions](https://github.com/dislovelhl/acgs2/discussions) - Q&A, ideas
 
 ### Documentation
 

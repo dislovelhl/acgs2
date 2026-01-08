@@ -63,7 +63,7 @@ cp go.mod go.mod.backup
 
 # Update to the correct module path for publishing
 cat > go.mod << EOF
-module github.com/acgs2/sdk/go
+module github.com/dislovelhl/acgs2/src/core/sdk/go
 
 go 1.21
 EOF
@@ -107,8 +107,8 @@ echo "The Go SDK has been tagged and pushed to GitHub."
 echo ""
 echo "Next steps:"
 echo "1. The module will be automatically available via Go module proxy"
-echo "2. Users can install with: go get github.com/acgs2/sdk/go@$VERSION"
-echo "3. Verify: https://pkg.go.dev/github.com/acgs2/sdk/go@$VERSION"
+echo "2. Users can install with: go get github.com/dislovelhl/acgs2/src/core/sdk/go@$VERSION"
+echo "3. Verify: https://pkg.go.dev/github.com/dislovelhl/acgs2/src/core/sdk/go@$VERSION"
 echo ""
 echo "Note: Go modules are distributed via Git tags and the Go module proxy."
 echo "No additional publishing step is required."

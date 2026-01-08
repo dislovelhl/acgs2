@@ -36,11 +36,11 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ACGS-Project/ACGS-2.git",
+    "url": "https://github.com/dislovelhl/acgs2.git",
     "directory": "sdk/typescript"
   },
   "bugs": {
-    "url": "https://github.com/ACGS-Project/ACGS-2/issues"
+    "url": "https://github.com/dislovelhl/acgs2/issues"
   },
   "homepage": "https://docs.acgs2.com",
   "engines": {

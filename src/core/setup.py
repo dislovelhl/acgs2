@@ -7,7 +7,7 @@ Provides the acgs2-policy CLI command for Rego policy validation and testing.
 from setuptools import find_packages, setup
 
 setup(
-    name="acgs2-core",
+    name="src-core",
     version="0.1.0",
     description="ACGS-2 Core - Policy validation and testing tools",
     author="ACGS2 Team",

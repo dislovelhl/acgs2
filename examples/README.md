@@ -396,7 +396,7 @@ Update `README.md` with:
 
 Found an issue or have a suggestion? We'd love to hear from you!
 
-- [Open an issue](https://github.com/ACGS-Project/ACGS-2/issues/new?labels=examples)
+- [Open an issue](https://github.com/dislovelhl/acgs2/issues/new?labels=examples)
 - [Submit feedback](../docs/feedback.md)
 
 ---

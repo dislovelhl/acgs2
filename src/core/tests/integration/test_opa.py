@@ -13,7 +13,7 @@ These tests verify:
 
 Usage:
     # Run with mock (offline mode - default)
-    pytest acgs2-core/tests/integration/test_opa.py -v
+    pytest src/core/tests/integration/test_opa.py -v
 
     # Run against live OPA service (requires OPA on localhost:8181)
     SKIP_LIVE_TESTS=false OPA_URL=http://localhost:8181 pytest -v -m integration
@@ -650,7 +650,7 @@ class TestOPALiveService:
     These tests are skipped by default. To run them:
     1. Start the OPA service on localhost:8181
     2. Set SKIP_LIVE_TESTS=false
-    3. Run: pytest acgs2-core/tests/integration/test_opa.py -v -k "Live"
+    3. Run: pytest src/core/tests/integration/test_opa.py -v -k "Live"
     """
 
     @pytest.mark.integration

@@ -1,6 +1,6 @@
 # ACGS-2 API Reference (v2.3.0)
 
-> **Constitutional Hash**: [`cdd01ef066bc6cf2`](https://github.com/ACGS-Project/ACGS-2/blob/main/VERSION) > **Version**: 2.3.0 (Phase 3.6 Complete)
+> **Constitutional Hash**: [`cdd01ef066bc6cf2`](https://github.com/dislovelhl/acgs2/blob/main/VERSION) > **Version**: 2.3.0 (Phase 3.6 Complete)
 > **Tests**: 99.8% Pass | **Coverage**: 100%
 > **Last Updated**: 2025-12-31
 

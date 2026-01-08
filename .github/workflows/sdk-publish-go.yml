@@ -73,7 +73,7 @@ jobs:
         run: |
           # Verify the module can be fetched from proxy
           go clean -modcache
-          go mod download github.com/acgs2/sdk/go@${{ github.event.release.tag_name || inputs.version }}
+          go mod download github.com/dislovelhl/acgs2/src/core/sdk/go@${{ github.event.release.tag_name || inputs.version }}
 
       - name: Create GitHub Release Notes
         if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')

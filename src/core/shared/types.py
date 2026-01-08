@@ -1,7 +1,7 @@
 """
-Type Aliases for ACGS2 Core Shared Modules
+Type Aliases for Core Shared Modules
 
-This module defines common type aliases used throughout acgs2-core to replace
+This module defines common type aliases used throughout the core package to replace
 excessive 'Any' usage with more specific, documented types.
 
 Usage Guidelines:

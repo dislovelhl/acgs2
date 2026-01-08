@@ -21,6 +21,13 @@ docs = [
     "mkdocs>=1.5.0",
     "mkdocs-material>=9.4.0",
 ]
+vector = [
+    # Vector database clients for Constitutional Retrieval System
+    "qdrant-client>=1.12.0",  # HNSW index with scalar/product quantization
+    "pinecone>=5.0.0",  # Serverless/pod-based vector search
+    "weaviate-client>=4.9.0",  # Schema-aware vector search with HNSW
+    "numpy>=1.26.0",  # Vector operations
+]
 cli = [
     "typer>=0.9.0",
     "rich>=13.0.0",  # Required for CLI output formatting
@@ -91,7 +98,7 @@ pythonpath = [
 ]
 
 [tool.coverage.run]
-# Migrated from acgs2-core/.coveragerc - Constitutional Hash: cdd01ef066bc6cf2
+# Migrated from src/core/.coveragerc - Constitutional Hash: cdd01ef066bc6cf2
 branch = true
 parallel = true
 source = ["src"]

@@ -1,6 +1,6 @@
 # ACGS-2 Enterprise TypeScript SDK
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/ACGS-Project/ACGS-2)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/dislovelhl/acgs2)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.3.0-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
@@ -346,7 +346,7 @@ We welcome contributions! Please see our [Contributing Guide](../CONTRIBUTING.md
 ### Development Setup
 
 ```bash
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 cd ACGS-2/sdk/typescript
 npm install
 npm run dev
@@ -377,8 +377,8 @@ For enterprise support, custom integrations, or professional services:
 
 - [Documentation](https://docs.acgs2.com)
 - [API Reference](https://docs.acgs2.com/sdk)
-- [GitHub Repository](https://github.com/ACGS-Project/ACGS-2)
-- [Issue Tracker](https://github.com/ACGS-Project/ACGS-2/issues)
+- [GitHub Repository](https://github.com/dislovelhl/acgs2)
+- [Issue Tracker](https://github.com/dislovelhl/acgs2/issues)
 - [Community Forum](https://community.acgs2.com)
 - [Blog](https://blog.acgs2.com)
 

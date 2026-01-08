@@ -20,7 +20,7 @@ We need to determine if GPU acceleration is beneficial for our ML models. Our cu
 - Must preserve constitutional compliance (hash: cdd01ef066bc6cf2)
 
 ## Start With
-Create a profiling module at `acgs2-core/enhanced_agent_bus/profiling/model_profiler.py` that:
+Create a profiling module at `src/core/enhanced_agent_bus/profiling/model_profiler.py` that:
 1. Wraps model inference calls with timing
 2. Tracks CPU usage during inference
 3. Identifies if models are compute-bound or I/O-bound

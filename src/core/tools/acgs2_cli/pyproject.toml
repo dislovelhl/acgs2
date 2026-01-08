@@ -56,8 +56,8 @@ acgs2_cli = "acgs2_cli.main:cli"
 [project.urls]
 Homepage = "https://acgs.io"
 Documentation = "https://docs.acgs.io/cli"
-Repository = "https://github.com/acgs/acgs2"
-Changelog = "https://github.com/acgs/acgs2/blob/main/tools/acgs2_cli/CHANGELOG.md"
+Repository = "https://github.com/dislovelhl/acgs2"
+Changelog = "https://github.com/dislovelhl/acgs2/blob/main/tools/acgs2_cli/CHANGELOG.md"
 
 [tool.hatch.build.targets.sdist]
 include = [

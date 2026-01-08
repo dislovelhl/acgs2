@@ -423,7 +423,7 @@ We welcome contributions! Please see our [Contributing Guide](../CONTRIBUTING.md
 ### Development Setup
 
 ```bash
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 cd ACGS-2/sdk/go
 
 # Install dependencies
@@ -472,8 +472,8 @@ For enterprise support, custom integrations, or professional services:
 
 - [Documentation](https://docs.acgs2.com/go-sdk)
 - [API Reference](https://godoc.org/github.com/acgs-project/acgs2-go-sdk)
-- [GitHub Repository](https://github.com/ACGS-Project/ACGS-2)
-- [Issue Tracker](https://github.com/ACGS-Project/ACGS-2/issues)
+- [GitHub Repository](https://github.com/dislovelhl/acgs2)
+- [Issue Tracker](https://github.com/dislovelhl/acgs2/issues)
 - [Community Forum](https://community.acgs2.com)
 - [Blog](https://blog.acgs2.com)
 

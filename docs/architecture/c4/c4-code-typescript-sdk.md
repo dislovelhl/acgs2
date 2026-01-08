@@ -898,7 +898,7 @@ flowchart TD
 - **Main Entry**: dist/index.js
 - **Module Entry**: dist/index.mjs
 - **Types Entry**: dist/index.d.ts
-- **Repository**: https://github.com/ACGS-Project/ACGS-2.git (sdk/typescript)
+- **Repository**: https://github.com/dislovelhl/acgs2.git (sdk/typescript)
 - **License**: Apache-2.0
 
 **Exports Field**:

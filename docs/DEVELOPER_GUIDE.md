@@ -1,7 +1,6 @@
 # ACGS-2 Developer Guide
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 3.0.0
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 3.0.0
 > **Last Updated**: 2026-01-04
 > **Status**: Production Ready
 
@@ -33,7 +32,7 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 cd ACGS-2
 
 # Copy environment configuration
@@ -153,21 +152,21 @@ await bus.stop()
 
 #### Message Types
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `COMMAND` | Direct agent command | Initiate governance actions |
-| `QUERY` | Information request | Read-only data retrieval |
-| `EVENT` | Event notification | Status updates, alerts |
-| `GOVERNANCE_REQUEST` | Governance action | Policy changes, votes |
-| `BROADCAST` | Multi-agent message | System-wide notifications |
+| Type                 | Description          | Use Case                    |
+| -------------------- | -------------------- | --------------------------- |
+| `COMMAND`            | Direct agent command | Initiate governance actions |
+| `QUERY`              | Information request  | Read-only data retrieval    |
+| `EVENT`              | Event notification   | Status updates, alerts      |
+| `GOVERNANCE_REQUEST` | Governance action    | Policy changes, votes       |
+| `BROADCAST`          | Multi-agent message  | System-wide notifications   |
 
 #### MACI Roles
 
-| Role | Allowed Actions | Prohibited Actions |
-|------|----------------|-------------------|
-| **EXECUTIVE** | PROPOSE, SYNTHESIZE, QUERY | VALIDATE, AUDIT, EXTRACT_RULES |
-| **LEGISLATIVE** | EXTRACT_RULES, SYNTHESIZE, QUERY | PROPOSE, VALIDATE, AUDIT |
-| **JUDICIAL** | VALIDATE, AUDIT, QUERY | PROPOSE, EXTRACT_RULES, SYNTHESIZE |
+| Role            | Allowed Actions                  | Prohibited Actions                 |
+| --------------- | -------------------------------- | ---------------------------------- |
+| **EXECUTIVE**   | PROPOSE, SYNTHESIZE, QUERY       | VALIDATE, AUDIT, EXTRACT_RULES     |
+| **LEGISLATIVE** | EXTRACT_RULES, SYNTHESIZE, QUERY | PROPOSE, VALIDATE, AUDIT           |
+| **JUDICIAL**    | VALIDATE, AUDIT, QUERY           | PROPOSE, EXTRACT_RULES, SYNTHESIZE |
 
 ### Policy Registry
 
@@ -368,22 +367,22 @@ audit_logs = await client.audit.query(
 #### TypeScript SDK
 
 ```typescript
-import { ACGS2Client } from '@acgs2/sdk';
+import { ACGS2Client } from "@acgs2/sdk";
 
 const client = new ACGS2Client({
-  baseURL: 'http://localhost:8000',
-  apiKey: 'your-api-key'
+  baseURL: "http://localhost:8000",
+  apiKey: "your-api-key",
 });
 
 // Policy operations
 const policies = await client.policies.list();
-const policy = await client.policies.get('P001');
+const policy = await client.policies.get("P001");
 ```
 
 #### Go SDK
 
 ```go
-import "github.com/acgs2/sdk-go"
+import "github.com/dislovelhl/acgs2/sdk-go"
 
 client := acgs2.NewClient(
     acgs2.WithBaseURL("http://localhost:8000"),
@@ -585,8 +584,8 @@ kubectl apply -f ../../gitops/argocd/applications/src/core.yaml
 
 ### Support
 
-- **Issues**: [GitHub Issues](https://github.com/ACGS-Project/ACGS-2/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/ACGS-Project/ACGS-2/discussions)
+- **Issues**: [GitHub Issues](https://github.com/dislovelhl/acgs2/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/dislovelhl/acgs2/discussions)
 - **Enterprise Support**: enterprise@acgs2.org
 
 ---

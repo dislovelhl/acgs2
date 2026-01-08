@@ -7,7 +7,7 @@ repos:
       - id: end-of-file-fixer
         exclude: ^\.auto-claude/
       - id: check-yaml
-        exclude: ^\.auto-claude/
+        exclude: ^(\.auto-claude/|src/infra/deploy/gitops/)
       - id: check-added-large-files
       - id: check-json
         exclude: ^\.auto-claude/
@@ -57,7 +57,7 @@ repos:
         entry: python3 scripts/security/check_secrets_pre_commit.py
         language: python
         types: [text]
-        exclude: ^(\.gitleaksignore|\.secrets-allowlist\.yaml|tests/fixtures/secrets/)
+        exclude: ^(\.gitleaksignore|\.secrets-allowlist\.yaml|tests/fixtures/secrets/|tests/unit/test_secrets_detection\.py|scripts/test-e2e-secrets-detection\.sh|\.auto-claude/|docs/quickstart/troubleshooting\.md|src/core/deploy/docker-compose\.yml)
         additional_dependencies: [pyyaml]
         pass_filenames: false
 

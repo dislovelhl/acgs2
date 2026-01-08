@@ -13,7 +13,7 @@ These tests verify:
 
 Usage:
     # Run with mock (offline mode - default)
-    pytest acgs2-core/tests/integration/test_redis.py -v
+    pytest src/core/tests/integration/test_redis.py -v
 
     # Run against live Redis service (requires Redis on localhost:6379)
     SKIP_LIVE_TESTS=false REDIS_URL=redis://localhost:6379/0 pytest -v -m integration
@@ -682,7 +682,7 @@ class TestRedisLiveService:
     These tests are skipped by default. To run them:
     1. Start Redis service on localhost:6379
     2. Set SKIP_LIVE_TESTS=false
-    3. Run: pytest acgs2-core/tests/integration/test_redis.py -v -k "Live"
+    3. Run: pytest src/core/tests/integration/test_redis.py -v -k "Live"
     """
 
     @pytest.mark.integration

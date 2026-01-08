@@ -25,7 +25,7 @@ Choose the method that works best for you:
 
 ## Quick Feedback Form
 
-Copy this template, fill it out, and submit via [GitHub Issue](https://github.com/ACGS-Project/ACGS-2/issues/new?template=feedback.md) or email to docs@acgs2.org:
+Copy this template, fill it out, and submit via [GitHub Issue](https://github.com/dislovelhl/acgs2/issues/new?template=feedback.md) or email to docs@acgs2.org:
 
 ```markdown
 ## ACGS-2 Quickstart Feedback
@@ -120,7 +120,7 @@ Quickstart Version: 1.0.0
 
 For detailed feedback with full GitHub integration, use our issue template:
 
-**[Create Feedback Issue](https://github.com/ACGS-Project/ACGS-2/issues/new?template=quickstart-feedback.yml&title=%5BFeedback%5D+Quickstart+Experience)**
+**[Create Feedback Issue](https://github.com/dislovelhl/acgs2/issues/new?template=quickstart-feedback.yml&title=%5BFeedback%5D+Quickstart+Experience)**
 
 Or manually create an issue with these labels:
 - `documentation`

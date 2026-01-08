@@ -11,7 +11,7 @@ Requirements:
 Manual Browser Verification Steps (for human QA):
 =================================================
 1. Start OPA server: docker run -d -p 8181:8181 openpolicyagent/opa run --server
-2. Start playground backend: cd acgs2-core/playground && uvicorn app:app --port 8080
+2. Start playground backend: cd src/core/playground && uvicorn app:app --port 8080
 3. Open http://localhost:8080/playground in browser
 4. Load example policy from dropdown
 5. Click 'Evaluate' button
@@ -70,7 +70,7 @@ _skip_reason = (
     "OPA and Playground servers must be running.\n"
     "Start with:\n"
     "  1. docker run -d -p 8181:8181 openpolicyagent/opa run --server\n"
-    "  2. cd acgs2-core/playground && uvicorn app:app --port 8080"
+    "  2. cd src/core/playground && uvicorn app:app --port 8080"
 )
 
 
@@ -614,7 +614,7 @@ MANUAL BROWSER VERIFICATION CHECKLIST
 
 Prerequisites:
 1. OPA server running: docker run -d -p 8181:8181 openpolicyagent/opa run --server
-2. Playground backend running: cd acgs2-core/playground && uvicorn app:app --port 8080
+2. Playground backend running: cd src/core/playground && uvicorn app:app --port 8080
 3. Browser with DevTools open (F12)
 
 Test Steps:

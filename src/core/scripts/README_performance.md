@@ -14,13 +14,13 @@ All performance benchmarks are conducted under constitutional governance, ensuri
 
 Based on architecture review and system specifications:
 
-| Metric | Target | Current Status | Validation Method |
-|--------|--------|----------------|-------------------|
-| P99 Latency | 0.278ms | 0.328ms (94% of target) | Async load testing |
-| Throughput | 6,310 RPS | 2,605 RPS (41% of target) | Concurrent request simulation |
-| Cache Hit Rate | 95% | 95% (100% of target) | Metrics endpoint analysis |
-| Memory Usage | < 4MB per pod | < 4MB (100% of target) | Prometheus metrics |
-| CPU Utilization | < 75% | 73.9% (99% of target) | System monitoring |
+| Metric          | Target        | Current Status            | Validation Method             |
+| --------------- | ------------- | ------------------------- | ----------------------------- |
+| P99 Latency     | 0.278ms       | 0.328ms (94% of target)   | Async load testing            |
+| Throughput      | 6,310 RPS     | 2,605 RPS (41% of target) | Concurrent request simulation |
+| Cache Hit Rate  | 95%           | 95% (100% of target)      | Metrics endpoint analysis     |
+| Memory Usage    | < 4MB per pod | < 4MB (100% of target)    | Prometheus metrics            |
+| CPU Utilization | < 75%         | 73.9% (99% of target)     | System monitoring             |
 
 ## Benchmark Scripts
 
@@ -46,6 +46,7 @@ python performance_benchmark.py --url http://your-service:8000 --duration 120 --
 #### Output
 
 Generates `performance_benchmark_report.json` with:
+
 - Detailed metrics for each test phase
 - Pass/fail status against targets
 - Performance recommendations
@@ -65,12 +66,14 @@ Generates `performance_benchmark_report.json` with:
 ### Execution Steps
 
 1. **Start ACGS-2 Service**:
+
    ```bash
-   cd acgs2-core
+   cd src/core
    python -m enhanced_agent_bus.agent_bus
    ```
 
 2. **Run Benchmark**:
+
    ```bash
    cd scripts
    python performance_benchmark.py
@@ -84,25 +87,30 @@ Generates `performance_benchmark_report.json` with:
 ## Benchmark Phases
 
 ### Phase 1: Warm-up
+
 - 50 requests to stabilize system caches
 - Validates basic service availability
 
 ### Phase 2: Latency Benchmark
+
 - 100 requests under low concurrency
 - Measures P50, P95, P99 response times
 - Validates sub-millisecond performance claims
 
 ### Phase 3: Throughput Benchmark
+
 - Ramp-up testing from 1K to target RPS
 - Finds maximum sustainable throughput
 - Measures success rates under load
 
 ### Phase 4: Sustained Load
+
 - 30-second continuous load test
 - Validates long-term stability
 - Checks for memory leaks or performance degradation
 
 ### Phase 5: Resource Validation
+
 - Queries Prometheus metrics endpoint
 - Validates memory and CPU targets
 - Ensures efficient resource utilization
@@ -119,11 +127,13 @@ Generates `performance_benchmark_report.json` with:
 ### Common Issues
 
 1. **High Latency**:
+
    - Network configuration issues
    - Database connection pooling problems
    - Inefficient async/await patterns
 
 2. **Low Throughput**:
+
    - Insufficient worker processes
    - Database connection limits
    - Message queue backlogs
@@ -180,7 +190,7 @@ All performance optimizations must maintain constitutional compliance:
 
 ```bash
 # Cron job for daily performance validation
-0 2 * * * /path/to/acgs2-core/scripts/performance_benchmark.py --quiet --report-only
+0 2 * * * /path/to/src/core/scripts/performance_benchmark.py --quiet --report-only
 ```
 
 ## Troubleshooting

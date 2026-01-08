@@ -595,7 +595,7 @@ const client = createACGS2Client({
 
 - **Documentation**: [docs.acgs2.com](https://docs.acgs2.com)
 - **Forum**: [community.acgs2.com](https://community.acgs2.com)
-- **GitHub**: [github.com/ACGS-Project/ACGS-2](https://github.com/ACGS-Project/ACGS-2)
+- **GitHub**: [github.com/dislovelhl/acgs2](https://github.com/dislovelhl/acgs2)
 
 ### Professional Services
 

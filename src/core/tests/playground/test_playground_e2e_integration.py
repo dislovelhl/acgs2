@@ -56,7 +56,7 @@ _opa_skip_reason = (
 # Skip message for full E2E tests (requires both OPA and playground)
 _full_skip_reason = (
     f"Playground backend not available at {PLAYGROUND_BACKEND_URL}. "
-    "Start with: cd acgs2-core/playground && uvicorn app:app --port 8080"
+    "Start with: cd src/core/playground && uvicorn app:app --port 8080"
 )
 
 

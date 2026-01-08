@@ -157,7 +157,7 @@ This directory contains scripts and production guidelines for ACGS-2 tutorial vi
 
    Resources:
    - Written Guide: [link to docs]
-   - GitHub Repository: https://github.com/ACGS-Project/ACGS-2
+   - GitHub Repository: https://github.com/dislovelhl/acgs2
    - Feedback Form: [link to feedback]
 
    Constitutional Hash: cdd01ef066bc6cf2

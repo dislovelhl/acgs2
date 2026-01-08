@@ -69,10 +69,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/acgs/acgs2"
+Homepage = "https://github.com/dislovelhl/acgs2"
 Documentation = "https://docs.acgs.io/integrations/nemo"
-Repository = "https://github.com/acgs/acgs2"
-Issues = "https://github.com/acgs/acgs2/issues"
+Repository = "https://github.com/dislovelhl/acgs2"
+Issues = "https://github.com/dislovelhl/acgs2/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]

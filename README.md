@@ -4,8 +4,8 @@
 > **Status**: Production Ready with Enterprise Security
 > **Architecture**: 3-Service Consolidation (70% complexity reduction)
 
-[![Tests](https://img.shields.io/badge/Tests-99.8%25-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/acgs2-ci-cd.yml)
-[![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/acgs2-ci-cd.yml)
+[![Tests](https://img.shields.io/badge/Tests-99.8%25-brightgreen?style=flat-square)](https://github.com/dislovelhl/acgs2/actions/workflows/acgs2-ci-cd.yml)
+[![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen?style=flat-square)](https://github.com/dislovelhl/acgs2/actions/workflows/acgs2-ci-cd.yml)
 [![Security](https://img.shields.io/badge/Security-Zero--Trust-red?style=flat-square)]()
 [![Performance](https://img.shields.io/badge/P99-0.328ms-orange?style=flat-square)]()
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
@@ -183,7 +183,7 @@ kubectl get pods -n acgs2-system
 
 ```bash
 # Clone repository
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 cd ACGS-2
 
 # Copy environment configuration (centralized config system)
@@ -211,7 +211,7 @@ See [Development Guide](./docs/DEVELOPMENT.md) for complete configuration option
 
 ```bash
 # Clone and setup
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 cd ACGS-2/src/core
 
 # Create virtual environment
@@ -406,7 +406,7 @@ For comprehensive testing documentation, see the [Testing Guide](./docs/testing-
 
 - **📧 Enterprise Support**: enterprise@acgs2.org
 - **💬 Community Forum**: forum.acgs2.org
-- **🐛 Issue Tracking**: github.com/ACGS-Project/ACGS-2/issues
+- **🐛 Issue Tracking**: github.com/dislovelhl/acgs2/issues
 - **📝 Documentation Issues**: github.com/ACGS-Project/docs/issues
 
 ## 🤝 Contributing

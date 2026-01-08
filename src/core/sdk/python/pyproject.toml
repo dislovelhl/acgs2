@@ -56,8 +56,8 @@ dev = [
 [project.urls]
 Homepage = "https://acgs.io"
 Documentation = "https://docs.acgs.io/sdk/python"
-Repository = "https://github.com/acgs/acgs2"
-Changelog = "https://github.com/acgs/acgs2/blob/main/sdk/python/CHANGELOG.md"
+Repository = "https://github.com/dislovelhl/acgs2"
+Changelog = "https://github.com/dislovelhl/acgs2/blob/main/sdk/python/CHANGELOG.md"
 
 [tool.hatch.build.targets.sdist]
 include = [

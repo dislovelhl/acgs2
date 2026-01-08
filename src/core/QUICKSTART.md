@@ -17,7 +17,7 @@ Before you begin, ensure you have:
 
 ```bash
 # Clone the repository
-git clone https://github.com/acgs2/ACGS-PGP2.git
+git clone https://github.com/dislovelhl/acgs2/ACGS-PGP2.git
 cd ACGS-PGP2
 
 # Start the complete development environment
@@ -36,7 +36,7 @@ That's it! ACGS-2 is now running with all services operational.
 
 ```bash
 # Clone and setup
-git clone https://github.com/acgs2/ACGS-PGP2.git
+git clone https://github.com/dislovelhl/acgs2/ACGS-PGP2.git
 cd ACGS-PGP2
 
 # Install dependencies
@@ -286,7 +286,7 @@ open htmlcov/index.html
 
 - **Documentation**: https://docs.acgs2.dev
 - **Community**: https://community.acgs2.dev
-- **Issues**: https://github.com/acgs2/acgs2-core/issues
+- **Issues**: https://github.com/dislovemartin/ACGS-PGP2/issues
 - **Slack**: https://acgs2.dev/slack
 
 ## ✅ Success Checklist

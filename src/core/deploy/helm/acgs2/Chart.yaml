@@ -12,9 +12,9 @@ keywords:
   - enterprise
   - kubernetes
 
-home: https://github.com/ACGS-Project/ACGS-2
+home: https://github.com/dislovelhl/acgs2
 sources:
-  - https://github.com/ACGS-Project/ACGS-2
+  - https://github.com/dislovelhl/acgs2
 
 maintainers:
   - name: ACGS-2 Team

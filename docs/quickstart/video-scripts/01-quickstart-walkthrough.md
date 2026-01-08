@@ -87,7 +87,7 @@ python3 --version
 **ACTION**: Type and execute:
 
 ```bash
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 cd ACGS-2
 ls -la
 ```

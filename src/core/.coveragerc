@@ -3,7 +3,7 @@
 
 [run]
 source =
-    acgs2-core
+    src/core
     acgs2-observability
     acgs2-research
 branch = True

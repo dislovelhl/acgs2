@@ -7,8 +7,8 @@
 > **Architecture**: 3-Service Consolidation (70% complexity reduction)
 > **Last Updated**: 2025-01-01
 
-[![Tests](https://img.shields.io/badge/Tests-99.8%25-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/acgs2-ci-cd.yml)
-[![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/acgs2-ci-cd.yml)
+[![Tests](https://img.shields.io/badge/Tests-99.8%25-brightgreen?style=flat-square)](https://github.com/dislovelhl/acgs2/actions/workflows/acgs2-ci-cd.yml)
+[![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen?style=flat-square)](https://github.com/dislovelhl/acgs2/actions/workflows/acgs2-ci-cd.yml)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?style=flat-square)](https://www.python.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.75+-orange?style=flat-square)](https://www.rust-lang.org/)
@@ -164,7 +164,7 @@ helm repo update
 
 # Deploy with GitOps (Recommended)
 kubectl create namespace acgs2-system
-kubectl apply -f acgs2-infra/deploy/gitops/argocd/applications/acgs2-core.yaml
+kubectl apply -f acgs2-infra/deploy/gitops/argocd/applications/acgs-core.yaml
 
 # Or deploy directly
 helm install acgs2 acgs2/acgs2 \
@@ -175,7 +175,7 @@ helm install acgs2 acgs2/acgs2 \
 
 # Verify deployment
 kubectl get pods -n acgs2-system
-kubectl logs -f deployment/acgs2-core-governance -n acgs2-system
+kubectl logs -f deployment/acgs-core-governance -n acgs2-system
 ```
 
 ### 4. Infrastructure Setup (AWS/GCP)
@@ -192,7 +192,7 @@ terraform plan -var-file=production.tfvars
 terraform apply -var-file=production.tfvars
 
 # Deploy application via GitOps
-kubectl apply -f ../../gitops/argocd/applications/acgs2-core.yaml
+kubectl apply -f ../../gitops/argocd/applications/acgs-core.yaml
 ```
 
 ## 🔧 Deployment Options
@@ -336,7 +336,7 @@ ACGS-2 features an intelligent governance system that learns and improves over t
 
 ```bash
 # Monitor governance performance
-kubectl exec -it deployment/acgs2-core-governance -n acgs2-system -- python -c "
+kubectl exec -it deployment/acgs-core-governance -n acgs2-system -- python -c "
 from enhanced_agent_bus.adaptive_governance import get_adaptive_governance
 gov = get_adaptive_governance()
 print(f'Compliance Rate: {gov.metrics.constitutional_compliance_rate:.3f}')
@@ -420,7 +420,7 @@ python -m pytest src/core/enhanced_agent_bus/tests/test_chaos_framework.py -v
 
 - **📧 Enterprise Support**: enterprise@acgs2.org
 - **💬 Community Forum**: forum.acgs2.org
-- **🐛 Issue Tracking**: github.com/ACGS-Project/ACGS-2/issues
+- **🐛 Issue Tracking**: github.com/dislovelhl/acgs2/issues
 - **📝 Documentation Issues**: github.com/ACGS-Project/docs/issues
 
 ## 🔄 Migration & Upgrades
@@ -435,7 +435,7 @@ ACGS-2 provides automated migration tools:
 
 # Validate migration
 kubectl get pods -n acgs2-system
-kubectl logs -f deployment/acgs2-core-governance -n acgs2-system
+kubectl logs -f deployment/acgs-core-governance -n acgs2-system
 
 # Rollback if needed
 ./src/infra/scripts/consolidate-services.sh rollback
@@ -499,6 +499,6 @@ ACGS-2 is built on the shoulders of giants in the AI safety and distributed syst
 3. CI: [`.github/workflows/acgs2-ci-cd.yml`](.github/workflows/acgs2-ci-cd.yml)
 4. Dependabot 自动更新依赖
 
-问题: [GitHub Issues](https://github.com/ACGS-Project/ACGS-2/issues)
+问题: [GitHub Issues](https://github.com/dislovelhl/acgs2/issues)
 
 **MIT 许可证** © 2025 ACGS 项目

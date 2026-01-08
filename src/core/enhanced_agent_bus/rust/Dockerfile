@@ -71,7 +71,7 @@ LABEL org.opencontainers.image.title="ACGS-2 Enhanced Agent Bus" \
       org.opencontainers.image.description="Constitutional AI governance with message bus" \
       org.opencontainers.image.vendor="ACGS-2" \
       org.opencontainers.image.version="2.0.0" \
-      org.opencontainers.image.source="https://github.com/acgs2/enhanced-agent-bus" \
+      org.opencontainers.image.source="https://github.com/dislovelhl/acgs2/enhanced-agent-bus" \
       acgs.io/constitutional-hash="cdd01ef066bc6cf2"
 
 # Security: Create non-root user and group

@@ -206,5 +206,5 @@ All CLI operations are constitutionally compliant with hash `cdd01ef066bc6cf2`. 
 ## Support
 
 - **Documentation**: https://docs.acgs.io/cli
-- **Issues**: https://github.com/acgs/acgs2/issues
+- **Issues**: https://github.com/dislovelhl/acgs2/issues
 - **Constitutional Hash**: `cdd01ef066bc6cf2`

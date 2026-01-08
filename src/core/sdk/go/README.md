@@ -7,7 +7,7 @@ Official Go SDK for the AI Constitutional Governance System (ACGS-2).
 ## Installation
 
 ```bash
-go get github.com/acgs2/sdk/go
+go get github.com/dislovelhl/acgs2/src/core/sdk/go
 ```
 
 ## Quick Start
@@ -20,7 +20,7 @@ import (
     "log"
     "time"
 
-    sdk "github.com/acgs2/sdk/go"
+    sdk "github.com/dislovelhl/acgs2/src/core/sdk/go"
 )
 
 func main() {
@@ -164,5 +164,5 @@ Apache-2.0
 
 - [Documentation](https://docs.acgs.io/sdk/go)
 - [API Reference](https://api.acgs.io/docs)
-- [GitHub](https://github.com/acgs/acgs2)
-- [Go Reference](https://pkg.go.dev/github.com/acgs2/sdk/go)
+- [GitHub](https://github.com/dislovelhl/acgs2)
+- [Go Reference](https://pkg.go.dev/github.com/dislovelhl/acgs2/src/core/sdk/go)

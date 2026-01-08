@@ -1,7 +1,6 @@
 # ACGS-2 Integration Guide
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 3.0.0
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 3.0.0
 > **Last Updated**: 2026-01-04
 
 ## Table of Contents
@@ -130,24 +129,24 @@ npm install @acgs2/sdk
 #### Basic Usage
 
 ```typescript
-import { ACGS2Client } from '@acgs2/sdk';
+import { ACGS2Client } from "@acgs2/sdk";
 
 // Initialize client
 const client = new ACGS2Client({
-  baseURL: 'http://localhost:8000',
-  apiKey: 'your-api-key',
-  tenantId: 'tenant-123'
+  baseURL: "http://localhost:8000",
+  apiKey: "your-api-key",
+  tenantId: "tenant-123",
 });
 
 // Policy operations
 const policies = await client.policies.list();
-const policy = await client.policies.get('policy-001');
+const policy = await client.policies.get("policy-001");
 
 // Create policy
 const newPolicy = await client.policies.create({
-  name: 'my-policy',
-  content: { rules: ['rule1', 'rule2'] },
-  format: 'json'
+  name: "my-policy",
+  content: { rules: ["rule1", "rule2"] },
+  format: "json",
 });
 ```
 
@@ -156,7 +155,7 @@ const newPolicy = await client.policies.create({
 #### Installation
 
 ```bash
-go get github.com/acgs2/sdk-go
+go get github.com/dislovelhl/acgs2/sdk-go
 ```
 
 #### Basic Usage
@@ -166,7 +165,7 @@ package main
 
 import (
     "context"
-    "github.com/acgs2/sdk-go"
+    "github.com/dislovelhl/acgs2/sdk-go"
 )
 
 func main() {
@@ -357,14 +356,14 @@ for message in consumer:
 
 ### Event Types
 
-| Topic | Event Type | Description |
-|-------|------------|-------------|
-| `acgs2-policy-updates` | `policy.created` | New policy created |
-| `acgs2-policy-updates` | `policy.updated` | Policy updated |
-| `acgs2-policy-updates` | `policy.activated` | Policy version activated |
-| `acgs2-audit-events` | `audit.logged` | New audit log entry |
-| `acgs2-governance-events` | `approval.requested` | HITL approval requested |
-| `acgs2-governance-events` | `approval.completed` | HITL approval completed |
+| Topic                     | Event Type           | Description              |
+| ------------------------- | -------------------- | ------------------------ |
+| `acgs2-policy-updates`    | `policy.created`     | New policy created       |
+| `acgs2-policy-updates`    | `policy.updated`     | Policy updated           |
+| `acgs2-policy-updates`    | `policy.activated`   | Policy version activated |
+| `acgs2-audit-events`      | `audit.logged`       | New audit log entry      |
+| `acgs2-governance-events` | `approval.requested` | HITL approval requested  |
+| `acgs2-governance-events` | `approval.completed` | HITL approval completed  |
 
 ---
 

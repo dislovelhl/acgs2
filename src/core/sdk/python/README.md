@@ -332,5 +332,5 @@ Apache-2.0
 
 - [Documentation](https://docs.acgs.io/sdk/python)
 - [API Reference](https://api.acgs.io/docs)
-- [GitHub](https://github.com/acgs/acgs2)
+- [GitHub](https://github.com/dislovelhl/acgs2)
 - [PyPI](https://pypi.org/project/acgs2-sdk)

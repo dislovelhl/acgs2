@@ -153,7 +153,7 @@ Let's get ACGS-2 running on your machine!
 
 ```bash
 # Clone the ACGS-2 repository
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 
 # Navigate to the project directory
 cd ACGS-2
@@ -1348,8 +1348,8 @@ After completing this quickstart, please take **2-3 minutes** to share your feed
 | Action | Description |
 |--------|-------------|
 | **[📝 Submit Feedback Survey](../feedback.md)** | Comprehensive feedback form (recommended) |
-| **[🐛 Report an Issue](https://github.com/ACGS-Project/ACGS-2/issues/new?labels=documentation,quickstart)** | Report bugs or unclear sections |
-| **[💡 Request Features](https://github.com/ACGS-Project/ACGS-2/issues/new?labels=enhancement)** | Suggest new examples or improvements |
+| **[🐛 Report an Issue](https://github.com/dislovelhl/acgs2/issues/new?labels=documentation,quickstart)** | Report bugs or unclear sections |
+| **[💡 Request Features](https://github.com/dislovelhl/acgs2/issues/new?labels=enhancement)** | Suggest new examples or improvements |
 
 ### Quick Feedback (30 seconds)
 
@@ -1362,7 +1362,7 @@ Hardest Section:      ________________
 Would Recommend:      Yes / No / Maybe
 ```
 
-**Submit via**: [GitHub Issue](https://github.com/ACGS-Project/ACGS-2/issues/new?title=[Quickstart%20Feedback]&labels=feedback,quickstart) or email to docs@acgs2.org
+**Submit via**: [GitHub Issue](https://github.com/dislovelhl/acgs2/issues/new?title=[Quickstart%20Feedback]&labels=feedback,quickstart) or email to docs@acgs2.org
 
 ### What We Measure
 
@@ -1432,7 +1432,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 - [OPA Documentation](https://www.openpolicyagent.org/docs/latest/)
 - [Rego Language Reference](https://www.openpolicyagent.org/docs/latest/policy-language/)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [ACGS-2 GitHub Repository](https://github.com/ACGS-Project/ACGS-2)
+- [ACGS-2 GitHub Repository](https://github.com/dislovelhl/acgs2)
 
 ---
 

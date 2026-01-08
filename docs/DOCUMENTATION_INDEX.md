@@ -184,8 +184,8 @@
 
 ### 📞 Support
 
-- **Documentation Issues**: [GitHub Issues](https://github.com/ACGS-Project/ACGS-2/issues)
-- **Questions**: [GitHub Discussions](https://github.com/ACGS-Project/ACGS-2/discussions)
+- **Documentation Issues**: [GitHub Issues](https://github.com/dislovelhl/acgs2/issues)
+- **Questions**: [GitHub Discussions](https://github.com/dislovelhl/acgs2/discussions)
 - **Enterprise Support**: enterprise@acgs2.org
 
 ---

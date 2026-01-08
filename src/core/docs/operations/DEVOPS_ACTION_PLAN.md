@@ -344,7 +344,7 @@ spec:
   project: acgs2
 
   source:
-    repoURL: https://github.com/acgs/acgs2
+    repoURL: https://github.com/dislovelhl/acgs2
     targetRevision: main
     path: deploy/helm/acgs2
     helm:

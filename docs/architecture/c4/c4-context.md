@@ -25,6 +25,7 @@ ACGS-2 (Advanced Constitutional Governance System) is a production-ready platfor
 The system ensures **perfect constitutional compliance** (100%) through cryptographic hash enforcement (`cdd01ef066bc6cf2`) while maintaining exceptional performance with 2,605 RPS throughput and 95%+ cache hit rates. Built on a consolidated 3-service architecture, ACGS-2 delivers:
 
 **Core Governance Capabilities:**
+
 - **Constitutional AI Validation:** RAG-powered compliance engine combining vector semantic search (384-dimensional embeddings) with LLM reasoning (GPT-4) to ensure all AI decisions align with constitutional principles
 - **Multi-Agent Coordination:** Enhanced communication bus enabling collaborative constitutional analysis and real-time conflict resolution across distributed AI agent systems
 - **Adaptive Governance:** ML-based impact scoring (93.1% accuracy) with dynamic threshold adjustment that learns from patterns and adapts safety boundaries based on context
@@ -32,6 +33,7 @@ The system ensures **perfect constitutional compliance** (100%) through cryptogr
 - **Policy Management:** Centralized policy lifecycle management with semantic versioning, cryptographic signing (Ed25519), and template marketplace for industry-specific governance policies
 
 **Enterprise Benefits:**
+
 - **Operational Simplicity:** 70% complexity reduction through 3-service consolidated architecture (from 50+ microservices)
 - **Cost Efficiency:** 40% infrastructure cost savings with 50% faster deployments
 - **Production Performance:** P99 0.328ms latency (96% better than <5ms target), 2,605 RPS throughput (26x target capacity)
@@ -344,7 +346,7 @@ ACGS-2 solves the critical challenge of ensuring AI systems operate within const
 
 **Steps:**
 
-1. **SDK Integration:** Integrates ACGS-2 Go SDK into ML inference service (`go get github.com/acgs2/go-sdk`)
+1. **SDK Integration:** Integrates ACGS-2 Go SDK into ML inference service (`go get github.com/dislovelhl/acgs2/go-sdk`)
 2. **Client Configuration:** Configures ACGS-2 client with service authentication and tenant context
 3. **Model Metadata Registration:** Registers ML model metadata (model type, version, training data, accuracy)
 4. **Inference Request:** ML service receives inference request from external client
@@ -366,7 +368,7 @@ ACGS-2 solves the critical challenge of ensuring AI systems operate within const
 **Steps:**
 
 1. **SDK Selection:** Frontend team selects TypeScript SDK for browser integration, backend team uses Go SDK
-2. **Package Installation:** Installs SDK packages (`npm install @acgs2/typescript-sdk`, `go get github.com/acgs2/go-sdk`)
+2. **Package Installation:** Installs SDK packages (`npm install @acgs2/typescript-sdk`, `go get github.com/dislovelhl/acgs2/go-sdk`)
 3. **Authentication Setup:** Configures JWT authentication with enterprise identity provider (SSO integration)
 4. **Tenant Configuration:** Initializes SDK with tenant ID for multi-tenant data isolation
 5. **Policy Retrieval:** Application fetches active governance policies from Policy Registry API
@@ -812,6 +814,7 @@ C4Context
 **Key Relationships:**
 
 1. **Human Users → ACGS-2:**
+
    - Enterprise Compliance Officers manage policies, monitor compliance, generate reports via Analytics Dashboard
    - AI/ML Engineers integrate governance APIs, validate decisions, develop multi-agent systems via SDK
    - Chief AI Officers monitor enterprise KPIs, establish governance strategy via executive dashboards
@@ -820,17 +823,20 @@ C4Context
    - DevOps Engineers deploy infrastructure, monitor performance, manage production operations
 
 2. **Programmatic Users → ACGS-2:**
+
    - AI Agent Applications validate decisions, register with agent registry, participate in multi-agent deliberation
    - ML Model Services validate predictions, receive explainable AI decisions, track compliance metrics
    - Enterprise Applications retrieve policies, submit governance requests, record audit trails via SDKs
 
 3. **ACGS-2 → Data Stores:**
+
    - PostgreSQL stores policies, audit metadata, user data, governance state with Row-Level Security
    - Redis provides multi-tier caching (95%+ hit rate), pub/sub messaging, agent registry
    - Kafka handles durable event streaming for audit logs (10,000+ messages/sec)
    - Vector Databases enable RAG-powered semantic search for constitutional documents (384-dim embeddings)
 
 4. **ACGS-2 → Blockchain Networks:**
+
    - Ethereum L2 provides immutable audit anchoring with sub-3s confirmation (Optimism, Arbitrum, Polygon)
    - Solana enables sub-second audit anchoring for time-sensitive operations
    - Arweave provides permanent audit storage with infinite retention
@@ -848,9 +854,11 @@ C4Context
 ## Related Documentation
 
 ### Container Documentation
+
 - **[C4 Container Level](./c4-container.md)** - Comprehensive deployment architecture for ACGS-2's 3-service consolidated design with API specifications, security architecture, and infrastructure requirements
 
 ### Component Documentation
+
 - **[C4 Component Overview](./c4-component.md)** - System-wide component architecture and relationships
 - **[Core Governance Service Components](./c4-component-core-governance.md)** - Constitutional validation, policy registry, and audit ledger
 - **[Enhanced Agent Bus Components](./c4-component-enhanced-agent-bus.md)** - Message routing, deliberation, impact scoring, and multi-agent coordination
@@ -858,6 +866,7 @@ C4Context
 - **[Client SDK Components](./c4-component-client-sdks.md)** - TypeScript and Go SDK architecture
 
 ### API Specifications
+
 - **[Constitutional Validation API](./apis/core-governance-constitutional-api.yaml)** - OpenAPI 3.1+ specification for constitutional compliance validation
 - **[Policy Management API](./apis/core-governance-policy-api.yaml)** - Policy CRUD, versioning, activation, and signature verification
 - **[Audit & Compliance API](./apis/core-governance-audit-api.yaml)** - Audit recording, Merkle verification, and compliance reporting
@@ -866,6 +875,7 @@ C4Context
 - **[SAML Authentication API](./apis/api-gateway-saml-api.yaml)** - SAML 2.0 SSO flows
 
 ### System Documentation
+
 - **[README.md](../README.md)** - Project overview, quickstart, and development setup
 - **[CLAUDE.md](../CLAUDE.md)** - Development guidelines and Agent OS integration
 - **[.agent-os/product/mission.md](../.agent-os/product/mission.md)** - Product vision and mission

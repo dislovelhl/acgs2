@@ -377,5 +377,5 @@ guardrails.on_violation(ViolationType.SAFETY, escalate_to_human)
 ## Support
 
 - **Documentation:** https://docs.acgs.io/integrations
-- **GitHub:** https://github.com/acgs/acgs2
+- **GitHub:** https://github.com/dislovelhl/acgs2
 - **API Reference:** https://api.acgs.io/docs

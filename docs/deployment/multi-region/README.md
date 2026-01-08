@@ -632,7 +632,7 @@ metadata:
 spec:
   project: acgs2
   source:
-    repoURL: https://github.com/ACGS-Project/ACGS-2
+    repoURL: https://github.com/dislovelhl/acgs2
     path: helm/acgs2
     targetRevision: HEAD
     helm:

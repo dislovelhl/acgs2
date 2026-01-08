@@ -74,8 +74,8 @@ all = [
 [project.urls]
 Homepage = "https://acgs.io"
 Documentation = "https://docs.acgs.io/examples/04-end-to-end-governance-workflow"
-Repository = "https://github.com/acgs/acgs2"
-"Example Directory" = "https://github.com/acgs/acgs2/tree/main/examples/04-end-to-end-governance-workflow"
+Repository = "https://github.com/dislovelhl/acgs2"
+"Example Directory" = "https://github.com/dislovelhl/acgs2/tree/main/examples/04-end-to-end-governance-workflow"
 
 [tool.setuptools]
 packages = ["src"]

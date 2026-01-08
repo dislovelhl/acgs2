@@ -18,7 +18,7 @@ The fastest way to explore ACGS-2 is via the local development setup.
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/ACGS-Project/ACGS-2.git
+git clone https://github.com/dislovelhl/acgs2.git
 cd ACGS-2/src/core
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
@@ -77,5 +77,5 @@ helm install acgs2 acgs2/acgs2 --namespace acgs2-system --create-namespace
 
 ## 🆘 Support
 
-- GitHub Issues: [Report a bug](https://github.com/ACGS-Project/ACGS-2/issues)
+- GitHub Issues: [Report a bug](https://github.com/dislovelhl/acgs2/issues)
 - Enterprise Support: [enterprise@acgs2.org](mailto:enterprise@acgs2.org)

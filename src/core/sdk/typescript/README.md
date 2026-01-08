@@ -294,5 +294,5 @@ Apache-2.0
 
 - [Documentation](https://acgs.io/docs/sdk)
 - [API Reference](https://api.acgs.io/docs)
-- [GitHub](https://github.com/acgs/acgs2)
-- [Changelog](https://github.com/acgs/acgs2/blob/main/sdk/typescript/CHANGELOG.md)
+- [GitHub](https://github.com/dislovelhl/acgs2)
+- [Changelog](https://github.com/dislovelhl/acgs2/blob/main/sdk/typescript/CHANGELOG.md)

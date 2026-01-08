@@ -426,7 +426,7 @@ class CICDIntegration:
 
         github_config = {
             "type": "github-actions",
-            "repository": "acgs2/acgs2-core",
+            "repository": "dislovemartin/ACGS-PGP2",
             "workflow_file": ".github/workflows/deploy.yml",
             "github_token": "${GITHUB_TOKEN}",
             "stages": [

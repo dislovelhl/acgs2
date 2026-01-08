@@ -576,7 +576,7 @@ kubectl exec -n acgs2 deployment/acgs2-constitutional-service -- \
 ### 支持
 
 - 文档: https://docs.acgs.io
-- 问题反馈: https://github.com/acgs/acgs2/issues
+- 问题反馈: https://github.com/dislovelhl/acgs2/issues
 - 邮件: support@acgs.io
 
 ---

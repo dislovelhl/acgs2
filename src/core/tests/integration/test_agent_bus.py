@@ -12,7 +12,7 @@ These tests verify:
 
 Usage:
     # Run with mock (offline mode - default)
-    pytest acgs2-core/tests/integration/test_agent_bus.py -v
+    pytest src/core/tests/integration/test_agent_bus.py -v
 
     # Run against live service (requires agent-bus on localhost:8000)
     AGENT_BUS_URL=http://localhost:8000 pytest -v -m integration
@@ -465,7 +465,7 @@ class TestAgentBusLiveService:
     These tests are skipped by default. To run them:
     1. Start the agent-bus service on localhost:8000
     2. Set SKIP_LIVE_TESTS=false
-    3. Run: pytest acgs2-core/tests/integration/test_agent_bus.py -v -k "Live"
+    3. Run: pytest src/core/tests/integration/test_agent_bus.py -v -k "Live"
     """
 
     @pytest.mark.integration

@@ -50,12 +50,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/acgs/acgs2.git",
+    "url": "https://github.com/dislovelhl/acgs2.git",
     "directory": "sdk/typescript"
   },
   "homepage": "https://acgs.io/docs/sdk",
   "bugs": {
-    "url": "https://github.com/acgs/acgs2/issues"
+    "url": "https://github.com/dislovelhl/acgs2/issues"
   },
   "engines": {
     "node": ">=18.0.0"
