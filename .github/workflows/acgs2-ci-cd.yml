@@ -139,8 +139,6 @@ jobs:
     needs: validate
     uses: ./.github/workflows/reusable-security.yml
     secrets: inherit
-    permissions:
-      security-events: write
 
   test:
     needs: security
@@ -164,8 +162,7 @@ jobs:
         run: |
           pip install -e .[test]
           pip install -r src/core/config/requirements_optimized.txt
-          pip install pytest-cov
-          pytest-asyncio
+          pip install pytest-cov pytest-asyncio
 
       - name: Pytest with coverage
         working-directory: ./src/core
