@@ -2,117 +2,43 @@ name: Security Code Scan
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM
+    - cron: "0 2 * * *" # Daily at 2 AM
 
 jobs:
   security-scan:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0  # Full history for incremental scans
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for incremental scans
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install ast semgrep
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ast semgrep
 
-    - name: Install Semgrep
-      run: |
-        pip install semgrep
+      - name: Install Semgrep
+        run: |
+          pip install semgrep
 
-    - name: Install CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: javascript, python
+      - name: Install CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, python
 
-    - name: Run AST-based security scan
-      run: |
-        python -c "
-        import asyncio
-        import sys
-        sys.path.append('.')
-        from services.integration.search_platform.constitutional_search import ConstitutionalCodeSearchService
-
-        async def main():
-            service = ConstitutionalCodeSearchService()
-            result = await service.scan_for_violations(['.'], ['py', 'js', 'ts'])
-            print(f'Found {len(result.violations)} violations')
-            for v in result.violations:
-                print(f'{v.severity}: {v.description} in {v.file}:{v.line_number}')
-
-            # Fail if critical violations found
-            critical = [v for v in result.violations if v.severity == 'critical']
-            if critical:
-                print(f'Found {len(critical)} critical violations!')
-                sys.exit(1)
-
-        asyncio.run(main())
-        "
-
-    - name: Run Semgrep scan
-      run: |
-        semgrep --config auto --json --output semgrep-results.json .
-      continue-on-error: true
-
-    - name: Run CodeQL analysis
-      uses: github/codeql-action/analyze@v2
-
-    - name: Install Trivy
-      run: |
-        sudo apt-get update
-        sudo apt-get install wget apt-transport-https gnupg lsb-release
-        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-        sudo apt-get update
-        sudo apt-get install trivy
-
-    - name: Scan container images with Trivy
-      run: |
-        # Find Dockerfiles and scan images
-        find . -name "Dockerfile*" -exec dirname {} \; | while read dir; do
-          if [ -f "$dir/Dockerfile" ]; then
-            echo "Scanning $dir"
-            trivy image --exit-code 1 --no-progress --format json --output "$dir/trivy-results.json" "$dir" || true
-          fi
-        done
-
-    - name: Upload scan results
-      uses: actions/upload-artifact@v3
-      with:
-        name: security-scan-results
-        path: |
-          semgrep-results.json
-          **/trivy-results.json
-
-  pre-commit-scan:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Get changed files
-      id: changed-files
-      run: |
-        echo "changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | tr '\n' ' ')" >> $GITHUB_OUTPUT
-
-    - name: Run incremental AST scan on changed files
-      run: |
-        CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
-        if [ -n "$CHANGED_FILES" ]; then
+      - name: Run AST-based security scan
+        run: |
           python -c "
           import asyncio
           import sys
@@ -121,15 +47,89 @@ jobs:
 
           async def main():
               service = ConstitutionalCodeSearchService()
-              # Only scan changed Python/JS/TS files
-              py_files = [f for f in '$CHANGED_FILES'.split() if f.endswith(('.py', '.js', '.ts'))]
-              if py_files:
-                  result = await service.scan_for_violations(['.'], ['py', 'js', 'ts'])
-                  critical = [v for v in result.violations if v.severity == 'critical']
-                  if critical:
-                      print('Critical violations found in changed files!')
-                      sys.exit(1)
+              result = await service.scan_for_violations(['.'], ['py', 'js', 'ts'])
+              print(f'Found {len(result.violations)} violations')
+              for v in result.violations:
+                  print(f'{v.severity}: {v.description} in {v.file}:{v.line_number}')
+
+              # Fail if critical violations found
+              critical = [v for v in result.violations if v.severity == 'critical']
+              if critical:
+                  print(f'Found {len(critical)} critical violations!')
+                  sys.exit(1)
 
           asyncio.run(main())
           "
-        fi
+
+      - name: Run Semgrep scan
+        run: |
+          semgrep --config auto --json --output semgrep-results.json .
+        continue-on-error: true
+
+      - name: Run CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+
+      - name: Scan container images with Trivy
+        run: |
+          # Find Dockerfiles and scan images
+          find . -name "Dockerfile*" -exec dirname {} \; | while read dir; do
+            if [ -f "$dir/Dockerfile" ]; then
+              echo "Scanning $dir"
+              trivy image --exit-code 1 --no-progress --format json --output "$dir/trivy-results.json" "$dir" || true
+            fi
+          done
+
+      - name: Upload scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: |
+            semgrep-results.json
+            **/trivy-results.json
+
+  pre-commit-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          echo "changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Run incremental AST scan on changed files
+        run: |
+          CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+          if [ -n "$CHANGED_FILES" ]; then
+            python -c "
+            import asyncio
+            import sys
+            sys.path.append('.')
+            from services.integration.search_platform.constitutional_search import ConstitutionalCodeSearchService
+
+            async def main():
+                service = ConstitutionalCodeSearchService()
+                # Only scan changed Python/JS/TS files
+                py_files = [f for f in '$CHANGED_FILES'.split() if f.endswith(('.py', '.js', '.ts'))]
+                if py_files:
+                    result = await service.scan_for_violations(['.'], ['py', 'js', 'ts'])
+                    critical = [v for v in result.violations if v.severity == 'critical']
+                    if critical:
+                        print('Critical violations found in changed files!')
+                        sys.exit(1)
+
+            asyncio.run(main())
+            "
+          fi
