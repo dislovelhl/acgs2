@@ -4,8 +4,10 @@ Handles incident management, notes, and escalation via PagerDuty REST API.
 """
 
 import logging
-import httpx
 from typing import Any, Dict, List, Optional
+
+import httpx
+
 from ..base import (
     AuthenticationError,
     IntegrationResult,
@@ -14,6 +16,7 @@ from ..pagerduty_models import PagerDutyCredentials
 from .payload_builder import PagerDutyPayloadBuilder
 
 logger = logging.getLogger(__name__)
+
 
 class PagerDutyRestClient:
     """Client for PagerDuty REST API."""
@@ -56,7 +59,9 @@ class PagerDutyRestClient:
         )
 
         if response.status_code == 200:
-            logger.info(f"PagerDuty REST API authentication successful for '{self.integration_name}'")
+            logger.info(
+                f"PagerDuty REST API authentication successful for '{self.integration_name}'"
+            )
             return IntegrationResult(
                 success=True,
                 integration_name=self.integration_name,

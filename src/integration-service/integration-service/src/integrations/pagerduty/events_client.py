@@ -4,8 +4,10 @@ Handles incident creation and resolution via PagerDuty Events API v2.
 """
 
 import logging
+from typing import Dict
+
 import httpx
-from typing import Any, Dict, Optional
+
 from ..base import (
     AuthenticationError,
     DeliveryError,
@@ -17,6 +19,7 @@ from ..pagerduty_models import PagerDutyCredentials
 from .payload_builder import PagerDutyPayloadBuilder
 
 logger = logging.getLogger(__name__)
+
 
 class PagerDutyEventsClient:
     """Client for PagerDuty Events API v2."""

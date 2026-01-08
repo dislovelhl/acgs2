@@ -19,13 +19,13 @@ from .base import (
     IntegrationResult,
     RateLimitError,
 )
+from .pagerduty.events_client import PagerDutyEventsClient
+from .pagerduty.payload_builder import PagerDutyPayloadBuilder
+from .pagerduty.rest_client import PagerDutyRestClient
 from .pagerduty_models import (
     PagerDutyAuthType,
     PagerDutyCredentials,
 )
-from .pagerduty.payload_builder import PagerDutyPayloadBuilder
-from .pagerduty.events_client import PagerDutyEventsClient
-from .pagerduty.rest_client import PagerDutyRestClient
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,10 @@ class PagerDutyAdapter(BaseIntegration):
         """Authenticate with PagerDuty and verify credentials."""
         try:
             # Events API authentication is validated during send_event (test trigger)
-            if self.pd_credentials.auth_type in (PagerDutyAuthType.EVENTS_V2, PagerDutyAuthType.BOTH):
+            if self.pd_credentials.auth_type in (
+                PagerDutyAuthType.EVENTS_V2,
+                PagerDutyAuthType.BOTH,
+            ):
                 if not self.pd_credentials.integration_key:
                     return IntegrationResult(
                         success=False,
@@ -110,7 +113,10 @@ class PagerDutyAdapter(BaseIntegration):
 
                 response = await client.post(
                     PagerDutyEventsClient.URL,
-                    headers={"Content-Type": "application/json", "Accept": "application/vnd.pagerduty+json;version=2"},
+                    headers={
+                        "Content-Type": "application/json",
+                        "Accept": "application/vnd.pagerduty+json;version=2",
+                    },
                     json=test_payload,
                 )
 
@@ -124,7 +130,10 @@ class PagerDutyAdapter(BaseIntegration):
                     }
                     await client.post(
                         PagerDutyEventsClient.URL,
-                        headers={"Content-Type": "application/json", "Accept": "application/vnd.pagerduty+json;version=2"},
+                        headers={
+                            "Content-Type": "application/json",
+                            "Accept": "application/vnd.pagerduty+json;version=2",
+                        },
                         json=resolve_payload,
                     )
                 elif response.status_code == 429:
@@ -163,18 +172,29 @@ class PagerDutyAdapter(BaseIntegration):
                     )
 
             # REST API authentication
-            if self.pd_credentials.auth_type in (PagerDutyAuthType.REST_API, PagerDutyAuthType.BOTH):
+            if self.pd_credentials.auth_type in (
+                PagerDutyAuthType.REST_API,
+                PagerDutyAuthType.BOTH,
+            ):
                 rest_client = await self._get_rest_client()
                 result = await rest_client.authenticate()
                 # For BOTH, we only fail if both fail or if REST is strictly required
-                if not result.success and self.pd_credentials.auth_type == PagerDutyAuthType.REST_API:
+                if (
+                    not result.success
+                    and self.pd_credentials.auth_type == PagerDutyAuthType.REST_API
+                ):
                     return result
                 # If BOTH and Events API succeeded (we are here), we can be more lenient
                 # but let's just log it for now to pass the test which only mocks POST
                 if not result.success:
-                    logger.warning(f"PagerDuty REST API authentication failed for {self.name}, but Events API may have succeeded")
+                    logger.warning(
+                        f"PagerDuty REST API authentication failed for {self.name}, "
+                        "but Events API may have succeeded"
+                    )
 
-            return IntegrationResult(success=True, integration_name=self.name, operation="authenticate")
+            return IntegrationResult(
+                success=True, integration_name=self.name, operation="authenticate"
+            )
 
         except httpx.TimeoutException as e:
             raise AuthenticationError(f"Connection timed out: {str(e)}", self.name) from e
@@ -189,11 +209,17 @@ class PagerDutyAdapter(BaseIntegration):
         issues: List[str] = []
 
         try:
-            if self.pd_credentials.auth_type in (PagerDutyAuthType.EVENTS_V2, PagerDutyAuthType.BOTH):
+            if self.pd_credentials.auth_type in (
+                PagerDutyAuthType.EVENTS_V2,
+                PagerDutyAuthType.BOTH,
+            ):
                 if not self.pd_credentials.integration_key:
                     issues.append("integration_key is required for Events API v2")
 
-            if self.pd_credentials.auth_type in (PagerDutyAuthType.REST_API, PagerDutyAuthType.BOTH):
+            if self.pd_credentials.auth_type in (
+                PagerDutyAuthType.REST_API,
+                PagerDutyAuthType.BOTH,
+            ):
                 if not self.pd_credentials.api_token:
                     issues.append("api_token is required for REST API")
                 elif self.pd_credentials.service_id:
@@ -223,7 +249,10 @@ class PagerDutyAdapter(BaseIntegration):
     async def _do_test_connection(self) -> IntegrationResult:
         """Override base connection test to use specific PagerDuty endpoints."""
         try:
-            if self.pd_credentials.auth_type in (PagerDutyAuthType.REST_API, PagerDutyAuthType.BOTH):
+            if self.pd_credentials.auth_type in (
+                PagerDutyAuthType.REST_API,
+                PagerDutyAuthType.BOTH,
+            ):
                 client = await self._get_rest_client()
                 return await client.authenticate()
             else:
@@ -234,23 +263,36 @@ class PagerDutyAdapter(BaseIntegration):
                     success=response.status_code < 500,
                     integration_name=self.name,
                     operation="test_connection",
-                    error_code=None if response.status_code < 500 else f"HTTP_{response.status_code}",
-                    error_message=None if response.status_code < 500 else f"Server returned status {response.status_code}",
+                    error_code=None
+                    if response.status_code < 500
+                    else f"HTTP_{response.status_code}",
+                    error_message=None
+                    if response.status_code < 500
+                    else f"Server returned status {response.status_code}",
                 )
         except httpx.TimeoutException as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="test_connection",
-                error_code="TIMEOUT", error_message=f"Connection timed out: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="test_connection",
+                error_code="TIMEOUT",
+                error_message=f"Connection timed out: {str(e)}",
             )
         except httpx.NetworkError as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="test_connection",
-                error_code="NETWORK_ERROR", error_message=f"Network error: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="test_connection",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
             )
         except Exception as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="test_connection",
-                error_code="ERROR", error_message=str(e)
+                success=False,
+                integration_name=self.name,
+                operation="test_connection",
+                error_code="ERROR",
+                error_message=str(e),
             )
 
     async def _do_send_event(self, event: IntegrationEvent) -> IntegrationResult:
@@ -261,9 +303,13 @@ class PagerDutyAdapter(BaseIntegration):
         except (RateLimitError, AuthenticationError, DeliveryError):
             raise
         except httpx.TimeoutException as e:
-            raise DeliveryError(f"Request timed out: {str(e)}", self.name, details={"should_retry": True}) from e
+            raise DeliveryError(
+                f"Request timed out: {str(e)}", self.name, details={"should_retry": True}
+            ) from e
         except httpx.NetworkError as e:
-            raise DeliveryError(f"Network error: {str(e)}", self.name, details={"should_retry": True}) from e
+            raise DeliveryError(
+                f"Network error: {str(e)}", self.name, details={"should_retry": True}
+            ) from e
         except Exception as e:
             raise DeliveryError(f"Unexpected error: {str(e)}", self.name) from e
 
@@ -272,8 +318,13 @@ class PagerDutyAdapter(BaseIntegration):
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
 
-        if self.pd_credentials.auth_type not in (PagerDutyAuthType.REST_API, PagerDutyAuthType.BOTH):
-            raise AuthenticationError("REST API authentication required for get_incident", self.name)
+        if self.pd_credentials.auth_type not in (
+            PagerDutyAuthType.REST_API,
+            PagerDutyAuthType.BOTH,
+        ):
+            raise AuthenticationError(
+                "REST API authentication required for get_incident", self.name
+            )
 
         try:
             client = await self._get_rest_client()
@@ -282,18 +333,27 @@ class PagerDutyAdapter(BaseIntegration):
             raise
         except httpx.TimeoutException as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="get_incident",
-                error_code="TIMEOUT", error_message=f"Request timed out: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="get_incident",
+                error_code="TIMEOUT",
+                error_message=f"Request timed out: {str(e)}",
             )
         except httpx.NetworkError as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="get_incident",
-                error_code="NETWORK_ERROR", error_message=f"Network error: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="get_incident",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
             )
         except Exception as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="get_incident",
-                error_code="ERROR", error_message=str(e)
+                success=False,
+                integration_name=self.name,
+                operation="get_incident",
+                error_code="ERROR",
+                error_message=str(e),
             )
 
     async def update_incident(self, incident_id: str, **kwargs: Any) -> IntegrationResult:
@@ -301,8 +361,13 @@ class PagerDutyAdapter(BaseIntegration):
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
 
-        if self.pd_credentials.auth_type not in (PagerDutyAuthType.REST_API, PagerDutyAuthType.BOTH):
-            raise AuthenticationError("REST API authentication required for update_incident", self.name)
+        if self.pd_credentials.auth_type not in (
+            PagerDutyAuthType.REST_API,
+            PagerDutyAuthType.BOTH,
+        ):
+            raise AuthenticationError(
+                "REST API authentication required for update_incident", self.name
+            )
 
         try:
             client = await self._get_rest_client()
@@ -311,18 +376,27 @@ class PagerDutyAdapter(BaseIntegration):
             raise
         except httpx.TimeoutException as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="update_incident",
-                error_code="TIMEOUT", error_message=f"Request timed out: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="update_incident",
+                error_code="TIMEOUT",
+                error_message=f"Request timed out: {str(e)}",
             )
         except httpx.NetworkError as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="update_incident",
-                error_code="NETWORK_ERROR", error_message=f"Network error: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="update_incident",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
             )
         except Exception as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="update_incident",
-                error_code="ERROR", error_message=str(e)
+                success=False,
+                integration_name=self.name,
+                operation="update_incident",
+                error_code="ERROR",
+                error_message=str(e),
             )
 
     async def resolve_incident(self, dedup_key: str) -> IntegrationResult:
@@ -330,8 +404,13 @@ class PagerDutyAdapter(BaseIntegration):
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
 
-        if self.pd_credentials.auth_type not in (PagerDutyAuthType.EVENTS_V2, PagerDutyAuthType.BOTH):
-            raise AuthenticationError("Events API authentication required for resolve_incident", self.name)
+        if self.pd_credentials.auth_type not in (
+            PagerDutyAuthType.EVENTS_V2,
+            PagerDutyAuthType.BOTH,
+        ):
+            raise AuthenticationError(
+                "Events API authentication required for resolve_incident", self.name
+            )
 
         try:
             client = await self._get_events_client()
@@ -340,18 +419,27 @@ class PagerDutyAdapter(BaseIntegration):
             raise
         except httpx.TimeoutException as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="resolve_incident",
-                error_code="TIMEOUT", error_message=f"Request timed out: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="resolve_incident",
+                error_code="TIMEOUT",
+                error_message=f"Request timed out: {str(e)}",
             )
         except httpx.NetworkError as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="resolve_incident",
-                error_code="NETWORK_ERROR", error_message=f"Network error: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="resolve_incident",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
             )
         except Exception as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="resolve_incident",
-                error_code="ERROR", error_message=str(e)
+                success=False,
+                integration_name=self.name,
+                operation="resolve_incident",
+                error_code="ERROR",
+                error_message=str(e),
             )
 
     async def add_note(self, incident_id: str, note: str) -> IntegrationResult:
@@ -359,7 +447,10 @@ class PagerDutyAdapter(BaseIntegration):
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
 
-        if self.pd_credentials.auth_type not in (PagerDutyAuthType.REST_API, PagerDutyAuthType.BOTH):
+        if self.pd_credentials.auth_type not in (
+            PagerDutyAuthType.REST_API,
+            PagerDutyAuthType.BOTH,
+        ):
             raise AuthenticationError("REST API authentication required for add_note", self.name)
 
         try:
@@ -369,21 +460,32 @@ class PagerDutyAdapter(BaseIntegration):
             raise
         except httpx.TimeoutException as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="add_note",
-                error_code="TIMEOUT", error_message=f"Request timed out: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="add_note",
+                error_code="TIMEOUT",
+                error_message=f"Request timed out: {str(e)}",
             )
         except httpx.NetworkError as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="add_note",
-                error_code="NETWORK_ERROR", error_message=f"Network error: {str(e)}"
+                success=False,
+                integration_name=self.name,
+                operation="add_note",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
             )
         except Exception as e:
             return IntegrationResult(
-                success=False, integration_name=self.name, operation="add_note",
-                error_code="ERROR", error_message=str(e)
+                success=False,
+                integration_name=self.name,
+                operation="add_note",
+                error_code="ERROR",
+                error_message=str(e),
             )
 
-    async def escalate_incident(self, incident_id: str, escalation_policy_id: str) -> IntegrationResult:
+    async def escalate_incident(
+        self, incident_id: str, escalation_policy_id: str
+    ) -> IntegrationResult:
         """Escalate an incident to a different escalation policy."""
         return await self.update_incident(incident_id, escalation_policy_id=escalation_policy_id)
 
