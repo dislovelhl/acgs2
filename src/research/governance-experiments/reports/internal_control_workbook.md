@@ -90,8 +90,8 @@ The following governance rules were extracted from the production environment on
 
 | Control Objective       | Control Activity                       | Verification Step             | Evidence Reference                | Status   |
 | :---------------------- | :------------------------------------- | :---------------------------- | :-------------------------------- | :------- |
-| **Fail-Closed Default** | Validation returns False on exception. | Audit `CircuitBreaker`.       | `acgs2-core/shared/security`      | [PASSED] |
-| **Sanitized Errors**    | Exceptions caught/sanitized for API.   | Review sanitization wrappers. | `acgs2-core/services/api_gateway` | [PASSED] |
+| **Fail-Closed Default** | Validation returns False on exception. | Audit `CircuitBreaker`.       | `src/core/shared/security`      | [PASSED] |
+| **Sanitized Errors**    | Exceptions caught/sanitized for API.   | Review sanitization wrappers. | `src/core/services/api_gateway` | [PASSED] |
 | **Credential Safety**   | No plain-text secrets in logs.         | Static analysis (Semgrep).    | `.semgrep`                        | [PASSED] |
 
 ---

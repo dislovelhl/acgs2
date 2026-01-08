@@ -19,7 +19,7 @@ Since Python execution is restricted in this environment, verification was perfo
 ## Test 1: Import Verification ✅
 
 ### Required Imports in agent_bus.py
-From `acgs2-core/enhanced_agent_bus/agent_bus.py` (lines 56-64):
+From `src/core/enhanced_agent_bus/agent_bus.py` (lines 56-64):
 ```python
 from .adaptive_governance import (
     AdaptiveGovernanceEngine,
@@ -32,7 +32,7 @@ from .adaptive_governance import (
 ```
 
 ### Exports from adaptive_governance/__init__.py
-From `acgs2-core/enhanced_agent_bus/adaptive_governance/__init__.py` (lines 82-99):
+From `src/core/enhanced_agent_bus/adaptive_governance/__init__.py` (lines 82-99):
 ```python
 __all__ = [
     "AdaptiveGovernanceEngine",         # ✅ Line 24 import
@@ -243,7 +243,7 @@ All handled with try/except blocks:
 ## Constitutional Hash Verification ✅
 
 ### Expected Hash
-From `acgs2-core/enhanced_agent_bus/models.py`:
+From `src/core/enhanced_agent_bus/models.py`:
 ```python
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 ```
@@ -294,12 +294,12 @@ The refactoring from a single 1768-line file to a modular package structure has 
 
 ## Files Analyzed
 
-1. `acgs2-core/enhanced_agent_bus/adaptive_governance/__init__.py` - Public API
-2. `acgs2-core/enhanced_agent_bus/agent_bus.py` - Integration point
-3. `acgs2-core/enhanced_agent_bus/adaptive_governance/governance_engine.py` - Core engine
-4. `acgs2-core/enhanced_agent_bus/adaptive_governance/models.py` - Data models
-5. `acgs2-core/enhanced_agent_bus/adaptive_governance/threshold_manager.py` - Thresholds
-6. `acgs2-core/enhanced_agent_bus/adaptive_governance/impact_scorer.py` - Impact scoring
+1. `src/core/enhanced_agent_bus/adaptive_governance/__init__.py` - Public API
+2. `src/core/enhanced_agent_bus/agent_bus.py` - Integration point
+3. `src/core/enhanced_agent_bus/adaptive_governance/governance_engine.py` - Core engine
+4. `src/core/enhanced_agent_bus/adaptive_governance/models.py` - Data models
+5. `src/core/enhanced_agent_bus/adaptive_governance/threshold_manager.py` - Thresholds
+6. `src/core/enhanced_agent_bus/adaptive_governance/impact_scorer.py` - Impact scoring
 
 ---
 **Verification Method:** Static Code Analysis

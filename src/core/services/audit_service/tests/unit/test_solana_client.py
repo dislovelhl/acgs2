@@ -2,7 +2,7 @@ import pytest
 from src.core.services.audit_service.blockchain.solana.solana_client import SolanaClient
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 def solana_config():
     return {
         "network": "devnet",
@@ -12,7 +12,7 @@ def solana_config():
     }
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client(solana_config):
     # Enable mock mode by setting live=False
     solana_config["live"] = False

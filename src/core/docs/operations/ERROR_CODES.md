@@ -682,7 +682,7 @@ docker-compose logs enhanced-agent-bus | grep "Constitutional hash validated"
 **Severity**: CRITICAL
 **Impact**: Service-Unavailable
 **Exception**: `ConstitutionalValidationError` (enhanced-agent-bus)
-**Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+**Location**: `src/core/enhanced_agent_bus/exceptions.py`
 
 **Description**: Constitutional validation check failed during runtime. The system enforces constitutional compliance for all operations.
 
@@ -718,7 +718,7 @@ Policy compliance validation failed
    ```bash
    # Check constitutional hash and principles
    grep CONSTITUTIONAL_HASH .env
-   cat acgs2-core/docs/operations/constitutional_principles.md
+   cat src/core/docs/operations/constitutional_principles.md
    ```
 
 5. **If legitimate operation is being rejected**:
@@ -1056,7 +1056,7 @@ echo "TLS_KEY_PATH=/path/to/key.pem" >> .env
 
 **Severity**: CRITICAL (Security)
 **Impact**: Security-Vulnerability
-**Location**: `acgs2-core/services/compliance_docs/src/main.py:25`
+**Location**: `src/core/services/compliance_docs/src/main.py:25`
 
 **Description**: CORS policy misconfigured. The service should use the centralized `get_cors_config()` from `src/core/shared/security/cors_config.py` to apply environment-specific CORS policies.
 
@@ -1179,7 +1179,7 @@ kubectl rollout restart deployment/integration-service
 **Severity**: HIGH
 **Impact**: Service-Unavailable
 **Exception**: `OIDCConfigurationError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+**Location**: `src/core/shared/auth/oidc_handler.py`
 
 **Description**: OIDC (OpenID Connect) provider configuration error.
 
@@ -1257,7 +1257,7 @@ docker-compose restart hitl-approvals
 **Severity**: HIGH
 **Impact**: Service-Unavailable
 **Exception**: `SAMLConfigurationError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/saml_config.py`
+**Location**: `src/core/shared/auth/saml_config.py`
 
 **Description**: SAML (Security Assertion Markup Language) configuration error.
 
@@ -2127,7 +2127,7 @@ curl -X PATCH http://localhost:8080/api/webhooks/<id> \
 **Severity**: HIGH
 **Impact**: Service-Unavailable
 **Exception**: `OIDCAuthenticationError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+**Location**: `src/core/shared/auth/oidc_handler.py`
 
 **Description**: OpenID Connect (OIDC) authentication failed during SSO login.
 
@@ -2209,7 +2209,7 @@ echo "OIDC_REDIRECT_URI=http://localhost:8080/auth/callback" >> .env
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `OIDCTokenError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+**Location**: `src/core/shared/auth/oidc_handler.py`
 
 **Description**: OIDC token exchange or validation failed.
 
@@ -2293,7 +2293,7 @@ echo "OIDC_DISCOVERY_URL=https://correct-idp.example.com/.well-known/openid-conf
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `OIDCProviderError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+**Location**: `src/core/shared/auth/oidc_handler.py`
 
 **Description**: Error communicating with OIDC identity provider.
 
@@ -2382,7 +2382,7 @@ curl -v https://idp.example.com/.well-known/openid-configuration
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `OIDCError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+**Location**: `src/core/shared/auth/oidc_handler.py`
 
 **Description**: Base exception for OIDC-related errors. Generic OIDC failure when specific type not determined.
 
@@ -2405,7 +2405,7 @@ docker-compose logs | grep -i oidc | tail -50
 **Severity**: HIGH
 **Impact**: Service-Unavailable
 **Exception**: `SAMLAuthenticationError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/saml_handler.py`
+**Location**: `src/core/shared/auth/saml_handler.py`
 
 **Description**: SAML 2.0 authentication failed during SSO login.
 
@@ -2486,7 +2486,7 @@ echo "SAML_ATTR_EMAIL=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emai
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `SAMLValidationError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/saml_handler.py`
+**Location**: `src/core/shared/auth/saml_handler.py`
 
 **Description**: SAML assertion validation failed.
 
@@ -2570,7 +2570,7 @@ curl https://idp.example.com/metadata > idp-metadata.xml
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `SAMLProviderError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/saml_handler.py`
+**Location**: `src/core/shared/auth/saml_handler.py`
 
 **Description**: Error communicating with SAML identity provider.
 
@@ -2641,7 +2641,7 @@ echo "SAML_IDP_METADATA_FILE=/app/config/idp-metadata.xml" >> .env
 **Severity**: CRITICAL
 **Impact**: Security-Violation
 **Exception**: `SAMLReplayError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/saml_handler.py`
+**Location**: `src/core/shared/auth/saml_handler.py`
 
 **Description**: SAML replay attack detected - same assertion used multiple times.
 
@@ -2713,7 +2713,7 @@ CRITICAL: SAMLReplayError: Assertion ID already used
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `SAMLError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/saml_handler.py`
+**Location**: `src/core/shared/auth/saml_handler.py`
 
 **Description**: Base exception for SAML-related errors. Generic SAML failure.
 
@@ -2737,7 +2737,7 @@ docker-compose logs | grep -i saml | tail -50
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `AzureADAuthError` (identity-service)
-**Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+**Location**: `src/core/services/identity/connectors/azure_ad_connector.py`
 
 **Description**: Azure Active Directory authentication error.
 
@@ -2806,7 +2806,7 @@ docker-compose restart identity-service
 **Severity**: HIGH
 **Impact**: Deployment-Blocking
 **Exception**: `AzureADConfigError` (identity-service)
-**Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+**Location**: `src/core/services/identity/connectors/azure_ad_connector.py`
 
 **Description**: Azure AD configuration error prevents service startup.
 
@@ -2864,7 +2864,7 @@ docker-compose restart identity-service
 **Severity**: MEDIUM
 **Impact**: Service-Degraded
 **Exception**: `AzureADGraphError` (identity-service)
-**Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+**Location**: `src/core/services/identity/connectors/azure_ad_connector.py`
 
 **Description**: Microsoft Graph API error when querying Azure AD.
 
@@ -2928,7 +2928,7 @@ ERROR: AzureADGraphError: Insufficient privileges
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `AzureADError` (identity-service)
-**Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+**Location**: `src/core/services/identity/connectors/azure_ad_connector.py`
 
 **Description**: Base exception for Azure AD errors.
 
@@ -2944,7 +2944,7 @@ ERROR: AzureADGraphError: Insufficient privileges
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `OktaAuthError` (identity-service)
-**Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+**Location**: `src/core/services/identity/connectors/okta_models.py`
 
 **Description**: Okta authentication error.
 
@@ -3008,7 +3008,7 @@ docker-compose restart identity-service
 **Severity**: HIGH
 **Impact**: Deployment-Blocking
 **Exception**: `OktaConfigError` (identity-service)
-**Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+**Location**: `src/core/services/identity/connectors/okta_models.py`
 
 **Description**: Okta configuration error.
 
@@ -3035,7 +3035,7 @@ docker-compose restart identity-service
 **Severity**: MEDIUM
 **Impact**: Service-Degraded
 **Exception**: `OktaProvisioningError` (identity-service)
-**Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+**Location**: `src/core/services/identity/connectors/okta_models.py`
 
 **Description**: Okta user provisioning failed.
 
@@ -3056,7 +3056,7 @@ docker-compose restart identity-service
 **Severity**: MEDIUM
 **Impact**: Service-Degraded
 **Exception**: `OktaGroupError` (identity-service)
-**Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+**Location**: `src/core/services/identity/connectors/okta_models.py`
 
 **Description**: Okta group operation failed.
 
@@ -3076,7 +3076,7 @@ docker-compose restart identity-service
 
 **Severity**: HIGH
 **Impact**: Security-Gap
-**Location**: `acgs2-core/services/hitl_approvals/app/services/approval_chain_engine.py:148`
+**Location**: `src/core/services/hitl_approvals/app/services/approval_chain_engine.py:148`
 
 **Description**: Role verification failed or not implemented. **TODO**: Implement role verification via OPA (see TODO_CATALOG.md HIGH priority item).
 
@@ -3192,7 +3192,7 @@ ERROR: InsufficientPermissionsError: Permission denied: approve_high_risk
 **Severity**: MEDIUM
 **Impact**: Service-Degraded
 **Exception**: `RoleMappingError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/role_mapper.py`
+**Location**: `src/core/shared/auth/role_mapper.py`
 
 **Description**: Failed to map identity provider groups/roles to ACGS roles.
 
@@ -3254,7 +3254,7 @@ docker-compose restart
 **Severity**: HIGH
 **Impact**: Service-Degraded
 **Exception**: `ProviderNotFoundError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/role_mapper.py`
+**Location**: `src/core/shared/auth/role_mapper.py`
 
 **Description**: Identity provider not found for role mapping.
 
@@ -3296,7 +3296,7 @@ ERROR: ProviderNotFoundError: Provider 'okta' not found
 **Severity**: MEDIUM
 **Impact**: Service-Degraded
 **Exception**: `ProvisioningError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/provisioning.py`
+**Location**: `src/core/shared/auth/provisioning.py`
 
 **Description**: Base exception for user provisioning errors.
 
@@ -3311,7 +3311,7 @@ ERROR: ProviderNotFoundError: Provider 'okta' not found
 **Severity**: MEDIUM
 **Impact**: Service-Degraded
 **Exception**: `DomainNotAllowedError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/provisioning.py`
+**Location**: `src/core/shared/auth/provisioning.py`
 
 **Description**: User's email domain is not in the allowed list for auto-provisioning.
 
@@ -3365,7 +3365,7 @@ docker-compose restart
 **Severity**: LOW
 **Impact**: Informational
 **Exception**: `ProvisioningDisabledError` (shared-auth)
-**Location**: `acgs2-core/shared/auth/provisioning.py`
+**Location**: `src/core/shared/auth/provisioning.py`
 
 **Description**: Auto-provisioning is disabled, manual user creation required.
 
@@ -5723,7 +5723,7 @@ kubectl get pvc -w
 **Severity**: CRITICAL
 **Impact**: Service-Unavailable
 **Exception**: `ServiceUnavailableError` (sdk)
-**Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+**Location**: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 
 **Description**: Service is unavailable - typically HTTP 503 status code. The service cannot handle requests temporarily.
 
@@ -7329,7 +7329,7 @@ Async message processing unavailable
 4. **Check requirements.txt**:
    ```bash
    # Ensure aiokafka is listed
-   grep aiokafka acgs2-core/services/hitl_approvals/requirements.txt
+   grep aiokafka src/core/services/hitl_approvals/requirements.txt
    # Should show: aiokafka>=0.8.0
    ```
 
@@ -8787,11 +8787,11 @@ docker-compose logs opa
 # ERROR: rego_parse_error: unexpected '}' token at line 23
 
 # Check policy file
-cat acgs2-core/opa/policies/acgs2.rego
+cat src/core/opa/policies/acgs2.rego
 # Line 23: Extra closing brace
 
 # Fix policy
-vim acgs2-core/opa/policies/acgs2.rego
+vim src/core/opa/policies/acgs2.rego
 # Remove extra }
 
 # Validate
@@ -8836,7 +8836,7 @@ allow {
 
 **Severity**: HIGH
 **Impact**: Service-Degraded
-**Location**: `acgs2-core/services/hitl_approvals/app/api/approvals.py:34`
+**Location**: `src/core/services/hitl_approvals/app/api/approvals.py:34`
 
 **Description**: Cannot resolve approval chain. Currently uses static fallback logic; dynamic OPA-based resolution not implemented (TODO).
 

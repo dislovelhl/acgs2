@@ -8,7 +8,7 @@
 
 ```bash
 # Option 1: Use the cleanup script (RECOMMENDED)
-cd /home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus
+cd /home/dislove/document/acgs2/src/core/enhanced_agent_bus
 chmod +x clean_and_test.sh
 ./clean_and_test.sh
 
@@ -128,7 +128,7 @@ async def started_agent_bus(agent_bus) -> EnhancedAgentBus
 **Solution:**
 ```bash
 # Ensure you're in the correct directory
-cd /home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus
+cd /home/dislove/document/acgs2/src/core/enhanced_agent_bus
 
 # Run from the package directory
 python3 -m pytest tests/

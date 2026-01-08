@@ -85,7 +85,7 @@ Performance Test Results:
 [0;31m❌ API Gateway: Unhealthy or not running[0m
 [0;31m❌ OPA: Unhealthy or not running[0m
 [0;31m❌ Services not ready for performance testing[0m
-   Start services with: docker-compose -f acgs2-core/docker-compose.dev.yml up -d
+   Start services with: docker-compose -f src/core/docker-compose.dev.yml up -d
 ⚡ ACGS-2 Performance Regression Testing
 ========================================
 📁 Project Root: /home/dislove/document/acgs2
@@ -104,7 +104,7 @@ Performance Test Results:
 [0;32m✅ API Gateway: Healthy[0m
 [0;32m✅ OPA: Healthy[0m
 [0;31m❌ Services not ready for performance testing[0m
-   Start services with: docker-compose -f acgs2-core/docker-compose.dev.yml up -d
+   Start services with: docker-compose -f src/core/docker-compose.dev.yml up -d
 ⚡ ACGS-2 Performance Regression Testing
 ========================================
 📁 Project Root: /home/dislove/document/acgs2
@@ -123,7 +123,7 @@ Performance Test Results:
 [0;32m✅ API Gateway: Healthy[0m
 [0;31m❌ OPA: Unhealthy or not running[0m
 [0;31m❌ Services not ready for performance testing[0m
-   Start services with: docker-compose -f acgs2-core/docker-compose.dev.yml up -d
+   Start services with: docker-compose -f src/core/docker-compose.dev.yml up -d
 ⚡ ACGS-2 Performance Regression Testing
 ========================================
 📁 Project Root: /home/dislove/document/acgs2
@@ -142,4 +142,4 @@ Performance Test Results:
 [0;31m❌ API Gateway: Unhealthy or not running[0m
 [0;31m❌ OPA: Unhealthy or not running[0m
 [0;31m❌ Services not ready for performance testing[0m
-   Start services with: docker-compose -f acgs2-core/docker-compose.dev.yml up -d
+   Start services with: docker-compose -f src/core/docker-compose.dev.yml up -d

@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # Add relevant paths to sys.path
-sys.path.append(os.path.abspath("/home/dislove/document/acgs2/acgs2-core"))
-sys.path.append(os.path.abspath("/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus"))
+sys.path.append(os.path.abspath("/home/dislove/document/acgs2/src/core"))
+sys.path.append(os.path.abspath("/home/dislove/document/acgs2/src/core/enhanced_agent_bus"))
 
 # Import LLMAssistant
 from src.core.enhanced_agent_bus.deliberation_layer.llm_assistant import LLMAssistant

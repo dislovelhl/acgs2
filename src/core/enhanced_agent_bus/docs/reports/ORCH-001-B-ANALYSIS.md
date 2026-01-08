@@ -106,7 +106,7 @@ The conftest.py attempts to disable Rust (line 63), but `MessageProcessor.__init
 ### Solution 1: Clean Cache and Re-run (Primary Recommendation)
 
 ```bash
-cd /home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus
+cd /home/dislove/document/acgs2/src/core/enhanced_agent_bus
 
 # Clean bytecode cache
 find . -type f -name "*.pyc" -delete

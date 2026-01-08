@@ -44,7 +44,7 @@ services:
 
   # Redis for caching and state management
   redis:
-    image: redis:7-alpine
+    image: redis:7.2-alpine
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-dev_password}
     ports:
       - "${REDIS_PORT:-6379}:6379"

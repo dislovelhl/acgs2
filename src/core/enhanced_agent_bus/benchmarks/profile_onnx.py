@@ -8,7 +8,7 @@ Profiles baseline ONNX inference to identify performance bottlenecks causing:
 - 798.6% CPU usage
 
 Usage:
-    python acgs2-core/enhanced_agent_bus/benchmarks/profile_onnx.py
+    python src/core/enhanced_agent_bus/benchmarks/profile_onnx.py
 
 Output:
     Profile report with memory/CPU metrics identifying:

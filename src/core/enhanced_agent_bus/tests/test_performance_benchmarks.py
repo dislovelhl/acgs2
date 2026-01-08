@@ -8,7 +8,7 @@ Performance benchmark test suite with memory profiling for validating:
 - Batch throughput ≥500 req/sec
 
 Usage:
-    pytest acgs2-core/enhanced_agent_bus/tests/test_performance_benchmarks.py --benchmark-only -v
+    pytest src/core/enhanced_agent_bus/tests/test_performance_benchmarks.py --benchmark-only -v
 
 Requires:
     pip install pytest-benchmark memory-profiler

@@ -18,11 +18,11 @@
 
 | Requirement                             | ACGS-2 Implementation                              | Location                            |
 | :-------------------------------------- | :------------------------------------------------- | :---------------------------------- |
-| Risk management system                  | Continuous evaluation in `PACARVerifier`.          | `acgs2-core/enhanced_agent_bus/`    |
+| Risk management system                  | Continuous evaluation in `PACARVerifier`.          | `src/core/enhanced_agent_bus/`    |
 | Data and data governance                | Data quality checks and bias detection patterns.   | `PolicyRegistry`                    |
 | Technical documentation                 | Automatically generated compliance exports.        | `docs/compliance/templates/`        |
-| Record-keeping (Logging)                | Structured logging and `IntegrityService` ledger.  | `acgs2-core/services/integrity/`    |
-| Human oversight                         | HITL (Human-in-the-Loop) approval chains.          | `acgs2-core/services/hitl_service/` |
+| Record-keeping (Logging)                | Structured logging and `IntegrityService` ledger.  | `src/core/services/integrity/`    |
+| Human oversight                         | HITL (Human-in-the-Loop) approval chains.          | `src/core/services/hitl_service/` |
 | Accuracy, robustness, and cybersecurity | Metrics monitoring and sub-millisecond fail-safes. | `acgs2-observability/`              |
 
 ## Conformity Assessment

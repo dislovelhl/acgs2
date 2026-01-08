@@ -74,10 +74,10 @@ except Exception as e:
         [sys.executable, "-c", test_code],
         capture_output=True,
         text=True,
-        cwd="/home/dislove/document/acgs2/acgs2-core",
+        cwd="/home/dislove/document/acgs2/src/core",
         env={
             **dict(__import__("os").environ),
-            "PYTHONPATH": "/home/dislove/document/acgs2/acgs2-core",
+            "PYTHONPATH": "/home/dislove/document/acgs2/src/core",
         },
     )
 

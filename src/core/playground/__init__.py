@@ -7,7 +7,7 @@ real-time evaluation via OPA integration.
 
 Usage:
     # Start the playground server
-    cd acgs2-core/playground
+    cd src/core/playground
     uvicorn app:app --reload --port 8080
 
     # Access playground at http://localhost:8080/playground

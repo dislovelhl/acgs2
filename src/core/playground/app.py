@@ -5,7 +5,7 @@ Provides a web-based API for policy validation, evaluation, and example policies
 Integrates with OPA for Rego policy testing and experimentation.
 
 Usage:
-    cd acgs2-core/playground
+    cd src/core/playground
     uvicorn app:app --reload --port 8080
 
 API Endpoints:

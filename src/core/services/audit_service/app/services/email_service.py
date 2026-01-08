@@ -29,7 +29,7 @@ class EmailSettings:
     SMTP Email configuration settings.
 
     Reads configuration from environment variables following the pattern
-    established in acgs2-core/shared/config.py.
+    established in src/core/shared/config.py.
     """
 
     host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", "smtp.gmail.com"))

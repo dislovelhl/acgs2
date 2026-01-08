@@ -239,10 +239,10 @@ deployments:
 ### Immediate Rollback (< 5 minutes)
 ```bash
 # Helm rollback command
-helm rollback acgs2-core 1
+helm rollback src/core 1
 
 # Or via ArgoCD
-kubectl patch application acgs2-core -n argocd \
+kubectl patch application src/core -n argocd \
   --type merge -p '{"spec":{"source":{"targetRevision":"v1.0.0"}}}'
 ```
 

@@ -514,7 +514,7 @@ curl -H "X-Tenant-ID: ../../../etc/passwd" \
 Run the integration tests to verify all components:
 
 ```bash
-cd acgs2-core
+cd src/core
 
 # Run tenant rate limit integration tests
 pytest tests/integration/test_tenant_rate_limit.py -v

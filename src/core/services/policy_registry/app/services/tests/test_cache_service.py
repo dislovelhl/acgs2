@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-# Add acgs2-core root to path for imports
+# Add src/core root to path for imports
 acgs2_core_root = Path(__file__).parent.parent.parent.parent.parent.parent
 if str(acgs2_core_root) not in sys.path:
     sys.path.insert(0, str(acgs2_core_root))

@@ -18,10 +18,10 @@
   "structure": {
     "components": [
       {
-        "name": "acgs2-core",
+        "name": "src/core",
         "description": "Core application logic and services",
         "contents": "Agent Bus, Policy Registry, Constitutional Services, Shared Libs",
-        "path": "./acgs2-core"
+        "path": "./src/core"
       },
       {
         "name": "acgs2-infra",
@@ -108,17 +108,17 @@
       {
         "name": "blue-green-deploy.sh",
         "description": "Zero-downtime deployment",
-        "path": "./acgs2-core/scripts/blue-green-deploy.sh"
+        "path": "./src/core/scripts/blue-green-deploy.sh"
       },
       {
         "name": "blue-green-rollback.sh",
         "description": "Instant rollback capability",
-        "path": "./acgs2-core/scripts/blue-green-rollback.sh"
+        "path": "./src/core/scripts/blue-green-rollback.sh"
       },
       {
         "name": "health-check.sh",
         "description": "Comprehensive health monitoring",
-        "path": "./acgs2-core/scripts/health-check.sh"
+        "path": "./src/core/scripts/health-check.sh"
       }
     ]
   },
@@ -204,8 +204,8 @@
   "configuration": {
     "python": [
       "pyproject.toml (root)",
-      "acgs2-core/pyproject.toml",
-      "acgs2-core/enhanced_agent_bus/pyproject.toml"
+      "src/core/pyproject.toml",
+      "src/core/enhanced_agent_bus/pyproject.toml"
     ],
     "infrastructure": [
       "acgs2-infra/deploy/helm/acgs2/values.yaml",
@@ -213,9 +213,9 @@
       "mkdocs.yml"
     ],
     "security": [
-      "acgs2-core/policies/rego/ (25+ policy files)",
-      "acgs2-core/cert-manager/",
-      "acgs2-core/chaos/experiments/"
+      "src/core/policies/rego/ (25+ policy files)",
+      "src/core/cert-manager/",
+      "src/core/chaos/experiments/"
     ]
   },
   "documentation": {
@@ -239,7 +239,7 @@
     },
     "technical": [
       "README.md",
-      "acgs2-core/CLAUDE.md",
+      "src/core/CLAUDE.md",
       "docs/api/",
       "docs/adr/ (7 ADRs)",
       "docs/user-guides/"
@@ -334,15 +334,15 @@
     "development_setup": [
       "git clone https://github.com/your-org/acgs2.git",
       "cd acgs2",
-      "pip install -e acgs2-core[dev]",
+      "pip install -e src/core[dev]",
       "python3 test_all.py",
       "docker-compose up -d",
-      "cd acgs2-core/enhanced_agent_bus && python3 -m pytest tests/ -v --tb=short"
+      "cd src/core/enhanced_agent_bus && python3 -m pytest tests/ -v --tb=short"
     ],
     "production_deployment": [
-      "./acgs2-core/scripts/blue-green-deploy.sh",
-      "./acgs2-core/scripts/health-check.sh",
-      "./acgs2-core/scripts/blue-green-rollback.sh (if needed)"
+      "./src/core/scripts/blue-green-deploy.sh",
+      "./src/core/scripts/health-check.sh",
+      "./src/core/scripts/blue-green-rollback.sh (if needed)"
     ]
   },
   "security_governance": {

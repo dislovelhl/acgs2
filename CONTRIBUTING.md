@@ -181,7 +181,7 @@ cd src/core
 python scripts/run_unified_tests.py --run --coverage --parallel
 
 # Run with pytest directly (parallel execution with coverage)
-cd acgs2-core
+cd src/core
 pytest -n auto --cov=acgs2_core --cov-branch --cov-report=term-missing --cov-fail-under=85
 
 # Unit tests only

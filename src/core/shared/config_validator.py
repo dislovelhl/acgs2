@@ -193,7 +193,7 @@ class ConfigValidator:
         """Initialize validator."""
         self.project_root = project_root or Path.cwd()
         while self.project_root != self.project_root.parent:
-            if (self.project_root / "acgs2-core").exists():
+            if (self.project_root / "src/core").exists():
                 break
             self.project_root = self.project_root.parent
 

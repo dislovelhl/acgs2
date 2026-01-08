@@ -49,8 +49,8 @@ graph TD
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/ACGS-Project/ACGS-2.git acgs2-core
-cd acgs2-core
+git clone https://github.com/ACGS-Project/ACGS-2.git src/core
+cd src/core
 pip install -r requirements_optimized.txt
 # Build Rust extensions (optional for full perf)
 cd enhanced_agent_bus/rust && cargo build --release && cd ../.. && pip install -e .
@@ -86,7 +86,7 @@ curl http://localhost:8080/health
 | **Audit**       | Solana Blockchain                | Mainnet              |
 | **CI/CD**       | GitHub Actions, Dependabot       | Consolidated         |
 
-Detailed deps: [`pyproject.toml`](acgs2-core/pyproject.toml), [`Cargo.toml`](acgs2-core/enhanced_agent_bus/rust/Cargo.toml), [`requirements_optimized.txt`](acgs2-core/requirements_optimized.txt)
+Detailed deps: [`pyproject.toml`](src/core/pyproject.toml), [`Cargo.toml`](src/core/enhanced_agent_bus/rust/Cargo.toml), [`requirements_optimized.txt`](src/core/requirements_optimized.txt)
 
 ## 📖 Documentation
 

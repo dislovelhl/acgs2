@@ -8,7 +8,7 @@ Official Python SDK for ACGS-2, aligned with Phase 3.6 refactors (modularity, ne
 
 ```bash
 # Use UV for optimized deps (Phase 3.6)
-uv add acgs2-core[dev]
+uv add src/core[dev]
 # or pip
 pip install -e .[dev]
 ```

@@ -579,7 +579,7 @@ pytest -m governance
 
 **Execution:**
 ```bash
-cd acgs2-core
+cd src/core
 python testing/comprehensive_profiler.py --iterations 50 --baseline
 ```
 

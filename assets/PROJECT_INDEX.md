@@ -18,7 +18,7 @@ ACGS-2 is an enterprise multi-agent bus system implementing constitutional AI go
 
 | Component | Description | Primary Contents |
 | :-------- | :---------- | :--------------- |
-| [**acgs2-core**](./acgs2-core) | Core application logic and services | Agent Bus, Policy Registry, Constitutional Services, Shared Libs |
+| [**src/core**](./src/core) | Core application logic and services | Agent Bus, Policy Registry, Constitutional Services, Shared Libs |
 | [**acgs2-infra**](./acgs2-infra) | Infrastructure as Code and Deployment | Terraform, K8s manifests, Helm charts |
 | [**acgs2-observability**](./acgs2-observability) | Monitoring and system state | Dashboards, Alerts, Monitoring tests |
 | [**acgs2-research**](./acgs2-research) | Research papers and technical specs | Documentation, Model evaluation data |
@@ -49,7 +49,7 @@ ACGS-2 is an enterprise multi-agent bus system implementing constitutional AI go
 
 ## 📦 Core Modules
 
-### Enhanced Agent Bus (acgs2-core/enhanced_agent_bus/)
+### Enhanced Agent Bus (src/core/enhanced_agent_bus/)
 **Primary Component**: High-performance agent communication with constitutional validation
 
 #### Main Classes
@@ -75,7 +75,7 @@ from enhanced_agent_bus import (
 - **HITLManager** - Human-in-the-loop approval workflow
 - **AdaptiveRouter** - Routes messages based on impact threshold (default: 0.8)
 
-### Services (acgs2-core/services/)
+### Services (src/core/services/)
 **47+ microservices** providing enterprise functionality:
 
 #### Core Services
@@ -101,8 +101,8 @@ from enhanced_agent_bus import (
 
 ### Python Configuration
 - **pyproject.toml** - Root project configuration (Python 3.11+, pytest, coverage)
-- **acgs2-core/pyproject.toml** - Core package dependencies and build settings
-- **acgs2-core/enhanced_agent_bus/pyproject.toml** - Agent bus package configuration
+- **src/core/pyproject.toml** - Core package dependencies and build settings
+- **src/core/enhanced_agent_bus/pyproject.toml** - Agent bus package configuration
 
 ### Infrastructure Configuration
 - **acgs2-infra/deploy/helm/acgs2/values.yaml** - Helm deployment values
@@ -110,14 +110,14 @@ from enhanced_agent_bus import (
 - **mkdocs.yml** - Documentation site configuration
 
 ### Security & Policies
-- **acgs2-core/policies/rego/** - OPA Rego policies (25+ policy files)
-- **acgs2-core/cert-manager/** - Certificate management manifests
-- **acgs2-core/chaos/experiments/** - Chaos testing configurations
+- **src/core/policies/rego/** - OPA Rego policies (25+ policy files)
+- **src/core/cert-manager/** - Certificate management manifests
+- **src/core/chaos/experiments/** - Chaos testing configurations
 
 ## 📚 Documentation
 
 ### Architecture Documentation (91 files)
-Complete C4 architecture documentation in `acgs2-core/C4-Documentation/`:
+Complete C4 architecture documentation in `src/core/C4-Documentation/`:
 
 #### C4 Levels
 - **Context**: System overview, 6 personas, 7 user journeys
@@ -138,7 +138,7 @@ Complete C4 architecture documentation in `acgs2-core/C4-Documentation/`:
 
 ### Technical Documentation
 - **README.md** - Main project overview and quick start
-- **acgs2-core/CLAUDE.md** - Comprehensive development guide
+- **src/core/CLAUDE.md** - Comprehensive development guide
 - **docs/api/** - API specifications and generated docs
 - **docs/adr/** - Architecture Decision Records (7 ADRs)
 - **docs/user-guides/** - User documentation (SDK guides, tutorials)
@@ -157,7 +157,7 @@ Complete C4 architecture documentation in `acgs2-core/C4-Documentation/`:
 - **Test Files**: 193 test files identified
 
 ### Test Categories
-#### Core Tests (acgs2-core/enhanced_agent_bus/tests/)
+#### Core Tests (src/core/enhanced_agent_bus/tests/)
 - **193 test files** covering agent bus functionality
 - Unit tests, integration tests, performance tests
 - Constitutional validation, MACI role separation
@@ -224,7 +224,7 @@ git clone https://github.com/your-org/acgs2.git
 cd acgs2
 
 # Install dependencies
-pip install -e acgs2-core[dev]
+pip install -e src/core[dev]
 
 # Run unified test suite
 python3 test_all.py
@@ -233,7 +233,7 @@ python3 test_all.py
 docker-compose up -d
 
 # Run enhanced agent bus tests
-cd acgs2-core/enhanced_agent_bus
+cd src/core/enhanced_agent_bus
 python3 -m pytest tests/ -v --tb=short
 ```
 
@@ -361,7 +361,7 @@ ACGS-2 implements Temporal-style workflow patterns with constitutional validatio
 
 ## 🛠️ Tools & Utilities
 
-### Development Tools (acgs2-core/tools/)
+### Development Tools (src/core/tools/)
 - **policy_bundle_manager.py** - Policy bundle management
 - **doc_link_checker.py** - Documentation link validation
 - **fix_kwarg_type_hints.py** - Type hint corrections

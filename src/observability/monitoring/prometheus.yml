@@ -43,11 +43,11 @@ scrape_configs:
   #   - tiered_cache_tier_health - Tier health status (1=healthy, 0=unhealthy)
   #   - tiered_cache_fallback_total - Fallback events (Redis unavailable)
   #   - tiered_cache_warming_keys_loaded_total - Cache warming metrics
-  - job_name: "acgs2-core-tiered-cache"
+  - job_name: "src/core-tiered-cache"
     static_configs:
       - targets: ["enhanced-agent-bus:8000"]
         labels:
-          service: "acgs2-core"
+          service: "src/core"
           component: "tiered-cache"
     scrape_interval: 5s
     metrics_path: "/metrics"
@@ -57,7 +57,7 @@ scrape_configs:
         regex: "(tiered_cache_.*|cache_operation_duration_l[123]_seconds.*)"
         action: keep
 
-  - job_name: "acgs2-core-services"
+  - job_name: "src/core-services"
     static_configs:
       - targets:
           - "constraint-generation-system:8001"

@@ -17,14 +17,14 @@ from src.core.services.audit_service.core.audit_ledger import (
 class TestAuditEntry:
     """Test AuditEntry data structure."""
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def storage_path(self, tmp_path):
         """Create a temporary storage path."""
         p = tmp_path / "audit_storage"
         p.mkdir()
         return p
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def ledger_with_config(self, storage_path):
         """Create a ledger with specific config for testing."""
         config = AuditLedgerConfig(

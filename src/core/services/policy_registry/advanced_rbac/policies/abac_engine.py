@@ -10,7 +10,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
-# Add acgs2-core to path for shared modules
+# Add src/core to path for shared modules
 core_path = Path(__file__).parent.parent.parent.parent.parent
 if str(core_path) not in sys.path:
     sys.path.insert(0, str(core_path))

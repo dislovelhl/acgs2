@@ -233,7 +233,7 @@ This document catalogs all custom exception classes across the ACGS-2 codebase, 
 
 ## Enhanced Agent Bus Exceptions
 
-### Location: `acgs2-core/enhanced_agent_bus/exceptions.py`
+### Location: `src/core/enhanced_agent_bus/exceptions.py`
 
 This module provides the core exception hierarchy for the Enhanced Agent Bus system.
 
@@ -538,7 +538,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ## HITL Approvals Service Exceptions
 
-### OPA Client (`acgs2-core/services/hitl-approvals/app/core/opa_client.py`)
+### OPA Client (`src/core/services/hitl-approvals/app/core/opa_client.py`)
 
 **`OPAClientError`**
 - **Description:** Base exception for OPA client errors
@@ -557,7 +557,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Kafka Client (`acgs2-core/services/hitl-approvals/app/core/kafka_client.py`)
+### Kafka Client (`src/core/services/hitl-approvals/app/core/kafka_client.py`)
 
 **`KafkaClientError`**
 - **Description:** Base exception for Kafka client errors
@@ -576,7 +576,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Approval Engine (`acgs2-core/services/hitl-approvals/app/core/approval_engine.py`)
+### Approval Engine (`src/core/services/hitl-approvals/app/core/approval_engine.py`)
 
 **`ApprovalEngineError`**
 - **Description:** Base exception for approval engine errors
@@ -595,7 +595,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Escalation (`acgs2-core/services/hitl-approvals/app/core/escalation.py`)
+### Escalation (`src/core/services/hitl-approvals/app/core/escalation.py`)
 
 **`EscalationTimerError`**
 - **Description:** Base exception for escalation timer errors
@@ -610,7 +610,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Audit Ledger (`acgs2-core/services/hitl-approvals/app/audit/ledger.py`)
+### Audit Ledger (`src/core/services/hitl-approvals/app/audit/ledger.py`)
 
 **`AuditLedgerError`**
 - **Description:** Base exception for audit ledger errors
@@ -631,7 +631,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ## Shared Authentication Exceptions
 
-### OIDC Handler (`acgs2-core/shared/auth/oidc_handler.py`)
+### OIDC Handler (`src/core/shared/auth/oidc_handler.py`)
 
 **`OIDCError`**
 - **Description:** Base exception for OIDC-related errors
@@ -670,7 +670,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### SAML Handler (`acgs2-core/shared/auth/saml_handler.py`)
+### SAML Handler (`src/core/shared/auth/saml_handler.py`)
 
 **`SAMLError`**
 - **Description:** Base exception for SAML-related errors
@@ -693,14 +693,14 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### SAML Configuration (`acgs2-core/shared/auth/saml_config.py`)
+### SAML Configuration (`src/core/shared/auth/saml_config.py`)
 
 **`SAMLConfigurationError`**
 - **Description:** SAML configuration error
 
 ---
 
-### Role Mapper (`acgs2-core/shared/auth/role_mapper.py`)
+### Role Mapper (`src/core/shared/auth/role_mapper.py`)
 
 **`RoleMappingError`**
 - **Description:** Base exception for role mapping errors
@@ -711,7 +711,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Provisioning (`acgs2-core/shared/auth/provisioning.py`)
+### Provisioning (`src/core/shared/auth/provisioning.py`)
 
 **`ProvisioningError`**
 - **Description:** Base exception for user provisioning errors
@@ -728,7 +728,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ## Tenant Management Exceptions
 
-### Location: `acgs2-core/services/tenant_management/src/`
+### Location: `src/core/services/tenant_management/src/`
 
 **`TenantNotFoundError`**
 - **Description:** Raised when tenant is not found
@@ -753,7 +753,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Shared Tenant Integration (`acgs2-core/shared/tenant_integration.py`)
+### Shared Tenant Integration (`src/core/shared/tenant_integration.py`)
 
 **`TenantError`**
 - **Description:** Base exception for tenant errors
@@ -776,7 +776,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Tenant Context (`acgs2-core/shared/security/tenant_context.py`)
+### Tenant Context (`src/core/shared/security/tenant_context.py`)
 
 **`TenantValidationError`**
 - **Description:** Tenant context validation error
@@ -785,7 +785,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ## SDK Client Exceptions
 
-### Location: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+### Location: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 
 **`ACGS2Error`**
 - **Description:** Base exception for ACGS-2 SDK errors
@@ -864,7 +864,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ### Identity Service
 
-#### Azure AD Connector (`acgs2-core/services/identity/connectors/azure_ad_connector.py`)
+#### Azure AD Connector (`src/core/services/identity/connectors/azure_ad_connector.py`)
 
 **`AzureADError`**
 - **Description:** Base exception for Azure AD errors
@@ -883,7 +883,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-#### Okta Models (`acgs2-core/services/identity/connectors/okta_models.py`)
+#### Okta Models (`src/core/services/identity/connectors/okta_models.py`)
 
 **`OktaAuthError`**
 - **Description:** Okta authentication error
@@ -899,7 +899,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Audit Service (`acgs2-core/services/audit_service/app/services/email_service.py`)
+### Audit Service (`src/core/services/audit_service/app/services/email_service.py`)
 
 **`EmailDeliveryError`**
 - **Description:** Email delivery failed
@@ -912,7 +912,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Policy Registry (`acgs2-core/services/policy_registry/app/services/secure_fallback_crypto.py`)
+### Policy Registry (`src/core/services/policy_registry/app/services/secure_fallback_crypto.py`)
 
 **`FallbackCryptoError`**
 - **Description:** Base exception for fallback crypto errors
@@ -939,14 +939,14 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Search Platform (`acgs2-core/services/integration/search_platform/client.py`)
+### Search Platform (`src/core/services/integration/search_platform/client.py`)
 
 **`SearchPlatformError`**
 - **Description:** Search platform integration error
 
 ---
 
-### Enhanced Agent Bus - ACL Adapters (`acgs2-core/enhanced_agent_bus/acl_adapters/base.py`)
+### Enhanced Agent Bus - ACL Adapters (`src/core/enhanced_agent_bus/acl_adapters/base.py`)
 
 **`AdapterTimeoutError`**
 - **Description:** ACL adapter operation timed out
@@ -959,14 +959,14 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Enhanced Agent Bus - Observability (`acgs2-core/enhanced_agent_bus/observability/timeout_budget.py`)
+### Enhanced Agent Bus - Observability (`src/core/enhanced_agent_bus/observability/timeout_budget.py`)
 
 **`LayerTimeoutError`**
 - **Description:** Timeout budget exceeded for observability layer
 
 ---
 
-### Enhanced Agent Bus - ML Governance (`acgs2-core/enhanced_agent_bus/integrations/ml_governance.py`)
+### Enhanced Agent Bus - ML Governance (`src/core/enhanced_agent_bus/integrations/ml_governance.py`)
 
 **`MLGovernanceError`**
 - **Inherits:** `AgentBusError`
@@ -982,7 +982,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Enhanced Agent Bus - Recovery Orchestrator (`acgs2-core/enhanced_agent_bus/recovery_orchestrator.py`)
+### Enhanced Agent Bus - Recovery Orchestrator (`src/core/enhanced_agent_bus/recovery_orchestrator.py`)
 
 **`RecoveryOrchestratorError`**
 - **Description:** Recovery orchestrator error
@@ -995,7 +995,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### CLI - OPA Service (`acgs2-core/cli/opa_service.py`)
+### CLI - OPA Service (`src/core/cli/opa_service.py`)
 
 **`OPAServiceError`**
 - **Description:** Base exception for OPA service CLI errors
@@ -1006,7 +1006,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Breakthrough - Temporal (`acgs2-core/breakthrough/temporal/timeline_engine.py`)
+### Breakthrough - Temporal (`src/core/breakthrough/temporal/timeline_engine.py`)
 
 **`TemporalViolationError`**
 - **Description:** Temporal constraint violation
@@ -1016,7 +1016,7 @@ This module provides the core exception hierarchy for the Enhanced Agent Bus sys
 
 ---
 
-### Breakthrough - Policy (`acgs2-core/breakthrough/policy/verified_policy_generator.py`)
+### Breakthrough - Policy (`src/core/breakthrough/policy/verified_policy_generator.py`)
 
 **`PolicyVerificationError`**
 - **Description:** Policy verification failed
@@ -1185,7 +1185,7 @@ This catalog will be used in the following phases:
 ## References
 
 - Implementation Plan: `.auto-claude/specs/060-document-error-codes-and-troubleshooting-for-commo/implementation_plan.json`
-- TODO Catalog: `acgs2-core/docs/operations/TODO_CATALOG.md`
+- TODO Catalog: `src/core/docs/operations/TODO_CATALOG.md`
 - Spec: `.auto-claude/specs/060-document-error-codes-and-troubleshooting-for-commo/spec.md`
 
 ---

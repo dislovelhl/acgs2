@@ -5,7 +5,7 @@
 ## Analysis Date: 2026-01-03
 
 ## Test File Location
-`acgs2-core/enhanced_agent_bus/tests/test_adaptive_governance.py`
+`src/core/enhanced_agent_bus/tests/test_adaptive_governance.py`
 
 ## Current Imports in Test File (lines 13-26)
 The test file imports the following from `enhanced_agent_bus.adaptive_governance`:
@@ -78,12 +78,12 @@ The test file also has a smoke test section (lines 390-411) that imports `Adapti
 
 ### Documentation Files with Code Examples
 
-1. **acgs2-core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md**
+1. **src/core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md**
    - Line 137: `from enhanced_agent_bus.adaptive_governance import provide_governance_feedback` ✅
    - Line 276: `from enhanced_agent_bus.adaptive_governance import get_adaptive_governance` ✅
    - Line 286: `from enhanced_agent_bus.adaptive_governance import get_adaptive_governance` ✅
 
-2. **acgs2-core/README.md**
+2. **src/core/README.md**
    - Line 327: `from enhanced_agent_bus.adaptive_governance import get_adaptive_governance` ✅
 
 All functions used in documentation examples (`provide_governance_feedback`, `get_adaptive_governance`) are properly exported from `adaptive_governance/__init__.py` and will continue to work.

@@ -44,7 +44,7 @@ With NVIDIA TensorRT and FP16 optimization:
 
 ```bash
 # Already exported to:
-# acgs2-core/enhanced_agent_bus/deliberation_layer/optimized_models/distilbert_base_uncased.onnx
+# src/core/enhanced_agent_bus/deliberation_layer/optimized_models/distilbert_base_uncased.onnx
 ```
 
 ### Step 2: TensorRT Conversion (GPU Required)
@@ -129,7 +129,7 @@ class ImpactScorer:
 
 ```bash
 # Run GPU decision benchmark
-cd acgs2-core
+cd src/core
 python -m enhanced_agent_bus.profiling.benchmark_gpu_decision --samples 200
 
 # Check optimization status

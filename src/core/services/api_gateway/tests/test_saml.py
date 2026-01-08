@@ -7,7 +7,7 @@ Tests cover: login redirect, ACS callback handling, assertion validation,
 user info extraction, session management, and error handling.
 
 Usage:
-    cd acgs2-core/services/api_gateway && pytest tests/test_saml.py -v
+    cd src/core/services/api_gateway && pytest tests/test_saml.py -v
 """
 
 import base64

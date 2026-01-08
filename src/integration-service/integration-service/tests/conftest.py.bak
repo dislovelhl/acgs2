@@ -10,10 +10,10 @@ from typing import Dict, List
 import pytest
 from fastapi.testclient import TestClient
 
-# Add acgs2-core to Python path for shared module imports
-# This allows integration-service to import from acgs2-core/shared/ during tests
+# Add src/core to Python path for shared module imports
+# This allows integration-service to import from src/core/shared/ during tests
 repo_root = Path(__file__).parent.parent.parent
-acgs2_core_path = repo_root / "acgs2-core"
+acgs2_core_path = repo_root / "src/core"
 if acgs2_core_path.exists() and str(acgs2_core_path) not in sys.path:
     sys.path.insert(0, str(acgs2_core_path))
 

@@ -44,7 +44,7 @@ The coordinated sequence of DOCS-001 documentation enhancement verification and 
    - **Resolution**: Fixed f-string and import issues in:
      - `scripts/docs_enhancement_tool.py`
      - `scripts/validate_performance.py`
-     - `acgs2-core/testing/comprehensive_profiler.py`
+     - `src/core/testing/comprehensive_profiler.py`
 
 #### Compliance Checks:
 - ✅ **Constitutional Hash Validation**: All documentation tagged with `cdd01ef066bc6cf2`

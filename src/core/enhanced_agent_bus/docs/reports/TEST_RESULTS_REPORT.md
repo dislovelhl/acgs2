@@ -361,7 +361,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 ### Full Test Suite
 ```bash
 cd enhanced_agent_bus
-PYTHONPATH=/path/to/acgs2-core python3 -m pytest tests/ -v --tb=short
+PYTHONPATH=/path/to/src/core python3 -m pytest tests/ -v --tb=short
 ```
 
 ### With Coverage
@@ -495,7 +495,7 @@ Tests are integrated into CI/CD pipeline:
 # GitHub Actions workflow
 - name: Run Enhanced Agent Bus Tests
   run: |
-    PYTHONPATH=${{ github.workspace }}/acgs2-core \
+    PYTHONPATH=${{ github.workspace }}/src/core \
     python -m pytest enhanced_agent_bus/tests/ \
       -v --tb=short \
       --cov=enhanced_agent_bus \

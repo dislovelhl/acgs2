@@ -1,5 +1,5 @@
 """
-Test to verify that integration-service can import from acgs2-core/shared/security/auth.py
+Test to verify that integration-service can import from src/core/shared/security/auth.py
 """
 
 import pytest

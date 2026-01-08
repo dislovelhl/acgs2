@@ -253,7 +253,7 @@ pytest tests/api/test_malformed_token_handling.py -v
 **Symptom:** Tests fail on assertion about error message content
 
 **Check:**
-1. Verify `acgs2-core/shared/security/auth.py` returns generic errors
+1. Verify `src/core/shared/security/auth.py` returns generic errors
 2. Check that `get_current_user` dependency raises proper HTTPException
 3. Verify FastAPI exception handler doesn't modify error format
 
@@ -351,7 +351,7 @@ After completing this subtask:
 
 - **Spec:** `.auto-claude/specs/044-add-authentication-to-policy-validation-api-endpoi/spec.md`
 - **Implementation Plan:** `.auto-claude/specs/044-add-authentication-to-policy-validation-api-endpoi/implementation_plan.json`
-- **Shared Auth Module:** `acgs2-core/shared/security/auth.py`
+- **Shared Auth Module:** `src/core/shared/security/auth.py`
 - **JWT Documentation:** `integration-service/docs/JWT_CONFIGURATION.md`
 - **Related:** `EXPIRED_TOKEN_VERIFICATION.md` - Similar verification for expired tokens
 

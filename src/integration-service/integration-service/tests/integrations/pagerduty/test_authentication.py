@@ -19,7 +19,7 @@ import pytest
 from pydantic import SecretStr
 
 from src.integrations.base import AuthenticationError, IntegrationStatus
-from src.integrations.pagerduty_adapter import PagerDutyAdapter, PagerDutyCredentials
+from src.integrations.pagerduty_adapter import PagerDutyAdapter, PagerDutyAuthType, PagerDutyCredentials
 
 if TYPE_CHECKING:
     pass

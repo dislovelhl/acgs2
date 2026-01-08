@@ -3,7 +3,7 @@ Adaptive Learning Engine - FastAPI Endpoints
 Constitutional Hash: cdd01ef066bc6cf2
 
 FastAPI router with endpoints for prediction, training, drift monitoring, and rollback.
-Follows patterns from acgs2-core/enhanced_agent_bus/api.py.
+Follows patterns from src/core/enhanced_agent_bus/api.py.
 """
 
 import logging

@@ -3,7 +3,7 @@ Adaptive Learning Engine - API Models
 Constitutional Hash: cdd01ef066bc6cf2
 
 Pydantic request/response models for the Adaptive Learning Engine FastAPI endpoints.
-Follows patterns from acgs2-core/enhanced_agent_bus/api.py.
+Follows patterns from src/core/enhanced_agent_bus/api.py.
 """
 
 from datetime import datetime

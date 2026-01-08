@@ -26,7 +26,7 @@ def generate_markdown_table(policies):
 
 
 def main():
-    policy_dir = Path("/home/dislove/document/acgs2/acgs2-core/policies/rego")
+    policy_dir = Path("/home/dislove/document/acgs2/src/core/policies/rego")
     output_file = Path("/home/dislove/document/acgs2/docs/summaries/rego_rules.md")
 
     policies = {}

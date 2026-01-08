@@ -2,7 +2,7 @@
 
 ## Overview
 
-The integration service uses JWT (JSON Web Token) based authentication from the shared `acgs2-core/shared/security/auth.py` module. This authentication secures the policy validation API endpoints.
+The integration service uses JWT (JSON Web Token) based authentication from the shared `src/core/shared/security/auth.py` module. This authentication secures the policy validation API endpoints.
 
 ## Required Environment Variables
 
@@ -149,6 +149,6 @@ curl -H "Authorization: Bearer <jwt-token>" \
 
 ## References
 
-- Shared Auth Module: `acgs2-core/shared/security/auth.py`
-- Shared Config Module: `acgs2-core/shared/config.py`
+- Shared Auth Module: `src/core/shared/security/auth.py`
+- Shared Config Module: `src/core/shared/config.py`
 - Environment Template: `integration-service/.env.example`

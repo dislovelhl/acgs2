@@ -15,11 +15,11 @@ This document catalogs common deployment failure scenarios identified from revie
 ### Sources Analyzed
 
 1. **docs/quickstart/troubleshooting.md** - Primary troubleshooting guide with 12 major categories
-2. **acgs2-core/docs/operations/DEPLOYMENT_GUIDE.md** - Enterprise deployment guide (AWS/GCP)
-3. **acgs2-core/deploy/deployment_guide.md** - Docker Compose and Helm deployment guide
-4. **acgs2-core/docs/operations/chaos_testing_guide.md** - Chaos engineering failure scenarios
+2. **src/core/docs/operations/DEPLOYMENT_GUIDE.md** - Enterprise deployment guide (AWS/GCP)
+3. **src/core/deploy/deployment_guide.md** - Docker Compose and Helm deployment guide
+4. **src/core/docs/operations/chaos_testing_guide.md** - Chaos engineering failure scenarios
 5. **acgs2-infra/multi-region/docs/failover-runbook.md** - Multi-region failover procedures
-6. **acgs2-core/docs/operations/LOAD_TEST_COMPREHENSIVE_REPORT.md** - Performance and load testing insights
+6. **src/core/docs/operations/LOAD_TEST_COMPREHENSIVE_REPORT.md** - Performance and load testing insights
 
 ---
 

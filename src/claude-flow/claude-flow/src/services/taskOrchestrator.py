@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 # Add the ACGS-2 core to the path
-sys.path.insert(0, "/home/dislove/document/acgs2/acgs2-core")
+sys.path.insert(0, "/home/dislove/document/acgs2/src/core")
 
 from ..utils.logging_config import log_error_result, log_success_result, setup_logging
 

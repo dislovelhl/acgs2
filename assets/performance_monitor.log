@@ -1,5 +1,5 @@
 2025-12-31 20:06:26,051 - PERF-001 - INFO - Establishing performance baseline...
-2025-12-31 20:06:26,425 - PERF-001 - ERROR - Failed to establish baseline: cannot import name 'ComprehensiveProfiler' from 'comprehensive_profiler' (/home/dislove/document/acgs2/acgs2-core/testing/comprehensive_profiler.py)
+2025-12-31 20:06:26,425 - PERF-001 - ERROR - Failed to establish baseline: cannot import name 'ComprehensiveProfiler' from 'comprehensive_profiler' (/home/dislove/document/acgs2/src/core/testing/comprehensive_profiler.py)
 2025-12-31 20:06:26,425 - PERF-001 - INFO - Starting PERF-001 Performance Monitoring
 2025-12-31 20:06:26,425 - PERF-001 - INFO - Constitutional Hash: cdd01ef066bc6cf2
 2025-12-31 20:06:26,425 - PERF-001 - INFO - Check interval: 30 seconds

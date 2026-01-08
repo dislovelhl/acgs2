@@ -214,7 +214,7 @@ ImportError: cannot import name 'get_current_user' from 'shared.security.auth'
 Ensure Python path is configured correctly. This should be handled automatically by `conftest.py` and `src/__init__.py`, but you can verify:
 
 ```bash
-# Check that acgs2-core is accessible
+# Check that src/core is accessible
 ls -la ../../src/core/shared/security/auth.py
 
 # Ensure symlink or path configuration exists

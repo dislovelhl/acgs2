@@ -6,7 +6,7 @@
 
 | Control | Name                                       | Implementation Detail                                | Audit Evidence (ACGS-2)                |
 | :------ | :----------------------------------------- | :--------------------------------------------------- | :------------------------------------- |
-| A.5.1   | Policies for information security          | Constitutional policies stored in `PolicyRegistry`.  | `acgs2-core/services/policy_registry/` |
+| A.5.1   | Policies for information security          | Constitutional policies stored in `PolicyRegistry`.  | `src/core/services/policy_registry/` |
 | A.5.3   | Segregation of duties                      | Multi-turn verifier roles (Red Team vs Validator).   | `PACARVerifier` stages                 |
 | A.5.8   | Information security in project management | Mandatory constitutional hash validation in all PRs. | CI/CD logs with hash check             |
 

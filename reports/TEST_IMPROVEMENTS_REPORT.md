@@ -184,7 +184,7 @@ Tests: 138 passed, 0 failed
 ### Virtual Environment Setup
 ```bash
 # Circuit breaker dependencies now available via:
-cd /home/dislove/document/acgs2/acgs2-core
+cd /home/dislove/document/acgs2/src/core
 source venv/bin/activate
 # All tests run with full circuit breaker support
 ```

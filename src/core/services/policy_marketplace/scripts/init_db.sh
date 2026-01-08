@@ -327,7 +327,7 @@ do_init() {
         echo ""
         echo "Next steps:"
         echo "  1. Run Alembic migrations:"
-        echo "     cd acgs2-core/services/policy_marketplace"
+        echo "     cd src/core/services/policy_marketplace"
         echo "     alembic upgrade head"
         echo ""
         echo "  2. Seed verified templates:"

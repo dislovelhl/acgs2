@@ -16,7 +16,7 @@ The ACGS-2 project is in a high-maturity state with Phase 1 "Foundation Completi
 
 | Spec ID | Name                            | Status         | Audit Findings                                                                             |
 | :------ | :------------------------------ | :------------- | :----------------------------------------------------------------------------------------- |
-| **001** | LLM-Based Intent Classification | ✅ Completed   | Operational logic confirmed in `acgs2-core`.                                               |
+| **001** | LLM-Based Intent Classification | ✅ Completed   | Operational logic confirmed in `src/core`.                                               |
 | **002** | Multi-Turn PACAR Support        | ✅ Completed   | Core async message flows and multi-turn state managed in `PACARVerifier`.                  |
 | **005** | Structured Logging              | 🚧 In Progress | **498** unstructured log sites identified. Migration to `structlog` is partially complete. |
 | **006** | Test Coverage Unification       | ✅ Completed   | 741+ tests achieve comprehensive coverage.                                                 |
@@ -25,7 +25,7 @@ The ACGS-2 project is in a high-maturity state with Phase 1 "Foundation Completi
 
 A deep scan of the codebase reveals:
 
-- **Python (`acgs2-core`):** 222 legacy `print()` statements.
+- **Python (`src/core`):** 222 legacy `print()` statements.
 - **TypeScript (`claude-flow`):** 238 legacy `console.log()` statements.
 - **Total:** 460 confirmed sites requiring migration to structured JSON logging with correlation IDs.
 
@@ -69,7 +69,7 @@ Restore sub-millisecond P99 latency by:
 
 ### 2. Logging Finalization
 
-Execute a sweep of the 460 legacy logging sites. Prioritize `acgs2-core` production services over test suites.
+Execute a sweep of the 460 legacy logging sites. Prioritize `src/core` production services over test suites.
 
 ### 3. Audit Service Activation
 

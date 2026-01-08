@@ -58,7 +58,7 @@ For each error code, we provide:
 - **Exception**: `ConfigurationError` (enhanced-agent-bus)
 - **Severity**: HIGH
 - **Impact**: Deployment-Blocking
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Generic configuration error, base class for config issues
 - **Common Causes**:
   - Invalid configuration structure
@@ -149,8 +149,8 @@ For each error code, we provide:
 - **Severity**: CRITICAL
 - **Impact**: Deployment-Blocking
 - **Location**:
-  - `acgs2-core/enhanced_agent_bus/exceptions.py`
-  - `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+  - `src/core/enhanced_agent_bus/exceptions.py`
+  - `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Constitutional hash validation failed
 - **Expected Hash**: `cdd01ef066bc6cf2`
 - **Common Causes**:
@@ -163,7 +163,7 @@ For each error code, we provide:
 - **Exception**: `ConstitutionalValidationError` (enhanced-agent-bus)
 - **Severity**: CRITICAL
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Constitutional validation check failed
 - **Common Causes**:
   - Validation rules not met
@@ -219,7 +219,7 @@ For each error code, we provide:
 - **Scenario**: CORS policy misconfigured
 - **Severity**: CRITICAL (Security)
 - **Impact**: Security-Vulnerability
-- **Location**: `acgs2-core/services/compliance_docs/src/main.py:25`
+- **Location**: `src/core/services/compliance_docs/src/main.py:25`
 - **Description**: CORS policy misconfigured. Use centralized `get_cors_config()`.
 - **Status**: RESOLVED
 - **Security Impact**: Allows any origin to access API
@@ -237,7 +237,7 @@ For each error code, we provide:
 - **Exception**: `OIDCConfigurationError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/shared/auth/oidc_handler.py`
+- **Location**: `src/core/shared/auth/oidc_handler.py`
 - **Description**: OIDC provider configuration error
 - **Common Causes**:
   - Missing client ID or secret
@@ -248,7 +248,7 @@ For each error code, we provide:
 - **Exception**: `SAMLConfigurationError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/shared/auth/saml_config.py`
+- **Location**: `src/core/shared/auth/saml_config.py`
 - **Description**: SAML configuration error
 - **Common Causes**:
   - Invalid IdP metadata
@@ -269,14 +269,14 @@ For each error code, we provide:
 - **Impact**: Service-Unavailable
 - **Location**:
   - `integration-service/src/integrations/base.py`
-  - `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+  - `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Generic authentication failure
 
 #### ACGS-2002: AuthorizationError
 - **Exception**: `AuthorizationError` (sdk)
 - **Severity**: HIGH
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+- **Location**: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Authorization denied
 
 #### ACGS-2003: AccessDeniedError
@@ -377,7 +377,7 @@ For each error code, we provide:
 - **Exception**: `OIDCAuthenticationError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/shared/auth/oidc_handler.py`
+- **Location**: `src/core/shared/auth/oidc_handler.py`
 - **Description**: OIDC authentication failed
 - **Common Causes**:
   - Invalid authorization code
@@ -388,7 +388,7 @@ For each error code, we provide:
 - **Exception**: `OIDCTokenError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/oidc_handler.py`
+- **Location**: `src/core/shared/auth/oidc_handler.py`
 - **Description**: OIDC token exchange or validation failed
 - **Common Causes**:
   - Invalid token signature
@@ -399,7 +399,7 @@ For each error code, we provide:
 - **Exception**: `OIDCProviderError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/oidc_handler.py`
+- **Location**: `src/core/shared/auth/oidc_handler.py`
 - **Description**: Error communicating with OIDC provider
 - **Common Causes**:
   - Network connectivity issues
@@ -410,98 +410,98 @@ For each error code, we provide:
 - **Exception**: `OIDCError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/oidc_handler.py`
+- **Location**: `src/core/shared/auth/oidc_handler.py`
 - **Description**: Base exception for OIDC-related errors
 
 #### ACGS-2211: SAMLAuthenticationError
 - **Exception**: `SAMLAuthenticationError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/shared/auth/saml_handler.py`
+- **Location**: `src/core/shared/auth/saml_handler.py`
 - **Description**: SAML authentication failed
 
 #### ACGS-2212: SAMLValidationError
 - **Exception**: `SAMLValidationError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/saml_handler.py`
+- **Location**: `src/core/shared/auth/saml_handler.py`
 - **Description**: SAML assertion validation failed
 
 #### ACGS-2213: SAMLProviderError
 - **Exception**: `SAMLProviderError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/saml_handler.py`
+- **Location**: `src/core/shared/auth/saml_handler.py`
 - **Description**: Error communicating with SAML IdP
 
 #### ACGS-2214: SAMLReplayError
 - **Exception**: `SAMLReplayError` (shared-auth)
 - **Severity**: CRITICAL (Security)
 - **Impact**: Security-Vulnerability
-- **Location**: `acgs2-core/shared/auth/saml_handler.py`
+- **Location**: `src/core/shared/auth/saml_handler.py`
 - **Description**: SAML replay attack detected
 
 #### ACGS-2215: SAMLError
 - **Exception**: `SAMLError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/saml_handler.py`
+- **Location**: `src/core/shared/auth/saml_handler.py`
 - **Description**: Base exception for SAML-related errors
 
 #### ACGS-2221: AzureADAuthError
 - **Exception**: `AzureADAuthError` (identity-service)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+- **Location**: `src/core/services/identity/connectors/azure_ad_connector.py`
 - **Description**: Azure AD authentication error
 
 #### ACGS-2222: AzureADConfigError
 - **Exception**: `AzureADConfigError` (identity-service)
 - **Severity**: HIGH
 - **Impact**: Deployment-Blocking
-- **Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+- **Location**: `src/core/services/identity/connectors/azure_ad_connector.py`
 - **Description**: Azure AD configuration error
 
 #### ACGS-2223: AzureADGraphError
 - **Exception**: `AzureADGraphError` (identity-service)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+- **Location**: `src/core/services/identity/connectors/azure_ad_connector.py`
 - **Description**: Azure AD Graph API error
 
 #### ACGS-2224: AzureADError
 - **Exception**: `AzureADError` (identity-service)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+- **Location**: `src/core/services/identity/connectors/azure_ad_connector.py`
 - **Description**: Base exception for Azure AD errors
 
 #### ACGS-2231: OktaAuthError
 - **Exception**: `OktaAuthError` (identity-service)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+- **Location**: `src/core/services/identity/connectors/okta_models.py`
 - **Description**: Okta authentication error
 
 #### ACGS-2232: OktaConfigError
 - **Exception**: `OktaConfigError` (identity-service)
 - **Severity**: HIGH
 - **Impact**: Deployment-Blocking
-- **Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+- **Location**: `src/core/services/identity/connectors/okta_models.py`
 - **Description**: Okta configuration error
 
 #### ACGS-2233: OktaProvisioningError
 - **Exception**: `OktaProvisioningError` (identity-service)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+- **Location**: `src/core/services/identity/connectors/okta_models.py`
 - **Description**: Okta user provisioning error
 
 #### ACGS-2234: OktaGroupError
 - **Exception**: `OktaGroupError` (identity-service)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+- **Location**: `src/core/services/identity/connectors/okta_models.py`
 - **Description**: Okta group operation error
 
 ---
@@ -512,7 +512,7 @@ For each error code, we provide:
 - **Scenario**: Role verification via OPA
 - **Severity**: HIGH (Security)
 - **Impact**: Security-Enforced
-- **Location**: `acgs2-core/services/hitl_approvals/app/services/approval_chain_engine.py:148`
+- **Location**: `src/core/services/hitl_approvals/app/services/approval_chain_engine.py:148`
 - **Description**: Role verification performed via OPA.
 - **Status**: RESOLVED
 - **Current Behavior**: Role verification implemented via OPA
@@ -526,35 +526,35 @@ For each error code, we provide:
 - **Exception**: `RoleMappingError` (shared-auth)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/role_mapper.py`
+- **Location**: `src/core/shared/auth/role_mapper.py`
 - **Description**: Role mapping failed
 
 #### ACGS-2304: ProviderNotFoundError
 - **Exception**: `ProviderNotFoundError` (shared-auth)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/role_mapper.py`
+- **Location**: `src/core/shared/auth/role_mapper.py`
 - **Description**: Identity provider not found for role mapping
 
 #### ACGS-2311: ProvisioningError
 - **Exception**: `ProvisioningError` (shared-auth)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/provisioning.py`
+- **Location**: `src/core/shared/auth/provisioning.py`
 - **Description**: Base exception for user provisioning errors
 
 #### ACGS-2312: DomainNotAllowedError
 - **Exception**: `DomainNotAllowedError` (shared-auth)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/auth/provisioning.py`
+- **Location**: `src/core/shared/auth/provisioning.py`
 - **Description**: User domain not in allowed list
 
 #### ACGS-2313: ProvisioningDisabledError
 - **Exception**: `ProvisioningDisabledError` (shared-auth)
 - **Severity**: LOW
 - **Impact**: Informational
-- **Location**: `acgs2-core/shared/auth/provisioning.py`
+- **Location**: `src/core/shared/auth/provisioning.py`
 - **Description**: Auto-provisioning is disabled
 
 ---
@@ -569,8 +569,8 @@ For each error code, we provide:
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
 - **Location**:
-  - `acgs2-core/enhanced_agent_bus/exceptions.py`
-  - `acgs2-core/services/hitl_approvals/app/core/opa_client.py`
+  - `src/core/enhanced_agent_bus/exceptions.py`
+  - `src/core/services/hitl_approvals/app/core/opa_client.py`
 - **Description**: OPA policy evaluation failed
 - **Common Causes**:
   - Policy execution error
@@ -582,7 +582,7 @@ For each error code, we provide:
 - **Scenario**: Policy query returns undefined
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Required policy not found in OPA
 - **Common Causes**:
   - Wrong policy path
@@ -599,9 +599,9 @@ For each error code, we provide:
 - **Severity**: CRITICAL
 - **Impact**: Service-Unavailable (Fail-Closed)
 - **Location**:
-  - `acgs2-core/enhanced_agent_bus/exceptions.py`
-  - `acgs2-core/services/hitl_approvals/app/core/opa_client.py`
-  - `acgs2-core/cli/opa_service.py`
+  - `src/core/enhanced_agent_bus/exceptions.py`
+  - `src/core/services/hitl_approvals/app/core/opa_client.py`
+  - `src/core/cli/opa_service.py`
 - **Description**: Cannot connect to OPA server
 - **Common Causes**:
   - OPA container not running
@@ -617,29 +617,29 @@ For each error code, we provide:
 - **Severity**: CRITICAL
 - **Impact**: Service-Unavailable
 - **Location**:
-  - `acgs2-core/enhanced_agent_bus/exceptions.py`
-  - `acgs2-core/services/hitl_approvals/app/core/opa_client.py`
+  - `src/core/enhanced_agent_bus/exceptions.py`
+  - `src/core/services/hitl_approvals/app/core/opa_client.py`
 - **Description**: OPA client not properly initialized
 
 #### ACGS-2411: PolicyError
 - **Exception**: `PolicyError` (enhanced-agent-bus)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Base exception for policy-related errors
 
 #### ACGS-2412: OPAClientError
 - **Exception**: `OPAClientError` (hitl-approvals)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/opa_client.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/opa_client.py`
 - **Description**: Base exception for OPA client errors
 
 #### ACGS-2413: OPAServiceError
 - **Exception**: `OPAServiceError` (cli)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/cli/opa_service.py`
+- **Location**: `src/core/cli/opa_service.py`
 - **Description**: Base exception for OPA service CLI errors
 
 ---
@@ -830,7 +830,7 @@ For each error code, we provide:
 - **Exception**: `ServiceUnavailableError` (sdk)
 - **Severity**: CRITICAL
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+- **Location**: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Kubernetes service unavailable
 
 ---
@@ -901,7 +901,7 @@ For each error code, we provide:
 - **Exception**: `SearchPlatformError` (integration/search_platform)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/integration/search_platform/client.py`
+- **Location**: `src/core/services/integration/search_platform/client.py`
 - **Description**: Search platform integration error
 
 ---
@@ -916,8 +916,8 @@ For each error code, we provide:
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded (Cache unavailable)
 - **Location**:
-  - `acgs2-core/services/hitl_approvals/app/core/escalation.py`
-  - `acgs2-core/services/hitl_approvals/app/audit/ledger.py`
+  - `src/core/services/hitl_approvals/app/core/escalation.py`
+  - `src/core/services/hitl_approvals/app/audit/ledger.py`
 - **Description**: Cannot connect to Redis
 - **Common Causes**:
   - Redis container not running
@@ -949,14 +949,14 @@ For each error code, we provide:
 - **Exception**: `EscalationTimerError` (hitl-approvals)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/escalation.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/escalation.py`
 - **Description**: Escalation timer error (base)
 
 #### ACGS-4106: TimerNotFoundError
 - **Exception**: `TimerNotFoundError` (hitl-approvals)
 - **Severity**: LOW
 - **Impact**: Informational
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/escalation.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/escalation.py`
 - **Description**: Escalation timer not found
 
 ---
@@ -968,7 +968,7 @@ For each error code, we provide:
 - **Scenario**: Kafka not ready (DEPLOYMENT_FAILURE_SCENARIOS.md #6.1)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/kafka_client.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/kafka_client.py`
 - **Description**: Kafka connection failed
 - **Common Causes**:
   - Kafka container not running
@@ -980,14 +980,14 @@ For each error code, we provide:
 - **Exception**: `KafkaNotAvailableError` (hitl-approvals)
 - **Severity**: HIGH
 - **Impact**: Deployment-Blocking
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/kafka_client.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/kafka_client.py`
 - **Description**: aiokafka library not installed
 
 #### ACGS-4203: KafkaPublishError
 - **Exception**: `KafkaPublishError` (hitl-approvals)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/kafka_client.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/kafka_client.py`
 - **Description**: Failed to publish message to Kafka
 
 #### ACGS-4204: KafkaConsumerError
@@ -1004,7 +1004,7 @@ For each error code, we provide:
 - **Exception**: `KafkaClientError` (hitl-approvals)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/kafka_client.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/kafka_client.py`
 - **Description**: Base exception for Kafka client errors
 
 #### ACGS-4211: KafkaMirrorMakerError
@@ -1133,7 +1133,7 @@ For each error code, we provide:
 - **Exception**: `EmailDeliveryError` (audit-service)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/audit_service/app/services/email_service.py`
+- **Location**: `src/core/services/audit_service/app/services/email_service.py`
 - **Description**: Email delivery failed
 
 #### ACGS-4602: SMTPConnectionError
@@ -1145,14 +1145,14 @@ For each error code, we provide:
 - **Exception**: `EmailConfigurationError` (audit-service)
 - **Severity**: HIGH
 - **Impact**: Deployment-Blocking
-- **Location**: `acgs2-core/services/audit_service/app/services/email_service.py`
+- **Location**: `src/core/services/audit_service/app/services/email_service.py`
 - **Description**: Email service configuration error
 
 #### ACGS-4604: EmailRetryExhaustedError
 - **Exception**: `EmailRetryExhaustedError` (audit-service)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/audit_service/app/services/email_service.py`
+- **Location**: `src/core/services/audit_service/app/services/email_service.py`
 - **Description**: Email delivery failed after all retries
 
 ---
@@ -1174,7 +1174,7 @@ For each error code, we provide:
 - **Scenario**: Dynamic chain resolution via OPA
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/api/approvals.py:34`
+- **Location**: `src/core/services/hitl_approvals/app/api/approvals.py:34`
 - **Description**: Cannot resolve approval chain.
 - **Status**: RESOLVED
 - **Current Behavior**: Dynamic OPA-based resolution implemented
@@ -1203,28 +1203,28 @@ For each error code, we provide:
 - **Exception**: `ApprovalEngineError` (hitl-approvals)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/approval_engine.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/approval_engine.py`
 - **Description**: Base exception for approval engine errors
 
 #### ACGS-5112: ApprovalNotFoundError
 - **Exception**: `ApprovalNotFoundError` (hitl-approvals)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/approval_engine.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/approval_engine.py`
 - **Description**: Approval request not found
 
 #### ACGS-5113: ChainNotFoundError
 - **Exception**: `ChainNotFoundError` (hitl-approvals)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/approval_engine.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/approval_engine.py`
 - **Description**: Approval chain not found
 
 #### ACGS-5114: ApprovalStateError
 - **Exception**: `ApprovalStateError` (hitl-approvals)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/core/approval_engine.py`
+- **Location**: `src/core/services/hitl_approvals/app/core/approval_engine.py`
 - **Description**: Invalid approval state transition
 
 ---
@@ -1301,28 +1301,28 @@ For each error code, we provide:
 - **Exception**: `MessageValidationError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Message validation failed
 
 #### ACGS-5302: MessageDeliveryError
 - **Exception**: `MessageDeliveryError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Message delivery failed
 
 #### ACGS-5303: MessageTimeoutError
 - **Exception**: `MessageTimeoutError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Message processing timeout
 
 #### ACGS-5304: MessageRoutingError
 - **Exception**: `MessageRoutingError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Message routing failed
 
 #### ACGS-5305: RateLimitExceededError
@@ -1334,17 +1334,17 @@ For each error code, we provide:
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
 - **Location**:
-  - `acgs2-core/enhanced_agent_bus/exceptions.py`
+  - `src/core/enhanced_agent_bus/exceptions.py`
   - `integration-service/src/integrations/base.py`
-  - `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
-  - `acgs2-core/enhanced_agent_bus/acl_adapters/base.py`
+  - `src/core/sdk/python/acgs2_sdk/exceptions.py`
+  - `src/core/enhanced_agent_bus/acl_adapters/base.py`
 - **Description**: Rate limit exceeded
 
 #### ACGS-5311: MessageError
 - **Exception**: `MessageError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Base exception for message-related errors
 
 ---
@@ -1370,7 +1370,7 @@ For each error code, we provide:
 - **Exception**: `PolicyVerificationError` (breakthrough/policy)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/breakthrough/policy/verified_policy_generator.py`
+- **Location**: `src/core/breakthrough/policy/verified_policy_generator.py`
 - **Description**: Policy verification failed
 
 ---
@@ -1399,7 +1399,7 @@ For each error code, we provide:
 - **Impact**: Service-Degraded
 - **Location**:
   - `integration-service/src/integrations/base.py`
-  - `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+  - `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Input validation failed
 
 #### ACGS-5602: SchemaValidationError
@@ -1416,7 +1416,7 @@ For each error code, we provide:
 - **Exception**: `TenantValidationError` (tenant-context)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/security/tenant_context.py`
+- **Location**: `src/core/shared/security/tenant_context.py`
 - **Description**: Tenant context validation error
 
 ---
@@ -1429,14 +1429,14 @@ For each error code, we provide:
 - **Exception**: `GovernanceError` (enhanced-agent-bus)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Generic governance error
 
 #### ACGS-6002: ImpactAssessmentError
 - **Exception**: `ImpactAssessmentError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Impact assessment operation failed
 
 ---
@@ -1460,7 +1460,7 @@ For each error code, we provide:
 - **Exception**: `ConstitutionalError` (enhanced-agent-bus)
 - **Severity**: CRITICAL
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Base exception for constitutional compliance failures
 
 ---
@@ -1471,7 +1471,7 @@ For each error code, we provide:
 - **Exception**: `MACIRoleViolationError` (enhanced-agent-bus)
 - **Severity**: CRITICAL (Security)
 - **Impact**: Security-Violation
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Agent attempted action outside its MACI role
 - **Purpose**: Prevent unauthorized cross-role operations
 
@@ -1479,7 +1479,7 @@ For each error code, we provide:
 - **Exception**: `MACISelfValidationError` (enhanced-agent-bus)
 - **Severity**: CRITICAL (Security)
 - **Impact**: Security-Violation (Gödel Bypass Prevention)
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Agent attempted to validate its own output (Gödel incompleteness bypass)
 - **Prevention Type**: godel_bypass
 - **Purpose**: Prevent self-certification (Gödel incompleteness theorem)
@@ -1488,21 +1488,21 @@ For each error code, we provide:
 - **Exception**: `MACICrossRoleValidationError` (enhanced-agent-bus)
 - **Severity**: CRITICAL (Security)
 - **Impact**: Security-Violation
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Cross-role validation constraints violated
 
 #### ACGS-6204: MACIRoleNotAssignedError
 - **Exception**: `MACIRoleNotAssignedError` (enhanced-agent-bus)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Agent has no MACI role assigned
 
 #### ACGS-6211: MACIError
 - **Exception**: `MACIError` (enhanced-agent-bus)
 - **Severity**: CRITICAL
 - **Impact**: Security-Violation
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Base exception for MACI role separation errors
 
 ---
@@ -1513,21 +1513,21 @@ For each error code, we provide:
 - **Exception**: `DeliberationTimeoutError` (enhanced-agent-bus)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Deliberation process timed out
 
 #### ACGS-6302: SignatureCollectionError
 - **Exception**: `SignatureCollectionError` (enhanced-agent-bus)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Multi-agent signature collection failed
 
 #### ACGS-6303: ReviewConsensusError
 - **Exception**: `ReviewConsensusError` (enhanced-agent-bus)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Critic review consensus not reached
 
 #### ACGS-6304: QuorumNotMetError
@@ -1539,7 +1539,7 @@ For each error code, we provide:
 - **Exception**: `DeliberationError` (enhanced-agent-bus)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Base exception for deliberation layer errors
 
 ---
@@ -1550,7 +1550,7 @@ For each error code, we provide:
 - **Exception**: `AlignmentViolationError` (enhanced-agent-bus)
 - **Severity**: CRITICAL
 - **Impact**: Security-Violation
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Agent message/action violates constitutional alignment
 
 #### ACGS-6402: SafetyConstraintError
@@ -1581,7 +1581,7 @@ For each error code, we provide:
 - **Exception**: `IntegrityError` (hitl-approvals/audit)
 - **Severity**: CRITICAL
 - **Impact**: Data-Integrity-Risk
-- **Location**: `acgs2-core/services/hitl_approvals/app/audit/ledger.py`
+- **Location**: `src/core/services/hitl_approvals/app/audit/ledger.py`
 - **Description**: Audit log integrity check failed
 
 #### ACGS-6511: AuditLedgerError
@@ -1589,7 +1589,7 @@ For each error code, we provide:
 - **Scenario**: Audit ledger integration
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/hitl_approvals/app/audit/ledger.py`
+- **Location**: `src/core/services/hitl_approvals/app/audit/ledger.py`
 - **Description**: Base exception for audit ledger errors.
 - **Status**: RESOLVED
 - **Recent Integration**:
@@ -1600,7 +1600,7 @@ For each error code, we provide:
 - **Exception**: `ImmutabilityError` (hitl-approvals/audit)
 - **Severity**: CRITICAL
 - **Impact**: Data-Integrity-Risk
-- **Location**: `acgs2-core/services/hitl_approvals/app/audit/ledger.py`
+- **Location**: `src/core/services/hitl_approvals/app/audit/ledger.py`
 - **Description**: Immutability constraint violated
 
 #### ACGS-6521: InvalidComplianceRequirementError
@@ -1650,28 +1650,28 @@ For each error code, we provide:
 - **Exception**: `TimeoutError` (sdk)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+- **Location**: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Request timeout (SDK)
 
 #### ACGS-7112: LayerTimeoutError
 - **Exception**: `LayerTimeoutError` (observability)
 - **Severity**: MEDIUM
 - **Impact**: Performance-Degradation
-- **Location**: `acgs2-core/enhanced_agent_bus/observability/timeout_budget.py`
+- **Location**: `src/core/enhanced_agent_bus/observability/timeout_budget.py`
 - **Description**: Timeout budget exceeded for observability layer
 
 #### ACGS-7121: MLGovernanceTimeoutError
 - **Exception**: `MLGovernanceTimeoutError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/integrations/ml_governance.py`
+- **Location**: `src/core/enhanced_agent_bus/integrations/ml_governance.py`
 - **Description**: ML governance operation timeout
 
 #### ACGS-7122: AdapterTimeoutError
 - **Exception**: `AdapterTimeoutError` (acl-adapters)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/acl_adapters/base.py`
+- **Location**: `src/core/enhanced_agent_bus/acl_adapters/base.py`
 - **Description**: ACL adapter operation timed out
 
 ---
@@ -1756,7 +1756,7 @@ For each error code, we provide:
 - **Exception**: `AdapterCircuitOpenError` (acl-adapters)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/acl_adapters/base.py`
+- **Location**: `src/core/enhanced_agent_bus/acl_adapters/base.py`
 - **Description**: Circuit breaker is open for ACL adapter
 
 ---
@@ -1894,35 +1894,35 @@ Reserved for future error code categories not yet defined.
 - **Exception**: `AgentError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Base exception for agent-related errors
 
 #### ACGS-5802: AgentNotRegisteredError
 - **Exception**: `AgentNotRegisteredError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Operation requires registered agent that doesn't exist
 
 #### ACGS-5803: AgentAlreadyRegisteredError
 - **Exception**: `AgentAlreadyRegisteredError` (enhanced-agent-bus)
 - **Severity**: LOW
 - **Impact**: Informational
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Attempting to register agent that already exists
 
 #### ACGS-5804: AgentCapabilityError
 - **Exception**: `AgentCapabilityError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Agent lacks required capabilities
 
 #### ACGS-5811: BusOperationError
 - **Exception**: `BusOperationError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Base exception for bus operation errors
 
 #### ACGS-5812: BusNotStartedError
@@ -1930,7 +1930,7 @@ Reserved for future error code categories not yet defined.
 - **Scenario**: Agent Bus not starting (DEPLOYMENT_FAILURE_SCENARIOS.md #3.1)
 - **Severity**: CRITICAL
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Operation requires started bus
 - **Common Causes**:
   - Dependencies not ready (OPA, Redis, Kafka)
@@ -1942,21 +1942,21 @@ Reserved for future error code categories not yet defined.
 - **Exception**: `BusAlreadyStartedError` (enhanced-agent-bus)
 - **Severity**: LOW
 - **Impact**: Informational
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Attempting to start already running bus
 
 #### ACGS-5814: HandlerExecutionError
 - **Exception**: `HandlerExecutionError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Message handler failed during execution
 
 #### ACGS-5821: AgentBusError
 - **Exception**: `AgentBusError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+- **Location**: `src/core/enhanced_agent_bus/exceptions.py`
 - **Description**: Base exception for all Enhanced Agent Bus errors
 
 ---
@@ -1967,7 +1967,7 @@ Reserved for future error code categories not yet defined.
 - **Exception**: `TenantError` (tenant-integration)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/tenant_integration.py`
+- **Location**: `src/core/shared/tenant_integration.py`
 - **Description**: Base exception for tenant errors
 
 #### ACGS-5832: TenantNotFoundError
@@ -1982,7 +1982,7 @@ Reserved for future error code categories not yet defined.
 - **Exception**: `TenantNotActiveError` (tenant-integration)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/shared/tenant_integration.py`
+- **Location**: `src/core/shared/tenant_integration.py`
 - **Description**: Tenant is not in active state
 
 #### ACGS-5834: DuplicateTenantError
@@ -2011,28 +2011,28 @@ Reserved for future error code categories not yet defined.
 - **Exception**: `ACGS2Error` (sdk)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+- **Location**: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Base exception for ACGS-2 SDK errors
 
 #### ACGS-5842: NetworkError
 - **Exception**: `NetworkError` (sdk)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+- **Location**: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Network error in SDK
 
 #### ACGS-5843: ResourceNotFoundError
 - **Exception**: `ResourceNotFoundError` (sdk)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+- **Location**: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Resource not found
 
 #### ACGS-5844: ConflictError
 - **Exception**: `ConflictError` (sdk)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+- **Location**: `src/core/sdk/python/acgs2_sdk/exceptions.py`
 - **Description**: Resource conflict occurred
 
 ---
@@ -2043,35 +2043,35 @@ Reserved for future error code categories not yet defined.
 - **Exception**: `RecoveryOrchestratorError` (recovery-orchestrator)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/recovery_orchestrator.py`
+- **Location**: `src/core/enhanced_agent_bus/recovery_orchestrator.py`
 - **Description**: Recovery orchestrator error
 
 #### ACGS-5852: RecoveryConstitutionalError
 - **Exception**: `RecoveryConstitutionalError` (recovery-orchestrator)
 - **Severity**: CRITICAL
 - **Impact**: Service-Unavailable
-- **Location**: `acgs2-core/enhanced_agent_bus/recovery_orchestrator.py`
+- **Location**: `src/core/enhanced_agent_bus/recovery_orchestrator.py`
 - **Description**: Constitutional error during recovery
 
 #### ACGS-5853: RecoveryValidationError
 - **Exception**: `RecoveryValidationError` (recovery-orchestrator)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/recovery_orchestrator.py`
+- **Location**: `src/core/enhanced_agent_bus/recovery_orchestrator.py`
 - **Description**: Validation error during recovery
 
 #### ACGS-5861: MLGovernanceError
 - **Exception**: `MLGovernanceError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/integrations/ml_governance.py`
+- **Location**: `src/core/enhanced_agent_bus/integrations/ml_governance.py`
 - **Description**: Base exception for ML governance errors
 
 #### ACGS-5862: MLGovernanceConnectionError
 - **Exception**: `MLGovernanceConnectionError` (enhanced-agent-bus)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/enhanced_agent_bus/integrations/ml_governance.py`
+- **Location**: `src/core/enhanced_agent_bus/integrations/ml_governance.py`
 - **Description**: ML governance service connection error
 
 ---
@@ -2082,56 +2082,56 @@ Reserved for future error code categories not yet defined.
 - **Exception**: `FallbackCryptoError` (policy-registry)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/policy_registry/app/services/secure_fallback_crypto.py`
+- **Location**: `src/core/services/policy_registry/app/services/secure_fallback_crypto.py`
 - **Description**: Base exception for fallback crypto errors
 
 #### ACGS-5872: KeyDerivationError
 - **Exception**: `KeyDerivationError` (policy-registry)
 - **Severity**: HIGH
 - **Impact**: Security-Risk
-- **Location**: `acgs2-core/services/policy_registry/app/services/secure_fallback_crypto.py`
+- **Location**: `src/core/services/policy_registry/app/services/secure_fallback_crypto.py`
 - **Description**: Key derivation failed
 
 #### ACGS-5873: EncryptionError
 - **Exception**: `EncryptionError` (policy-registry)
 - **Severity**: HIGH
 - **Impact**: Security-Risk
-- **Location**: `acgs2-core/services/policy_registry/app/services/secure_fallback_crypto.py`
+- **Location**: `src/core/services/policy_registry/app/services/secure_fallback_crypto.py`
 - **Description**: Encryption operation failed
 
 #### ACGS-5874: DecryptionError
 - **Exception**: `DecryptionError` (policy-registry)
 - **Severity**: HIGH
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/policy_registry/app/services/secure_fallback_crypto.py`
+- **Location**: `src/core/services/policy_registry/app/services/secure_fallback_crypto.py`
 - **Description**: Decryption operation failed
 
 #### ACGS-5875: CiphertextFormatError
 - **Exception**: `CiphertextFormatError` (policy-registry)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/services/policy_registry/app/services/secure_fallback_crypto.py`
+- **Location**: `src/core/services/policy_registry/app/services/secure_fallback_crypto.py`
 - **Description**: Invalid ciphertext format
 
 #### ACGS-5876: CryptoNotAvailableError
 - **Exception**: `CryptoNotAvailableError` (policy-registry)
 - **Severity**: CRITICAL
 - **Impact**: Deployment-Blocking
-- **Location**: `acgs2-core/services/policy_registry/app/services/secure_fallback_crypto.py`
+- **Location**: `src/core/services/policy_registry/app/services/secure_fallback_crypto.py`
 - **Description**: Cryptography library not available
 
 #### ACGS-5881: TemporalViolationError
 - **Exception**: `TemporalViolationError` (breakthrough/temporal)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/breakthrough/temporal/timeline_engine.py`
+- **Location**: `src/core/breakthrough/temporal/timeline_engine.py`
 - **Description**: Temporal constraint violation
 
 #### ACGS-5882: CausalViolationError
 - **Exception**: `CausalViolationError` (breakthrough/temporal)
 - **Severity**: MEDIUM
 - **Impact**: Service-Degraded
-- **Location**: `acgs2-core/breakthrough/temporal/timeline_engine.py`
+- **Location**: `src/core/breakthrough/temporal/timeline_engine.py`
 - **Description**: Causal constraint violation
 
 ---

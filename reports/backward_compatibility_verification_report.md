@@ -402,10 +402,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 ### Files Importing from `adaptive_governance`
 
-1. ✅ `acgs2-core/enhanced_agent_bus/agent_bus.py` - 6 imports verified
-2. ✅ `acgs2-core/enhanced_agent_bus/tests/test_adaptive_governance.py` - 12 imports verified
+1. ✅ `src/core/enhanced_agent_bus/agent_bus.py` - 6 imports verified
+2. ✅ `src/core/enhanced_agent_bus/tests/test_adaptive_governance.py` - 12 imports verified
 3. ✅ `verify_adaptive_governance_init.py` - Test verification script (uses 12 imports)
-4. ✅ `acgs2-core/test_imports.py` - Import verification script
+4. ✅ `src/core/test_imports.py` - Import verification script
 
 **All existing usage verified compatible.**
 

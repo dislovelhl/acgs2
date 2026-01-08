@@ -3,7 +3,7 @@
 > **Constitutional Hash**: `cdd01ef066bc6cf2`
 > **Version**: 1.0.0
 > **Last Updated**: 2026-01-03
-> **Module**: `acgs2-core/shared/security/security_headers.py`
+> **Module**: `src/core/shared/security/security_headers.py`
 
 ## Overview
 
@@ -196,7 +196,7 @@ form-action 'self'
 ```
 
 **Files Modified**:
-- `acgs2-core/services/compliance_docs/src/main.py`
+- `src/core/services/compliance_docs/src/main.py`
 
 ### Observability Dashboard (WebSocket Support)
 
@@ -226,18 +226,18 @@ style-src 'self'
 
 ### Step 1: Import the Middleware
 
-For services within `acgs2-core`:
+For services within `src/core`:
 ```python
 from shared.security import SecurityHeadersConfig, SecurityHeadersMiddleware
 ```
 
-For services outside `acgs2-core` (e.g., `acgs2-observability`):
+For services outside `src/core` (e.g., `acgs2-observability`):
 ```python
 import sys
 from pathlib import Path
 
-# Add acgs2-core to path
-core_path = Path(__file__).parent.parent / "acgs2-core"
+# Add src/core to path
+core_path = Path(__file__).parent.parent / "src/core"
 if str(core_path) not in sys.path:
     sys.path.insert(0, str(core_path))
 
@@ -411,7 +411,7 @@ config = SecurityHeadersConfig(
 
 The security headers middleware includes comprehensive unit tests:
 
-**Test File**: `acgs2-core/shared/security/tests/test_security_headers.py`
+**Test File**: `src/core/shared/security/tests/test_security_headers.py`
 
 **Coverage Areas**:
 - Configuration defaults and customization
@@ -424,7 +424,7 @@ The security headers middleware includes comprehensive unit tests:
 
 **Running Unit Tests**:
 ```bash
-cd acgs2-core
+cd src/core
 pytest shared/security/tests/test_security_headers.py -v
 ```
 
@@ -434,7 +434,7 @@ Each service has integration tests to verify security headers on all endpoints:
 
 **Test Files**:
 - `integration-service/tests/test_security_headers.py`
-- `acgs2-core/services/compliance_docs/tests/test_security_headers.py`
+- `src/core/services/compliance_docs/tests/test_security_headers.py`
 - `acgs2-observability/tests/monitoring/test_dashboard_security.py`
 
 **Coverage Areas**:
@@ -451,7 +451,7 @@ cd integration-service
 pytest tests/test_security_headers.py -v
 
 # Compliance Docs Service
-cd acgs2-core/services/compliance_docs
+cd src/core/services/compliance_docs
 pytest tests/test_security_headers.py -v
 
 # Observability Dashboard
@@ -600,7 +600,7 @@ docker run -t owasp/zap2docker-stable zap-baseline.py -t http://localhost:8000
 **Possible Causes**:
 1. Middleware not registered with FastAPI app
 2. Middleware added before CORS (headers might be overwritten)
-3. Import path incorrect (especially for services outside acgs2-core)
+3. Import path incorrect (especially for services outside src/core)
 
 **Solutions**:
 ```python
@@ -612,10 +612,10 @@ app.add_middleware(CORSMiddleware, ...)  # First
 app.add_middleware(SecurityHeadersMiddleware, ...)  # Second
 
 # 3. Verify import path
-from shared.security import SecurityHeadersMiddleware  # For acgs2-core services
+from shared.security import SecurityHeadersMiddleware  # For src/core services
 
 # For external services:
-sys.path.insert(0, str(Path(__file__).parent.parent / "acgs2-core"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src/core"))
 from shared.security import SecurityHeadersMiddleware
 ```
 
@@ -925,11 +925,11 @@ logger.info(
 
 **Services Integrated**:
 - ✅ Integration Service (`integration-service/src/main.py`)
-- ✅ Compliance Docs Service (`acgs2-core/services/compliance_docs/src/main.py`)
+- ✅ Compliance Docs Service (`src/core/services/compliance_docs/src/main.py`)
 - ✅ Observability Dashboard (`acgs2-observability/monitoring/dashboard_api.py`)
 
 **Test Coverage**:
-- ✅ Unit tests: `acgs2-core/shared/security/tests/test_security_headers.py`
+- ✅ Unit tests: `src/core/shared/security/tests/test_security_headers.py`
 - ✅ Integration tests: 3 service test files with 100+ total test cases
 
 ---

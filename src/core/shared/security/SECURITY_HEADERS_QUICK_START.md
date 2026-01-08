@@ -92,7 +92,7 @@ async def health():
 
 ```bash
 # Run tests
-cd acgs2-core
+cd src/core
 pytest shared/security/tests/test_security_headers.py -v
 
 # Run your service integration tests
@@ -132,7 +132,7 @@ config = SecurityHeadersConfig(
 
 ## Full Documentation
 
-See [acgs2-core/docs/security/SECURITY_HEADERS.md](../../docs/security/SECURITY_HEADERS.md) for:
+See [src/core/docs/security/SECURITY_HEADERS.md](../../docs/security/SECURITY_HEADERS.md) for:
 - Complete configuration options
 - Environment-specific behavior
 - Custom CSP directives
@@ -143,6 +143,6 @@ See [acgs2-core/docs/security/SECURITY_HEADERS.md](../../docs/security/SECURITY_
 ## Questions?
 
 Contact the ACGS-2 Security Team or refer to:
-- Full docs: `acgs2-core/docs/security/SECURITY_HEADERS.md`
-- Source code: `acgs2-core/shared/security/security_headers.py`
-- Tests: `acgs2-core/shared/security/tests/test_security_headers.py`
+- Full docs: `src/core/docs/security/SECURITY_HEADERS.md`
+- Source code: `src/core/shared/security/security_headers.py`
+- Tests: `src/core/shared/security/tests/test_security_headers.py`

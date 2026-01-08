@@ -2,7 +2,7 @@
  * TypeScript types for Policy Marketplace
  *
  * These types mirror the Pydantic schemas from the backend
- * Located at: acgs2-core/services/policy_marketplace/app/schemas/template.py
+ * Located at: src/core/services/policy_marketplace/app/schemas/template.py
  */
 
 // ====================

@@ -17,8 +17,8 @@ The ACGS-2 project demonstrates an exceptionally high level of engineering matur
 
 - **Strengths**: Strong focus on constitutional AI and immutable governance. Integration with Solana for audit trails.
 - **Findings**:
-  - [CRITICAL] `exec()` usage in `acgs2-core/enhanced_agent_bus/tests/test_policy_client.py` and `test_policy_client_actual.py`. While labeled for test loading, this represents a potential risk if test harnesses are exposed.
-  - [LOW] `allow_origins=["*"]` in `acgs2-core/services/compliance_docs/src/main.py`. Needs environment-specific lockdown.
+  - [CRITICAL] `exec()` usage in `src/core/enhanced_agent_bus/tests/test_policy_client.py` and `test_policy_client_actual.py`. While labeled for test loading, this represents a potential risk if test harnesses are exposed.
+  - [LOW] `allow_origins=["*"]` in `src/core/services/compliance_docs/src/main.py`. Needs environment-specific lockdown.
   - [LOW] Use of `subprocess.run(shell=True)` in CLI tools and search platform components.
 
 ### 🚀 Performance Assessment (Severity: LOW)
@@ -30,9 +30,9 @@ The ACGS-2 project demonstrates an exceptionally high level of engineering matur
 
 ### 🏗️ Architecture Assessment (Severity: LOW)
 
-- **Strengths**: Clean separation between `acgs2-core`, `acgs2-infra`, and `acgs2-observability`. Robust C4 documentation.
+- **Strengths**: Clean separation between `src/core`, `acgs2-infra`, and `acgs2-observability`. Robust C4 documentation.
 - **Findings**:
-  - [STRUCTURE] Large number of files in `acgs2-core` (52k Python files) despite consolidation. While modular, it may lead to slower CI/CD pipelines.
+  - [STRUCTURE] Large number of files in `src/core` (52k Python files) despite consolidation. While modular, it may lead to slower CI/CD pipelines.
   - [CONSISTENCY] Hybrid usage of Python and Rust for the Agent Bus. While good for performance, it increases maintenance overhead.
 
 ### 💎 Quality Assessment (Severity: LOW)
@@ -72,7 +72,7 @@ The ACGS-2 project demonstrates an exceptionally high level of engineering matur
 ### Phase 3: Technical Debt & Documentation (Medium-term)
 
 1. **Cleanup TODOs**: Prioritize the initialization of persistent memory in `claude-flow`.
-2. **Module Consolidation**: Review the 52k Python files in `acgs2-core` for potential archival or consolidation of legacy utilities.
+2. **Module Consolidation**: Review the 52k Python files in `src/core` for potential archival or consolidation of legacy utilities.
 
 ---
 

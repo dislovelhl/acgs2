@@ -43,7 +43,7 @@ try:
         import os
         import sys
 
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../acgs2-core"))
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src/core"))
         from src.core.enhanced_agent_bus.memory_profiler import MemorySnapshot, get_memory_profiler
 
         MEMORY_PROFILER_AVAILABLE = True

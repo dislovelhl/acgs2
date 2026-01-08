@@ -10,7 +10,7 @@ This script loads verified template JSON files from the templates/verified direc
 and inserts them into the database with is_verified=true and status='published'.
 
 Usage:
-    cd acgs2-core/services/policy_marketplace
+    cd src/core/services/policy_marketplace
     python scripts/seed_templates.py
 
 Environment Variables:

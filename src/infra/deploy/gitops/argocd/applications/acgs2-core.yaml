@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: acgs2-core
+  name: src/core
   namespace: argocd
   labels:
-    app.kubernetes.io/name: acgs2-core
+    app.kubernetes.io/name: src-core
     acgs.io/constitutional-hash: cdd01ef066bc6cf2
   annotations:
     argocd.argoproj.io/sync-wave: "1"

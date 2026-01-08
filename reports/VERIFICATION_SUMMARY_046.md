@@ -91,7 +91,7 @@ default-src 'self'; script-src 'self'; connect-src 'self' ws: wss:; img-src 'sel
 ## Test Coverage
 
 ### Unit Tests (90+ tests)
-**File:** `acgs2-core/shared/security/tests/test_security_headers.py` (38KB)
+**File:** `src/core/shared/security/tests/test_security_headers.py` (38KB)
 - Configuration defaults and customization
 - Environment variable parsing
 - Factory methods (dev, staging, prod, WebSocket, integration)
@@ -111,7 +111,7 @@ default-src 'self'; script-src 'self'; connect-src 'self' ws: wss:; img-src 'sel
 - CORS compatibility
 
 **Compliance Docs Service** (40+ tests)
-**File:** `acgs2-core/services/compliance_docs/tests/test_security_headers.py` (23KB)
+**File:** `src/core/services/compliance_docs/tests/test_security_headers.py` (23KB)
 - All endpoints: /health, /ready, /, /docs, /api/v1/euaiact/validate
 - Strict production CSP verification
 - Production-grade HSTS with preload
@@ -128,7 +128,7 @@ default-src 'self'; script-src 'self'; connect-src 'self' ws: wss:; img-src 'sel
 ## Documentation
 
 ### Main Documentation
-**File:** `acgs2-core/docs/security/SECURITY_HEADERS.md` (938 lines, 31KB)
+**File:** `src/core/docs/security/SECURITY_HEADERS.md` (938 lines, 31KB)
 - Architecture overview
 - All 6 security headers explained
 - Configuration reference (SecurityHeadersConfig)
@@ -143,7 +143,7 @@ default-src 'self'; script-src 'self'; connect-src 'self' ws: wss:; img-src 'sel
 - Standards and specifications
 
 ### Quick Start Guide
-**File:** `acgs2-core/shared/security/SECURITY_HEADERS_QUICK_START.md` (148 lines)
+**File:** `src/core/shared/security/SECURITY_HEADERS_QUICK_START.md` (148 lines)
 - 5-minute integration guide
 - Common configuration examples
 - Complete working example
@@ -193,12 +193,12 @@ The implementation is code-complete. The following manual steps are recommended 
 ### 1. Run Automated Tests
 ```bash
 # Unit tests
-cd acgs2-core
+cd src/core
 python3 -m pytest shared/security/tests/test_security_headers.py -v --cov
 
 # Integration tests
 cd integration-service && python3 -m pytest tests/test_security_headers.py -v
-cd acgs2-core/services/compliance_docs && python3 -m pytest tests/test_security_headers.py -v
+cd src/core/services/compliance_docs && python3 -m pytest tests/test_security_headers.py -v
 cd acgs2-observability && python3 -m pytest tests/monitoring/test_dashboard_security.py -v
 ```
 
@@ -229,28 +229,28 @@ Verify all 6 headers are present in responses.
 
 For complete verification procedures, see:
 - `.auto-claude/specs/046-.../VERIFICATION.md`
-- `acgs2-core/docs/security/SECURITY_HEADERS.md`
+- `src/core/docs/security/SECURITY_HEADERS.md`
 
 ---
 
 ## Files Created/Modified
 
 ### Files Created (7)
-1. `acgs2-core/shared/security/security_headers.py` (401 lines)
-2. `acgs2-core/shared/security/tests/__init__.py`
-3. `acgs2-core/shared/security/tests/test_security_headers.py` (1008 lines)
+1. `src/core/shared/security/security_headers.py` (401 lines)
+2. `src/core/shared/security/tests/__init__.py`
+3. `src/core/shared/security/tests/test_security_headers.py` (1008 lines)
 4. `integration-service/tests/test_security_headers.py` (421 lines)
-5. `acgs2-core/services/compliance_docs/tests/test_security_headers.py` (575 lines)
+5. `src/core/services/compliance_docs/tests/test_security_headers.py` (575 lines)
 6. `acgs2-observability/tests/monitoring/test_dashboard_security.py` (598 lines)
-7. `acgs2-core/docs/security/SECURITY_HEADERS.md` (938 lines)
-8. `acgs2-core/shared/security/SECURITY_HEADERS_QUICK_START.md` (148 lines)
+7. `src/core/docs/security/SECURITY_HEADERS.md` (938 lines)
+8. `src/core/shared/security/SECURITY_HEADERS_QUICK_START.md` (148 lines)
 
 ### Files Modified (5)
-1. `acgs2-core/shared/security/__init__.py` - Added exports
+1. `src/core/shared/security/__init__.py` - Added exports
 2. `integration-service/src/main.py` - Added middleware
-3. `acgs2-core/services/compliance_docs/src/main.py` - Added middleware
+3. `src/core/services/compliance_docs/src/main.py` - Added middleware
 4. `acgs2-observability/monitoring/dashboard_api.py` - Added middleware
-5. `acgs2-core/docs/security/README.md` - Updated with security headers section
+5. `src/core/docs/security/README.md` - Updated with security headers section
 
 ---
 
@@ -355,4 +355,4 @@ The codebase is production-ready pending manual verification of test execution a
 
 **Contact:** Auto-Claude Development Agent
 **Reference:** Spec 046 - Add Security Headers Middleware to FastAPI Services
-**Documentation:** See `acgs2-core/docs/security/SECURITY_HEADERS.md`
+**Documentation:** See `src/core/docs/security/SECURITY_HEADERS.md`

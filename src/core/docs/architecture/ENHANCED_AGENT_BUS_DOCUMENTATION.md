@@ -1246,7 +1246,7 @@ except Exception as e:
 ```bash
 # Clone repository
 git clone <repository-url>
-cd acgs2-core
+cd src/core
 
 # Create virtual environment
 python3 -m venv .venv
@@ -1602,11 +1602,11 @@ Content-Type: application/json
 
 ### References
 
-- **CLAUDE.md:** `/home/dislove/document/acgs2/acgs2-core/CLAUDE.md`
-- **Source Code:** `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
-- **Tests:** `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/tests/`
-- **Docker Compose:** `/home/dislove/document/acgs2/acgs2-core/docker-compose.yml`
-- **Kubernetes:** `/home/dislove/document/acgs2/acgs2-core/k8s/`
+- **CLAUDE.md:** `/home/dislove/document/acgs2/src/core/CLAUDE.md`
+- **Source Code:** `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/`
+- **Tests:** `/home/dislove/document/acgs2/src/core/enhanced_agent_bus/tests/`
+- **Docker Compose:** `/home/dislove/document/acgs2/src/core/docker-compose.yml`
+- **Kubernetes:** `/home/dislove/document/acgs2/src/core/k8s/`
 
 ### Architecture Decision Records
 

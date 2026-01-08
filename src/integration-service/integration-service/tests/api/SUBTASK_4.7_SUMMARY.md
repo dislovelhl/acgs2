@@ -206,7 +206,7 @@ Both test suites work together to provide comprehensive JWT token validation cov
 
 - **Spec:** `.auto-claude/specs/044-add-authentication-to-policy-validation-api-endpoi/spec.md`
 - **Implementation Plan:** `.auto-claude/specs/044-add-authentication-to-policy-validation-api-endpoi/implementation_plan.json`
-- **Shared Auth Module:** `acgs2-core/shared/security/auth.py`
+- **Shared Auth Module:** `src/core/shared/security/auth.py`
 - **JWT Configuration:** `integration-service/docs/JWT_CONFIGURATION.md`
 - **Related:** `EXPIRED_TOKEN_VERIFICATION.md` - Expired token testing (Subtask 4.6)
 

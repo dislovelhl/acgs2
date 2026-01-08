@@ -36,22 +36,22 @@ This document catalogs all TODO/FIXME comments found across critical ACGS-2 code
 ### 2. HITL Approvals Service
 
 #### 2.1 Role Verification via OPA [RESOLVED]
-**File:** `acgs2-core/services/hitl_approvals/app/services/approval_chain_engine.py:148`
+**File:** `src/core/services/hitl_approvals/app/services/approval_chain_engine.py:148`
 **Status:** RESOLVED
 **Resolution:** Implemented OPA-based role verification for approval decisions.
 
 #### 2.2 Dynamic Chain Resolution via OPA [RESOLVED]
-**File:** `acgs2-core/services/hitl_approvals/app/api/approvals.py:34`
+**File:** `src/core/services/hitl_approvals/app/api/approvals.py:34`
 **Status:** RESOLVED
 **Resolution:** Implemented dynamic approval chain resolution using OPA policies.
 
 #### 2.3 Alembic Database Migrations [RESOLVED]
-**File:** `acgs2-core/services/hitl_approvals/main.py:43`
+**File:** `src/core/services/hitl_approvals/main.py:43`
 **Status:** RESOLVED
 **Resolution:** Transitioned to Alembic for production database migration management.
 
 #### 2.4 Authentication Integration in Frontend [RESOLVED]
-**File:** `acgs2-core/services/hitl_approvals/app/templates/approval_detail.html:212`
+**File:** `src/core/services/hitl_approvals/app/templates/approval_detail.html:212`
 **Status:** RESOLVED
 **Resolution:** Integrated with authentication context to retrieve actual user ID.
 
@@ -60,17 +60,17 @@ This document catalogs all TODO/FIXME comments found across critical ACGS-2 code
 ### 3. Audit Service
 
 #### 3.1 Audit Ledger Integration for KPI Calculation [RESOLVED]
-**File:** `acgs2-core/services/audit_service/app/api/governance.py:39`
+**File:** `src/core/services/audit_service/app/api/governance.py:39`
 **Status:** RESOLVED
 **Resolution:** Integrated with `AuditLedger` to calculate real compliance metrics.
 
 #### 3.2 Audit Ledger Integration for Trend Data [RESOLVED]
-**File:** `acgs2-core/services/audit_service/app/api/governance.py:170`
+**File:** `src/core/services/audit_service/app/api/governance.py:170`
 **Status:** RESOLVED
 **Resolution:** Integrated with `AuditLedger` for real historical trend data.
 
 #### 3.3 Audit Log Fetching from Ledger [RESOLVED]
-**File:** `acgs2-core/services/audit_service/app/tasks/report_tasks.py:128`
+**File:** `src/core/services/audit_service/app/tasks/report_tasks.py:128`
 **Status:** RESOLVED
 **Resolution:** Implemented actual log fetching from `AuditLedger` in report generation tasks.
 
@@ -79,7 +79,7 @@ This document catalogs all TODO/FIXME comments found across critical ACGS-2 code
 ### 4. Compliance Docs Service
 
 #### 4.1 CORS Configuration [RESOLVED]
-**File:** `acgs2-core/services/compliance_docs/src/main.py:25`
+**File:** `src/core/services/compliance_docs/src/main.py:25`
 **Status:** RESOLVED
 **Resolution:** Environment-based CORS configuration implemented using centralized `get_cors_config()`.
 

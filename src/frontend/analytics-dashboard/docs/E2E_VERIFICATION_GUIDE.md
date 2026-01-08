@@ -8,7 +8,7 @@ Before starting verification, ensure:
 
 1. **analytics-api** is running at `http://localhost:8080`
    ```bash
-   cd acgs2-core/services/analytics-api
+   cd src/core/services/analytics-api
    uvicorn src.main:app --reload --port 8080
    ```
 

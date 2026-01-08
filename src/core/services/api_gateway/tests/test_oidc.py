@@ -7,7 +7,7 @@ Tests cover: login redirect, callback handling, token exchange, user info extrac
 session management, and error handling.
 
 Usage:
-    cd acgs2-core/services/api_gateway && pytest tests/test_oidc.py -v
+    cd src/core/services/api_gateway && pytest tests/test_oidc.py -v
 """
 
 import base64

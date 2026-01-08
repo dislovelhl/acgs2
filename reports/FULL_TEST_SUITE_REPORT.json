@@ -3,7 +3,7 @@
     "timestamp": "2026-01-01T07:58:16.969974+00:00",
     "constitutional_hash": "cdd01ef066bc6cf2",
     "project_root": "/home/dislove/document/acgs2",
-    "virtual_environment": "/home/dislove/document/acgs2/acgs2-core/venv"
+    "virtual_environment": "/home/dislove/document/acgs2/src/core/venv"
   },
   "summary": {
     "total_tests": 1,

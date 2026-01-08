@@ -89,7 +89,7 @@ celery_app.config_from_object(get_celery_config())
 # Task autodiscovery - will find tasks in app.tasks module
 celery_app.autodiscover_tasks(
     [
-        "acgs2-core.services.audit_service.app.tasks",
+        "src/core.services.audit_service.app.tasks",
         "app.tasks",  # Fallback for local development
     ],
     force=True,
@@ -261,6 +261,6 @@ def configure_beat_schedule(app: Celery) -> None:
 configure_beat_schedule(celery_app)
 
 # Expose app for celery CLI compatibility
-# Usage: celery -A acgs2-core.services.audit_service.app.celery_app worker
-# Usage: celery -A acgs2-core.services.audit_service.app.celery_app beat
+# Usage: celery -A src/core.services.audit_service.app.celery_app worker
+# Usage: celery -A src/core.services.audit_service.app.celery_app beat
 app = celery_app

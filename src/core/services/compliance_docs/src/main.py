@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Add acgs2-core to path for shared modules
+# Add src/core to path for shared modules
 core_path = Path(__file__).parent.parent.parent.parent
 if str(core_path) not in sys.path:
     sys.path.insert(0, str(core_path))

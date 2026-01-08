@@ -13,7 +13,7 @@ spec:
   sourceRepos:
     - https://github.com/acgs2/acgs2-infra
     - https://github.com/acgs2/acgs2-observability
-    - https://github.com/acgs2/acgs2-core
+    - https://github.com/acgs2/src/core
   destinations:
     - namespace: acgs2-system
       server: https://kubernetes.default.svc
@@ -50,6 +50,6 @@ spec:
       schedule: '0 1 * * *'  # Daily at 1 AM
       duration: 2h
       applications:
-        - acgs2-core
+        - src/core
       manualSync: true
       timeZone: UTC
