@@ -110,7 +110,7 @@ jobs:
         run: |
           docker build -t acgs2-bus:v3 -f src/core/Dockerfile.optimized src/core/
       - name: Trivy Scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: acgs2-bus:v3
           exit-code: "1"
