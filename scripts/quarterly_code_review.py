@@ -47,7 +47,7 @@ class QuarterlyCodeReview:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.project_root)
+            subprocess.run(cmd, capture_output=True, text=True, cwd=self.project_root)
             with open(output_file, "r") as f:
                 return json.load(f)
         except Exception as e:

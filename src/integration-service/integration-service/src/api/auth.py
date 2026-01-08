@@ -5,7 +5,15 @@ This module imports and re-exports authentication functions from the shared
 security module for use in integration-service API endpoints.
 """
 
-from src.core.shared.security.auth import (
+import sys
+from pathlib import Path
+
+# Add core to path for shared modules
+core_path = Path(__file__).parent.parent.parent.parent.parent / "core"
+if str(core_path) not in sys.path:
+    sys.path.insert(0, str(core_path))
+
+from src.core.shared.security.auth import (  # noqa: E402
     AuthenticationMiddleware,
     TokenResponse,
     UserClaims,

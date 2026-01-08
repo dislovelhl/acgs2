@@ -34,8 +34,6 @@ try:
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.x509.oid import NameOID
 except ImportError:
-    # print("Error: cryptography library not installed.")  # DEBUG_CLEANUP
-    # print("Install with: pip install cryptography>=41.0.0")  # DEBUG_CLEANUP
     sys.exit(1)
 
 
@@ -130,13 +128,6 @@ def generate_saml_sp_certificate(
         # Write certificate
         cert_file.write_bytes(certificate_pem)
         os.chmod(cert_file, 0o644)  # Owner read/write, others read
-
-        # print("Generated SAML SP certificate files:")  # DEBUG_CLEANUP
-        # print(f"  Certificate: {cert_file}")  # DEBUG_CLEANUP
-        # print(f"  Private Key: {key_file}")  # DEBUG_CLEANUP
-        # print(f"  Common Name: {common_name}")  # DEBUG_CLEANUP
-        # print(f"  Key Size: {key_size} bits")  # DEBUG_CLEANUP
-        # print(f"  Valid Until: {now + timedelta(days=validity_days):%Y-%m-%d}")  # DEBUG_CLEANUP
 
     return certificate_pem, private_key_pem
 

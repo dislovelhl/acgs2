@@ -72,9 +72,6 @@ def main():
     planner = RefactoringPlanner(Path("."))
     large_files = planner.analyze_large_files()
 
-    print(f"📊 Found {len(large_files)} files over 400 lines")
-    print("\n🔧 REFACTORING RECOMMENDATIONS:")
-    print("=" * 60)
 
     with open("refactoring_recommendations.md", "w") as f:
         f.write("# ACGS-2 Large File Refactoring Plan\n\n")
@@ -84,16 +81,11 @@ def main():
             file_path = file_info["file"]
             relative_path = Path(file_path).relative_to(Path("."))
 
-            print(f"\n{i}. {relative_path}")
-            print(
-                f"   Lines: {file_info['lines']}, Classes: {file_info['classes']}, Functions: {file_info['functions']}"
-            )
 
             suggestions = planner.suggest_refactoring(file_info)
             if suggestions:
-                print("   💡 Suggestions:")
                 for suggestion in suggestions:
-                    print(f"      • {suggestion}")
+                    pass
 
             # Write to file
             f.write(f"## {i}. {relative_path}\n\n")
@@ -108,7 +100,6 @@ def main():
                     f.write(f"- {suggestion}\n")
                 f.write("\n")
 
-    print("\n✅ Refactoring plan saved to refactoring_recommendations.md")
 
 
 if __name__ == "__main__":

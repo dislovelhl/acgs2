@@ -194,30 +194,30 @@ class TestIT08SwarmPermissions:
     async def test_agent_role_permissions_enforced(self, swarm_topology):
         """Test that agent roles enforce permissions correctly."""
         # Coordinator can orchestrate
-        assert swarm_topology.check_permission("coord-001", "orchestrate") == True
-        assert swarm_topology.check_permission("coord-001", "execute_tools") == False
+        assert swarm_topology.check_permission("coord-001", "orchestrate")
+        assert not swarm_topology.check_permission("coord-001", "execute_tools")
 
         # Worker can execute tools
-        assert swarm_topology.check_permission("worker-001", "execute_tools") == True
-        assert swarm_topology.check_permission("worker-001", "assign") == False
+        assert swarm_topology.check_permission("worker-001", "execute_tools")
+        assert not swarm_topology.check_permission("worker-001", "assign")
 
         # Restricted cannot execute tools
-        assert swarm_topology.check_permission("restricted-001", "execute_tools") == False
-        assert swarm_topology.check_permission("restricted-001", "read_memory") == True
+        assert not swarm_topology.check_permission("restricted-001", "execute_tools")
+        assert swarm_topology.check_permission("restricted-001", "read_memory")
 
     @pytest.mark.asyncio
     async def test_tool_permissions_by_role(self, swarm_topology):
         """Test that tool permissions are role-specific."""
         # Worker has limited tools
-        assert swarm_topology.check_tool_permission("worker-001", "search") == True
-        assert swarm_topology.check_tool_permission("worker-001", "database") == False
+        assert swarm_topology.check_tool_permission("worker-001", "search")
+        assert not swarm_topology.check_tool_permission("worker-001", "database")
 
         # Specialist has more tools
-        assert swarm_topology.check_tool_permission("specialist-001", "search") == True
-        assert swarm_topology.check_tool_permission("specialist-001", "database") == True
+        assert swarm_topology.check_tool_permission("specialist-001", "search")
+        assert swarm_topology.check_tool_permission("specialist-001", "database")
 
         # Restricted has no tools
-        assert swarm_topology.check_tool_permission("restricted-001", "search") == False
+        assert not swarm_topology.check_tool_permission("restricted-001", "search")
 
     @pytest.mark.asyncio
     async def test_task_assignment_based_on_permissions(self, cf, swarm_topology):
@@ -274,7 +274,7 @@ class TestIT08SwarmPermissions:
             "tools": ["search"],
         }
         validation = await cf.validate_agent_assignment("worker-001", valid_task)
-        assert validation["valid"] == True
+        assert validation["valid"]
 
         # Invalid assignment - wrong permissions
         invalid_task_perm = {
@@ -282,7 +282,7 @@ class TestIT08SwarmPermissions:
             "tools": [],
         }
         validation = await cf.validate_agent_assignment("worker-001", invalid_task_perm)
-        assert validation["valid"] == False
+        assert not validation["valid"]
         assert "orchestrate" in validation["reason"]
 
         # Invalid assignment - wrong tools
@@ -291,7 +291,7 @@ class TestIT08SwarmPermissions:
             "tools": ["database"],
         }
         validation = await cf.validate_agent_assignment("worker-001", invalid_task_tools)
-        assert validation["valid"] == False
+        assert not validation["valid"]
         assert "database" in validation["reason"]
 
     @pytest.mark.asyncio

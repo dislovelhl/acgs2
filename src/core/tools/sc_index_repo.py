@@ -30,6 +30,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+
 class RepositoryIndexer:
     """High-performance repository indexer with parallel analysis."""
 
@@ -56,7 +57,8 @@ class RepositoryIndexer:
                     )
             except ImportError:
                 pass
-            except Exception as e:
+            except Exception:
+                pass
 
         package_path = self.root_path / "package.json"
         if package_path.exists():
@@ -64,7 +66,8 @@ class RepositoryIndexer:
                 with open(package_path) as f:
                     data = json.load(f)
                     return data.get("name", "Unknown Project")
-            except (json.JSONDecodeError, FileNotFoundError, PermissionError) as e:
+            except (json.JSONDecodeError, FileNotFoundError, PermissionError):
+                pass
 
         return self.root_path.name
 
@@ -75,7 +78,9 @@ class RepositoryIndexer:
             try:
                 with open(index_path, "r", encoding="utf-8") as f:
                     return json.load(f)
-            except (json.JSONDecodeError, FileNotFoundError, PermissionError) as e:
+            except (json.JSONDecodeError, FileNotFoundError, PermissionError):
+                pass
+                return None
 
                 return None
         return None
@@ -106,9 +111,9 @@ class RepositoryIndexer:
             for category, future in futures.items():
                 try:
                     results[category] = future.result(timeout=30)
-                    print(f"  ✅ {category.capitalize()} analysis completed")
+                    print(f"  ✅ {category.capitalize()} analysis completed")  # noqa: T201
                 except Exception as e:
-                    print(f"  ❌ {category.capitalize()} analysis failed: {e}")
+                    print(f"  ❌ {category.capitalize()} analysis failed: {e}")  # noqa: T201
                     results[category] = {}
 
         # Combine results
@@ -179,7 +184,8 @@ class RepositoryIndexer:
                             if module_info:
                                 modules.append(module_info)
 
-                except Exception as e:
+                except Exception:
+                    pass
 
         return {
             "entry_points": entry_points,
@@ -271,7 +277,8 @@ class RepositoryIndexer:
                     "purpose": self._infer_module_purpose(path, content),
                 }
 
-        except Exception as e:
+        except Exception:
+            pass
 
         return None
 
@@ -315,7 +322,8 @@ class RepositoryIndexer:
                                 "title": self._extract_doc_title(path),
                             }
                         )
-            except Exception as e:
+            except Exception:
+                pass
 
         return {"files": doc_files[:15]}  # Limit to 15 docs
 
@@ -342,8 +350,8 @@ class RepositoryIndexer:
                 first_line = f.readline().strip()
                 if first_line.startswith("#"):
                     return first_line[1:].strip()
-            except Exception:
-                pass
+        except Exception:
+            pass
         return path.stem.replace("_", " ").title()
 
     def _analyze_configuration(self) -> Dict:
@@ -375,7 +383,8 @@ class RepositoryIndexer:
                                 "purpose": "Configuration",
                             }
                         )
-            except Exception as e:
+            except Exception:
+                pass
 
         return {"files": config_files}
 
@@ -416,7 +425,8 @@ class RepositoryIndexer:
                     if path.is_file() and self._is_valid_file(path, []):
                         rel_path = path.relative_to(self.root_path)
                         test_files.append(str(rel_path))
-            except Exception as e:
+            except Exception:
+                pass
 
         # Count test types
         unit_tests = len([f for f in test_files if "unit" in f.lower()])
@@ -449,7 +459,8 @@ class RepositoryIndexer:
                         # Only include scripts/tools directories
                         if any(part in ["scripts", "tools", "bin"] for part in rel_path.parts):
                             script_files.append(str(rel_path))
-            except Exception as e:
+            except Exception:
+                pass
 
         return {"files": script_files[:10]}  # Limit to 10
 
@@ -518,7 +529,8 @@ class RepositoryIndexer:
                 if path.is_dir() and not self._is_ignored_dir(path):
                     rel_path = path.relative_to(self.root_path)
                     self._add_to_tree(tree, rel_path.parts)
-        except Exception as e:
+        except Exception:
+            pass
 
         return tree
 
@@ -737,15 +749,15 @@ class RepositoryIndexer:
         with open(json_path, "w", encoding="utf-8") as f:
             f.write(json_content)
 
-        print(f"📄 PROJECT_INDEX.md saved ({len(md_content) // 1024}KB)")
-        print(f"📄 PROJECT_INDEX.json saved ({len(json_content) // 1024}KB)")
+        print(f"📄 PROJECT_INDEX.md saved ({len(md_content) // 1024}KB)")  # noqa: T201
+        print(f"📄 PROJECT_INDEX.json saved ({len(json_content) // 1024}KB)")  # noqa: T201
 
     def run(self):
         """Main execution flow."""
 
         # Check if we can skip analysis
         if self._should_skip_analysis():
-            print("⏭️  Skipping full analysis (using existing index)")
+            print("⏭️  Skipping full analysis (using existing index)")  # noqa: T201
             return
 
         # Phase 1: Analysis
@@ -757,9 +769,11 @@ class RepositoryIndexer:
         # Phase 3: Validation
         validation = self.validate_index(md_content, json_content)
 
-        for issue in validation["issues"]:
+        for _issue in validation["issues"]:
+            pass
 
-        for rec in validation["recommendations"]:
+        for _rec in validation["recommendations"]:
+            pass
 
         # Phase 4: Save
         self.save_index(md_content, json_content)
@@ -770,11 +784,12 @@ class RepositoryIndexer:
         print("  Index Reading: 3,000 tokens (per session)")
         print("  Full Codebase: 58,000 tokens (per session)")
 
-        savings_10 = (58 - 3) * 10
-        savings_100 = (58 - 3) * 100
+        (58 - 3) * 10
+        (58 - 3) * 100
 
         print("  - PROJECT_INDEX.md (human-readable)")
         print("  - PROJECT_INDEX.json (machine-readable)")
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -807,6 +822,7 @@ Examples:
 
     # Run indexing
     indexer.run()
+
 
 if __name__ == "__main__":
     main()

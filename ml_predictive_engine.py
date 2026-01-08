@@ -4,7 +4,6 @@ ACGS-2 Machine Learning Predictive Engine
 Advanced ML models for workload prediction, anomaly detection, and capacity optimization
 """
 
-import json
 import os
 import warnings
 from datetime import datetime, timedelta
@@ -53,9 +52,8 @@ class MLPredictiveEngine:
             if os.path.exists(filepath):
                 try:
                     setattr(self, model_name, joblib.load(filepath))
-                    print(f"✓ Loaded {model_name} model")
-                except Exception as e:
-                    print(f"✗ Failed to load {model_name}: {e}")
+                except Exception:
+                    pass
 
     def train_workload_prediction_model(
         self, historical_data: List[Dict[str, Any]]
@@ -94,7 +92,7 @@ class MLPredictiveEngine:
         missing_features = [col for col in feature_columns if col not in df.columns]
 
         if missing_features:
-            print(f"Warning: Missing features: {missing_features}")
+            pass
 
         X = df[available_features].fillna(0)
         y = df[target_column].fillna(0)
@@ -519,7 +517,7 @@ class MLPredictiveEngine:
 
         current_capacity = state.get("current_capacity", 4)
         utilization = state.get("utilization", 0)
-        pending_tasks = state.get("pending_tasks", 0)
+        state.get("pending_tasks", 0)
 
         if recommended_capacity > current_capacity:
             return f"Scaling up due to high utilization ({utilization:.1%}) and pending workload"
@@ -577,8 +575,7 @@ def main():
                 },
                 # Add more sample data...
             ]
-            result = engine.train_workload_prediction_model(sample_data)
-            print(json.dumps(result, indent=2))
+            engine.train_workload_prediction_model(sample_data)
 
         elif command == "train-anomaly":
             # Load metrics data and train anomaly detection
@@ -597,8 +594,7 @@ def main():
                 },
                 # Add more sample data...
             ]
-            result = engine.train_anomaly_detection_model(sample_data)
-            print(json.dumps(result, indent=2))
+            engine.train_anomaly_detection_model(sample_data)
 
         elif command == "predict-workload":
             # Predict future workload
@@ -610,8 +606,7 @@ def main():
                 "last_hour_tasks": 10,
                 "last_day_avg": 15,
             }
-            result = engine.predict_workload(current_context, 24)
-            print(json.dumps(result, indent=2))
+            engine.predict_workload(current_context, 24)
 
         elif command == "detect-anomalies":
             # Detect anomalies in current metrics
@@ -625,24 +620,18 @@ def main():
                 "active_agents": 5,
                 "total_agents": 5,
             }
-            result = engine.detect_anomalies(current_metrics)
-            print(json.dumps(result, indent=2))
+            engine.detect_anomalies(current_metrics)
 
         elif command == "optimize-capacity":
             # Optimize capacity allocation
             current_state = {"current_capacity": 5, "utilization": 0.85, "pending_tasks": 12}
             constraints = {"max_capacity": 20, "min_capacity": 2}
-            result = engine.optimize_capacity(current_state, constraints)
-            print(json.dumps(result, indent=2))
+            engine.optimize_capacity(current_state, constraints)
 
         else:
-            print(
-                "Usage: python ml_predictive_engine.py [train-workload|train-anomaly|predict-workload|detect-anomalies|optimize-capacity]"
-            )
+            pass
     else:
-        print("ACGS-2 ML Predictive Engine")
-        print("Advanced machine learning models for coordination optimization")
-        print("Usage: python ml_predictive_engine.py [command]")
+        pass
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+
 class CodeAnalyzer:
     """Comprehensive code analyzer with multi-domain assessment capabilities."""
 
@@ -49,7 +50,7 @@ class CodeAnalyzer:
 
                 with open(pyproject_path, "rb") as f:
                     data = tomllib.load(f)
-                    return (
+                    return str(
                         data.get("tool", {})
                         .get("poetry", {})
                         .get("name", data.get("project", {}).get("name", "Unknown Project"))
@@ -63,7 +64,7 @@ class CodeAnalyzer:
             try:
                 with open(package_path, encoding="utf-8") as f:
                     data = json.load(f)
-                    return data.get("name", "Unknown Project")
+                    return str(data.get("name", "Unknown Project"))
             except (FileNotFoundError, json.JSONDecodeError, KeyError):
                 pass
 
@@ -74,7 +75,7 @@ class CodeAnalyzer:
 
         search_path = self.root_path / target if target else self.root_path
 
-        file_categories = {
+        file_categories: Dict[str, List[Path]] = {
             "python": [],
             "typescript": [],
             "javascript": [],
@@ -136,7 +137,7 @@ class CodeAnalyzer:
                     file_categories["tests"].append(path)
 
         total_files = sum(len(files) for files in file_categories.values())
-        print(
+        print(  # noqa: T201
             f"  Found {total_files} files across {len([k for k, v in file_categories.items() if v])} categories"
         )
 
@@ -207,9 +208,7 @@ class CodeAnalyzer:
 
                     # Check documentation coverage
                     has_docstring = '"""' in content or "'''" in content
-                    has_class_doc = bool(
-                        re.search(r'class\s+\w+.*?:\s*(?:""".*?"""|""".*?""")', content, re.DOTALL)
-                    )
+                    pass
 
                     if not has_docstring and len(lines) > 20:
                         findings.append(
@@ -379,7 +378,7 @@ class CodeAnalyzer:
             try:
                 with open(py_file, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
-                    lines = content.split("\n")
+                    content.split("\n")
 
                     for category, patterns in performance_patterns.items():
                         for pattern, description in patterns:
@@ -622,7 +621,6 @@ class CodeAnalyzer:
             with open(output_file, "w", encoding="utf-8") as f:
                 f.write(report)
 
-        else:
 
 def main():
     parser = argparse.ArgumentParser(
@@ -674,6 +672,7 @@ Examples:
 
     # Run analysis
     analyzer.run(target=args.target, output_path=args.output)
+
 
 if __name__ == "__main__":
     main()

@@ -15,23 +15,24 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
+import hashlib
+import json
 import logging
 import ssl
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from urllib.parse import urlparse
 
-import aiohttp
-import requests
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from cryptography.x509.oid import ExtensionOID
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 class CertificateManager:
     """Manages SSL/TLS certificates and pinning for ACGS-2 services."""
@@ -54,12 +55,10 @@ class CertificateManager:
             ssl_context.verify_mode = ssl.CERT_REQUIRED
 
             # Connect and get certificate
-            reader, writer = await asyncio.open_connection(
-                domain, port, ssl=ssl_context
-            )
+            reader, writer = await asyncio.open_connection(domain, port, ssl=ssl_context)
 
             # Get certificate from connection
-            cert = writer.get_extra_info('ssl_object').getpeercert(binary_form=True)
+            cert = writer.get_extra_info("ssl_object").getpeercert(binary_form=True)
             if cert:
                 cert_obj = x509.load_der_x509_certificate(cert, default_backend())
                 cert_info = self._parse_certificate(cert_obj, domain)
@@ -67,33 +66,28 @@ class CertificateManager:
                 writer.close()
                 await writer.wait_closed()
 
-                return {
-                    'valid': True,
-                    'domain': domain,
-                    'certificate': cert_info,
-                    'errors': []
-                }
+                return {"valid": True, "domain": domain, "certificate": cert_info, "errors": []}
             else:
                 return {
-                    'valid': False,
-                    'domain': domain,
-                    'certificate': None,
-                    'errors': ['No certificate received']
+                    "valid": False,
+                    "domain": domain,
+                    "certificate": None,
+                    "errors": ["No certificate received"],
                 }
 
         except ssl.SSLError as e:
             return {
-                'valid': False,
-                'domain': domain,
-                'certificate': None,
-                'errors': [f'SSL Error: {str(e)}']
+                "valid": False,
+                "domain": domain,
+                "certificate": None,
+                "errors": [f"SSL Error: {str(e)}"],
             }
         except Exception as e:
             return {
-                'valid': False,
-                'domain': domain,
-                'certificate': None,
-                'errors': [f'Connection Error: {str(e)}']
+                "valid": False,
+                "domain": domain,
+                "certificate": None,
+                "errors": [f"Connection Error: {str(e)}"],
             }
 
     def _parse_certificate(self, cert: x509.Certificate, domain: str) -> Dict[str, any]:
@@ -121,22 +115,22 @@ class CertificateManager:
         public_key = cert.public_key()
         public_key_der = public_key.public_key_bytes(
             encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
         pin = hashlib.sha256(public_key_der).hexdigest()
 
         return {
-            'subject_common_name': subject_cn,
-            'issuer_common_name': issuer_cn,
-            'not_before': not_before.isoformat(),
-            'not_after': not_after.isoformat(),
-            'days_until_expiry': days_until_expiry,
-            'subject_alt_names': san_names,
-            'serial_number': str(cert.serial_number),
-            'signature_algorithm': cert.signature_algorithm_oid._name,
-            'pin_sha256': pin,
-            'is_expired': datetime.now(not_after.tzinfo) > not_after,
-            'is_self_signed': subject_cn == issuer_cn
+            "subject_common_name": subject_cn,
+            "issuer_common_name": issuer_cn,
+            "not_before": not_before.isoformat(),
+            "not_after": not_after.isoformat(),
+            "days_until_expiry": days_until_expiry,
+            "subject_alt_names": san_names,
+            "serial_number": str(cert.serial_number),
+            "signature_algorithm": cert.signature_algorithm_oid._name,
+            "pin_sha256": pin,
+            "is_expired": datetime.now(not_after.tzinfo) > not_after,
+            "is_self_signed": subject_cn == issuer_cn,
         }
 
     def pin_certificate(self, domain: str, expected_pin: str) -> bool:
@@ -165,11 +159,9 @@ class CertificateManager:
             ssl_context.check_hostname = True
             ssl_context.verify_mode = ssl.CERT_REQUIRED
 
-            reader, writer = await asyncio.open_connection(
-                domain, port, ssl=ssl_context
-            )
+            reader, writer = await asyncio.open_connection(domain, port, ssl=ssl_context)
 
-            cert = writer.get_extra_info('ssl_object').getpeercert(binary_form=True)
+            cert = writer.get_extra_info("ssl_object").getpeercert(binary_form=True)
             if cert:
                 cert_obj = x509.load_der_x509_certificate(cert, default_backend())
 
@@ -177,7 +169,7 @@ class CertificateManager:
                 public_key = cert_obj.public_key()
                 public_key_der = public_key.public_key_bytes(
                     encoding=serialization.Encoding.DER,
-                    format=serialization.PublicFormat.SubjectPublicKeyInfo
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo,
                 )
                 actual_pin = hashlib.sha256(public_key_der).hexdigest()
 
@@ -187,14 +179,19 @@ class CertificateManager:
                 if actual_pin == expected_pin:
                     return True, f"Certificate pin validated for {domain}"
                 else:
-                    return False, f"Certificate pin mismatch for {domain}. Expected: {expected_pin[:16]}..., Actual: {actual_pin[:16]}..."
+                    return (
+                        False,
+                        f"Certificate pin mismatch for {domain}. Expected: {expected_pin[:16]}..., Actual: {actual_pin[:16]}...",
+                    )
 
             return False, f"No certificate received from {domain}"
 
         except Exception as e:
             return False, f"Certificate validation failed for {domain}: {str(e)}"
 
-    async def check_certificate_expiry(self, domains: List[str], warning_days: int = 30) -> Dict[str, List[str]]:
+    async def check_certificate_expiry(
+        self, domains: List[str], warning_days: int = 30
+    ) -> Dict[str, List[str]]:
         """
         Check certificate expiry for multiple domains.
 
@@ -206,23 +203,25 @@ class CertificateManager:
             try:
                 cert_result = await self.validate_certificate(domain)
 
-                if not cert_result['valid']:
-                    results[domain] = cert_result['errors']
+                if not cert_result["valid"]:
+                    results[domain] = cert_result["errors"]
                     continue
 
-                cert_info = cert_result['certificate']
+                cert_info = cert_result["certificate"]
                 warnings = []
 
-                if cert_info['is_expired']:
+                if cert_info["is_expired"]:
                     warnings.append("CERTIFICATE HAS EXPIRED")
-                elif cert_info['days_until_expiry'] <= warning_days:
+                elif cert_info["days_until_expiry"] <= warning_days:
                     warnings.append(f"Certificate expires in {cert_info['days_until_expiry']} days")
 
-                if cert_info['is_self_signed']:
+                if cert_info["is_self_signed"]:
                     warnings.append("Certificate is self-signed")
 
-                if not any(domain in san or domain == cert_info['subject_common_name']
-                          for san in cert_info['subject_alt_names']):
+                if not any(
+                    domain in san or domain == cert_info["subject_common_name"]
+                    for san in cert_info["subject_alt_names"]
+                ):
                     warnings.append(f"Domain {domain} not in certificate subject or SAN")
 
                 results[domain] = warnings
@@ -242,12 +241,16 @@ class CertificateManager:
         output_path = output_path or self.config_path
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, 'w') as f:
-            json.dump({
-                'certificate_pins': self.pin_store,
-                'last_updated': datetime.now().isoformat(),
-                'version': '1.0'
-            }, f, indent=2)
+        with open(output_path, "w") as f:
+            json.dump(
+                {
+                    "certificate_pins": self.pin_store,
+                    "last_updated": datetime.now().isoformat(),
+                    "version": "1.0",
+                },
+                f,
+                indent=2,
+            )
 
         logger.info(f"Saved certificate pins to {output_path}")
 
@@ -256,21 +259,27 @@ async def main():
     """Main entry point for certificate management."""
     import argparse
 
-    parser = argparse.ArgumentParser(description='ACGS-2 Certificate Management')
-    parser.add_argument('--check-expiry', nargs='*', help='Check certificate expiry for domains')
-    parser.add_argument('--validate-cert', help='Validate certificate for a domain')
-    parser.add_argument('--pin-cert', nargs=2, metavar=('DOMAIN', 'PIN'), help='Pin certificate for domain')
-    parser.add_argument('--validate-pin', help='Validate pinned certificate for domain')
-    parser.add_argument('--config', default='config/certificates.json', help='Certificate config file')
+    parser = argparse.ArgumentParser(description="ACGS-2 Certificate Management")
+    parser.add_argument("--check-expiry", nargs="*", help="Check certificate expiry for domains")
+    parser.add_argument("--validate-cert", help="Validate certificate for a domain")
+    parser.add_argument(
+        "--pin-cert", nargs=2, metavar=("DOMAIN", "PIN"), help="Pin certificate for domain"
+    )
+    parser.add_argument("--validate-pin", help="Validate pinned certificate for domain")
+    parser.add_argument(
+        "--config", default="config/certificates.json", help="Certificate config file"
+    )
 
     args = parser.parse_args()
 
     manager = CertificateManager(args.config)
 
     if args.check_expiry:
-        domains = args.check_expiry if args.check_expiry else [
-            'mcp.neon.tech', 'huggingface.co', 'registry-1234567890.amazonaws.com'
-        ]
+        domains = (
+            args.check_expiry
+            if args.check_expiry
+            else ["mcp.neon.tech", "huggingface.co", "registry-1234567890.amazonaws.com"]
+        )
 
         print(f"🔍 Checking certificate expiry for {len(domains)} domains...")
         results = await manager.check_certificate_expiry(domains)
@@ -287,14 +296,16 @@ async def main():
         print(f"🔍 Validating certificate for {args.validate_cert}...")
         result = await manager.validate_certificate(args.validate_cert)
 
-        if result['valid']:
-            cert_info = result['certificate']
-            print("✅ Certificate Valid"            print(f"   Subject: {cert_info['subject_common_name']}")
+        if result["valid"]:
+            cert_info = result["certificate"]
+            print("✅ Certificate Valid")
+            print(f"   Subject: {cert_info['subject_common_name']}")
             print(f"   Issuer: {cert_info['issuer_common_name']}")
             print(f"   Expires: {cert_info['not_after']} ({cert_info['days_until_expiry']} days)")
             print(f"   PIN SHA256: {cert_info['pin_sha256']}")
         else:
-            print("❌ Certificate Invalid"            for error in result['errors']:
+            print("❌ Certificate Invalid")
+            for error in result["errors"]:
                 print(f"   - {error}")
 
     elif args.pin_cert:
@@ -312,5 +323,5 @@ async def main():
             sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

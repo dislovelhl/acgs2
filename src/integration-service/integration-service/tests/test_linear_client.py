@@ -11,10 +11,9 @@ from unittest.mock import Mock, patch
 import aiohttp
 import pytest
 
+from src.integrations.base import IntegrationEvent
 from src.integrations.linear.client import LinearClient
 from src.integrations.linear.credentials import LinearCredentials
-
-from ..base import IntegrationEvent
 
 
 class TestLinearClient:

@@ -27,10 +27,12 @@ from .. import CONSTITUTIONAL_HASH, VERIFICATION_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
+
 class PolicyVerificationError(Exception):
     """Raised when policy verification fails after all attempts."""
 
     pass
+
 
 class PolicyLanguage(Enum):
     """Supported policy languages."""
@@ -39,6 +41,7 @@ class PolicyLanguage(Enum):
     DAFNY = "dafny"
     Z3 = "z3"
     NATURAL = "natural"
+
 
 @dataclass
 class VerifiedPolicy:
@@ -65,6 +68,7 @@ class VerifiedPolicy:
             "constitutional_hash": self.constitutional_hash,
         }
 
+
 @dataclass
 class DafnyAnnotation:
     """A Dafny annotation for a policy."""
@@ -73,6 +77,7 @@ class DafnyAnnotation:
     postconditions: List[str]
     invariants: List[str]
     decreases: Optional[str] = None
+
 
 @dataclass
 class VerificationAttempt:
@@ -83,6 +88,7 @@ class VerificationAttempt:
     errors: List[str]
     refinements_made: List[str]
     duration_ms: float
+
 
 class LLMProposer:
     """
@@ -125,6 +131,7 @@ class LLMProposer:
         )
 
         return proposals
+
 
 class LLMSolver:
     """
@@ -181,6 +188,7 @@ allow {{
 
         return "\n    ".join(conditions) if conditions else "true"
 
+
 class DafnyProAnnotator:
     """
     DafnyPro annotation generator.
@@ -209,7 +217,7 @@ class DafnyProAnnotator:
 
         # Extract policy structure
         package_match = re.search(r"package\s+([\w.]+)", rego_policy)
-        package_name = package_match.group(1) if package_match else "policy"
+        package_match.group(1) if package_match else "policy"
 
         # Generate Dafny method with annotations
         dafny_spec = f"""
@@ -289,6 +297,7 @@ module ConstitutionalPolicy {{
             return 0.0
         return self._success_count / self._attempt_count
 
+
 class DafnyVerifier:
     """
     Dafny verification interface.
@@ -332,6 +341,7 @@ class DafnyVerifier:
                 "constitutional_hash": CONSTITUTIONAL_HASH,
             },
         }
+
 
 class VerifiedPolicyGenerator:
     """
@@ -441,7 +451,7 @@ class VerifiedPolicyGenerator:
                 self._stats["successful_verifications"] += 1
                 policy = VerifiedPolicy(
                     policy_id=policy_id,
-                    rego_code=rego_policy,
+                    rego_code=rego_code,
                     dafny_spec=refined,
                     proof=verification["proof"],
                     natural_language=natural_language,
@@ -499,11 +509,12 @@ class VerifiedPolicyGenerator:
 
         for proposal in proposals:
             try:
-                policy = await self.generate_verified_policy(proposal)
+                await self.generate_verified_policy(proposal)
                 verified_count += 1
 
             except PolicyVerificationError:
                 # Skip unverifiable proposals
+                pass
 
         logger.info(f"Self-play round complete: {verified_count}/{len(proposals)} verified")
 

@@ -39,20 +39,24 @@ DEFAULT_STATE_TTL = 86400 * 7  # 7 days
 DEFAULT_EVENT_TTL = 86400 * 3  # 3 days
 DEFAULT_LOCK_TTL = 300  # 5 minutes
 
+
 class LinearStateError(Exception):
     """Base exception for Linear state tracking errors."""
 
     pass
+
 
 class LinearStateConnectionError(LinearStateError):
     """Raised when Redis connection fails."""
 
     pass
 
+
 class LinearStateLockError(LinearStateError):
     """Raised when unable to acquire a lock."""
 
     pass
+
 
 class LinearStateManager:
     """
@@ -378,8 +382,10 @@ class LinearStateManager:
             )
 
             if lock_acquired:
+                pass  # Lock acquired successfully
 
             else:
+                pass  # Lock not acquired
 
             return bool(lock_acquired)
 
@@ -408,6 +414,7 @@ class LinearStateManager:
             deleted = await self._redis_client.delete(key)
 
             if deleted:
+                pass  # Lock released successfully
 
             return bool(deleted)
 
@@ -499,6 +506,7 @@ class LinearStateManager:
             logger.error(f"Failed to clear sync state for {issue_id}: {e}")
             raise LinearStateError(f"Failed to clear sync state: {e}") from e
 
+
 class _LockContext:
     """Async context manager for distributed locks."""
 
@@ -533,8 +541,10 @@ class _LockContext:
         if self._acquired:
             await self.state_manager.release_lock(self.resource_id)
 
+
 # Singleton instance for easy access
 _state_manager: Optional[LinearStateManager] = None
+
 
 def get_state_manager() -> LinearStateManager:
     """
@@ -550,6 +560,7 @@ def get_state_manager() -> LinearStateManager:
     if _state_manager is None:
         _state_manager = LinearStateManager()
     return _state_manager
+
 
 def reset_state_manager() -> None:
     """

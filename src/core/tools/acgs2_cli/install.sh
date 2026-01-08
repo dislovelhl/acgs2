@@ -49,9 +49,9 @@ echo
 echo "✅ ACGS-2 CLI Tool installed successfully!"
 echo
 echo "🎯 Quick Start:"
-echo "  acgs2-cli --help                    # Show help"
-echo "  acgs2-cli health                    # Check system health"
-echo "  acgs2-cli playground --interactive  # Start policy playground"
+echo "  acgs2_cli --help                    # Show help"
+echo "  acgs2_cli health                    # Check system health"
+echo "  acgs2_cli playground --interactive  # Start policy playground"
 echo
 echo "📖 For more information, see README.md"
 echo "🔗 Documentation: https://docs.acgs.io/cli"

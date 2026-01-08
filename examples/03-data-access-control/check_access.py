@@ -93,23 +93,10 @@ def format_access_level(role: str, sensitivity: str) -> str:
 
 def main():
     """Run data access control evaluation examples."""
-    print("=" * 70)
-    print("ACGS-2 Data Access Control Example")
-    print("Demonstrating RBAC and Context-Based Access Control")
-    print("=" * 70)
-    print()
 
     # Step 1: Check OPA connection
-    print(f"Connecting to OPA at {OPA_URL}...")
     if not check_opa_health():
-        print(
-            "\n\033[91mError: Cannot connect to OPA.\033[0m\n"
-            "\nPlease ensure OPA is running:\n"
-            "  docker compose up -d\n"
-            "\nThen try again."
-        )
         sys.exit(1)
-    print("OPA is healthy and ready.\n")
 
     # Step 2: Define test cases demonstrating different access scenarios
     test_cases = [
@@ -309,29 +296,22 @@ def main():
     ]
 
     # Step 3: Run policy evaluations grouped by category
-    print("Running Data Access Policy Evaluations")
-    print("-" * 70)
 
     all_passed = True
     current_category = None
 
-    for i, test in enumerate(test_cases, 1):
+    for _i, test in enumerate(test_cases, 1):
         # Print category header when it changes
         if test["category"] != current_category:
             current_category = test["category"]
-            print(f"\n--- {current_category} Scenarios ---")
 
         user = test["input"]["user"]
         resource = test["input"]["resource"]
-        role = user.get("role", "none")
-        sensitivity = resource.get("sensitivity", "unknown")
+        user.get("role", "none")
+        resource.get("sensitivity", "unknown")
 
-        print(f"\nTest {i}: {test['description']}")
-        user_name = user.get("name", "unknown")
-        user_dept = user.get("department", "none")
-        print(f"  User: {user_name} (role={role}, dept={user_dept})")
-        print(f"  Resource: {resource.get('type', 'unknown')} (sensitivity={sensitivity})")
-        print(f"  Access Level: {format_access_level(role, sensitivity)}")
+        user.get("name", "unknown")
+        user.get("department", "none")
 
         try:
             # Query the allow rule
@@ -350,24 +330,18 @@ def main():
                     denial_reasons = list(denial_reasons)
 
             # Display result
-            print(f"  Decision: {format_decision(allowed, denial_reasons)}")
 
             # Verify expectation
             if allowed == test["expected"]:
-                print("  \033[92m[PASS]\033[0m Result matches expected")
+                pass
             else:
-                expected_str = "allowed" if test["expected"] else "denied"
-                print(f"  \033[91m[FAIL]\033[0m Expected {expected_str}")
+                "allowed" if test["expected"] else "denied"
                 all_passed = False
 
-        except requests.exceptions.RequestException as e:
-            print(f"  \033[91m[ERROR]\033[0m Failed to query policy: {e}")
+        except requests.exceptions.RequestException:
             all_passed = False
 
     # Step 4: Demonstrate status query for full context
-    print("\n" + "-" * 70)
-    print("Full Status Query Example")
-    print("-" * 70)
 
     sample_input = {
         "user": {"id": "demo-user", "name": "demo", "role": "analyst", "department": "engineering"},
@@ -383,29 +357,17 @@ def main():
     try:
         status_result = evaluate_policy(f"{ACCESS_POLICY_PATH}/status", sample_input)
         status = status_result.get("result", {})
-        print("\nInput: analyst accessing confidential data")
-        print("Full Status Response:")
-        print(f"  allowed: {status.get('allowed', 'unknown')}")
-        print(f"  user_role: {status.get('user_role', 'unknown')}")
-        print(f"  user_level: {status.get('user_level', 'unknown')}")
-        print(f"  data_sensitivity: {status.get('data_sensitivity', 'unknown')}")
-        print(f"  data_level: {status.get('data_level', 'unknown')}")
         denial_reasons = status.get("denial_reasons", [])
         if denial_reasons:
-            print(f"  denial_reasons: {denial_reasons}")
-    except requests.exceptions.RequestException as e:
-        print(f"  \033[91m[ERROR]\033[0m Failed to query status: {e}")
+            pass
+    except requests.exceptions.RequestException:
+        pass
 
     # Step 5: Summary
-    print("\n" + "=" * 70)
     if all_passed:
-        print("\033[92mAccess control evaluation successful\033[0m")
-        print("All test cases passed!")
-        print("\nAccess decisions printed for all scenarios.")
+        pass
     else:
-        print("\033[91mSome tests failed.\033[0m")
-        print("Review the output above for details.")
-    print("=" * 70)
+        pass
 
     # Exit with appropriate code
     sys.exit(0 if all_passed else 1)

@@ -601,30 +601,22 @@ def main():
 
         if command == "create-deployment-workflow":
             result = engine.create_deployment_workflow()
-            print(json.dumps(result, indent=2))
 
         elif command == "execute-workflow":
             workflow_id = sys.argv[2] if len(sys.argv) > 2 else None
             if workflow_id:
                 result = asyncio.run(engine.execute_workflow(workflow_id))
-                print(json.dumps(result, indent=2))
             else:
-                print("Usage: python advanced_workflow_engine.py execute-workflow <workflow_id>")
+                pass
 
         else:
-            print(
-                "Usage: python advanced_workflow_engine.py [create-deployment-workflow|execute-workflow <workflow_id>]"
-            )
+            pass
     else:
         # Create and execute deployment workflow
-        print("🔧 Creating CI/CD deployment workflow...")
         result = engine.create_deployment_workflow()
-        print(json.dumps(result, indent=2))
 
         workflow_id = result["workflow"]["workflow_id"]
-        print(f"\n🚀 Executing workflow {workflow_id}...")
-        execution_result = asyncio.run(engine.execute_workflow(workflow_id))
-        print(json.dumps(execution_result, indent=2))
+        asyncio.run(engine.execute_workflow(workflow_id))
 
 
 if __name__ == "__main__":

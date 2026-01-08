@@ -107,7 +107,6 @@ class PromptOptimizer:
         current_metrics = None
 
         for iteration in range(max_iterations):
-            print(f"\nIteration {iteration + 1}/{max_iterations}")
 
             # Evaluate current prompt
             # Bolt Optimization: Avoid re-evaluating if we already have metrics from previous iteration
@@ -116,9 +115,6 @@ class PromptOptimizer:
             else:
                 metrics = self.evaluate_prompt(current_prompt)
 
-            print(
-                f"Accuracy: {metrics['avg_accuracy']:.2f}, Latency: {metrics['avg_latency']:.2f}s"
-            )
 
             # Track results
             self.results_history.append(
@@ -132,7 +128,6 @@ class PromptOptimizer:
 
             # Stop if good enough
             if metrics["avg_accuracy"] > 0.95:
-                print("Achieved target accuracy!")
                 break
 
             # Generate variations for next iteration
@@ -209,10 +204,8 @@ Output: Sample output
 
     def compare_prompts(self, prompt_a: str, prompt_b: str) -> Dict[str, Any]:
         """A/B test two prompts."""
-        print("Testing Prompt A...")
         metrics_a = self.evaluate_prompt(prompt_a)
 
-        print("Testing Prompt B...")
         metrics_b = self.evaluate_prompt(prompt_b)
 
         return {
@@ -252,12 +245,8 @@ def main():
     try:
         base_prompt = "Classify the sentiment of: {text}\nSentiment:"
 
-        results = optimizer.optimize(base_prompt)
+        optimizer.optimize(base_prompt)
 
-        print("\n" + "=" * 50)
-        print("Optimization Complete!")
-        print(f"Best Accuracy: {results['best_score']:.2f}")
-        print(f"Best Prompt:\n{results['best_prompt']}")
 
         optimizer.export_results("optimization_results.json")
     finally:

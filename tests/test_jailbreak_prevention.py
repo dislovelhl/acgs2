@@ -193,18 +193,18 @@ class TestJailbreakPrevention:
             # First request should pass
             context1 = {"trace_id": "test1", "user_id": client_id}
             result1 = await guardrails.process_request("test", context1)
-            assert result1.get("allowed", True) == True, "First request should be allowed"
+            assert result1.get("allowed", True), "First request should be allowed"
 
             # Second request should pass (within burst limit)
             context2 = {"trace_id": "test2", "user_id": client_id}
             result2 = await guardrails.process_request("test", context2)
-            assert result2.get("allowed", True) == True, "Second request should be allowed"
+            assert result2.get("allowed", True), "Second request should be allowed"
 
             # Third request should be blocked
             context3 = {"trace_id": "test3", "user_id": client_id}
             result3 = await guardrails.process_request("test", context3)
             assert (
-                result3.get("allowed", True) == False
+                not result3.get("allowed", True)
             ), "Third request should be blocked by rate limiting"
 
             print("✅ Rate limiting working correctly")

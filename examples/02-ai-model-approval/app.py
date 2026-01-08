@@ -38,7 +38,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from models import (
+from approval_models import (
     ErrorResponse,
     HealthResponse,
     ModelApprovalRequest,

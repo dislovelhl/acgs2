@@ -584,21 +584,16 @@ def main():
         command = sys.argv[1]
 
         if command == "executive-dashboard":
-            result = dashboards.generate_executive_dashboard()
-            print(json.dumps(result, indent=2))
+            dashboards.generate_executive_dashboard()
 
         elif command == "compliance-report":
-            result = dashboards.generate_compliance_report()
-            print(json.dumps(result, indent=2))
+            dashboards.generate_compliance_report()
 
         else:
-            print("Usage: python governance_dashboards.py [executive-dashboard|compliance-report]")
+            pass
     else:
-        print("ACGS-2 Governance Dashboards")
-        print("Generating executive dashboard...")
 
-        result = dashboards.generate_executive_dashboard()
-        print(json.dumps(result, indent=2))
+        dashboards.generate_executive_dashboard()
 
 
 if __name__ == "__main__":

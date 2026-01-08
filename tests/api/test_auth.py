@@ -57,7 +57,7 @@ class TestAuthManager:
         user_id = "test_user"
 
         # Should allow requests initially
-        for i in range(10):
+        for _i in range(10):
             allowed = auth.check_rate_limit(user_id)
             assert allowed is True
 

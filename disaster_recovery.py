@@ -670,7 +670,6 @@ class DisasterRecoveryCoordinator:
         """Continuously monitor system health for disaster detection"""
 
         self.monitoring_active = True
-        print("🛟 Starting disaster recovery monitoring...")
 
         try:
             while self.monitoring_active:
@@ -681,16 +680,14 @@ class DisasterRecoveryCoordinator:
                 disaster_detected = self._analyze_health_for_disasters(health_status)
 
                 if disaster_detected:
-                    print(f"🚨 Disaster detected: {disaster_detected['type']}")
-                    recovery_result = await self.initiate_disaster_recovery(
+                    await self.initiate_disaster_recovery(
                         disaster_detected["type"], disaster_detected["context"]
                     )
-                    print(f"🔄 Recovery {'successful' if recovery_result['success'] else 'failed'}")
 
                 await asyncio.sleep(30)  # Check every 30 seconds
 
-        except Exception as e:
-            print(f"Monitoring error: {e}")
+        except Exception:
+            pass
 
     async def _perform_health_checks(self) -> Dict[str, Any]:
         """Perform comprehensive health checks"""
@@ -794,8 +791,7 @@ def main():
             )
 
             async def run_recovery():
-                result = await coordinator.initiate_disaster_recovery(disaster_enum, {})
-                print(json.dumps(result, indent=2))
+                await coordinator.initiate_disaster_recovery(disaster_enum, {})
 
             asyncio.run(run_recovery())
 
@@ -808,21 +804,16 @@ def main():
                 asyncio.run(run_monitoring())
             except KeyboardInterrupt:
                 coordinator.monitoring_active = False
-                print("\n🛑 Monitoring stopped")
 
         elif command == "status":
-            status = coordinator.get_disaster_recovery_status()
-            print(json.dumps(status, indent=2))
+            coordinator.get_disaster_recovery_status()
 
         else:
-            print("Usage: python disaster_recovery.py [recover [type]|monitor|status]")
+            pass
     else:
-        print("ACGS-2 Disaster Recovery Coordinator")
-        print("Simulating system failure recovery...")
 
         async def demo():
-            result = await coordinator.initiate_disaster_recovery(DisasterType.SYSTEM_FAILURE, {})
-            print(json.dumps(result, indent=2))
+            await coordinator.initiate_disaster_recovery(DisasterType.SYSTEM_FAILURE, {})
 
         asyncio.run(demo())
 

@@ -25,8 +25,16 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from slack_sdk.errors import SlackApiError
-from slack_sdk.web.async_client import AsyncWebClient
+try:
+    from slack_sdk.errors import SlackApiError
+    from slack_sdk.web.async_client import AsyncWebClient
+
+    SLACK_SDK_AVAILABLE = True
+except ImportError:
+    SLACK_SDK_AVAILABLE = False
+    SlackApiError = Exception  # Fallback for type hints
+    AsyncWebClient = None  # Will cause runtime error if used without check
+
 from tenacity import (
     before_sleep_log,
     retry,

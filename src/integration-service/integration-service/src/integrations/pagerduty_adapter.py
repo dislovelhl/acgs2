@@ -121,12 +121,14 @@ from .base import (
 
 logger = logging.getLogger(__name__)
 
+
 class PagerDutyAuthType(str, Enum):
     """PagerDuty authentication types"""
 
     EVENTS_V2 = "events_v2"  # Events API v2 (integration_key)
     REST_API = "rest_api"  # REST API (api_token)
     BOTH = "both"  # Both authentication methods
+
 
 # Default urgency mapping from ACGS-2 severity to PagerDuty urgency
 # PagerDuty has only two urgency levels: high and low
@@ -147,6 +149,7 @@ DEFAULT_SEVERITY_MAP: Dict[EventSeverity, str] = {
     EventSeverity.LOW: "warning",
     EventSeverity.INFO: "info",
 }
+
 
 class PagerDutyCredentials(IntegrationCredentials):
     """
@@ -384,6 +387,7 @@ class PagerDutyCredentials(IntegrationCredentials):
                     f"Must be one of: {valid_severities}"
                 )
         return self
+
 
 class PagerDutyAdapter(BaseIntegration):
     """
@@ -654,7 +658,8 @@ class PagerDutyAdapter(BaseIntegration):
                     try:
                         error_data = response.json()
                         error_msg = error_data.get("message", error_msg)
-                    except Exception as e:
+                    except Exception:
+                        pass  # Error parsing response
 
                     logger.error(f"PagerDuty authentication failed: {error_msg}")
                     return IntegrationResult(

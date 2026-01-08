@@ -40,8 +40,15 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [pydantic]
-        args: [--ignore-missing-imports]
+        additional_dependencies:
+          [pydantic, types-PyYAML, types-aiofiles, types-requests]
+        args:
+          [
+            --ignore-missing-imports,
+            --explicit-package-bases,
+            --namespace-packages,
+          ]
+        exclude: ^(archive/|examples/|adaptive-learning/|scripts/|src/.*/(src|tests|config|app)/|islands/)
 
   - repo: local
     hooks:

@@ -89,7 +89,7 @@ class TestIT05MemoryWriteSafety:
         # Check that PII flag is set appropriately (false for this benign query)
         record = pii_records[0]
         assert "pii" in record.retention
-        assert record.retention["pii"] == False
+        assert not record.retention["pii"]
 
     @pytest.mark.asyncio
     async def test_retention_policy_applied_correctly(self):

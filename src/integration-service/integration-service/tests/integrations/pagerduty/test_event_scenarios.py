@@ -1,14 +1,7 @@
-"""
-Tests for PagerDuty eventscenarios.
-
-Tests cover:
-- eventscenarios functionality
-- Error handling and edge cases
-- Integration with PagerDuty APIs
-"""
+from __future__ import annotations
 
 """
-Tests for PagerDuty integration adapter.
+Tests for PagerDuty integration adapter - event scenarios.
 
 Tests cover:
 - PagerDutyCredentials validation
@@ -20,8 +13,6 @@ Tests cover:
 - Incident lifecycle management
 - Ticket mapping transformers and configuration
 """
-
-from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch

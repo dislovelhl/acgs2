@@ -8,30 +8,30 @@ A comprehensive command-line interface for the AI Constitutional Governance Syst
 
 ```bash
 # Install from source
-pip install -e ./tools/acgs2-cli
+pip install -e ./tools/acgs2_cli
 
 # Or install the SDK first
 pip install acgs2-sdk
-pip install -e ./tools/acgs2-cli
+pip install -e ./tools/acgs2_cli
 ```
 
 ## Quick Start
 
 ```bash
 # Check system health
-acgs2-cli health
+acgs2_cli health
 
 # Create an approval request
-acgs2-cli hitl create --type model_deployment --payload '{"model": "v2", "env": "prod"}'
+acgs2_cli hitl create --type model_deployment --payload '{"model": "v2", "env": "prod"}'
 
 # List ML models
-acgs2-cli ml models list
+acgs2_cli ml models list
 
 # Start interactive policy playground
-acgs2-cli playground --interactive
+acgs2_cli playground --interactive
 
 # Validate a policy
-acgs2-cli policy validate policy-123 --context '{"action": "deploy"}'
+acgs2_cli policy validate policy-123 --context '{"action": "deploy"}'
 ```
 
 ## Configuration
@@ -57,66 +57,66 @@ The CLI can be configured via command-line options or a config file at `~/.acgs2
 
 ```bash
 # Create approval request
-acgs2-cli hitl create --type model_deployment --payload-file deployment.json --risk-score 75
+acgs2_cli hitl create --type model_deployment --payload-file deployment.json --risk-score 75
 
 # List requests
-acgs2-cli hitl list --status pending --limit 10
+acgs2_cli hitl list --status pending --limit 10
 
 # Show request details
-acgs2-cli hitl show req-123
+acgs2_cli hitl show req-123
 
 # Submit decision
-acgs2-cli hitl decide req-123 --decision approve --reasoning "Meets requirements"
+acgs2_cli hitl decide req-123 --decision approve --reasoning "Meets requirements"
 
 # Escalate request
-acgs2-cli hitl escalate req-123 --reason "Urgent deployment needed"
+acgs2_cli hitl escalate req-123 --reason "Urgent deployment needed"
 
 # View pending approvals for user
-acgs2-cli hitl pending alice@example.com
+acgs2_cli hitl pending alice@example.com
 ```
 
 ### ML Governance (`ml`)
 
 ```bash
 # Models
-acgs2-cli ml models create --name fraud-model --framework scikit-learn --model-type classification
-acgs2-cli ml models list --limit 20
-acgs2-cli ml models show model-123
-acgs2-cli ml models update model-123 --accuracy 0.92
-acgs2-cli ml models drift model-123
+acgs2_cli ml models create --name fraud-model --framework scikit-learn --model-type classification
+acgs2_cli ml models list --limit 20
+acgs2_cli ml models show model-123
+acgs2_cli ml models update model-123 --accuracy 0.92
+acgs2_cli ml models drift model-123
 
 # Predictions
-acgs2-cli ml predict model-123 --features '{"amount": 150, "category": "online"}' --confidence
+acgs2_cli ml predict model-123 --features '{"amount": 150, "category": "online"}' --confidence
 
 # Feedback
-acgs2-cli ml feedback model-123 --prediction-id pred-456 --type correction --value false
+acgs2_cli ml feedback model-123 --prediction-id pred-456 --type correction --value false
 
 # A/B Tests
-acgs2-cli ml abtests create --name comparison --model-a model-1 --model-b model-2 --duration 14
-acgs2-cli ml abtests list
-acgs2-cli ml abtests results test-123
+acgs2_cli ml abtests create --name comparison --model-a model-1 --model-b model-2 --duration 14
+acgs2_cli ml abtests list
+acgs2_cli ml abtests results test-123
 ```
 
 ### Policy Management (`policy`)
 
 ```bash
 # Create policy
-acgs2-cli policy create --name "Data Privacy" --file policy.json --tags "gdpr,privacy"
+acgs2_cli policy create --name "Data Privacy" --file policy.json --tags "gdpr,privacy"
 
 # List policies
-acgs2-cli policy list --status active --limit 10
+acgs2_cli policy list --status active --limit 10
 
 # Show policy
-acgs2-cli policy show policy-123
+acgs2_cli policy show policy-123
 
 # Update policy
-acgs2-cli policy update policy-123 --status active
+acgs2_cli policy update policy-123 --status active
 
 # Validate compliance
-acgs2-cli policy validate policy-123 --context '{"user": "alice", "action": "read"}'
+acgs2_cli policy validate policy-123 --context '{"user": "alice", "action": "read"}'
 
 # Test policy (creates temporary policy)
-acgs2-cli policy test my-policy.json --context-file test-context.json
+acgs2_cli policy test my-policy.json --context-file test-context.json
 ```
 
 ### Policy Playground (`playground`)
@@ -125,10 +125,10 @@ Interactive mode for experimenting with policies:
 
 ```bash
 # Start interactive playground
-acgs2-cli playground --interactive
+acgs2_cli playground --interactive
 
 # Load policy and context for single validation
-acgs2-cli playground --policy my-policy.json --context '{"action": "deploy"}'
+acgs2_cli playground --policy my-policy.json --context '{"action": "deploy"}'
 ```
 
 #### Playground Commands
@@ -149,7 +149,7 @@ playground> quit                    # Exit
 
 ```bash
 # 1. Check system health
-acgs2-cli health
+acgs2_cli health
 
 # 2. Create a policy for model deployment approval
 cat > deployment-policy.json << 'EOF'
@@ -162,13 +162,13 @@ cat > deployment-policy.json << 'EOF'
 ]
 EOF
 
-acgs2-cli policy create --name "Model Deployment" --file deployment-policy.json
+acgs2_cli policy create --name "Model Deployment" --file deployment-policy.json
 
 # 3. Register a new ML model
-acgs2-cli ml models create --name fraud-detector --framework tensorflow --model-type classification
+acgs2_cli ml models create --name fraud-detector --framework tensorflow --model-type classification
 
 # 4. Create approval request for production deployment
-acgs2-cli hitl create --type model_deployment --payload '{
+acgs2_cli hitl create --type model_deployment --payload '{
   "model_id": "fraud-detector",
   "environment": "production",
   "risk_score": 75,
@@ -179,17 +179,17 @@ acgs2-cli hitl create --type model_deployment --payload '{
 }' --risk-score 75
 
 # 5. List pending approvals
-acgs2-cli hitl list --status pending
+acgs2_cli hitl list --status pending
 
 # 6. Approve the request
-acgs2-cli hitl decide req-123 --decision approve --reasoning "Performance metrics excellent"
+acgs2_cli hitl decide req-123 --decision approve --reasoning "Performance metrics excellent"
 ```
 
 ## Development
 
 ```bash
 # Install in development mode
-pip install -e ./tools/acgs2-cli
+pip install -e ./tools/acgs2_cli
 
 # Run tests
 pytest

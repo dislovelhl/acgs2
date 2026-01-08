@@ -19,13 +19,14 @@ import click
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from acgs2_sdk import ACGS2Config, create_client
+
 from acgs2_cli.commands.hitl import hitl
 from acgs2_cli.commands.ml import ml
 from acgs2_cli.commands.playground import playground
 from acgs2_cli.commands.policy import policy
 from acgs2_cli.commands.tenant import tenant
 from acgs2_cli.config import CLIConfig
-from acgs2_sdk import ACGS2Config, create_client
 
 # Configure logging
 logging.basicConfig(
@@ -51,19 +52,19 @@ def cli(ctx, base_url, api_key, tenant_id, verbose, config):
     Examples:
 
         # Check system health
-        acgs2-cli health
+        acgs2_cli health
 
         # Create an approval request
-        acgs2-cli hitl create --type model_deployment --payload-file deployment.json
+        acgs2_cli hitl create --type model_deployment --payload-file deployment.json
 
         # List ML models
-        acgs2-cli ml models list
+        acgs2_cli ml models list
 
         # Start policy playground
-        acgs2-cli playground
+        acgs2_cli playground
 
         # Validate a policy
-        acgs2-cli policy validate --file policy.json
+        acgs2_cli policy validate --file policy.json
     """
 
     if verbose:

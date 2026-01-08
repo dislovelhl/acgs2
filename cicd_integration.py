@@ -484,39 +484,29 @@ def main():
         command = sys.argv[1]
 
         if command == "create-jenkins-pipeline":
-            result = cicd.create_sample_jenkins_pipeline()
-            print(json.dumps(result, indent=2))
+            cicd.create_sample_jenkins_pipeline()
 
         elif command == "create-github-pipeline":
-            result = cicd.create_sample_github_actions_pipeline()
-            print(json.dumps(result, indent=2))
+            cicd.create_sample_github_actions_pipeline()
 
         elif command == "trigger-pipeline":
             pipeline_id = sys.argv[2] if len(sys.argv) > 2 else None
             if pipeline_id:
-                result = asyncio.run(cicd.trigger_pipeline(pipeline_id))
-                print(json.dumps(result, indent=2))
+                asyncio.run(cicd.trigger_pipeline(pipeline_id))
             else:
-                print("Usage: python cicd_integration.py trigger-pipeline <pipeline_id>")
+                pass
 
         elif command == "analytics":
-            analytics = cicd.get_deployment_analytics()
-            print(json.dumps(analytics, indent=2))
+            cicd.get_deployment_analytics()
 
         else:
-            print(
-                "Usage: python cicd_integration.py [create-jenkins-pipeline|create-github-pipeline|trigger-pipeline <id>|analytics]"
-            )
+            pass
     else:
-        print("ACGS-2 CI/CD Integration")
-        print("Creating sample pipelines...")
 
         # Create sample pipelines
-        jenkins_result = cicd.create_sample_jenkins_pipeline()
-        github_result = cicd.create_sample_github_actions_pipeline()
+        cicd.create_sample_jenkins_pipeline()
+        cicd.create_sample_github_actions_pipeline()
 
-        print("Jenkins Pipeline:", json.dumps(jenkins_result, indent=2))
-        print("GitHub Actions Pipeline:", json.dumps(github_result, indent=2))
 
 
 if __name__ == "__main__":

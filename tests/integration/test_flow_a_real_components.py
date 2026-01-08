@@ -8,6 +8,7 @@ This validates the actual system works end-to-end as designed.
 import asyncio
 
 import pytest
+
 from acgs2.core.schemas import UserRequest
 from acgs2.factory import create_default_system
 
@@ -45,7 +46,7 @@ class TestFlowARealComponents:
         assert "tms" in health["components"]
         assert "dms" in health["components"]
 
-        for component_name, component_health in health["components"].items():
+        for _component_name, component_health in health["components"].items():
             assert component_health["status"] == "healthy"
 
     async def test_benign_query_flow_a(self, real_system):
@@ -201,8 +202,8 @@ class TestFlowARealComponents:
         uig = real_system["uig"]
         sas = real_system["sas"]
         cre = real_system["cre"]
-        tms = real_system["tms"]
-        dms = real_system["dms"]
+        real_system["tms"]
+        real_system["dms"]
 
         # Make a request to generate activity
         request = UserRequest(query="Generate some telemetry")
@@ -265,7 +266,7 @@ class TestFlowARealComponents:
 
         # Clear session
         cleared = await dms.clear_session(session_id)
-        assert cleared == True
+        assert cleared
 
         # Verify data is gone
         history_after = await dms.get_session_history(session_id)

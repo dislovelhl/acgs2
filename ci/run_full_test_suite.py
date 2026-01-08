@@ -47,7 +47,6 @@ class FullTestSuiteRunner:
 
     def setup_virtual_environment(self) -> bool:
         """Set up Python virtual environment with all test dependencies."""
-        print("🔧 Setting up virtual environment...")
 
         try:
             # Create virtual environment
@@ -64,11 +63,9 @@ class FullTestSuiteRunner:
             pip_cmd.extend(test_deps)
             subprocess.run(pip_cmd, check=True, cwd=self.core_dir)  # nosec B603
 
-            print("✅ Virtual environment ready")
             return True
 
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to setup virtual environment: {e}")
+        except subprocess.CalledProcessError:
             return False
 
     def run_command(
@@ -94,7 +91,6 @@ class FullTestSuiteRunner:
 
     def run_core_tests(self) -> TestResult:
         """Run core security and CEOS tests."""
-        print("🧪 Running core tests...")
         start_time = time.time()
 
         result = self.run_command(["pytest", "tests/", "-v", "--tb=short", "--durations=5", "-q"])
@@ -156,7 +152,6 @@ class FullTestSuiteRunner:
 
     def run_enhanced_agent_bus_tests(self) -> TestResult:
         """Run Enhanced Agent Bus tests with coverage."""
-        print("🚀 Running Enhanced Agent Bus tests with coverage...")
         start_time = time.time()
 
         result = self.run_command(
@@ -231,7 +226,6 @@ class FullTestSuiteRunner:
 
     def run_performance_validation(self) -> TestResult:
         """Run performance validation tests."""
-        print("⚡ Running performance validation...")
         start_time = time.time()
 
         result = self.run_command(
@@ -262,7 +256,6 @@ class FullTestSuiteRunner:
 
     def run_metering_integration_tests(self) -> TestResult:
         """Run metering integration tests."""
-        print("📊 Running metering integration tests...")
         start_time = time.time()
 
         result = self.run_command(
@@ -377,12 +370,6 @@ class FullTestSuiteRunner:
 
     def run_full_suite(self) -> bool:
         """Run the complete test suite."""
-        print("🚀 ACGS-2 Full Test Suite Execution")
-        print("=" * 60)
-        print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-        print(f"Project Root: {self.project_root}")
-        print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
-        print("=" * 60)
 
         # Setup virtual environment
         if not self.setup_virtual_environment():
@@ -397,36 +384,22 @@ class FullTestSuiteRunner:
         # Generate and display report
         report = self.generate_report()
 
-        print("\n📊 Test Execution Summary")
-        print("=" * 40)
         summary = report["summary"]
-        print(f"Total Tests: {summary['total_tests']}")
-        print(f"Passed: {summary['passed']}")
-        print(f"Failed: {summary['failed']}")
-        print(f"Skipped: {summary['skipped']}")
-        print(f"Pass Rate: {summary['pass_rate_percent']:.2f}%")
         if summary["overall_coverage_percent"]:
-            print(f"Coverage: {summary['overall_coverage_percent']:.2f}%")
-        print(f"Execution Time: {summary['total_execution_time_seconds']:.2f}s")
-        print(f"Overall Status: {summary['overall_status']}")
+            pass
 
-        print("\n📋 Component Results")
-        print("-" * 40)
         for result in report["component_results"]:
-            status_icon = "✅" if result["status"] == "PASSED" else "❌"
-            cov = result["coverage_percent"]
-            coverage = f" ({cov:.1f}%)" if cov else ""
-            component = result["component"]
-            passed = result["passed"]
-            tests_run = result["tests_run"]
-            print(f"{status_icon} {component}: {passed}/{tests_run} passed{coverage}")
+            "✅" if result["status"] == "PASSED" else "❌"
+            result["coverage_percent"]
+            result["component"]
+            result["passed"]
+            result["tests_run"]
 
         # Save detailed report
         report_file = self.project_root / "FULL_TEST_SUITE_REPORT.json"
         with open(report_file, "w") as f:
             json.dump(report, f, indent=2)
 
-        print(f"\n💾 Detailed report saved to: {report_file}")
 
         return summary["overall_status"] == "PASSED"
 
@@ -456,8 +429,7 @@ Examples:
 
     if args.report_only:
         # Generate report from existing results (if any)
-        report = runner.generate_report()
-        print(json.dumps(report, indent=2))
+        runner.generate_report()
         return
 
     # Run full test suite

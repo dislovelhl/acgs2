@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 try:
-    from qdrant_client import QdrantClient
+    from qdrant_client import AsyncQdrantClient
     from qdrant_client.http.models import Distance, VectorParams
 
     QDRANT_AVAILABLE = True
@@ -92,7 +92,7 @@ class QdrantManager(VectorDatabaseManager):
         self.host = host
         self.port = port
         self.api_key = api_key
-        self.client: Optional[QdrantClient] = None
+        self.client: Optional[AsyncQdrantClient] = None
 
     async def connect(self) -> bool:
         """Connect to Qdrant database."""
@@ -101,9 +101,9 @@ class QdrantManager(VectorDatabaseManager):
                 logger.error("Qdrant client not available")
                 return False
 
-            self.client = QdrantClient(host=self.host, port=self.port, api_key=self.api_key)
+            self.client = AsyncQdrantClient(host=self.host, port=self.port, api_key=self.api_key)
             # Test connection
-            self.client.get_collections()
+            await self.client.get_collections()
             logger.info(f"Connected to Qdrant at {self.host}:{self.port}")
             return True
         except Exception as e:
@@ -123,7 +123,7 @@ class QdrantManager(VectorDatabaseManager):
             if not self.client:
                 return False
 
-            self.client.create_collection(
+            await self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config=VectorParams(size=vector_dim, distance=Distance.COSINE),
             )
@@ -150,7 +150,7 @@ class QdrantManager(VectorDatabaseManager):
                 point_id = ids[i] if ids else str(i)
                 points.append({"id": point_id, "vector": vector, "payload": payload})
 
-            self.client.upsert(collection_name=collection_name, points=points)
+            await self.client.upsert(collection_name=collection_name, points=points)
             logger.info(f"Inserted {len(points)} vectors into {collection_name}")
             return True
         except Exception as e:
@@ -169,7 +169,7 @@ class QdrantManager(VectorDatabaseManager):
             if not self.client:
                 return []
 
-            search_result = self.client.search(
+            search_result = await self.client.search(
                 collection_name=collection_name,
                 query_vector=query_vector,
                 limit=limit,
@@ -191,7 +191,7 @@ class QdrantManager(VectorDatabaseManager):
             if not self.client:
                 return False
 
-            self.client.delete(collection_name=collection_name, points_selector=ids)
+            await self.client.delete(collection_name=collection_name, points_selector=ids)
             logger.info(f"Deleted {len(ids)} vectors from {collection_name}")
             return True
         except Exception as e:
@@ -214,7 +214,7 @@ class QdrantManager(VectorDatabaseManager):
             for vector_id, vector, payload in zip(ids, vectors, payloads, strict=False):
                 points.append({"id": vector_id, "vector": vector, "payload": payload})
 
-            self.client.upsert(collection_name=collection_name, points=points)
+            await self.client.upsert(collection_name=collection_name, points=points)
             logger.info(f"Updated {len(points)} vectors in {collection_name}")
             return True
         except Exception as e:

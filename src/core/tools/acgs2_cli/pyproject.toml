@@ -6,7 +6,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "acgs2-cli"
+name = "acgs2_cli"
 version = "2.0.0"
 description = "ACGS-2 Unified CLI Tool for AI Constitutional Governance"
 readme = "README.md"
@@ -51,13 +51,13 @@ dev = [
 ]
 
 [project.scripts]
-acgs2-cli = "acgs2_cli.main:cli"
+acgs2_cli = "acgs2_cli.main:cli"
 
 [project.urls]
 Homepage = "https://acgs.io"
 Documentation = "https://docs.acgs.io/cli"
 Repository = "https://github.com/acgs/acgs2"
-Changelog = "https://github.com/acgs/acgs2/blob/main/tools/acgs2-cli/CHANGELOG.md"
+Changelog = "https://github.com/acgs/acgs2/blob/main/tools/acgs2_cli/CHANGELOG.md"
 
 [tool.hatch.build.targets.sdist]
 include = [

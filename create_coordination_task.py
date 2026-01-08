@@ -49,7 +49,6 @@ def create_task():
         "message": f"Task '{task['task']}' created and ready for swarm coordination",
     }
 
-    print(json.dumps(result, indent=2))
     return result
 
 

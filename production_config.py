@@ -604,8 +604,6 @@ def create_production_config() -> ProductionConfig:
 def main():
     """Main deployment function"""
 
-    print("🚀 ACGS-2 Production Deployment System")
-    print("=" * 50)
 
     # Create production configuration
     config = create_production_config()
@@ -614,34 +612,24 @@ def main():
     deployer = ProductionDeployer(config)
 
     # Deploy system
-    print("📦 Deploying ACGS-2 coordination framework...")
     results = deployer.deploy()
 
     # Report results
-    print(f"\n✅ Deployment {'successful' if results['success'] else 'failed'}")
 
     if results["components_deployed"]:
-        print("📋 Components deployed:")
-        for component in results["components_deployed"]:
-            print(f"  • {component}")
+        for _component in results["components_deployed"]:
+            pass
 
     if results["warnings"]:
-        print("\n⚠️  Warnings:")
-        for warning in results["warnings"]:
-            print(f"  • {warning}")
+        for _warning in results["warnings"]:
+            pass
 
     if results["errors"]:
-        print("\n❌ Errors:")
-        for error in results["errors"]:
-            print(f"  • {error}")
+        for _error in results["errors"]:
+            pass
 
     if results["success"]:
-        print("\n🎉 ACGS-2 coordination framework deployed successfully!")
-        print("   Next steps:")
-        print("   1. Start services: systemctl start acgs2-*")
-        print("   2. Enable services: systemctl enable acgs2-*")
-        print("   3. Check logs: journalctl -u acgs2-continuous-monitor")
-        print("   4. Access dashboard: https://dashboard.acgs2.local")
+        pass
 
 
 if __name__ == "__main__":

@@ -263,7 +263,7 @@ async def test_complete_flow_a() -> None:
 
     system = await create_default_system()
 
-    health = await system["factory"].health_check()
+    await system["factory"].health_check()
 
     uig = system["uig"]
     from .core.schemas import UserRequest
@@ -275,7 +275,7 @@ async def test_complete_flow_a() -> None:
         "Search for Python tutorials",  # Tool required: search
     ]
 
-    for i, query in enumerate(test_queries, 1):
+    for _i, query in enumerate(test_queries, 1):
         try:
             request = UserRequest(query=query)
             response = await uig.handle_request(request)
@@ -289,33 +289,23 @@ async def test_complete_flow_a() -> None:
     # Get TMS stats
     tms = system["tms"]
     tools = await tms.list_tools()
-    print(f"Registered tools: {len(tools)}")
     for tool in tools:
-        stats = await tms.get_tool_stats(tool["name"])
-        print(
-            f"  {tool['name']}: {stats.get('total_calls', 0)} calls, {stats.get('successful_calls', 0)} successful"
-        )
+        await tms.get_tool_stats(tool["name"])
 
     # Get CRE stats
     cre = system["cre"]
-    cre_stats = await cre.get_reasoning_stats()
-    print(f"\nReasoning requests: {cre_stats.get('active_traces', 0)}")
-    print(f"Tool orchestration requests: {cre_stats.get('tool_orchestration_requests', 0)}")
+    await cre.get_reasoning_stats()
 
     # Get OBS stats
     obs = system["obs"]
-    obs_health = await obs.health_check()
-    print(f"\nObservability events: {obs_health.get('active_traces', 0)}")
-    print(f"Active alerts: {obs_health.get('active_alerts', 0)}")
+    await obs.health_check()
 
     # Get AUD stats
     aud = system["aud"]
-    aud_health = await aud.health_check()
-    print(f"Audit entries: {aud_health.get('total_entries', 0)}")
-    print(f"Audit integrity: {aud_health.get('integrity_verified', False)}")
+    await aud.health_check()
 
     # Get DMS stats
-    dms = system["dms"]
+    system["dms"]
 
     await system["factory"].shutdown_system()
 
@@ -325,13 +315,13 @@ async def quick_test() -> None:
 
     system = await create_default_system()
 
-    health = await system["factory"].health_check()
+    await system["factory"].health_check()
 
     uig = system["uig"]
     from .core.schemas import UserRequest
 
     request = UserRequest(query="What is the weather in New York?")
-    response = await uig.handle_request(request)
+    await uig.handle_request(request)
 
     await system["factory"].shutdown_system()
 

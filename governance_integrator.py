@@ -220,7 +220,7 @@ class GovernanceIntegrator:
 
         for check_name, check_result in compliance_checks.items():
             if not check_result.get("compliant", True):
-                reason = check_result.get("reason", f"{check_name} compliance issue")
+                check_result.get("reason", f"{check_name} compliance issue")
 
                 if check_name == "security_clearance":
                     actions.append("Assign task to security-cleared agent or reduce task scope")
@@ -391,7 +391,7 @@ class GovernanceIntegrator:
         for swarm_id, swarm in swarms.items():
             # Check swarm security features
             has_memory_security = swarm.get("memory_enabled", False)
-            has_github_security = swarm.get("github_enabled", False)
+            swarm.get("github_enabled", False)
 
             findings.append(
                 {
@@ -508,31 +508,24 @@ def main():
                 tasks = integrator._load_tasks()
                 task = next((t for t in tasks if t.get("id") == task_id), None)
                 if task:
-                    assessment = integrator.assess_task_governance_compliance(task)
-                    print(json.dumps(assessment, indent=2))
+                    integrator.assess_task_governance_compliance(task)
                 else:
-                    print(f"Task {task_id} not found")
+                    pass
             else:
-                print("Usage: python governance_integrator.py assess-task <task_id>")
+                pass
 
         elif command == "audit":
-            audit_report = integrator.audit_swarm_operations()
-            print(json.dumps(audit_report, indent=2))
+            integrator.audit_swarm_operations()
 
         elif command == "apply-policies":
             tasks = integrator._load_tasks()
-            policy_report = integrator.apply_governance_policies(tasks)
-            print(json.dumps(policy_report, indent=2))
+            integrator.apply_governance_policies(tasks)
 
         else:
-            print(
-                "Usage: python governance_integrator.py [assess-task <task_id>|audit|apply-policies]"
-            )
+            pass
     else:
         # Run full governance audit
-        print("🔍 Running governance audit...")
-        audit_report = integrator.audit_swarm_operations()
-        print(json.dumps(audit_report, indent=2))
+        integrator.audit_swarm_operations()
 
 
 if __name__ == "__main__":

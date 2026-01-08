@@ -326,20 +326,16 @@ def main():
                     setattr(thresholds, key, value)
 
     # Analyze project
-    print("🔍 Analyzing code complexity...")
     results = analyze_project(args.path, thresholds)
 
     # Generate and print report
-    report = generate_report(results, args.output)
-    print(report)
+    generate_report(results, args.output)
 
     # Exit with appropriate code
     violation_count = len(results["violations"])
     if args.fail_on_violations and violation_count > 0:
-        print(f"❌ Complexity check FAILED: {violation_count} files with violations")
         sys.exit(1)
     else:
-        print("✅ Complexity check PASSED")
         sys.exit(0)
 
 

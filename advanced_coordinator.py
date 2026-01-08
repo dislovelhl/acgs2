@@ -226,7 +226,7 @@ class AdvancedCoordinator:
         """Execute tasks while respecting dependencies and enabling parallel execution"""
 
         tasks = workflow["tasks"]
-        dependencies = workflow.get("dependencies", {})
+        workflow.get("dependencies", {})
         reverse_deps = workflow.get("reverse_dependencies", {})
 
         # Track execution state
@@ -397,30 +397,22 @@ def main():
 
         if command == "create-auth-workflow":
             result = coordinator.create_authentication_workflow()
-            print(json.dumps(result, indent=2))
 
         elif command == "execute-workflow":
             workflow_id = os.sys.argv[2] if len(os.sys.argv) > 2 else None
             if workflow_id:
                 result = asyncio.run(coordinator.execute_workflow(workflow_id))
-                print(json.dumps(result, indent=2))
             else:
-                print("Usage: python advanced_coordinator.py execute-workflow <workflow_id>")
+                pass
 
         else:
-            print(
-                "Usage: python advanced_coordinator.py [create-auth-workflow|execute-workflow <workflow_id>]"
-            )
+            pass
     else:
         # Create and execute authentication workflow
-        print("🔧 Creating authentication system workflow...")
         result = coordinator.create_authentication_workflow()
-        print(json.dumps(result, indent=2))
 
         workflow_id = result["workflow"]["workflow_id"]
-        print(f"\n🚀 Executing workflow {workflow_id}...")
-        execution_result = asyncio.run(coordinator.execute_workflow(workflow_id))
-        print(json.dumps(execution_result, indent=2))
+        asyncio.run(coordinator.execute_workflow(workflow_id))
 
 
 if __name__ == "__main__":

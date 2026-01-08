@@ -325,35 +325,25 @@ def main():
 
         if command == "analyze":
             analysis = scaler.analyze_workload_demand()
-            print(json.dumps(analysis, indent=2))
 
         elif command == "scale":
             target = int(sys.argv[2]) if len(sys.argv) > 2 else None
-            result = scaler.scale_swarm_capacity(target)
-            print(json.dumps(result, indent=2))
+            scaler.scale_swarm_capacity(target)
 
         elif command == "spawn":
             agent_type = sys.argv[2] if len(sys.argv) > 2 else "coder"
             specialization = sys.argv[3] if len(sys.argv) > 3 else None
-            result = scaler.spawn_specialized_agent(agent_type, specialization)
-            print(json.dumps(result, indent=2))
+            scaler.spawn_specialized_agent(agent_type, specialization)
 
         else:
-            print(
-                "Usage: python scale_swarm.py [analyze|scale [target]|spawn [type] [specialization]]"
-            )
+            pass
     else:
         # Default: analyze and auto-scale
         analysis = scaler.analyze_workload_demand()
         if analysis["scaling_needed"]["immediate_action_needed"]:
-            print("🔍 Analysis shows scaling needed:")
-            print(json.dumps(analysis["scaling_needed"], indent=2))
-            print("\n🚀 Auto-scaling swarm...")
-            result = scaler.scale_swarm_capacity()
-            print(json.dumps(result, indent=2))
+            scaler.scale_swarm_capacity()
         else:
-            print("✅ Swarm capacity is optimal")
-            print(json.dumps(analysis, indent=2))
+            pass
 
 
 if __name__ == "__main__":

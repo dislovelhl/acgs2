@@ -65,6 +65,8 @@ target-version = ['py312']
 [tool.mypy]
 # MyPy is configured per-package to avoid directory naming conflicts
 # See individual package mypy.ini files for configuration
+exclude = '(?x)(archive/|examples/|adaptive-learning/|scripts/|src/adaptive-learning/)'
+explicit_package_bases = true
 
 [tool.pytest.ini_options]
 # NOTE: This configuration is for individual component testing only.

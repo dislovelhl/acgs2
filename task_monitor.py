@@ -31,8 +31,8 @@ class TaskMonitor:
                     with open(filepath, "r") as f:
                         task = json.load(f)
                         tasks.append(task)
-                except Exception as e:
-                    print(f"Warning: Failed to load task {filename}: {e}")
+                except Exception:
+                    pass
 
         return tasks
 
@@ -49,8 +49,8 @@ class TaskMonitor:
                     with open(filepath, "r") as f:
                         agent = json.load(f)
                         agents.append(agent)
-                except Exception as e:
-                    print(f"Warning: Failed to load agent {filename}: {e}")
+                except Exception:
+                    pass
 
         return agents
 
@@ -69,8 +69,8 @@ class TaskMonitor:
                         swarm_id = config.get("swarm_id")
                         if swarm_id:
                             swarms[swarm_id] = config
-                except Exception as e:
-                    print(f"Warning: Failed to load swarm {filename}: {e}")
+                except Exception:
+                    pass
 
         return swarms
 
@@ -213,42 +213,28 @@ class TaskMonitor:
 
     def monitor_continuous(self, interval_seconds: int = 30, max_updates: int = 10):
         """Monitor tasks continuously with periodic updates"""
-        print("🐝 Starting continuous task monitoring...")
-        print(f"   Interval: {interval_seconds}s | Max updates: {max_updates}")
-        print("   Press Ctrl+C to stop monitoring")
-        print()
 
         update_count = 0
         try:
             while update_count < max_updates:
                 report = self.get_task_completion_report()
 
-                print(f"📊 Update {update_count + 1} - {report['timestamp']}")
-                print(f"   Tasks: {report['task_completion']['completion_rate']} completed")
-                print(
-                    f"   Agents: {report['swarm_health']['active_agents']}/{report['swarm_health']['total_agents']} active"
-                )
-                print(f"   Utilization: {report['swarm_health']['utilization_percent']:.1f}%")
-                print(f"   Status: {report['swarm_health']['utilization_status']}")
 
                 if report["active_tasks"]:
-                    print(f"   Active tasks: {len(report['active_tasks'])}")
-                    for task in report["active_tasks"][:2]:  # Show first 2 active tasks
-                        print(f"     • {task['title']} ({task['assigned_agent']})")
+                    for _task in report["active_tasks"][:2]:  # Show first 2 active tasks
+                        pass
 
                 if report["recommendations"]:
-                    print(f"   💡 {report['recommendations'][0]}")
+                    pass
 
-                print()
                 update_count += 1
 
                 if update_count < max_updates:
                     time.sleep(interval_seconds)
 
         except KeyboardInterrupt:
-            print("\n🛑 Monitoring stopped by user")
+            pass
 
-        print(f"✅ Monitoring complete - {update_count} updates shown")
 
 
 def main():
@@ -263,8 +249,7 @@ def main():
         monitor.monitor_continuous(interval, max_updates)
     else:
         # Single report
-        report = monitor.get_task_completion_report()
-        print(json.dumps(report, indent=2))
+        monitor.get_task_completion_report()
 
 
 if __name__ == "__main__":

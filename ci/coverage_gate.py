@@ -5,7 +5,6 @@ import xml.etree.ElementTree as ET
 
 def check_coverage(file_path, threshold):
     if not os.path.exists(file_path):
-        print(f"Error: {file_path} not found.")
         sys.exit(1)
 
     try:
@@ -21,28 +20,20 @@ def check_coverage(file_path, threshold):
             rate = (covered / total) * 100 if total > 0 else 0
         else:
             # Fallback for other formats if necessary
-            print(
-                "Warning: Could not find 'line-rate' in XML root attributes. Check report format."
-            )
             sys.exit(1)
 
-        print(f"Current Line Coverage: {rate:.2f}% (Threshold: {threshold}%)")
 
         if rate >= threshold:
-            print("Coverage gate PASSED.")
             sys.exit(0)
         else:
-            print(f"Coverage gate FAILED: {rate:.2f}% < {threshold}%")
             sys.exit(1)
 
-    except Exception as e:
-        print(f"Error parsing coverage report: {e}")
+    except Exception:
         sys.exit(1)
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python coverage_gate.py <threshold> [report_path]")
         sys.exit(1)
 
     gate_threshold = float(sys.argv[1])

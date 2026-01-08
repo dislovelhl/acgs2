@@ -15,7 +15,6 @@ def test_oidc_handler_initialization():
     handler = OIDCHandler()
     assert handler is not None
     assert handler.list_providers() == []
-    # print("OK")  # DEBUG_CLEANUP
 
 
 def test_oidc_provider_config():

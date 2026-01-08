@@ -41,11 +41,13 @@ from .base import (
 
 logger = logging.getLogger(__name__)
 
+
 class ServiceNowAuthType(str, Enum):
     """ServiceNow authentication types"""
 
     BASIC = "basic"
     OAUTH = "oauth"
+
 
 class ServiceNowIncidentState(str, Enum):
     """ServiceNow incident states"""
@@ -56,6 +58,7 @@ class ServiceNowIncidentState(str, Enum):
     RESOLVED = "6"
     CLOSED = "7"
     CANCELED = "8"
+
 
 # Default impact/urgency mapping from ACGS-2 severity
 # ServiceNow uses: 1 = High, 2 = Medium, 3 = Low
@@ -74,6 +77,7 @@ DEFAULT_URGENCY_MAP: Dict[EventSeverity, str] = {
     EventSeverity.LOW: "3",
     EventSeverity.INFO: "3",
 }
+
 
 class ServiceNowCredentials(IntegrationCredentials):
     """
@@ -213,6 +217,7 @@ class ServiceNowCredentials(IntegrationCredentials):
             if not self.client_secret:
                 raise ValueError("Client secret is required for OAuth authentication")
         return self
+
 
 class ServiceNowAdapter(BaseIntegration):
     """
@@ -492,6 +497,7 @@ class ServiceNowAdapter(BaseIntegration):
             )
 
             if incident_response.status_code == 200:
+                pass  # Success
 
             elif incident_response.status_code == 401:
                 validation_issues.append("Authentication failed - invalid credentials")
@@ -893,7 +899,6 @@ class ServiceNowAdapter(BaseIntegration):
 
             # Any response (even 401) indicates the server is reachable
             if response.status_code < 500:
-
                 return IntegrationResult(
                     success=True,
                     integration_name=self.name,

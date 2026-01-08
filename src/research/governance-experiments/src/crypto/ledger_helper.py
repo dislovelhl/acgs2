@@ -86,9 +86,7 @@ if __name__ == "__main__":
     ledger.record_event("v1", "non-compliant", "block", 2.1)
 
     sig = ledger.sign_ledger()
-    # print(f"Ledger signed: {sig}")  # DEBUG_CLEANUP
 
     # Simulate export/import
     logs = [asdict(e) for e in ledger.entries]
     is_valid = ExperimentLedger.verify_integrity(logs, sig)
-    # print(f"Integrity check: {'PASSED' if is_valid else 'FAILED'}")  # DEBUG_CLEANUP

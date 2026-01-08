@@ -90,7 +90,7 @@ class TestEnterpriseComponents:
             payload={"test": "data"},
         )
 
-        entry_hash = await aud.append_entry(entry)
+        await aud.append_entry(entry)
 
         # Check entry was added
         health = await aud.health_check()

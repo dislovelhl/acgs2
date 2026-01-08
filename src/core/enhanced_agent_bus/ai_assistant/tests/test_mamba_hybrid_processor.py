@@ -350,7 +350,6 @@ class TestConstitutionalCompliance:
 
 if __name__ == "__main__":
     # Run basic smoke tests
-    # print("Running Mamba-2 Hybrid Processor smoke tests...")  # DEBUG_CLEANUP
 
     config = MambaConfig(d_model=64, num_mamba_layers=2, device="cpu", dtype=torch.float32)
     processor = ConstitutionalMambaHybrid(config)
@@ -360,14 +359,9 @@ if __name__ == "__main__":
     x = torch.randn(batch_size, seq_len, d_model)
 
     output = processor(x)
-    # print(f"✅ Basic forward pass: input {x.shape} -> output {output.shape}")  # DEBUG_CLEANUP
 
     # Test JRT preparation
     prepared = processor._prepare_jrt_context(x, [5, 10, 15])
-    # print(f"✅ JRT preparation: {x.shape[1]} -> {prepared.shape[1]} tokens")  # DEBUG_CLEANUP
 
     # Test memory reporting
     usage = processor.get_memory_usage()
-    # print(f"✅ Memory usage: {usage['model_memory_mb']:.2f} MB")  # DEBUG_CLEANUP
-
-    # print("✅ All smoke tests passed!")  # DEBUG_CLEANUP

@@ -81,22 +81,10 @@ def format_decision(allowed: bool, reasons: list[str] | None = None) -> str:
 
 def main():
     """Run policy evaluation examples."""
-    print("=" * 60)
-    print("ACGS-2 Basic Policy Evaluation Example")
-    print("=" * 60)
-    print()
 
     # Step 1: Check OPA connection
-    print(f"Connecting to OPA at {OPA_URL}...")
     if not check_opa_health():
-        print(
-            "\n\033[91mError: Cannot connect to OPA.\033[0m\n"
-            "\nPlease ensure OPA is running:\n"
-            "  docker compose up -d\n"
-            "\nThen try again."
-        )
         sys.exit(1)
-    print("OPA is healthy and ready.\n")
 
     # Step 2: Define test cases demonstrating different scenarios
     test_cases = [
@@ -144,13 +132,9 @@ def main():
     ]
 
     # Step 3: Run policy evaluations
-    print("Running Policy Evaluations")
-    print("-" * 60)
 
     all_passed = True
-    for i, test in enumerate(test_cases, 1):
-        print(f"\nTest {i}: {test['description']}")
-        print(f"  Input: user={test['input']['user']}, action={test['input']['action']}")
+    for _i, test in enumerate(test_cases, 1):
 
         try:
             # Query the allow rule
@@ -158,35 +142,27 @@ def main():
             allowed = result.get("result", False)
 
             # If denied, get the denial reasons
-            denial_reasons = None
             if not allowed:
                 reasons_result = evaluate_policy(f"{POLICY_PATH}/denial_reasons", test["input"])
-                denial_reasons = reasons_result.get("result", [])
+                reasons_result.get("result", [])
 
             # Display result
-            print(f"  Decision: {format_decision(allowed, denial_reasons)}")
 
             # Verify expectation
             if allowed == test["expected"]:
-                print("  \033[92m[PASS]\033[0m Result matches expected")
+                pass
             else:
-                expected_str = "allowed" if test["expected"] else "denied"
-                print(f"  \033[91m[FAIL]\033[0m Expected {expected_str}")
+                "allowed" if test["expected"] else "denied"
                 all_passed = False
 
-        except requests.exceptions.RequestException as e:
-            print(f"  \033[91m[ERROR]\033[0m Failed to query policy: {e}")
+        except requests.exceptions.RequestException:
             all_passed = False
 
     # Step 4: Summary
-    print("\n" + "=" * 60)
     if all_passed:
-        print("\033[92mPolicy evaluation successful\033[0m")
-        print("All test cases passed!")
+        pass
     else:
-        print("\033[91mSome tests failed.\033[0m")
-        print("Review the output above for details.")
-    print("=" * 60)
+        pass
 
     # Exit with appropriate code
     sys.exit(0 if all_passed else 1)

@@ -50,6 +50,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("analytics-engine")
 
+
 class AnalyticsEngineConfig:
     """Configuration for the analytics engine."""
 
@@ -85,6 +86,7 @@ class AnalyticsEngineConfig:
         self.output_dir = output_dir or os.getenv("PDF_OUTPUT_DIR", "./data")
         self.contamination = contamination
         self.forecast_days = forecast_days
+
 
 class AnalyticsEngineResult:
     """Container for analytics engine processing results."""
@@ -183,6 +185,7 @@ class AnalyticsEngineResult:
             }
 
         return result
+
 
 class AnalyticsEngine:
     """
@@ -633,6 +636,7 @@ class AnalyticsEngine:
 
         return result
 
+
 def create_parser() -> argparse.ArgumentParser:
     """Create the command-line argument parser."""
     parser = argparse.ArgumentParser(
@@ -760,6 +764,7 @@ Environment Variables:
 
     return parser
 
+
 async def main_async(args: argparse.Namespace) -> int:
     """Async main entry point."""
     # Configure logging level
@@ -782,14 +787,15 @@ async def main_async(args: argparse.Namespace) -> int:
     if args.status:
         status = engine.get_status()
         if args.json_output:
-
+            pass
         else:
+            pass
 
             logger.debug(
                 f"  - Anomaly Detector: sklearn={status['anomaly_detector']['sklearn_available']}"
             )
 
-            api_key_configured = status["insight_generator"]["api_key_configured"]
+            status["insight_generator"]["api_key_configured"]
 
             logger.debug(
                 f"  - PDF Exporter: reportlab={status['pdf_exporter']['reportlab_available']}"
@@ -846,36 +852,43 @@ async def main_async(args: argparse.Namespace) -> int:
 
         # Output results
         if args.json_output:
-
+            pass
         else:
+            pass
 
             if result.metrics:
+                pass
 
             if result.anomalies:
+                pass
 
             if result.forecast:
                 if result.forecast.model_trained:
                     summary = result.forecast.summary
 
                     if "trend_direction" in summary:
+                        pass
 
                     if "total_predicted_violations" in summary:
                         logger.debug(
                             f"  - Total Predicted: {summary['total_predicted_violations']:.0f}"
                         )
                 else:
-
+                    pass
             if result.insights:
                 if result.insights.insight:
-
+                    pass
                 else:
+                    pass
 
             if result.pdf_result:
                 if result.pdf_result.success:
-
+                    pass
                 else:
+                    pass
 
             if result.warnings:
+                pass
 
             if result.errors:
                 logger.error(f"\nErrors: {', '.join(result.errors)}")
@@ -886,16 +899,19 @@ async def main_async(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.exception("Engine error")
         if args.json_output:
-
+            pass
         else:
+            pass
             logger.error(f"Error: {e}", file=sys.stderr)
         return 1
+
 
 def main() -> int:
     """Main entry point."""
     parser = create_parser()
     args = parser.parse_args()
     return asyncio.run(main_async(args))
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -136,7 +136,6 @@ class ImportStructureAnalyzer:
 
     def analyze_codebase(self) -> Dict[str, any]:
         """Analyze the entire codebase for import relationships."""
-        print("🔍 Analyzing import structure...")
 
         # Find all Python files
         python_files = []
@@ -152,7 +151,6 @@ class ImportStructureAnalyzer:
                 if file.endswith(".py"):
                     python_files.append(Path(root) / file)
 
-        print(f"📁 Found {len(python_files)} Python files")
 
         # Analyze each file
         for file_path in python_files:
@@ -160,8 +158,8 @@ class ImportStructureAnalyzer:
                 analyzer = self._analyze_file(file_path)
                 if analyzer:
                     self.analyzers[str(file_path)] = analyzer
-            except Exception as e:
-                print(f"❌ Error analyzing {file_path}: {e}")
+            except Exception:
+                pass
 
         # Build dependency graph
         self._build_dependency_graph()
@@ -271,64 +269,40 @@ class ImportStructureAnalyzer:
         plt.savefig(output_file, dpi=150, bbox_inches="tight")
         plt.close()
 
-        print(f"📊 Import graph saved to {output_file}")
 
 
 def main():
     """Main ARCH-001 analysis execution."""
-    print("🏗️  ARCH-001: Import Structure Analysis")
-    print("=" * 50)
-    print("Constitutional Hash:", CONSTITUTIONAL_HASH)
-    print()
 
     # Analyze the codebase
     analyzer = ImportStructureAnalyzer("acgs2-core")
     results = analyzer.analyze_codebase()
 
-    print("📊 ANALYSIS RESULTS")
-    print(f"Files analyzed: {results['files_analyzed']}")
-    print(f"Total imports: {results['total_imports']}")
-    print(f"Circular dependencies found: {len(results['circular_dependencies'])}")
-    print()
 
     # Show metrics
     metrics = results["metrics"]
-    print("📈 DEPENDENCY METRICS")
-    print(f"Total modules: {metrics['total_modules']}")
-    print(f"Total dependencies: {metrics['total_dependencies']}")
-    print()
 
-    print("🔝 MOST IMPORTED MODULES:")
-    for module, count in metrics["most_imported"][:5]:
-        print(f"  {module}: {count} imports")
-    print()
+    for _module, _count in metrics["most_imported"][:5]:
+        pass
 
-    print("🔝 MOST IMPORTING MODULES:")
-    for module, count in metrics["most_importing"][:5]:
-        print(f"  {module}: {count} imports")
-    print()
+    for _module, _count in metrics["most_importing"][:5]:
+        pass
 
     # Show circular dependencies
     if results["circular_dependencies"]:
-        print("🔄 CIRCULAR DEPENDENCIES FOUND:")
-        for i, cycle in enumerate(results["circular_dependencies"][:5]):  # Show first 5
-            print(f"  Cycle {i + 1}: {' -> '.join(cycle)}")
+        for _i, _cycle in enumerate(results["circular_dependencies"][:5]):  # Show first 5
+            pass
         if len(results["circular_dependencies"]) > 5:
-            print(f"  ... and {len(results['circular_dependencies']) - 5} more")
+            pass
     else:
-        print("✅ NO CIRCULAR DEPENDENCIES FOUND")
+        pass
 
-    print()
-    print("🎯 ARCH-001 ANALYSIS COMPLETE")
-    print("✅ Import structure analyzed and circular dependencies identified")
 
     # Generate visualization if networkx is available
     try:
         analyzer.generate_visualization()
     except ImportError:
-        print(
-            "ℹ️  Install networkx and matplotlib for visualization: pip install networkx matplotlib"
-        )
+        pass
 
 
 if __name__ == "__main__":

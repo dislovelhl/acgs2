@@ -75,7 +75,7 @@ async def test_memory_profiling_optimization():
 
     start_time = time.perf_counter()
     for _ in range(iterations):
-        result = dumps(test_data)
+        dumps(test_data)
     end_time = time.perf_counter()
 
     json_time = end_time - start_time
@@ -86,7 +86,7 @@ async def test_memory_profiling_optimization():
     # Test memory profiling context manager performance when disabled
     start_time = time.perf_counter()
     for _ in range(iterations):
-        async with profiler_disabled.profile_async("test_operation") as ctx:
+        async with profiler_disabled.profile_async("test_operation"):
             # Simulate minimal work
             _ = test_data["message_id"]
     end_time = time.perf_counter()

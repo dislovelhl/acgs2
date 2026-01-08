@@ -6,8 +6,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 SECURITY: Uses shell=False for subprocess calls to prevent command injection.
 """
 
+import logging
 import subprocess
 import sys
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
 
 
 def run_command(cmd_args: list, description: str) -> bool:
@@ -21,20 +25,20 @@ def run_command(cmd_args: list, description: str) -> bool:
         # SECURITY: shell=False prevents command injection
         result = subprocess.run(cmd_args, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
-    logger.info(f"✅ {description}: PASSED")
+            logger.info(f"✅ {description}: PASSED")
             return True
         else:
-    logger.info(f"❌ {description}: FAILED")
-    logger.info(f"   Error: {result.stderr.strip()}")
+            logger.info(f"❌ {description}: FAILED")
+            logger.info(f"   Error: {result.stderr.strip()}")
             return False
     except subprocess.TimeoutExpired:
-    logger.info(f"❌ {description}: TIMEOUT")
+        logger.info(f"❌ {description}: TIMEOUT")
         return False
     except FileNotFoundError:
-    logger.info(f"❌ {description}: COMMAND NOT FOUND")
+        logger.info(f"❌ {description}: COMMAND NOT FOUND")
         return False
     except Exception as e:
-    logger.info(f"❌ {description}: ERROR - {e}")
+        logger.info(f"❌ {description}: ERROR - {e}")
         return False
 
 
@@ -50,44 +54,44 @@ def main():
 
     # Test 1: CLI help
     total_tests += 1
-    if run_command(["acgs2-cli", "--help"], "CLI help command"):
+    if run_command(["acgs2_cli", "--help"], "CLI help command"):
         tests_passed += 1
 
     # Test 2: CLI version
     total_tests += 1
-    if run_command(["acgs2-cli", "version"], "CLI version command"):
+    if run_command(["acgs2_cli", "version"], "CLI version command"):
         tests_passed += 1
 
     # Test 3: CLI health check (will fail without running services, but should show proper error)
     total_tests += 1
     # SECURITY: shell=False to prevent command injection
-    result = subprocess.run(["acgs2-cli", "health"], capture_output=True, text=True, timeout=10)
+    result = subprocess.run(["acgs2_cli", "health"], capture_output=True, text=True, timeout=10)
     if "Health check failed" in result.stderr or "Connection refused" in result.stderr:
-    logger.info("✅ CLI health check: PASSED (expected failure without services)")
+        logger.info("✅ CLI health check: PASSED (expected failure without services)")
         tests_passed += 1
     else:
-    logger.info("❓ CLI health check: UNEXPECTED RESULT")
-    logger.info(f"   stdout: {result.stdout.strip()}")
-    logger.info(f"   stderr: {result.stderr.strip()}")
+        logger.info("❓ CLI health check: UNEXPECTED RESULT")
+        logger.info(f"   stdout: {result.stdout.strip()}")
+        logger.info(f"   stderr: {result.stderr.strip()}")
 
     # Test 4: HITL commands help
     total_tests += 1
-    if run_command(["acgs2-cli", "hitl", "--help"], "HITL commands help"):
+    if run_command(["acgs2_cli", "hitl", "--help"], "HITL commands help"):
         tests_passed += 1
 
     # Test 5: ML commands help
     total_tests += 1
-    if run_command(["acgs2-cli", "ml", "--help"], "ML commands help"):
+    if run_command(["acgs2_cli", "ml", "--help"], "ML commands help"):
         tests_passed += 1
 
     # Test 6: Policy commands help
     total_tests += 1
-    if run_command(["acgs2-cli", "policy", "--help"], "Policy commands help"):
+    if run_command(["acgs2_cli", "policy", "--help"], "Policy commands help"):
         tests_passed += 1
 
     # Test 7: Playground help
     total_tests += 1
-    if run_command(["acgs2-cli", "playground", "--help"], "Playground command help"):
+    if run_command(["acgs2_cli", "playground", "--help"], "Playground command help"):
         tests_passed += 1
 
     # Summary
@@ -95,10 +99,10 @@ def main():
     logger.info(f"📊 Test Results: {tests_passed}/{total_tests} tests passed")
 
     if tests_passed == total_tests:
-    logger.info("🎉 All tests passed! CLI tool is working correctly.")
+        logger.info("🎉 All tests passed! CLI tool is working correctly.")
         return 0
     else:
-    logger.info(f"⚠️  {total_tests - tests_passed} test(s) failed.")
+        logger.info(f"⚠️  {total_tests - tests_passed} test(s) failed.")
         return 1
 
 

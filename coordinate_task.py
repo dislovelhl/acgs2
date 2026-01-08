@@ -21,8 +21,8 @@ def coordinate_task():
                 with open(os.path.join(storage_dir, filename), "r") as f:
                     task = json.load(f)
                     tasks.append(task)
-            except Exception as e:
-                print(f"Warning: Failed to load task {filename}: {e}")
+            except Exception:
+                pass
 
     # Load agents
     agents = []
@@ -32,8 +32,8 @@ def coordinate_task():
                 with open(os.path.join(storage_dir, filename), "r") as f:
                     agent = json.load(f)
                     agents.append(agent)
-            except Exception as e:
-                print(f"Warning: Failed to load agent {filename}: {e}")
+            except Exception:
+                pass
 
     # Find pending tasks and assign to appropriate agents
     assignments = []
@@ -113,7 +113,6 @@ def coordinate_task():
             },
         }
 
-    print(json.dumps(result, indent=2))
     return result
 
 

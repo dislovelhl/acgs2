@@ -21,8 +21,6 @@ import httpx
 
 try:
     if httpx.__version__ < "0.26.0":
-        import functools
-
         _original_async_client_init = httpx.AsyncClient.__init__
 
         @functools.wraps(_original_async_client_init)
@@ -59,6 +57,7 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 logger = logging.getLogger(__name__)
+
 
 class SolanaClient:
     """Solana 区块链客户端 - 支持 Mock 和 Live 模式"""
@@ -174,7 +173,8 @@ class SolanaClient:
                     self._keypair = Keypair.from_bytes(bytes(secret))
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Wallet loaded from environment variable")
                     return True
-            except Exception as e:
+            except Exception:
+                pass
 
         # 2. 从文件加载
         wallet_path = self.config.get("wallet_path")

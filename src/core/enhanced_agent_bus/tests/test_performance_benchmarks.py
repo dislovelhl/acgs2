@@ -982,10 +982,6 @@ def run_benchmarks():
     """Run benchmarks and print summary."""
     from deliberation_layer.impact_scorer import ImpactScorer
 
-    # print("=" * 70)  # DEBUG_CLEANUP
-    # print("ACGS-2 Impact Scorer Performance Benchmarks")  # DEBUG_CLEANUP
-    # print("=" * 70)  # DEBUG_CLEANUP
-
     with patch("deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE", False):
         scorer = ImpactScorer(use_onnx=False)
 
@@ -1001,17 +997,8 @@ def run_benchmarks():
         scorer.calculate_impact_score(msg)
         metrics_single.latency_ms.append((time.perf_counter() - start) * 1000)
 
-    # print(f"\nSingle Scoring (n={len(metrics_single.latency_ms)}):")  # DEBUG_CLEANUP
-    # print(f"  P50: {metrics_single.latency_p50:.2f} ms")  # DEBUG_CLEANUP
-    # print(f"  P95: {metrics_single.latency_p95:.2f} ms")  # DEBUG_CLEANUP
-    # print(f"  P99: {metrics_single.latency_p99:.2f} ms")  # DEBUG_CLEANUP
-    # print(f"  Throughput: {metrics_single.throughput_per_sec:.0f} req/s")  # DEBUG_CLEANUP
-
     # Batch scoring benchmark
     batch_sizes = [1, 8, 16, 32]
-    # print("\nBatch Scoring:")  # DEBUG_CLEANUP
-    # print(f"{'Batch':<8} {'P50 (ms)':<12} {'P99 (ms)':<12} {'Throughput (req/s)':<20}")  # DEBUG_CLEANUP
-    # print("-" * 52)  # DEBUG_CLEANUP
 
     for batch_size in batch_sizes:
         metrics_batch = BenchmarkMetrics(operation=f"batch_{batch_size}")
@@ -1022,18 +1009,9 @@ def run_benchmarks():
             metrics_batch.latency_ms.append((time.perf_counter() - start) * 1000)
 
         throughput = batch_size * metrics_batch.throughput_per_sec
-        # print(  # DEBUG_CLEANUP
         #     f"{batch_size:<8} {metrics_batch.latency_p50:<12.2f} "
         #     f"{metrics_batch.latency_p99:<12.2f} {throughput:<20.0f}"
         # )
-
-    # print("\n" + "=" * 70)  # DEBUG_CLEANUP
-    # print("Performance Targets:")  # DEBUG_CLEANUP
-    # print(f"  P99 Latency Target: <{PERFORMANCE_TARGETS['p99_latency_ms']}ms")  # DEBUG_CLEANUP
-    # print(f"  P99 Stretch Goal: <{PERFORMANCE_TARGETS['p99_latency_stretch_ms']}ms")  # DEBUG_CLEANUP
-    # print(f"  Throughput Target: ≥{PERFORMANCE_TARGETS['throughput_req_per_sec']} req/s")  # DEBUG_CLEANUP
-    # print(f"  Memory Target: <{PERFORMANCE_TARGETS['peak_memory_gb']}GB")  # DEBUG_CLEANUP
-    # print("=" * 70)  # DEBUG_CLEANUP
 
 
 # Entry point for running tests directly

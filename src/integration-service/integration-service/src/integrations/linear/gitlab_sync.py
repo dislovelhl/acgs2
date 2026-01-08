@@ -27,10 +27,23 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-import gitlab
-from gitlab.exceptions import GitlabAuthenticationError as GitlabAuthError
-from gitlab.exceptions import GitlabError, GitlabGetError
-from gitlab.v4.objects import Project, ProjectIssue, ProjectMergeRequest
+try:
+    import gitlab
+    from gitlab.exceptions import GitlabAuthenticationError as GitlabAuthError
+    from gitlab.exceptions import GitlabError, GitlabGetError
+    from gitlab.v4.objects import Project, ProjectIssue, ProjectMergeRequest
+
+    GITLAB_AVAILABLE = True
+except ImportError:
+    GITLAB_AVAILABLE = False
+    gitlab = None  # Will cause runtime error if used without check
+    GitlabAuthError = Exception  # Fallback for type hints
+    GitlabError = Exception
+    GitlabGetError = Exception
+    Project = None
+    ProjectIssue = None
+    ProjectMergeRequest = None
+
 from tenacity import (
     before_sleep_log,
     retry,

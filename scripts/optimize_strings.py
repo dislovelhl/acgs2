@@ -61,7 +61,7 @@ class StringOptimizer:
 
             # Suggest using join() instead of +=
             if " += " in content:
-                suggestion = content.replace(" += ", " = ").replace(
+                content.replace(" += ", " = ").replace(
                     "str_var", "parts.append(str_var)"
                 )
                 optimizations.append(

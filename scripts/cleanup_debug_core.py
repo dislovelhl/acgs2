@@ -83,7 +83,7 @@ class DebugCleanup:
                             replacement = debug_line.replace("print(", "logger.debug(")
                     else:
                         # Comment out the print statement if no logger
-                        replacement = f"# {debug_line}  # DEBUG_CLEANUP"
+                        replacement = f"# {debug_line}"
 
                     replacements.append((line_num, debug_line, replacement))
 

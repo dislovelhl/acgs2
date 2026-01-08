@@ -4,7 +4,6 @@ Simple agent spawner for ACGS-2 coordination framework
 """
 
 import asyncio
-import json
 import os
 import sys
 
@@ -51,12 +50,10 @@ async def spawn_agent():
         else:
             result = {"success": False, "error": "Failed to register agent with bus"}
 
-        print(json.dumps(result, indent=2))
         return result
 
     except Exception as e:
         error_result = {"success": False, "error": f"Exception during agent spawning: {str(e)}"}
-        print(json.dumps(error_result, indent=2))
         return error_result
 
 

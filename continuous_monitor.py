@@ -82,8 +82,8 @@ class AlertManager:
                     try:
                         await self.alert_handlers[channel](alert)
                         success = True
-                    except Exception as e:
-                        print(f"Failed to send {channel} alert: {e}")
+                    except Exception:
+                        pass
 
         return success
 
@@ -148,7 +148,6 @@ Please investigate immediately.
     async def _send_webhook_alert(self, alert: Dict[str, Any]):
         """Send alert via webhook (e.g., Slack)"""
         # Placeholder for webhook implementation
-        print(f"WEBHOOK ALERT: {alert['severity']} - {alert['message']}")
 
 
 class ContinuousMonitor:
@@ -165,11 +164,9 @@ class ContinuousMonitor:
     async def start_monitoring(self, interval_seconds: int = 60):
         """Start continuous monitoring"""
         if self.is_monitoring:
-            print("Monitoring already running")
             return
 
         self.is_monitoring = True
-        print("🔔 Starting continuous governance monitoring...")
 
         # Initialize governance integrator
         from governance_integrator import GovernanceIntegrator
@@ -181,7 +178,6 @@ class ContinuousMonitor:
                 await self._perform_monitoring_cycle()
                 await asyncio.sleep(interval_seconds)
         except Exception as e:
-            print(f"Monitoring error: {e}")
             await self.alert_manager.send_alert(
                 "monitoring_failure",
                 "high",
@@ -191,7 +187,6 @@ class ContinuousMonitor:
     def stop_monitoring(self):
         """Stop continuous monitoring"""
         self.is_monitoring = False
-        print("🛑 Stopping continuous governance monitoring...")
 
     async def _perform_monitoring_cycle(self):
         """Perform one complete monitoring cycle"""
@@ -387,20 +382,17 @@ async def main():
                 monitor.stop_monitoring()
 
         elif command == "status":
-            status = monitor.get_monitoring_status()
-            print(json.dumps(status, indent=2))
+            monitor.get_monitoring_status()
 
         elif command == "test-alert":
-            success = await monitor.alert_manager.send_alert(
+            await monitor.alert_manager.send_alert(
                 "test_alert", "low", "This is a test alert to verify alerting functionality"
             )
-            print(f"Test alert sent: {success}")
 
         else:
-            print("Usage: python continuous_monitor.py [start [interval]|status|test-alert]")
+            pass
     else:
-        print("ACGS-2 Continuous Governance Monitor")
-        print("Usage: python continuous_monitor.py [start [interval]|status|test-alert]")
+        pass
 
 
 if __name__ == "__main__":

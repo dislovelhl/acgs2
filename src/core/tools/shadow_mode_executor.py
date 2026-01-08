@@ -26,6 +26,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class PolicyDecision:
     """Represents a policy decision result."""
@@ -34,6 +35,7 @@ class PolicyDecision:
     reason: str
     metadata: Dict[str, Any] = field(default_factory=dict)
     execution_time_ms: float = 0.0
+
 
 @dataclass
 class ComparisonResult:
@@ -46,6 +48,7 @@ class ComparisonResult:
     difference_type: Optional[str] = None  # "allow_deny", "metadata", "performance"
     impact_score: float = 0.0  # 0.0 = no impact, 1.0 = critical difference
     details: Dict[str, Any] = field(default_factory=dict)
+
 
 class ShadowModeExecutor:
     """
@@ -310,12 +313,15 @@ class ShadowModeExecutor:
             report = self.generate_report()
 
         if report["critical_differences"]:
+            pass
 
             for diff in report["critical_differences"]:
-                print(
+                print(  # noqa: T201
                     f"  - {diff['test_case']}: {diff['difference_type']} (impact: {diff['impact_score']})"
                 )
         else:
+            pass
+
 
 async def main():
     """Main entry point for CLI."""
@@ -423,6 +429,7 @@ async def main():
     # Exit with error code if critical differences found
     if report["summary"]["critical_differences_count"] > 0:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

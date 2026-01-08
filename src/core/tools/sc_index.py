@@ -21,7 +21,8 @@ import argparse
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
 
 class ProjectIndexer:
     """Comprehensive project documentation indexer with multi-persona coordination."""
@@ -41,7 +42,7 @@ class ProjectIndexer:
 
                 with open(pyproject_path, "rb") as f:
                     data = tomllib.load(f)
-                    return (
+                    return str(
                         data.get("tool", {})
                         .get("poetry", {})
                         .get("name", data.get("project", {}).get("name", "Unknown Project"))
@@ -55,7 +56,7 @@ class ProjectIndexer:
             try:
                 with open(package_path, encoding="utf-8") as f:
                     data = json.load(f)
-                    return data.get("name", "Unknown Project")
+                    return str(data.get("name", "Unknown Project"))
             except (FileNotFoundError, json.JSONDecodeError, KeyError):
                 pass
 
@@ -88,7 +89,7 @@ class ProjectIndexer:
     def analyze_structure(self) -> Dict:
         """Phase 1: Analyze project structure and identify components."""
 
-        structure = {
+        structure: Dict[str, Any] = {
             "directories": {},
             "files": {},
             "languages": set(),
@@ -98,6 +99,11 @@ class ProjectIndexer:
             "test_files": [],
             "doc_files": [],
         }
+        languages: Any = structure["languages"]
+        entry_points: Any = structure["entry_points"]
+        config_files: Any = structure["config_files"]
+        test_files: Any = structure["test_files"]
+        doc_files: Any = structure["doc_files"]
 
         # Walk through directory structure
         for path in self.root_path.rglob("*"):
@@ -107,17 +113,17 @@ class ProjectIndexer:
                 # Detect language
                 lang = self._detect_language(path)
                 if lang:
-                    structure["languages"].add(lang)
+                    languages.add(lang)
 
                 # Categorize files
                 if self._is_entry_point(path):
-                    structure["entry_points"].append(str(rel_path))
+                    entry_points.append(str(rel_path))
                 elif self._is_config_file(path):
-                    structure["config_files"].append(str(rel_path))
+                    config_files.append(str(rel_path))
                 elif self._is_test_file(path):
-                    structure["test_files"].append(str(rel_path))
+                    test_files.append(str(rel_path))
                 elif self._is_doc_file(path):
-                    structure["doc_files"].append(str(rel_path))
+                    doc_files.append(str(rel_path))
 
                 # Build directory tree
                 self._add_to_directory_tree(structure["directories"], rel_path)
@@ -555,9 +561,7 @@ class ProjectIndexer:
         doc_content = self.generate_documentation(organized, doc_type, output_format)
 
         # Phase 4: Validation (Quality Persona)
-        validation = self.validate_documentation(doc_content)
-
-        for rec in validation["recommendations"]:
+        self.validate_documentation(doc_content)
 
         # Phase 5: Save (Maintenance Mode)
         if output_path:
@@ -567,6 +571,7 @@ class ProjectIndexer:
             ext = "md" if output_format == "md" else output_format
             default_path = f"PROJECT_DOCS_{doc_type}.{ext}"
             self.save_documentation(doc_content, default_path)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -613,6 +618,7 @@ Examples:
     indexer.run(
         target=args.target, doc_type=args.type, output_format=args.format, output_path=args.output
     )
+
 
 if __name__ == "__main__":
     main()

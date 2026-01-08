@@ -180,7 +180,7 @@ class QuarterlyQualityOracle:
             return {"error": "Cannot predict without complexity data"}
 
         current_violations = complexity_data.get("summary", {}).get("violation_files", 0)
-        total_files = complexity_data.get("summary", {}).get("total_files", 0)
+        complexity_data.get("summary", {}).get("total_files", 0)
 
         # Simple linear extrapolation
         monthly_growth_rate = 0.02  # 2% monthly growth assumption

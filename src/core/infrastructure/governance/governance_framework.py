@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+
 class GovernanceState(Enum):
     """Governance framework state."""
 
@@ -26,6 +27,7 @@ class GovernanceState(Enum):
     SUSPENDED = "suspended"
     SHUTDOWN = "shutdown"
 
+
 class PolicyLoadStatus(Enum):
     """Policy loading status."""
 
@@ -34,6 +36,7 @@ class PolicyLoadStatus(Enum):
     LOADED = "loaded"
     FAILED = "failed"
     OUTDATED = "outdated"
+
 
 @dataclass
 class GovernanceConfiguration:
@@ -78,6 +81,7 @@ class GovernanceConfiguration:
             raise ValueError("Evaluation timeout must be at least 100ms")
         return True
 
+
 @dataclass
 class AuditEntry:
     """Audit trail entry."""
@@ -92,6 +96,7 @@ class AuditEntry:
     constitutional_hash: str
     metadata: Dict[str, Any] = field(default_factory=dict)
     tenant_id: str = "default"
+
 
 @dataclass
 class Policy:
@@ -108,6 +113,7 @@ class Policy:
     is_active: bool = True
     priority: int = 0
     metadata: Dict[str, Any] = field(default_factory=dict)
+
 
 class AuditTrailManager:
     """Manages governance audit trails."""
@@ -226,7 +232,6 @@ class AuditTrailManager:
                 logger.error(f"Error flushing audit buffer: {e}")
                 with self._lock:
                     self._buffer.extend(entries_to_flush)
-        else:
 
     def _background_flush_loop(self) -> None:
         """Background thread for periodic buffer flushing."""
@@ -237,6 +242,7 @@ class AuditTrailManager:
             except Exception as e:
                 logger.error(f"Background flush error: {e}")
                 time.sleep(5)  # Back off on errors
+
 
 class PolicyLoader:
     """Loads and manages governance policies."""
@@ -409,6 +415,7 @@ class PolicyLoader:
 
         elapsed = (datetime.now(timezone.utc) - self._last_refresh).total_seconds()
         return elapsed >= self.config.policy_cache_ttl
+
 
 class GovernanceFramework:
     """Main governance framework for constitutional AI governance."""
@@ -604,9 +611,11 @@ class GovernanceFramework:
             "is_ready": self.is_ready,
         }
 
+
 # Global instance
 _governance_framework: Optional[GovernanceFramework] = None
 _init_lock = threading.Lock()
+
 
 async def initialize_governance(
     config: GovernanceConfiguration,
@@ -626,9 +635,11 @@ async def initialize_governance(
 
     return _governance_framework
 
+
 def get_governance_framework() -> Optional[GovernanceFramework]:
     """Get the global governance framework instance."""
     return _governance_framework
+
 
 async def shutdown_governance() -> None:
     """Shutdown the global governance framework."""

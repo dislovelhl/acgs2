@@ -27,16 +27,30 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from github import (
-    Github,
-    GithubException,
-    RateLimitExceededException,
-    UnknownObjectException,
-)
-from github.Issue import Issue as GithubIssue
-from github.IssueComment import IssueComment as GithubComment
-from github.PullRequest import PullRequest as GithubPR
-from github.Repository import Repository as GithubRepository
+try:
+    from github import (
+        Github,
+        GithubException,
+        RateLimitExceededException,
+        UnknownObjectException,
+    )
+    from github.Issue import Issue as GithubIssue
+    from github.IssueComment import IssueComment as GithubComment
+    from github.PullRequest import PullRequest as GithubPR
+    from github.Repository import Repository as GithubRepository
+
+    GITHUB_AVAILABLE = True
+except ImportError:
+    GITHUB_AVAILABLE = False
+    Github = None  # Will cause runtime error if used without check
+    GithubException = Exception  # Fallback for type hints
+    RateLimitExceededException = Exception
+    UnknownObjectException = Exception
+    GithubIssue = None
+    GithubComment = None
+    GithubPR = None
+    GithubRepository = None
+
 from tenacity import (
     before_sleep_log,
     retry,

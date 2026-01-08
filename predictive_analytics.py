@@ -314,7 +314,7 @@ class PredictiveAnalytics:
         util_pred = models.get("utilization_prediction", {})
 
         predicted_workload = workload_pred.get("predicted_workload", 0)
-        current_capacity = util_pred.get("current_utilization", 0) * 100  # Convert to percentage
+        util_pred.get("current_utilization", 0) * 100  # Convert to percentage
 
         # Simple capacity calculation (can be enhanced with ML models)
         optimal_capacity = max(4, int(predicted_workload * 1.2))  # 20% buffer
@@ -475,28 +475,20 @@ def main():
         command = sys.argv[1]
 
         if command == "analyze":
-            result = analytics.analyze_historical_patterns()
-            print(json.dumps(result, indent=2))
+            analytics.analyze_historical_patterns()
 
         elif command == "predict-capacity":
             hours = int(sys.argv[2]) if len(sys.argv) > 2 else 24
-            result = asyncio.run(analytics.predict_optimal_capacity(hours))
-            print(json.dumps(result, indent=2))
+            asyncio.run(analytics.predict_optimal_capacity(hours))
 
         elif command == "optimize":
-            result = analytics.get_optimization_recommendations()
-            print(json.dumps(result, indent=2))
+            analytics.get_optimization_recommendations()
 
         else:
-            print(
-                "Usage: python predictive_analytics.py [analyze|predict-capacity [hours]|optimize]"
-            )
+            pass
     else:
-        print("ACGS-2 Predictive Analytics Engine")
-        print("Analyzing historical patterns...")
 
-        result = analytics.analyze_historical_patterns()
-        print(json.dumps(result, indent=2))
+        analytics.analyze_historical_patterns()
 
 
 if __name__ == "__main__":

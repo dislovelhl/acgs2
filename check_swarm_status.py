@@ -15,11 +15,6 @@ def check_swarm_status():
     storage_dir = "src/claude-flow/claude-flow/storage"
 
     if not os.path.exists(storage_dir):
-        print(
-            json.dumps(
-                {"success": False, "error": f"Storage directory not found: {storage_dir}"}, indent=2
-            )
-        )
         return
 
     # Load swarm configurations
@@ -36,19 +31,18 @@ def check_swarm_status():
                     swarm_id = config.get("swarm_id")
                     if swarm_id:
                         swarms[swarm_id] = config
-            except Exception as e:
-                print(f"Warning: Failed to load swarm config {filename}: {e}")
+            except Exception:
+                pass
 
         elif filename.startswith("agent_") and filename.endswith(".json"):
             try:
                 with open(filepath, "r") as f:
                     agent_info = json.load(f)
                     agents.append(agent_info)
-            except Exception as e:
-                print(f"Warning: Failed to load agent config {filename}: {e}")
+            except Exception:
+                pass
 
     if not swarms:
-        print(json.dumps({"success": False, "error": "No swarm configurations found"}, indent=2))
         return
 
     # Get the most recent swarm
@@ -62,7 +56,6 @@ def check_swarm_status():
             most_recent_swarm = (swarm_id, swarm_config)
 
     if not most_recent_swarm:
-        print(json.dumps({"success": False, "error": "No valid swarm found"}, indent=2))
         return
 
     swarm_id, swarm_config = most_recent_swarm
@@ -91,7 +84,6 @@ def check_swarm_status():
 
     result = {"success": True, "status": status}
 
-    print(json.dumps(result, indent=2))
     return result
 
 

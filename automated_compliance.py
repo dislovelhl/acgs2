@@ -281,7 +281,7 @@ class AutomatedComplianceReporter:
 
         for finding in failed_findings:
             area = finding["area"]
-            severity = finding["severity"]
+            finding["severity"]
 
             if area == "data_privacy":
                 recommendations.append(
@@ -602,30 +602,23 @@ def main():
             period = sys.argv[3] if len(sys.argv) > 3 else "monthly"
 
             async def run_generate():
-                result = await reporter.generate_compliance_report(framework, period)
-                print(json.dumps(result, indent=2))
+                await reporter.generate_compliance_report(framework, period)
 
             asyncio.run(run_generate())
 
         elif command == "schedule-reports":
 
             async def run_schedule():
-                result = await reporter.schedule_compliance_reports()
-                print(json.dumps(result, indent=2))
+                await reporter.schedule_compliance_reports()
 
             asyncio.run(run_schedule())
 
         else:
-            print(
-                "Usage: python automated_compliance.py [generate-report [framework] [period]|schedule-reports]"
-            )
+            pass
     else:
-        print("ACGS-2 Automated Compliance Reporting")
-        print("Generating sample GDPR compliance report...")
 
         async def demo():
-            result = await reporter.generate_compliance_report("gdpr", "monthly")
-            print(json.dumps(result, indent=2))
+            await reporter.generate_compliance_report("gdpr", "monthly")
 
         asyncio.run(demo())
 

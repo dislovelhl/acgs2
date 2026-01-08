@@ -115,7 +115,7 @@ class TestIT04ToolFailureHandling:
         cre = MockCRE(sas, tms, dms)
         uig = MockUIG(sas, cre, dms)
 
-        result = await uig.handle_request("Search for partial failure test")
+        await uig.handle_request("Search for partial failure test")
 
         # Memory should still be consistent
         assert len(dms.records) == 1  # CRE still writes summary

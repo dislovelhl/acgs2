@@ -110,7 +110,6 @@ async def profile_message_processing(num_messages: int = 1000) -> PipelineProfil
 
     # Profile the entire processing pipeline
     latencies = []
-    component_times = {}
 
     with profile_context() as profiler:
         start_time = time.perf_counter()

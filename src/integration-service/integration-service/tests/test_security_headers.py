@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 
 # Add paths for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "acgs2-core"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "core"))
 
 from src.main import app  # noqa: E402
 
