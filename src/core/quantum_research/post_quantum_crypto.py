@@ -66,7 +66,7 @@ class PQCKeyPair:
 
     algorithm: PQCAlgorithm
     public_key: bytes
-    secret_key: bytes
+    sk_bytes: bytes
     security_level: SecurityLevel
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     key_id: str = field(default_factory=lambda: secrets.token_hex(16))
@@ -319,7 +319,7 @@ class KyberKEM:
 
         # Serialize keys
         public_key = self._serialize_public_key(t, rho)
-        secret_key = self._serialize_secret_key(s, public_key, d)
+        sk_bytes = self._serialize_secret_key(s, public_key, d)
 
         elapsed = time.time() - start_time
         logger.info(f"Kyber keygen completed in {elapsed:.3f}s")
@@ -327,7 +327,7 @@ class KyberKEM:
         return PQCKeyPair(
             algorithm=self.algorithm,
             public_key=public_key,
-            secret_key=secret_key,
+            sk_bytes=sk_bytes,
             security_level=self.params["level"],
         )
 
@@ -404,12 +404,12 @@ class KyberKEM:
             recipient_key_id=hashlib.sha3_256(public_key).hexdigest()[:16],
         )
 
-    def decapsulate(self, ciphertext: bytes, secret_key: bytes) -> bytes:
+    def decapsulate(self, ciphertext: bytes, sk_bytes: bytes) -> bytes:
         """Decapsulate shared secret using secret key"""
         start_time = time.time()
 
         # Parse secret key and ciphertext
-        s, public_key, z = self._parse_secret_key(secret_key)
+        s, public_key, z = self._parse_secret_key(sk_bytes)
         u, v = self._parse_ciphertext(ciphertext)
         k = self.params["k"]
 
@@ -623,7 +623,7 @@ class DilithiumSignature:
 
         # Serialize keys
         public_key = self._serialize_public_key(rho, t)
-        secret_key = self._serialize_secret_key(rho, K, s1, s2, t)
+        sk_bytes = self._serialize_secret_key(rho, K, s1, s2, t)
 
         elapsed = time.time() - start_time
         logger.info(f"Dilithium keygen completed in {elapsed:.3f}s")
@@ -631,16 +631,16 @@ class DilithiumSignature:
         return PQCKeyPair(
             algorithm=self.algorithm,
             public_key=public_key,
-            secret_key=secret_key,
+            sk_bytes=sk_bytes,
             security_level=self.params["level"],
         )
 
-    def sign(self, message: bytes, secret_key: bytes) -> PQCSignature:
+    def sign(self, message: bytes, sk_bytes: bytes) -> PQCSignature:
         """Sign a message using Dilithium"""
         start_time = time.time()
 
         # Parse secret key
-        rho, K, s1, s2, t = self._parse_secret_key(secret_key)
+        rho, K, s1, s2, t = self._parse_secret_key(sk_bytes)
         k = self.params["k"]
         l_param = self.params["l"]
         gamma1 = self.params["gamma1"]
@@ -1004,7 +1004,7 @@ class ConstitutionalHashValidator:
         # Add constitutional hash binding
         message = self.constitutional_hash.encode() + b"|" + message
 
-        return self.dilithium.sign(message, self.key_pair.secret_key)
+        return self.dilithium.sign(message, self.key_pair.sk_bytes)
 
     def verify_governance_decision(
         self, decision: Dict[str, Any], signature: PQCSignature, public_key: bytes

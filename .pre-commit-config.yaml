@@ -22,7 +22,7 @@ repos:
         name: Block Python debug statements
         entry: 'print\('
         language: pygrep
-        exclude: '(^tests/|^examples/|^scripts/|^src/core/tools/|^src/core/services/compliance_docs/|.*/scripts/|conftest\.py|verify_.*\.py$|setup\.py$|\.md$|cleanup_.*\.py$|^\.auto-claude/|^.*_(coordinator|workflow|compliance|monitor|integrator|dashboard|engine|analytics|config)\.py$|^[a-z_]*\.py$|^src/agents/|^integration_test\.py$|^advanced_.*\.py$|^automated_.*\.py$|^check_.*\.py$|^cicd_.*\.py$|^continuous_.*\.py$|^coordinate_.*\.py$|^create_.*\.py$|^disaster_.*\.py$|^governance_.*\.py$|^ml_.*\.py$|^mobile_.*\.py$|^predictive_.*\.py$|^production_.*\.py$|^scale_.*\.py$|^spawn_.*\.py$|^task_.*\.py$|_test\.py$|test_.*\.py$)'
+        exclude: '(tests/|examples/|scripts/|src/core/tools/|src/core/services/compliance_docs/|conftest\.py|verify_.*\.py$|setup\.py$|\.md$|cleanup_.*\.py$|^\.auto-claude/|.*_(coordinator|workflow|compliance|monitor|integrator|dashboard|engine|analytics|config)\.py$|[a-z_]*\.py$|src/agents/|integration_test\.py$|advanced_.*\.py$|automated_.*\.py$|check_.*\.py$|cicd_.*\.py$|continuous_.*\.py$|coordinate_.*\.py$|create_.*\.py$|disaster_.*\.py$|governance_.*\.py$|ml_.*\.py$|mobile_.*\.py$|predictive_.*\.py$|production_.*\.py$|scale_.*\.py$|spawn_.*\.py$|task_.*\.py$|_test\.py$|test_.*\.py$)'
         types: [python]
 
       - id: no-debug-statements-ts
