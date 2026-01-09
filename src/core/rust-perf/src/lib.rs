@@ -731,7 +731,7 @@ mod tests {
 
     #[test]
     fn test_sinkhorn_knopp() {
-        let result = sinkhorn_knopp_core(ndarray::Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap(), 20, 1e-9);
+        let result = sinkhorn_knopp_core(ndarray::Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap(), None, None, 20, 1e-9);
 
         // Verify shapes
         assert_eq!(result.dim(), (2, 2));

@@ -10,6 +10,8 @@ ignore = [
     "E501",   # line too long, handled by black
     "E402",   # module level import not at top - intentional for try/except fallback patterns
     "F403",   # star imports - intentional for re-export modules
+    "B008",   # Do not perform function call in argument defaults (FastAPI Depends)
+    "B017",   # pytest.raises(Exception) should be considered evil (but sometimes necessary for broad catch)
 ]
 
 [lint.isort]

@@ -272,7 +272,7 @@ class RedisVotingSystem:
             logger.error(f"Failed to submit vote: {e}")
             return False
 
-    async def subscribe_to_votes(self, item_id: str):
+    async def get_votes_pubsub_instance(self, item_id: str):
         """
         Subscribe to votes for a deliberation item.
 

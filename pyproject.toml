@@ -48,6 +48,8 @@ select = ["E", "F", "B", "I", "T20"]  # T20 = flake8-print (catch print statemen
 ignore = [
     "B008",  # Do not perform function call in argument defaults (FastAPI Depends)
     "E501",  # Line too long (Handled by Black mostly)
+    "E402",  # Module level import not at top of file
+    "B017",  # pytest.raises(Exception) should be considered evil
 ]
 
 
@@ -55,9 +57,9 @@ ignore = [
 known-first-party = ["src", "shared", "services", "enhanced_agent_bus", "routes", "main", "app"]
 
 [tool.ruff.lint.per-file-ignores]
-"*/alembic/env.py" = ["I001"]
-"alembic/env.py" = ["I001"]
-"**/alembic/*.py" = ["I001"]
+"*/alembic/env.py" = ["I001", "F401", "E402"]
+"alembic/env.py" = ["I001", "F401", "E402"]
+"**/alembic/*.py" = ["I001", "F401", "E402"]
 # Allow print statements in verification/debugging scripts and CLI tools
 "**/verify_*.py" = ["T20"]
 "**/tests/*" = ["T20"]

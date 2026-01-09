@@ -3,7 +3,10 @@
 
 [run]
 source =
-    src/core
+    .
+    enhanced_agent_bus
+    shared
+    services
     acgs2-observability
     acgs2-research
 branch = True

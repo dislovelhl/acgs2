@@ -175,7 +175,7 @@ class ApprovalChainEngine:
                 request=request,
                 approver_id=approver_id,
                 decision=decision,
-                context=context if "context" in locals() else {},
+                context=request.context or {},
             )
 
             if not authorized:

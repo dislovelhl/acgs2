@@ -48,18 +48,18 @@ class MockCryptoService:
                 "constitutional_hash": CONSTITUTIONAL_HASH,
             }
         elif token == "expired_token":
-            raise Exception("Token expired")
+            raise ValueError("Token expired")
         elif token == "invalid_signature":
-            raise Exception("Invalid signature")
+            raise ValueError("Invalid signature")
         else:
-            raise Exception("Invalid token")
+            raise ValueError("Invalid token")
 
     def issue_agent_token(
         self, agent_id: str, tenant_id: str, capabilities: list, private_key_b64: str
     ):
         """Mock token issuance."""
         if private_key_b64 == "invalid_key":
-            raise Exception("Invalid private key")
+            raise ValueError("Invalid private key")
         return f"mock_jwt_token_for_{agent_id}"
 
 
@@ -326,7 +326,7 @@ class TestTokenIssuance:
     @pytest.mark.asyncio
     async def test_issue_token_invalid_key_raises_400(self, mock_crypto_service):
         """Test token issuance with invalid key raises error."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             mock_crypto_service.issue_agent_token(
                 agent_id="agent", tenant_id="tenant", capabilities=[], private_key_b64="invalid_key"
             )
@@ -440,7 +440,7 @@ class TestSecurityControls:
 
         with patch("shared.config.settings", mock_settings):
             # When credentials are None, verify_agent_token should fail
-            with pytest.raises(Exception):
+            with pytest.raises(ValueError):
                 mock_crypto_service.verify_agent_token(None, "public_key")
 
     @pytest.mark.asyncio

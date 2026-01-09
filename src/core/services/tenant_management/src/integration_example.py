@@ -144,9 +144,9 @@ async def health_check():
 # Example FastAPI router with tenant integration
 from fastapi import HTTPException
 from src.core.shared.tenant_integration import (
-    get_current_tenant,
-    inject_tenant_id,
-    validate_tenant_operation,
+    get_current_tenant,  # noqa: F811
+    inject_tenant_id,  # noqa: F811
+    validate_tenant_operation,  # noqa: F811
 )
 
 router = APIRouter()
@@ -205,7 +205,7 @@ async def get_policy(policy_id: str, tenant_ctx=Depends(get_current_tenant)):
 from pydantic import BaseModel
 
 
-class Policy(BaseModel):
+class Policy(BaseModel):  # noqa: F811
     id: str
     tenant_id: str  # Tenant isolation field
     name: str
