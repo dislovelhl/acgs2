@@ -242,7 +242,7 @@ jobs:
             -k "not (torch or transformers or distilbert)"
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: ./src/core/coverage.xml
 
