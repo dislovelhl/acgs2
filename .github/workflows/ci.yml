@@ -233,7 +233,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run security scanning
-        uses: github/super-linter/slim@v5
+        uses: github/super-linter/slim@v7
         continue-on-error: true # Non-blocking until linter configuration is finalized
         env:
           DEFAULT_BRANCH: main
