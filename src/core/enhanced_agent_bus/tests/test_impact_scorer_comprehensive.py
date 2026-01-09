@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 # Import the module under test
-from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import (
+from enhanced_agent_bus.deliberation_layer.impact_scorer import (
     ImpactScorer,
     ScoringConfig,
     calculate_message_impact,
@@ -32,7 +32,7 @@ from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import (
     get_profiling_report,
     reset_profiling,
 )
-from src.core.enhanced_agent_bus.models import MessageType, Priority
+from enhanced_agent_bus.models import MessageType, Priority
 
 
 class TestScoringConfig:
@@ -578,7 +578,7 @@ class TestGlobalFunctions:
     def test_get_impact_scorer_singleton(self):
         """Test that get_impact_scorer returns a singleton."""
         # Reset the global scorer to ensure clean state
-        import src.core.enhanced_agent_bus.deliberation_layer.impact_scorer as scorer_module
+        import enhanced_agent_bus.deliberation_layer.impact_scorer as scorer_module
 
         scorer_module._global_scorer = None
 

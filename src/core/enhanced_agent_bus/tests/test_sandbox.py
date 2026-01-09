@@ -10,17 +10,15 @@ Comprehensive tests for the Zero Trust Sandbox module including:
 - Execution isolation and timeout handling
 """
 
-import logging
-
-logger = logging.getLogger(__name__)
 import asyncio
+import logging
 import time
 
 import pytest
 
 # Import sandbox module
 try:
-    from src.core.enhanced_agent_bus.sandbox import (
+    from enhanced_agent_bus.sandbox import (  # noqa: E402
         FirecrackerSandbox,
         SandboxProvider,
         WasmSandbox,
@@ -29,6 +27,8 @@ try:
 except ImportError:
     import os
     import sys
+
+    logger = logging.getLogger(__name__)
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from sandbox import (
@@ -425,7 +425,7 @@ class TestConstitutionalCompliance:
     def test_constitutional_hash_in_module(self):
         """Test that module has constitutional hash in docstring."""
         try:
-            from src.core.enhanced_agent_bus import sandbox
+            from enhanced_agent_bus import sandbox
         except ImportError:
             import sandbox
 

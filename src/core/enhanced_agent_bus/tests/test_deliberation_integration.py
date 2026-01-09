@@ -12,7 +12,7 @@ Tests the complete deliberation workflow including:
 import pytest
 
 # Import test targets
-from src.core.enhanced_agent_bus.deliberation_layer import (
+from enhanced_agent_bus.deliberation_layer import (
     DeliberationQueue,
     DeliberationTask,
     Vote,
@@ -20,11 +20,11 @@ from src.core.enhanced_agent_bus.deliberation_layer import (
     VotingStrategy,
     get_redis_voting_system,
 )
-from src.core.enhanced_agent_bus.deliberation_layer.vote_collector import (
+from enhanced_agent_bus.deliberation_layer.vote_collector import (
     EventDrivenVoteCollector,
     VoteEvent,
 )
-from src.core.enhanced_agent_bus.deliberation_layer.workflows.deliberation_workflow import (
+from enhanced_agent_bus.deliberation_layer.workflows.deliberation_workflow import (
     DefaultDeliberationActivities,
     DeliberationWorkflow,
     DeliberationWorkflowInput,
@@ -259,7 +259,7 @@ class TestImpactScorerIntegration:
     @pytest.mark.governance
     def test_impact_scorer_fallback_cascade(self):
         """Test impact scorer works with fallback when ML unavailable."""
-        from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
+        from enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
 
         scorer = ImpactScorer()
 
@@ -277,7 +277,7 @@ class TestImpactScorerIntegration:
     @pytest.mark.governance
     def test_impact_scorer_low_impact_message(self):
         """Test low-impact message scoring."""
-        from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
+        from enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
 
         scorer = ImpactScorer()
 
@@ -295,7 +295,7 @@ class TestImpactScorerIntegration:
     @pytest.mark.governance
     def test_impact_scorer_batch_processing(self):
         """Test batch scoring for multiple messages."""
-        from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
+        from enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
 
         scorer = ImpactScorer()
 
@@ -324,7 +324,7 @@ class TestDeliberationQueueIntegration:
     @pytest.mark.asyncio
     async def test_queue_enqueue_and_get_task(self, queue):
         """Test basic queue operations."""
-        from src.core.enhanced_agent_bus.models import AgentMessage
+        from enhanced_agent_bus.models import AgentMessage
 
         # Create a message to enqueue
         message = AgentMessage(
@@ -345,7 +345,7 @@ class TestDeliberationQueueIntegration:
     @pytest.mark.asyncio
     async def test_queue_task_status_management(self, queue):
         """Test task status management in queue."""
-        from src.core.enhanced_agent_bus.models import AgentMessage
+        from enhanced_agent_bus.models import AgentMessage
 
         # Create messages with different content
         message1 = AgentMessage(
@@ -390,7 +390,7 @@ class TestVotingServiceIntegration:
     @pytest.mark.asyncio
     async def test_voting_strategy_quorum(self, voting_service):
         """Test quorum voting strategy (50% + 1)."""
-        from src.core.enhanced_agent_bus.models import AgentMessage
+        from enhanced_agent_bus.models import AgentMessage
 
         # Create a mock message for the election
         message = AgentMessage(
@@ -420,7 +420,7 @@ class TestVotingServiceIntegration:
     @pytest.mark.asyncio
     async def test_voting_strategy_unanimous(self, voting_service):
         """Test unanimous voting strategy (100% required)."""
-        from src.core.enhanced_agent_bus.models import AgentMessage
+        from enhanced_agent_bus.models import AgentMessage
 
         # Create voting service with unanimous strategy (no Redis)
         unanimous_service = VotingService(
@@ -453,7 +453,7 @@ class TestVotingServiceIntegration:
     @pytest.mark.asyncio
     async def test_voting_with_participant_weights(self, voting_service):
         """Test weighted voting calculation using participant_weights."""
-        from src.core.enhanced_agent_bus.models import AgentMessage
+        from enhanced_agent_bus.models import AgentMessage
 
         # Create voting service without Redis
         weighted_service = VotingService(

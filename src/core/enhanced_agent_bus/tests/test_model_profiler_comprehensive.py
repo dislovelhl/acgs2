@@ -27,7 +27,7 @@ from datetime import datetime
 import pytest
 
 # Import the module under test
-from src.core.enhanced_agent_bus.profiling.model_profiler import (
+from enhanced_agent_bus.profiling.model_profiler import (
     PROMETHEUS_AVAILABLE,
     PSUTIL_AVAILABLE,
     BottleneckType,
@@ -43,7 +43,7 @@ from src.core.enhanced_agent_bus.profiling.model_profiler import (
 @pytest.fixture(autouse=True)
 def reset_prometheus_registry():
     """Reset Prometheus registry and global profiler between tests to prevent duplication errors."""
-    import src.core.enhanced_agent_bus.profiling.model_profiler as profiler_module
+    import enhanced_agent_bus.profiling.model_profiler as profiler_module
 
     # Reset global profiler
     profiler_module._global_profiler = None
@@ -619,7 +619,7 @@ class TestGlobalProfiler:
     def test_get_global_profiler_singleton(self):
         """Test that get_global_profiler returns singleton."""
         # Reset global profiler
-        import src.core.enhanced_agent_bus.profiling.model_profiler as profiler_module
+        import enhanced_agent_bus.profiling.model_profiler as profiler_module
 
         profiler_module._global_profiler = None
 
@@ -630,7 +630,7 @@ class TestGlobalProfiler:
     def test_profile_inference_decorator(self):
         """Test profile_inference convenience decorator."""
         # Reset global profiler
-        import src.core.enhanced_agent_bus.profiling.model_profiler as profiler_module
+        import enhanced_agent_bus.profiling.model_profiler as profiler_module
 
         profiler_module._global_profiler = None
 
@@ -649,7 +649,7 @@ class TestProfileAsyncCall:
     async def test_profile_async_call_coroutine(self):
         """Test profiling async call with coroutine."""
         # Reset global profiler
-        import src.core.enhanced_agent_bus.profiling.model_profiler as profiler_module
+        import enhanced_agent_bus.profiling.model_profiler as profiler_module
 
         profiler_module._global_profiler = None
 
@@ -663,7 +663,7 @@ class TestProfileAsyncCall:
     @pytest.mark.asyncio
     async def test_profile_async_call_sync_function(self):
         """Test profiling call with sync function that returns coroutine."""
-        import src.core.enhanced_agent_bus.profiling.model_profiler as profiler_module
+        import enhanced_agent_bus.profiling.model_profiler as profiler_module
 
         profiler_module._global_profiler = None
 

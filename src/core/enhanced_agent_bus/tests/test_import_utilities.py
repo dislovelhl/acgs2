@@ -6,7 +6,7 @@ Tests for the import utility functions in imports.py.
 """
 
 # Import the utilities we're testing
-from src.core.enhanced_agent_bus.imports import (
+from enhanced_agent_bus.imports import (
     get_import_status,
     import_with_fallback,
     optional_import,

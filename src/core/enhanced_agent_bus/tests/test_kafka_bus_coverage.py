@@ -10,14 +10,14 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.exceptions import MessageDeliveryError
-    from src.core.enhanced_agent_bus.kafka_bus import (
+    from enhanced_agent_bus.exceptions import MessageDeliveryError
+    from enhanced_agent_bus.kafka_bus import (
         KAFKA_AVAILABLE,
         Blackboard,
         KafkaEventBus,
         Orchestrator,
     )
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,

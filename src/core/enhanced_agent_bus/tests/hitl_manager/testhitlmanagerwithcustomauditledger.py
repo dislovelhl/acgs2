@@ -1,17 +1,12 @@
 """
-Tests for hitlmanagerwithcustomauditledger.
-
-Tests cover:
-- hitlmanagerwithcustomauditledger functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 ACGS-2 Enhanced Agent Bus - HITL Manager Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
 Comprehensive tests for the HITLManager class.
+Tests cover:
+- hitlmanagerwithcustomauditledger functionality
+- Error handling and edge cases
+- Integration with related components
 """
 
 from dataclasses import dataclass, field
@@ -156,11 +151,11 @@ class TestHITLManagerWithCustomAuditLedger:
     @pytest.mark.asyncio
     async def test_custom_audit_ledger_receives_results(self, custom_audit_ledger):
         """Test that custom audit ledger receives validation results."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         manager = HITLManager(queue, audit_ledger=custom_audit_ledger)
@@ -190,11 +185,11 @@ class TestHITLManagerWithCustomAuditLedger:
     @pytest.mark.asyncio
     async def test_audit_records_constitutional_hash(self, custom_audit_ledger):
         """Test that audit records include constitutional hash."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import (
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import (
             CONSTITUTIONAL_HASH,
             AgentMessage,
             MessageType,

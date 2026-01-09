@@ -17,7 +17,7 @@ import pytest
 
 # Import graph database module
 try:
-    from src.core.enhanced_agent_bus.graph_database import (
+    from enhanced_agent_bus.graph_database import (
         GraphDatabaseManager,
         MockGraphManager,
         create_graph_db_manager,
@@ -432,7 +432,7 @@ class TestConstitutionalCompliance:
     def test_constitutional_hash_in_module(self):
         """Test that module has constitutional hash in docstring."""
         try:
-            from src.core.enhanced_agent_bus import graph_database
+            from enhanced_agent_bus import graph_database
         except ImportError:
             import graph_database
 

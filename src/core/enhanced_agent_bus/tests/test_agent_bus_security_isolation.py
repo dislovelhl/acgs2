@@ -9,31 +9,31 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.agent_bus import (
+    from enhanced_agent_bus.agent_bus import (
         EnhancedAgentBus,
     )
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
         Priority,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     import sys
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
-    from src.core.enhanced_agent_bus.agent_bus import (
+    from enhanced_agent_bus.agent_bus import (
         EnhancedAgentBus,
     )
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
         Priority,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 
 
 # Test fixtures

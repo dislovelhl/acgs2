@@ -6,7 +6,7 @@ Tests for observability/telemetry.py to increase coverage.
 """
 
 try:
-    from src.core.enhanced_agent_bus.observability.telemetry import (
+    from enhanced_agent_bus.observability.telemetry import (
         OTEL_AVAILABLE,
         NoOpCounter,
         NoOpHistogram,
@@ -199,7 +199,7 @@ class TestConfigureTelemetry:
     def test_configure_without_config(self):
         """configure_telemetry works without config."""
         try:
-            from src.core.enhanced_agent_bus.observability.telemetry import configure_telemetry
+            from enhanced_agent_bus.observability.telemetry import configure_telemetry
         except ImportError:
             from observability.telemetry import configure_telemetry
 
@@ -210,7 +210,7 @@ class TestConfigureTelemetry:
     def test_configure_with_custom_config(self):
         """configure_telemetry with custom config."""
         try:
-            from src.core.enhanced_agent_bus.observability.telemetry import configure_telemetry
+            from enhanced_agent_bus.observability.telemetry import configure_telemetry
         except ImportError:
             from observability.telemetry import configure_telemetry
 

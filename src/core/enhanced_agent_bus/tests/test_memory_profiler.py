@@ -11,7 +11,7 @@ import time
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.memory_profiler import (
+    from enhanced_agent_bus.memory_profiler import (
         CONSTITUTIONAL_HASH,
         MEMORY_PROFILING_AVAILABLE,
         AsyncMemoryQueue,

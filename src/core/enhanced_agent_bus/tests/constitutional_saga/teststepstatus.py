@@ -1,13 +1,4 @@
 """
-Tests for stepstatus.
-
-Tests cover:
-- stepstatus functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 Comprehensive tests for Constitutional Saga workflow module.
 Constitutional Hash: cdd01ef066bc6cf2
 
@@ -27,7 +18,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from src.core.enhanced_agent_bus.deliberation_layer.workflows.constitutional_saga import (
+
+from enhanced_agent_bus.deliberation_layer.workflows.constitutional_saga import (
     CONSTITUTIONAL_HASH,
     DefaultSagaActivities,
     FileSagaPersistenceProvider,

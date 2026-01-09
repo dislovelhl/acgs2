@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         DecisionLog,

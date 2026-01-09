@@ -6,8 +6,8 @@ Tests for core.py backward compatibility facade.
 """
 
 try:
-    from src.core.enhanced_agent_bus import core
-    from src.core.enhanced_agent_bus.core import (
+    from enhanced_agent_bus import core
+    from enhanced_agent_bus.core import (
         CIRCUIT_BREAKER_ENABLED,
         CONSTITUTIONAL_HASH,
         DEFAULT_REDIS_URL,
@@ -246,7 +246,7 @@ class TestCoreBackwardCompatibility:
     def test_constitutional_validation_alias(self):
         """ConstitutionalValidationStrategy is aliased to StaticHashValidationStrategy."""
         try:
-            from src.core.enhanced_agent_bus.core import ConstitutionalValidationStrategy
+            from enhanced_agent_bus.core import ConstitutionalValidationStrategy
         except ImportError:
             from core import ConstitutionalValidationStrategy
 
@@ -255,7 +255,7 @@ class TestCoreBackwardCompatibility:
     def test_message_priority_deprecated_alias(self):
         """MessagePriority is exported for backward compatibility."""
         try:
-            from src.core.enhanced_agent_bus.core import MessagePriority, Priority
+            from enhanced_agent_bus.core import MessagePriority, Priority
         except ImportError:
             from core import MessagePriority, Priority
 
@@ -269,7 +269,7 @@ class TestCoreMeteringExports:
     def test_metering_config_exported(self):
         """MeteringConfig is exported (may be None if unavailable)."""
         try:
-            from src.core.enhanced_agent_bus.core import MeteringConfig
+            from enhanced_agent_bus.core import MeteringConfig
         except ImportError:
             from core import MeteringConfig
 
@@ -280,7 +280,7 @@ class TestCoreMeteringExports:
     def test_metering_hooks_exported(self):
         """MeteringHooks is exported (may be None if unavailable)."""
         try:
-            from src.core.enhanced_agent_bus.core import MeteringHooks
+            from enhanced_agent_bus.core import MeteringHooks
         except ImportError:
             from core import MeteringHooks
 
@@ -290,7 +290,7 @@ class TestCoreMeteringExports:
     def test_metered_operation_exported(self):
         """metered_operation decorator is exported."""
         try:
-            from src.core.enhanced_agent_bus.core import metered_operation
+            from enhanced_agent_bus.core import metered_operation
         except ImportError:
             from core import metered_operation
 

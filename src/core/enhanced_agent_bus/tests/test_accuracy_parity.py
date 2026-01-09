@@ -28,7 +28,7 @@ import numpy as np
 import pytest
 
 # Import the module under test
-from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import (
+from enhanced_agent_bus.deliberation_layer.impact_scorer import (
     ONNX_AVAILABLE,
     TRANSFORMERS_AVAILABLE,
     ImpactScorer,

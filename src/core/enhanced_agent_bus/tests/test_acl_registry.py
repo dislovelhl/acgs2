@@ -15,8 +15,9 @@ from typing import Any, Dict, Optional
 from unittest.mock import Mock
 
 import pytest
-from src.core.enhanced_agent_bus.acl_adapters.base import ACLAdapter, AdapterConfig
-from src.core.enhanced_agent_bus.acl_adapters.registry import (
+
+from enhanced_agent_bus.acl_adapters.base import ACLAdapter, AdapterConfig
+from enhanced_agent_bus.acl_adapters.registry import (
     AdapterRegistry,
     get_adapter,
     get_registry,

@@ -1,17 +1,12 @@
 """
-Tests for hitlmanageradditionalscenarios.
-
-Tests cover:
-- hitlmanageradditionalscenarios functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 ACGS-2 Enhanced Agent Bus - HITL Manager Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
 Comprehensive tests for the HITLManager class.
+Tests cover:
+- hitlmanageradditionalscenarios functionality
+- Error handling and edge cases
+- Integration with related components
 """
 
 from dataclasses import dataclass, field
@@ -142,11 +137,11 @@ class TestHITLManagerAdditionalScenarios:
     @pytest.mark.asyncio
     async def test_process_approval_with_various_decisions(self):
         """Test process_approval with different decision types."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         manager = HITLManager(queue)
@@ -178,11 +173,11 @@ class TestHITLManagerAdditionalScenarios:
         """Test that request_approval logs notification correctly."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         with caplog.at_level(logging.INFO):
             queue = DeliberationQueue()
@@ -209,11 +204,11 @@ class TestHITLManagerAdditionalScenarios:
         """Test that process_approval logs the decision."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         with caplog.at_level(logging.INFO):
             queue = DeliberationQueue()
@@ -247,11 +242,11 @@ class TestHITLManagerAdditionalScenarios:
     @pytest.mark.asyncio
     async def test_multiple_sequential_approvals(self):
         """Test handling multiple sequential approval workflows."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         manager = HITLManager(queue)

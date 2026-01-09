@@ -6,10 +6,11 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from src.core.enhanced_agent_bus.deliberation_layer.intent_classifier import IntentType
-from src.core.enhanced_agent_bus.sdpc.asc_verifier import ASCVerifier
-from src.core.enhanced_agent_bus.sdpc.graph_check import GraphCheckVerifier
-from src.core.enhanced_agent_bus.sdpc.pacar_verifier import PACARVerifier
+
+from enhanced_agent_bus.deliberation_layer.intent_classifier import IntentType
+from enhanced_agent_bus.sdpc.asc_verifier import ASCVerifier
+from enhanced_agent_bus.sdpc.graph_check import GraphCheckVerifier
+from enhanced_agent_bus.sdpc.pacar_verifier import PACARVerifier
 
 
 @pytest.mark.asyncio

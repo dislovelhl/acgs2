@@ -1,17 +1,12 @@
 """
-Tests for edgecasesanderrorhandling.
-
-Tests cover:
-- edgecasesanderrorhandling functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 ACGS-2 Enhanced Agent Bus - HITL Manager Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
 Comprehensive tests for the HITLManager class.
+Tests cover:
+- edgecasesanderrorhandling functionality
+- Error handling and edge cases
+- Integration with related components
 """
 
 from dataclasses import dataclass, field
@@ -142,12 +137,12 @@ class TestEdgeCasesAndErrorHandling:
     @pytest.mark.asyncio
     async def test_empty_content_message(self):
         """Test handling of message with empty content."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             DeliberationStatus,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         manager = HITLManager(queue)
@@ -170,11 +165,11 @@ class TestEdgeCasesAndErrorHandling:
     @pytest.mark.asyncio
     async def test_special_characters_in_reasoning(self):
         """Test special characters in reasoning field."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         class TrackingLedger:
             def __init__(self):
@@ -214,12 +209,12 @@ class TestEdgeCasesAndErrorHandling:
         """Test concurrent approval requests don't interfere."""
         import asyncio
 
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             DeliberationStatus,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         manager = HITLManager(queue)
@@ -251,11 +246,11 @@ class TestEdgeCasesAndErrorHandling:
         """Test that long content is truncated in notification."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         manager = HITLManager(queue)

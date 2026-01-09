@@ -11,40 +11,40 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.agent_bus import (
+    from enhanced_agent_bus.agent_bus import (
         EnhancedAgentBus,
         get_agent_bus,
         reset_agent_bus,
     )
-    from src.core.enhanced_agent_bus.exceptions import (
+    from enhanced_agent_bus.exceptions import (
         BusNotStartedError,
         ConstitutionalHashMismatchError,
     )
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageStatus,
         MessageType,
         Priority,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     import sys
 
     sys.path.insert(0, "/home/dislove/document/acgs2")
-    from src.core.enhanced_agent_bus.agent_bus import (
+    from enhanced_agent_bus.agent_bus import (
         EnhancedAgentBus,
         get_agent_bus,
         reset_agent_bus,
     )
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageStatus,
         MessageType,
         Priority,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 
 
 # Test fixtures
@@ -949,7 +949,7 @@ class TestDynamicPolicyFlag:
         """
         # Import the module-level constant
         try:
-            from src.core.enhanced_agent_bus.agent_bus import POLICY_CLIENT_AVAILABLE
+            from enhanced_agent_bus.agent_bus import POLICY_CLIENT_AVAILABLE
         except ImportError:
             from agent_bus import POLICY_CLIENT_AVAILABLE
 

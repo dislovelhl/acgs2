@@ -9,12 +9,13 @@ import json
 from unittest.mock import AsyncMock
 
 import pytest
-from src.core.enhanced_agent_bus.runtime_security import (
+
+from enhanced_agent_bus.runtime_security import (
     SecurityEvent,
     SecurityEventType,
     SecuritySeverity,
 )
-from src.core.enhanced_agent_bus.siem_integration import (
+from enhanced_agent_bus.siem_integration import (
     AlertLevel,
     AlertManager,
     AlertThreshold,

@@ -6,10 +6,11 @@ Constitutional Hash: cdd01ef066bc6cf2
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from src.core.enhanced_agent_bus.config import BusConfiguration
-from src.core.enhanced_agent_bus.sdpc.conversation import MessageRole
-from src.core.enhanced_agent_bus.sdpc.pacar_manager import PACARManager
-from src.core.enhanced_agent_bus.sdpc.pacar_verifier import PACARVerifier
+
+from enhanced_agent_bus.config import BusConfiguration
+from enhanced_agent_bus.sdpc.conversation import MessageRole
+from enhanced_agent_bus.sdpc.pacar_manager import PACARManager
+from enhanced_agent_bus.sdpc.pacar_verifier import PACARVerifier
 
 
 @pytest.fixture

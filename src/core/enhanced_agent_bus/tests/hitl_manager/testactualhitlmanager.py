@@ -1,17 +1,12 @@
 """
-Tests for actualhitlmanager.
-
-Tests cover:
-- actualhitlmanager functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 ACGS-2 Enhanced Agent Bus - HITL Manager Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
 Comprehensive tests for the HITLManager class.
+Tests cover:
+- actualhitlmanager functionality
+- Error handling and edge cases
+- Integration with related components
 """
 
 from dataclasses import dataclass, field
@@ -142,7 +137,7 @@ class TestActualHITLManager:
     @pytest.fixture
     async def real_queue(self):
         """Create a real DeliberationQueue."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
 
@@ -153,7 +148,7 @@ class TestActualHITLManager:
     @pytest.fixture
     async def real_hitl_manager(self, real_queue):
         """Create a real HITLManager instance."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
 
         manager = HITLManager(real_queue)
         return manager
@@ -161,7 +156,7 @@ class TestActualHITLManager:
     @pytest.mark.asyncio
     async def test_real_hitl_manager_init(self, real_queue):
         """Test real HITLManager initialization."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
 
         manager = HITLManager(real_queue)
         assert manager.queue is real_queue
@@ -172,8 +167,8 @@ class TestActualHITLManager:
         """Test request_approval with a real AgentMessage."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         manager = HITLManager(real_queue)
 
@@ -193,7 +188,7 @@ class TestActualHITLManager:
         assert "Notification sent to slack" in caplog.text
 
         # Verify status changed
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationStatus,
         )
 
@@ -205,7 +200,7 @@ class TestActualHITLManager:
         """Test request_approval when item doesn't exist."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
 
         manager = HITLManager(real_queue)
 
@@ -219,8 +214,8 @@ class TestActualHITLManager:
         """Test request_approval with Teams channel."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         manager = HITLManager(real_queue)
 
@@ -243,8 +238,8 @@ class TestActualHITLManager:
         """Test process_approval with approve decision."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         manager = HITLManager(real_queue)
 
@@ -276,8 +271,8 @@ class TestActualHITLManager:
         """Test process_approval with reject decision."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         manager = HITLManager(real_queue)
 
@@ -304,7 +299,7 @@ class TestActualHITLManager:
     @pytest.mark.asyncio
     async def test_real_process_approval_invalid_item(self, real_queue):
         """Test process_approval with invalid item_id."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
 
         manager = HITLManager(real_queue)
 
@@ -317,8 +312,8 @@ class TestActualHITLManager:
     @pytest.mark.asyncio
     async def test_real_process_approval_not_under_review(self, real_queue):
         """Test process_approval fails if item not under review."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         manager = HITLManager(real_queue)
 

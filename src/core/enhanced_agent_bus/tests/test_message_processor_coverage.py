@@ -10,18 +10,18 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.message_processor import (
+    from enhanced_agent_bus.message_processor import (
         PROMPT_INJECTION_PATTERNS,
         LRUCache,
         MessageProcessor,
     )
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
         Priority,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     from message_processor import (
         PROMPT_INJECTION_PATTERNS,

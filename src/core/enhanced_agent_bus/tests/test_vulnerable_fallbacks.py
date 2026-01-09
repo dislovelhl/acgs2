@@ -5,12 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import logging
-
-logger = logging.getLogger(__name__)
 import subprocess
 import sys
 
 import pytest
+
+logger = logging.getLogger(__name__)
 
 
 def test_deliberation_layer_fail_closed_on_missing_deps():
@@ -52,7 +52,7 @@ def blocking_import(name, globals=None, locals=None, fromlist=(), level=0):
 builtins.__import__ = blocking_import
 
 try:
-    import src.core.enhanced_agent_bus.deliberation_layer.integration
+    import enhanced_agent_bus.deliberation_layer.integration
     log_warning(logger, "ERROR: Import succeeded when it should have failed")
     sys.exit(1)
 except RuntimeError as e:
@@ -96,7 +96,7 @@ def test_deliberation_layer_imports_successfully_when_deps_available():
     dependencies are available (normal operation).
     """
     try:
-        from src.core.enhanced_agent_bus.deliberation_layer import integration
+        from enhanced_agent_bus.deliberation_layer import integration
 
         # Verify module loaded with expected attributes
         assert hasattr(integration, "DeliberationEngine") or hasattr(

@@ -1,17 +1,12 @@
 """
-Tests for constitutionalcompliance.
-
-Tests cover:
-- constitutionalcompliance functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 ACGS-2 Enhanced Agent Bus - HITL Manager Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
 Comprehensive tests for the HITLManager class.
+Tests cover:
+- constitutionalcompliance functionality
+- Error handling and edge cases
+- Integration with related components
 """
 
 from dataclasses import dataclass, field
@@ -143,11 +138,11 @@ class TestConstitutionalCompliance:
     @pytest.mark.constitutional
     async def test_constitutional_hash_in_audit_trail(self):
         """Verify constitutional hash is maintained in audit trail."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import (
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import (
             CONSTITUTIONAL_HASH,
             AgentMessage,
             MessageType,
@@ -194,11 +189,11 @@ class TestConstitutionalCompliance:
     async def test_all_decisions_include_timestamp(self):
         """Verify all decisions include proper timestamps."""
 
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         class TrackingLedger:
             def __init__(self):

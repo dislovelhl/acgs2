@@ -3,8 +3,8 @@ Unit tests for AMPOEngine.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from src.core.enhanced_agent_bus.deliberation_layer.intent_classifier import IntentType
-from src.core.enhanced_agent_bus.sdpc.ampo_engine import AMPOEngine
+from enhanced_agent_bus.deliberation_layer.intent_classifier import IntentType
+from enhanced_agent_bus.sdpc.ampo_engine import AMPOEngine
 
 
 def test_ampo_factual_compilation():

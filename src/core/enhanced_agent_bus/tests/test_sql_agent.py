@@ -16,7 +16,7 @@ import pytest
 
 # Import SQL agent module
 try:
-    from src.core.enhanced_agent_bus.sql_agent import SQLAgent
+    from enhanced_agent_bus.sql_agent import SQLAgent
 except ImportError:
     import os
     import sys
@@ -382,7 +382,7 @@ class TestModuleExports:
     def test_all_export(self):
         """Test __all__ exports."""
         try:
-            from src.core.enhanced_agent_bus import sql_agent
+            from enhanced_agent_bus import sql_agent
         except ImportError:
             import sql_agent
 
@@ -392,7 +392,7 @@ class TestModuleExports:
     def test_sql_agent_exported(self):
         """Test that SQLAgent class is properly exported."""
         try:
-            from src.core.enhanced_agent_bus.sql_agent import SQLAgent
+            from enhanced_agent_bus.sql_agent import SQLAgent
         except ImportError:
             from sql_agent import SQLAgent
 
@@ -405,7 +405,7 @@ class TestConstitutionalCompliance:
     def test_constitutional_hash_in_module(self):
         """Test that module has constitutional hash in docstring."""
         try:
-            from src.core.enhanced_agent_bus import sql_agent
+            from enhanced_agent_bus import sql_agent
         except ImportError:
             import sql_agent
 

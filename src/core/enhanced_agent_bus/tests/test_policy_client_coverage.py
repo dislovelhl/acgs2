@@ -12,13 +12,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
-    from src.core.enhanced_agent_bus.policy_client import (
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
+    from enhanced_agent_bus.policy_client import (
         DEFAULT_MAX_CACHE_SIZE,
         PolicyRegistryClient,
         get_policy_client,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     from models import AgentMessage
     from policy_client import (

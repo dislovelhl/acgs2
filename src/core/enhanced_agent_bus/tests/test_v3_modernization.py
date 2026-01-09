@@ -7,9 +7,10 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from src.core.enhanced_agent_bus.agent_bus import EnhancedAgentBus
-from src.core.enhanced_agent_bus.exceptions import AgentBusError, AlignmentViolationError
-from src.core.enhanced_agent_bus.models import (
+
+from enhanced_agent_bus.agent_bus import EnhancedAgentBus
+from enhanced_agent_bus.exceptions import AgentBusError, AlignmentViolationError
+from enhanced_agent_bus.models import (
     CONSTITUTIONAL_HASH,
     AgentMessage,
     MessageType,

@@ -1,8 +1,8 @@
 """
-ACGS-2 ML Lifecycle Integration Tests
+ACGS-2 Enhanced Agent Bus - Integrations Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
-End-to-end integration tests for the complete ML lifecycle including:
+Comprehensive tests for the ML Lifecycle integration.
 1. Training sklearn model
 2. Registering in MLflow with champion alias
 3. Serving predictions via API
@@ -34,14 +34,14 @@ if enhanced_agent_bus_dir not in sys.path:
     sys.path.insert(0, enhanced_agent_bus_dir)
 
 # Import modules for testing (alphabetically sorted for ruff I001)
-from ab_testing import (
+from ab_testing import (  # noqa: E402
     ABTestRouter,
     CohortType,
     ComparisonResult,
     PromotionResult,
     PromotionStatus,
 )
-from drift_monitoring import (
+from drift_monitoring import (  # noqa: E402
     PANDAS_AVAILABLE,
     DriftDetector,
     DriftReport,
@@ -49,20 +49,20 @@ from drift_monitoring import (
     DriftStatus,
     FeatureDriftResult,
 )
-from feedback_handler import (
+from feedback_handler import (  # noqa: E402
     FeedbackEvent,
     FeedbackHandler,
     FeedbackType,
     OutcomeStatus,
 )
-from ml_versioning import (
+from ml_versioning import (  # noqa: E402
     DEFAULT_CANDIDATE_ALIAS,
     DEFAULT_CHAMPION_ALIAS,
     DEFAULT_MODEL_NAME,
     MLFLOW_AVAILABLE,
     MLflowVersionManager,
 )
-from online_learning import (
+from online_learning import (  # noqa: E402
     KAFKA_AVAILABLE,
     RIVER_AVAILABLE,
     LearningStatus,

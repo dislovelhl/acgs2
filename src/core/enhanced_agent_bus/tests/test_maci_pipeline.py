@@ -1,7 +1,12 @@
 """Tests for MACI Verification Pipeline."""
 
+import logging
+
 import pytest
-from src.core.enhanced_agent_bus.verification.maci_pipeline import (
+
+logger = logging.getLogger(__name__)
+
+from enhanced_agent_bus.verification.maci_pipeline import (
     CONSTITUTIONAL_HASH,
     AgentRole,
     ConstitutionalPrinciple,

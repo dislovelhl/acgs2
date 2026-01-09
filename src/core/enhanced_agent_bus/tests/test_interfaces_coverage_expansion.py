@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus import interfaces
-    from src.core.enhanced_agent_bus.interfaces import (
+    from enhanced_agent_bus import interfaces
+    from enhanced_agent_bus.interfaces import (
         AgentRegistry,
         MessageHandler,
         MessageRouter,
@@ -20,7 +20,7 @@ try:
         ProcessingStrategy,
         ValidationStrategy,
     )
-    from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+    from enhanced_agent_bus.models import AgentMessage, MessageType
 except ImportError:
     import interfaces
     from interfaces import (
@@ -641,7 +641,7 @@ class TestRealImplementationsMatchProtocol:
     def test_inmemory_agent_registry(self):
         """InMemoryAgentRegistry implements AgentRegistry protocol."""
         try:
-            from src.core.enhanced_agent_bus.registry import InMemoryAgentRegistry
+            from enhanced_agent_bus.registry import InMemoryAgentRegistry
         except ImportError:
             from registry import InMemoryAgentRegistry
 
@@ -651,7 +651,7 @@ class TestRealImplementationsMatchProtocol:
     def test_direct_message_router(self):
         """DirectMessageRouter implements MessageRouter protocol."""
         try:
-            from src.core.enhanced_agent_bus.registry import DirectMessageRouter
+            from enhanced_agent_bus.registry import DirectMessageRouter
         except ImportError:
             from registry import DirectMessageRouter
 
@@ -661,7 +661,7 @@ class TestRealImplementationsMatchProtocol:
     def test_python_processing_strategy(self):
         """PythonProcessingStrategy implements ProcessingStrategy protocol."""
         try:
-            from src.core.enhanced_agent_bus.registry import PythonProcessingStrategy
+            from enhanced_agent_bus.registry import PythonProcessingStrategy
         except ImportError:
             from registry import PythonProcessingStrategy
 
@@ -671,7 +671,7 @@ class TestRealImplementationsMatchProtocol:
     def test_static_hash_validation_strategy(self):
         """StaticHashValidationStrategy implements ValidationStrategy protocol."""
         try:
-            from src.core.enhanced_agent_bus.registry import StaticHashValidationStrategy
+            from enhanced_agent_bus.registry import StaticHashValidationStrategy
         except ImportError:
             from registry import StaticHashValidationStrategy
 
@@ -681,7 +681,7 @@ class TestRealImplementationsMatchProtocol:
     def test_opa_processing_strategy(self):
         """OPAProcessingStrategy implements ProcessingStrategy protocol."""
         try:
-            from src.core.enhanced_agent_bus.registry import OPAProcessingStrategy
+            from enhanced_agent_bus.registry import OPAProcessingStrategy
         except ImportError:
             from registry import OPAProcessingStrategy
 
@@ -691,7 +691,7 @@ class TestRealImplementationsMatchProtocol:
     def test_opa_validation_strategy(self):
         """OPAValidationStrategy implements ValidationStrategy protocol."""
         try:
-            from src.core.enhanced_agent_bus.validation_strategies import OPAValidationStrategy
+            from enhanced_agent_bus.validation_strategies import OPAValidationStrategy
         except ImportError:
             from validation_strategies import OPAValidationStrategy
 

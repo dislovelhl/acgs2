@@ -13,7 +13,7 @@ Validates:
 import pytest
 
 # Import test targets
-from src.core.enhanced_agent_bus.deliberation_layer.vote_collector import (
+from enhanced_agent_bus.deliberation_layer.vote_collector import (
     EventDrivenVoteCollector,
     VoteEvent,
     VoteSession,

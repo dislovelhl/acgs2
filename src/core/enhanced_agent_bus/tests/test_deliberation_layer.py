@@ -8,7 +8,10 @@ Comprehensive tests for the deliberation layer components.
 import importlib.util
 import os
 import sys
+import uuid
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 
 import pytest
 
@@ -63,7 +66,6 @@ CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 delib_dir = os.path.join(enhanced_agent_bus_dir, "deliberation_layer")
 
 # Import DeliberationStatus and VoteType enums directly
-from enum import Enum
 
 
 class DeliberationStatus(Enum):
@@ -86,8 +88,6 @@ class VoteType(Enum):
 
 
 # Create simplified test-specific implementations
-import uuid
-from dataclasses import dataclass, field
 
 
 @dataclass

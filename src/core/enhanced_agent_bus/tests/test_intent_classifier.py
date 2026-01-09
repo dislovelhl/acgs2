@@ -6,9 +6,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from src.core.enhanced_agent_bus.deliberation_layer.intent_classifier import (
+
+from enhanced_agent_bus.deliberation_layer.intent_classifier import (
+    ClassificationResult,
     IntentClassifier,
     IntentType,
+    RoutingPath,
 )
 
 

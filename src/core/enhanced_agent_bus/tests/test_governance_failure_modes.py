@@ -101,7 +101,7 @@ class TestConstitutionalHashCorruption:
 
     def test_corrupted_hash_detected(self) -> None:
         """Test that corrupted constitutional hash is detected."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         corrupted_hash = "cdd01ef066bc6cf3"  # Last char changed
 
@@ -111,7 +111,7 @@ class TestConstitutionalHashCorruption:
 
     def test_empty_hash_rejected(self) -> None:
         """Test that empty hash is rejected (fail-closed)."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         result = validate_constitutional_hash("")
 
@@ -119,7 +119,7 @@ class TestConstitutionalHashCorruption:
 
     def test_none_hash_handled(self) -> None:
         """Test that None hash is handled gracefully."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         # None should be handled (either rejected or cause exception)
         try:
@@ -131,7 +131,7 @@ class TestConstitutionalHashCorruption:
 
     def test_partial_hash_rejected(self) -> None:
         """Test that partial/truncated hash is rejected."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         partial_hash = CONSTITUTIONAL_HASH[:8]  # Only first 8 chars
 
@@ -141,7 +141,7 @@ class TestConstitutionalHashCorruption:
 
     def test_extended_hash_rejected(self) -> None:
         """Test that extended hash with extra chars is rejected."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         extended_hash = CONSTITUTIONAL_HASH + "abcd"
 
@@ -151,7 +151,7 @@ class TestConstitutionalHashCorruption:
 
     def test_case_sensitive_hash_validation(self) -> None:
         """Test that hash validation is case-sensitive."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         upper_hash = CONSTITUTIONAL_HASH.upper()
 
@@ -163,7 +163,7 @@ class TestConstitutionalHashCorruption:
 
     def test_unicode_injection_rejected(self) -> None:
         """Test that unicode lookalike characters are rejected."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         # Replace 'c' with cyrillic 'с' (looks similar)
         unicode_hash = "сdd01ef066bc6cf2"
@@ -178,7 +178,7 @@ class TestConstitutionalHashCorruption:
 
     def test_whitespace_prefix_rejected(self) -> None:
         """Test that whitespace prefixed hash is rejected."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         whitespace_hash = " " + CONSTITUTIONAL_HASH
 
@@ -189,7 +189,7 @@ class TestConstitutionalHashCorruption:
 
     def test_whitespace_suffix_rejected(self) -> None:
         """Test that whitespace suffixed hash is rejected."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         whitespace_hash = CONSTITUTIONAL_HASH + " "
 
@@ -200,7 +200,7 @@ class TestConstitutionalHashCorruption:
 
     def test_hash_corruption_in_message_model(self) -> None:
         """Test that message model can hold corrupted hash for detection."""
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         # Create message with corrupted hash
         # AgentMessage uses from_agent/to_agent, not source_agent/target_agent
@@ -219,7 +219,7 @@ class TestConstitutionalHashCorruption:
 
     def test_multiple_bit_flip_corruption_detected(self) -> None:
         """Test detection of multiple bit flips in hash."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         # Flip multiple bits
         corrupted = list(CONSTITUTIONAL_HASH)
@@ -234,7 +234,7 @@ class TestConstitutionalHashCorruption:
 
     def test_valid_hash_passes(self) -> None:
         """Test that valid constitutional hash passes validation."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         result = validate_constitutional_hash(CONSTITUTIONAL_HASH)
 
@@ -257,8 +257,8 @@ class TestMACIRoleDesynchronization:
         This is fail-closed behavior - preventing unauthorized actions.
         """
         try:
-            from src.core.enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from src.core.enhanced_agent_bus.maci_enforcement import (
+            from enhanced_agent_bus.exceptions import MACIRoleViolationError
+            from enhanced_agent_bus.maci_enforcement import (
                 MACIAction,
                 MACIEnforcer,
                 MACIRole,
@@ -284,8 +284,8 @@ class TestMACIRoleDesynchronization:
         This is fail-closed behavior - preventing unauthorized actions.
         """
         try:
-            from src.core.enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from src.core.enhanced_agent_bus.maci_enforcement import (
+            from enhanced_agent_bus.exceptions import MACIRoleViolationError
+            from enhanced_agent_bus.maci_enforcement import (
                 MACIAction,
                 MACIEnforcer,
                 MACIRole,
@@ -310,8 +310,8 @@ class TestMACIRoleDesynchronization:
         This is fail-closed behavior - preventing unauthorized actions.
         """
         try:
-            from src.core.enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from src.core.enhanced_agent_bus.maci_enforcement import (
+            from enhanced_agent_bus.exceptions import MACIRoleViolationError
+            from enhanced_agent_bus.maci_enforcement import (
                 MACIAction,
                 MACIEnforcer,
                 MACIRole,
@@ -336,8 +336,8 @@ class TestMACIRoleDesynchronization:
         This is fail-closed behavior - unknown agents cannot perform actions.
         """
         try:
-            from src.core.enhanced_agent_bus.exceptions import MACIRoleNotAssignedError
-            from src.core.enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer
+            from enhanced_agent_bus.exceptions import MACIRoleNotAssignedError
+            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer
 
             enforcer = MACIEnforcer()
 
@@ -351,7 +351,7 @@ class TestMACIRoleDesynchronization:
     async def test_all_roles_can_query(self) -> None:
         """Test that all roles can perform QUERY action."""
         try:
-            from src.core.enhanced_agent_bus.maci_enforcement import (
+            from enhanced_agent_bus.maci_enforcement import (
                 MACIAction,
                 MACIEnforcer,
                 MACIRole,
@@ -403,7 +403,7 @@ class TestPartialOPAOutages:
     async def test_opa_client_handles_timeout(self) -> None:
         """Test that OPA client handles timeout gracefully."""
         try:
-            from src.core.enhanced_agent_bus.opa_client import OPAClient
+            from enhanced_agent_bus.opa_client import OPAClient
 
             client = OPAClient(
                 opa_url="http://localhost:8181",
@@ -427,7 +427,7 @@ class TestPartialOPAOutages:
     async def test_opa_connection_error_handled(self) -> None:
         """Test that OPA connection error is handled gracefully."""
         try:
-            from src.core.enhanced_agent_bus.opa_client import OPAClient
+            from enhanced_agent_bus.opa_client import OPAClient
 
             client = OPAClient(
                 opa_url="http://nonexistent-opa:8181",
@@ -449,7 +449,7 @@ class TestPartialOPAOutages:
     def test_opa_client_has_fail_closed_architecture(self) -> None:
         """Test that OPA client is designed for fail-closed operation."""
         try:
-            from src.core.enhanced_agent_bus.opa_client import OPAClient
+            from enhanced_agent_bus.opa_client import OPAClient
 
             # Check that fail-closed is part of the design
             client = OPAClient(opa_url="http://localhost:8181")
@@ -470,7 +470,7 @@ class TestPartialOPAOutages:
     async def test_opa_cache_prevents_outage_amplification(self) -> None:
         """Test that OPA cache prevents outage amplification."""
         try:
-            from src.core.enhanced_agent_bus.opa_client import OPAClient
+            from enhanced_agent_bus.opa_client import OPAClient
 
             # Create client with caching enabled
             client = OPAClient(opa_url="http://localhost:8181", enable_cache=True, cache_ttl=300)
@@ -485,7 +485,7 @@ class TestPartialOPAOutages:
     async def test_fallback_mode_available(self) -> None:
         """Test that OPA client has fallback mode."""
         try:
-            from src.core.enhanced_agent_bus.opa_client import OPAClient
+            from enhanced_agent_bus.opa_client import OPAClient
 
             # Create client with fallback mode
             client = OPAClient(opa_url="http://localhost:8181", mode="fallback")
@@ -507,7 +507,7 @@ class TestConflictingApprovals:
     async def test_voting_service_exists(self) -> None:
         """Test that voting service can be instantiated."""
         try:
-            from src.core.enhanced_agent_bus.deliberation_layer.voting_service import VotingService
+            from enhanced_agent_bus.deliberation_layer.voting_service import VotingService
 
             service = VotingService()
             assert service is not None
@@ -518,8 +518,8 @@ class TestConflictingApprovals:
     async def test_election_creation(self) -> None:
         """Test that elections can be created for voting."""
         try:
-            from src.core.enhanced_agent_bus.deliberation_layer.voting_service import VotingService
-            from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+            from enhanced_agent_bus.deliberation_layer.voting_service import VotingService
+            from enhanced_agent_bus.models import AgentMessage, MessageType
 
             service = VotingService()
 
@@ -601,7 +601,7 @@ class TestCombinedAttackScenarios:
 
     def test_hash_corruption_plus_role_desync(self) -> None:
         """Test resilience against combined hash corruption and role desync."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         simulator = AdversarialGovernanceSimulator()
         simulator.corruption_active = True
@@ -693,7 +693,7 @@ class TestFailClosedVerification:
 
     def test_validator_defaults_to_fail_closed(self) -> None:
         """Verify validator defaults to rejecting invalid input."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         # All invalid inputs should fail
         invalid_inputs = ["", "invalid", " ", "\n", "0" * 100, "xyz"]
@@ -704,7 +704,7 @@ class TestFailClosedVerification:
 
     def test_validation_result_has_required_fields(self) -> None:
         """Verify validation result has all required fields."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         result = validate_constitutional_hash("invalid_hash")
 
@@ -716,7 +716,7 @@ class TestFailClosedVerification:
 
     def test_exception_includes_constitutional_hash(self) -> None:
         """Verify exceptions include constitutional hash."""
-        from src.core.enhanced_agent_bus.exceptions import (
+        from enhanced_agent_bus.exceptions import (
             ConstitutionalHashMismatchError,
             ConstitutionalValidationError,
             MessageValidationError,
@@ -740,7 +740,7 @@ class TestFailClosedVerification:
 
     def test_audit_trail_for_rejections(self) -> None:
         """Verify rejections create audit trail."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         # Perform rejection
         result = validate_constitutional_hash("invalid_hash")
@@ -751,7 +751,7 @@ class TestFailClosedVerification:
 
     def test_valid_hash_accepts(self) -> None:
         """Verify valid hash is accepted (not over-restrictive)."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         result = validate_constitutional_hash(CONSTITUTIONAL_HASH)
 
@@ -818,7 +818,7 @@ class TestGovernanceEdgeCases:
 
     def test_hash_with_null_bytes_rejected(self) -> None:
         """Test that hash with null bytes is rejected."""
-        from src.core.enhanced_agent_bus.validators import validate_constitutional_hash
+        from enhanced_agent_bus.validators import validate_constitutional_hash
 
         null_hash = CONSTITUTIONAL_HASH[:8] + "\x00" + CONSTITUTIONAL_HASH[9:]
 

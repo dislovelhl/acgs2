@@ -18,8 +18,8 @@ import pytest
 
 # Import retrieval triad module
 try:
-    from src.core.enhanced_agent_bus.graph_database import MockGraphManager
-    from src.core.enhanced_agent_bus.retrieval_triad import RetrievalTriad
+    from enhanced_agent_bus.graph_database import MockGraphManager
+    from enhanced_agent_bus.retrieval_triad import RetrievalTriad
 except ImportError:
     import os
     import sys
@@ -629,7 +629,7 @@ class TestConstitutionalCompliance:
     def test_constitutional_hash_in_module(self):
         """Test that module has constitutional hash in docstring."""
         try:
-            from src.core.enhanced_agent_bus import retrieval_triad
+            from enhanced_agent_bus import retrieval_triad
         except ImportError:
             import retrieval_triad
 

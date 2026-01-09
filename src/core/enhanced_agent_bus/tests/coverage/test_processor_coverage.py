@@ -31,8 +31,8 @@ class TestMessageProcessorLogDecision:
     @pytest.mark.asyncio
     async def test_log_decision_with_span(self) -> None:
         """Test _log_decision with OpenTelemetry span."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
 
@@ -68,8 +68,8 @@ class TestMessageProcessorLogDecision:
     @pytest.mark.asyncio
     async def test_log_decision_without_span(self) -> None:
         """Test _log_decision without OpenTelemetry span."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
 
@@ -94,8 +94,8 @@ class TestMessageProcessorLogDecision:
 
     def test_get_compliance_tags_approved(self) -> None:
         """Test _get_compliance_tags for approved messages."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         processor = MessageProcessor()
 
@@ -120,8 +120,8 @@ class TestMessageProcessorLogDecision:
 
     def test_get_compliance_tags_rejected(self) -> None:
         """Test _get_compliance_tags for rejected messages."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         processor = MessageProcessor()
 
@@ -146,8 +146,8 @@ class TestMessageProcessorLogDecision:
 
     def test_get_compliance_tags_critical_priority(self) -> None:
         """Test _get_compliance_tags for critical priority messages."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         processor = MessageProcessor()
 
@@ -182,8 +182,8 @@ class TestMessageProcessorTracing:
     @pytest.mark.asyncio
     async def test_process_with_otel_mocked(self) -> None:
         """Test process with mocked OpenTelemetry."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
 
@@ -205,8 +205,8 @@ class TestMessageProcessorTracing:
     @pytest.mark.asyncio
     async def test_do_process_directly(self) -> None:
         """Test _do_process internal method."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
 
@@ -235,8 +235,8 @@ class TestOPAClientEmbedded:
     @pytest.mark.asyncio
     async def test_evaluate_embedded_not_initialized(self) -> None:
         """Test embedded evaluation when not initialized."""
-        from src.core.enhanced_agent_bus.exceptions import OPANotInitializedError
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.exceptions import OPANotInitializedError
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
         # Set embedded OPA to None
@@ -248,7 +248,7 @@ class TestOPAClientEmbedded:
     @pytest.mark.asyncio
     async def test_evaluate_embedded_bool_result(self) -> None:
         """Test embedded evaluation returning bool."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
 
@@ -265,7 +265,7 @@ class TestOPAClientEmbedded:
     @pytest.mark.asyncio
     async def test_evaluate_embedded_dict_result(self) -> None:
         """Test embedded evaluation returning dict."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
 
@@ -286,7 +286,7 @@ class TestOPAClientEmbedded:
     @pytest.mark.asyncio
     async def test_evaluate_embedded_unexpected_result_type(self) -> None:
         """Test embedded evaluation with unexpected result type."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
 
@@ -304,7 +304,7 @@ class TestOPAClientEmbedded:
     @pytest.mark.asyncio
     async def test_evaluate_embedded_exception(self) -> None:
         """Test embedded evaluation with exception."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
 
@@ -323,7 +323,7 @@ class TestOPAClientFallback:
     @pytest.mark.asyncio
     async def test_evaluate_fallback(self) -> None:
         """Test fallback policy evaluation always fails closed."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
 

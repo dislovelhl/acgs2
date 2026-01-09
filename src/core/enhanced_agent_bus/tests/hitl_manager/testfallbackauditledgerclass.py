@@ -1,17 +1,12 @@
 """
-Tests for fallbackauditledgerclass.
-
-Tests cover:
-- fallbackauditledgerclass functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 ACGS-2 Enhanced Agent Bus - HITL Manager Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
 Comprehensive tests for the HITLManager class.
+Tests cover:
+- fallbackauditledgerclass functionality
+- Error handling and edge cases
+- Integration with related components
 """
 
 from dataclasses import dataclass, field
@@ -142,7 +137,7 @@ class TestFallbackAuditLedgerClass:
     @pytest.mark.asyncio
     async def test_mock_audit_ledger_returns_hash(self):
         """Test that mock audit ledger returns a hash."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import (
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import (
             AuditLedger,
             ValidationResult,
         )
@@ -159,7 +154,7 @@ class TestFallbackAuditLedgerClass:
         """Test that mock audit ledger logs the result."""
         import logging
 
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import (
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import (
             AuditLedger,
             ValidationResult,
         )

@@ -8,8 +8,8 @@ Additional tests for core.py to expand coverage of all exports and feature flags
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus import core
-    from src.core.enhanced_agent_bus.core import (
+    from enhanced_agent_bus import core
+    from enhanced_agent_bus.core import (
         # Constants
         CIRCUIT_BREAKER_ENABLED,
         CONSTITUTIONAL_HASH,
@@ -172,7 +172,7 @@ class TestCoreMeteringExportsExpanded:
     def test_metering_available_affects_exports(self):
         """METERING_AVAILABLE flag indicates metering export availability."""
         try:
-            from src.core.enhanced_agent_bus.core import (
+            from enhanced_agent_bus.core import (
                 AsyncMeteringQueue,
                 MeteringConfig,
                 MeteringHooks,
@@ -212,7 +212,7 @@ class TestCoreMeteringExportsExpanded:
     def test_metering_functions_callable_when_available(self):
         """Metering functions are callable when available."""
         try:
-            from src.core.enhanced_agent_bus.core import (
+            from enhanced_agent_bus.core import (
                 get_metering_hooks,
                 get_metering_queue,
                 reset_metering,
@@ -262,7 +262,7 @@ class TestCoreFeatureFlags:
         assert isinstance(USE_RUST, bool)
         if USE_RUST:
             try:
-                import src.core.enhanced_agent_bus_rust
+                import enhanced_agent_bus_rust  # noqa: F401
 
                 assert enhanced_agent_bus_rust is not None
             except ImportError:

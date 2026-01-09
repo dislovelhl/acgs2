@@ -11,7 +11,7 @@ Comprehensive tests for validation utilities including:
 from typing import Any, Dict
 
 try:
-    from src.core.enhanced_agent_bus.validators import (
+    from enhanced_agent_bus.validators import (
         CONSTITUTIONAL_HASH,
         ValidationResult,
         validate_constitutional_hash,
@@ -21,7 +21,7 @@ except ImportError:
     import sys
 
     sys.path.insert(0, "/home/dislove/document/acgs2")
-    from src.core.enhanced_agent_bus.validators import (
+    from enhanced_agent_bus.validators import (
         CONSTITUTIONAL_HASH,
         ValidationResult,
         validate_constitutional_hash,

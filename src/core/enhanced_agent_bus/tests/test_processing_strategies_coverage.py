@@ -10,20 +10,20 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageStatus,
         MessageType,
     )
-    from src.core.enhanced_agent_bus.processing_strategies import (
+    from enhanced_agent_bus.processing_strategies import (
         CompositeProcessingStrategy,
         DynamicPolicyProcessingStrategy,
         MACIProcessingStrategy,
         OPAProcessingStrategy,
         PythonProcessingStrategy,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     from models import (
         CONSTITUTIONAL_HASH,

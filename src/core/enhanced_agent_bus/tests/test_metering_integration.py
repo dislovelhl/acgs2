@@ -1,32 +1,42 @@
 """
-ACGS-2 Enhanced Agent Bus - Metering Integration Tests
+ACGS-2 Enhanced Agent Bus - Integrations Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
-Comprehensive tests for production billing metering integration.
+Comprehensive tests for the Metering integration.
 """
 
 import logging
-
-logger = logging.getLogger(__name__)
 import os
 import sys
 import time
 
 import pytest
 
+logger = logging.getLogger(__name__)
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import metering integration module
-from metering_integration import (
-    CONSTITUTIONAL_HASH,
-    METERING_AVAILABLE,
+from acgs_logging import get_logger  # noqa: E402
+
+# Import metering components (noqa for path manipulation above)
+from metering import (  # noqa: E402
     AsyncMeteringQueue,
+    BillingStatus,
+    MeteredDecision,
+    MeteringClient,
     MeteringConfig,
     MeteringHooks,
     MeteringMixin,
+    UsageUnit,
     get_metering_hooks,
     get_metering_queue,
+)
+
+from metering_integration import (  # noqa: E402
+    CONSTITUTIONAL_HASH,
+    METERING_AVAILABLE,
     metered_operation,
     reset_metering,
 )
@@ -36,8 +46,8 @@ try:
     from models import AgentMessage, MessageType, Priority
     from validators import ValidationResult
 except ImportError:
-    from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+    from enhanced_agent_bus.validators import ValidationResult
 
 # Import metering models with fallback mocks
 try:
@@ -617,7 +627,7 @@ class TestIntegrationWithMessageProcessor:
         try:
             from message_processor import MessageProcessor
         except ImportError:
-            from src.core.enhanced_agent_bus.message_processor import MessageProcessor
+            from enhanced_agent_bus.message_processor import MessageProcessor
 
         # Create processor with metering hooks
         processor = MessageProcessor(
@@ -638,7 +648,7 @@ class TestIntegrationWithMessageProcessor:
         try:
             from message_processor import MessageProcessor
         except ImportError:
-            from src.core.enhanced_agent_bus.message_processor import MessageProcessor
+            from enhanced_agent_bus.message_processor import MessageProcessor
 
         # Create processor without metering
         processor = MessageProcessor(
@@ -661,7 +671,7 @@ class TestIntegrationWithAgentBus:
         try:
             from agent_bus import EnhancedAgentBus
         except ImportError:
-            from src.core.enhanced_agent_bus.agent_bus import EnhancedAgentBus
+            from enhanced_agent_bus.agent_bus import EnhancedAgentBus
 
         # Create bus with metering
         bus = EnhancedAgentBus(
@@ -692,7 +702,7 @@ class TestIntegrationWithAgentBus:
         try:
             from agent_bus import EnhancedAgentBus
         except ImportError:
-            from src.core.enhanced_agent_bus.agent_bus import EnhancedAgentBus
+            from enhanced_agent_bus.agent_bus import EnhancedAgentBus
 
         # Create bus without metering
         bus = EnhancedAgentBus(

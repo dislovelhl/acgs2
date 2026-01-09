@@ -9,31 +9,31 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.agent_bus import (
+    from enhanced_agent_bus.agent_bus import (
         EnhancedAgentBus,
     )
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
         Priority,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     import sys
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
-    from src.core.enhanced_agent_bus.agent_bus import (
+    from enhanced_agent_bus.agent_bus import (
         EnhancedAgentBus,
     )
-    from src.core.enhanced_agent_bus.models import (
+    from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
         Priority,
     )
-    from src.core.enhanced_agent_bus.validators import ValidationResult
+    from enhanced_agent_bus.validators import ValidationResult
 
 
 # Test fixtures
@@ -126,7 +126,7 @@ class TestValidatorInitialization:
     def test_init_validator_static_hash_default(self):
         """Test default StaticHashValidationStrategy is used."""
         bus = EnhancedAgentBus(use_dynamic_policy=False, enable_maci=False)
-        from src.core.enhanced_agent_bus.registry import StaticHashValidationStrategy
+        from enhanced_agent_bus.registry import StaticHashValidationStrategy
 
         assert isinstance(bus._validator, StaticHashValidationStrategy)
 
@@ -139,7 +139,7 @@ class TestOPAValidatorPath:
         bus = EnhancedAgentBus(enable_maci=False, use_dynamic_policy=True)
         mock_opa = MagicMock()
         bus._opa_client = mock_opa
-        from src.core.enhanced_agent_bus.registry import OPAValidationStrategy
+        from enhanced_agent_bus.registry import OPAValidationStrategy
 
         bus._validator = OPAValidationStrategy(opa_client=mock_opa)
         assert isinstance(bus._validator, OPAValidationStrategy)

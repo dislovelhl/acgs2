@@ -7,14 +7,14 @@ This is a debug version of test_constitutional_validation.py with detailed outpu
 
 import logging
 
-logger = logging.getLogger(__name__)
-
 import pytest
 
 from core import MessageProcessor
 
 # Import from module names that conftest.py patches
 from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType
+
+logger = logging.getLogger(__name__)
 
 
 class TestMessageProcessorDebug:

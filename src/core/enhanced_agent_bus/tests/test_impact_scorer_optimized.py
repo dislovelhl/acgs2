@@ -2,7 +2,8 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
+
+from enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
 
 
 class TestImpactScorerOptimized:

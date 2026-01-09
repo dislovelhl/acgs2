@@ -8,8 +8,8 @@ Extended tests for registry classes.
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
-    from src.core.enhanced_agent_bus.registry import (
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
+    from enhanced_agent_bus.registry import (
         CapabilityBasedRouter,
         DirectMessageRouter,
         InMemoryAgentRegistry,

@@ -6,19 +6,19 @@ Provides common fixtures for all test modules.
 """
 
 import logging
-
-logger = logging.getLogger(__name__)
 import os
 import sys
+
+logger = logging.getLogger(__name__)
 
 # CRITICAL: Block Rust imports BEFORE any module imports
 _test_with_rust = os.environ.get("TEST_WITH_RUST", "0") == "1"
 if not _test_with_rust:
     sys.modules["enhanced_agent_bus_rust"] = None
 
-import asyncio
+import asyncio  # noqa: E402
 
-import pytest
+import pytest  # noqa: E402
 
 # Add enhanced_agent_bus directory to path if not already there
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,20 +27,20 @@ if enhanced_agent_bus_dir not in sys.path:
 
 # Ensure consistent class identity by patching sys.modules
 try:
-    import src.core.enhanced_agent_bus.audit_client as _audit_client
-    import src.core.enhanced_agent_bus.core as _core
-    import src.core.enhanced_agent_bus.exceptions as _exceptions
-    import src.core.enhanced_agent_bus.imports as _imports
-    import src.core.enhanced_agent_bus.interfaces as _interfaces
-    import src.core.enhanced_agent_bus.maci_enforcement as _maci_enforcement
-    import src.core.enhanced_agent_bus.models as _models
-    import src.core.enhanced_agent_bus.registry as _registry
-    import src.core.enhanced_agent_bus.utils as _utils
-    import src.core.enhanced_agent_bus.validators as _validators
+    import enhanced_agent_bus.audit_client as _audit_client  # noqa: E402
+    import enhanced_agent_bus.core as _core  # noqa: E402
+    import enhanced_agent_bus.exceptions as _exceptions  # noqa: E402
+    import enhanced_agent_bus.imports as _imports  # noqa: E402
+    import enhanced_agent_bus.interfaces as _interfaces  # noqa: E402
+    import enhanced_agent_bus.maci_enforcement as _maci_enforcement  # noqa: E402
+    import enhanced_agent_bus.models as _models  # noqa: E402
+    import enhanced_agent_bus.registry as _registry  # noqa: E402
+    import enhanced_agent_bus.utils as _utils  # noqa: E402
+    import enhanced_agent_bus.validators as _validators  # noqa: E402
 
     # Import additional modules needed for MACI integration tests
     try:
-        import src.core.enhanced_agent_bus.agent_bus as _agent_bus
+        import enhanced_agent_bus.agent_bus as _agent_bus
 
         sys.modules["agent_bus"] = _agent_bus
         sys.modules["enhanced_agent_bus.agent_bus"] = _agent_bus
@@ -48,7 +48,7 @@ try:
         _agent_bus = None
 
     try:
-        import src.core.enhanced_agent_bus.message_processor as _message_processor
+        import enhanced_agent_bus.message_processor as _message_processor
 
         sys.modules["message_processor"] = _message_processor
         sys.modules["enhanced_agent_bus.message_processor"] = _message_processor
@@ -56,7 +56,7 @@ try:
         _message_processor = None
 
     try:
-        import src.core.enhanced_agent_bus.processing_strategies as _processing_strategies
+        import enhanced_agent_bus.processing_strategies as _processing_strategies
 
         sys.modules["processing_strategies"] = _processing_strategies
         sys.modules["enhanced_agent_bus.processing_strategies"] = _processing_strategies
@@ -65,7 +65,7 @@ try:
 
     # Import online_learning module for ML tests
     try:
-        import src.core.enhanced_agent_bus.online_learning as _online_learning
+        import enhanced_agent_bus.online_learning as _online_learning
 
         sys.modules["online_learning"] = _online_learning
         sys.modules["enhanced_agent_bus.online_learning"] = _online_learning
@@ -74,7 +74,7 @@ try:
 
     # Import ab_testing module for A/B testing tests
     try:
-        import src.core.enhanced_agent_bus.ab_testing as _ab_testing
+        import enhanced_agent_bus.ab_testing as _ab_testing
 
         sys.modules["ab_testing"] = _ab_testing
         sys.modules["enhanced_agent_bus.ab_testing"] = _ab_testing
@@ -83,7 +83,7 @@ try:
 
     # Import ml_versioning module for MLflow tests
     try:
-        import src.core.enhanced_agent_bus.ml_versioning as _ml_versioning
+        import enhanced_agent_bus.ml_versioning as _ml_versioning
 
         sys.modules["ml_versioning"] = _ml_versioning
         sys.modules["enhanced_agent_bus.ml_versioning"] = _ml_versioning
@@ -92,7 +92,7 @@ try:
 
     # Import feedback_handler module for feedback tests
     try:
-        import src.core.enhanced_agent_bus.feedback_handler as _feedback_handler
+        import enhanced_agent_bus.feedback_handler as _feedback_handler
 
         sys.modules["feedback_handler"] = _feedback_handler
         sys.modules["enhanced_agent_bus.feedback_handler"] = _feedback_handler
@@ -101,7 +101,7 @@ try:
 
     # Import drift_monitoring module for drift detection tests
     try:
-        import src.core.enhanced_agent_bus.drift_monitoring as _drift_monitoring
+        import enhanced_agent_bus.drift_monitoring as _drift_monitoring
 
         sys.modules["drift_monitoring"] = _drift_monitoring
         sys.modules["enhanced_agent_bus.drift_monitoring"] = _drift_monitoring
@@ -232,7 +232,7 @@ except AttributeError:
 
     MessageProcessor = message_processor.MessageProcessor
 try:
-    from src.core.enhanced_agent_bus.agent_bus import EnhancedAgentBus
+    from enhanced_agent_bus.agent_bus import EnhancedAgentBus
 except ImportError:
     EnhancedAgentBus = None
 

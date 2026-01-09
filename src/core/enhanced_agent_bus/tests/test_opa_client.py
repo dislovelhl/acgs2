@@ -9,16 +9,17 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH
+
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
 
 # Use package-relative imports to maintain class identity
-from src.core.enhanced_agent_bus.opa_client import (
+from enhanced_agent_bus.opa_client import (
     OPAClient,
     close_opa_client,
     get_opa_client,
     initialize_opa_client,
 )
-from src.core.enhanced_agent_bus.validators import ValidationResult
+from enhanced_agent_bus.validators import ValidationResult
 
 
 class TestOPAClient:

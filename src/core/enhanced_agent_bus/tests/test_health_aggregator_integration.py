@@ -10,7 +10,7 @@ import asyncio
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.health_aggregator import (
+    from enhanced_agent_bus.health_aggregator import (
         CIRCUIT_BREAKER_AVAILABLE,
         CONSTITUTIONAL_HASH,
         HealthAggregator,

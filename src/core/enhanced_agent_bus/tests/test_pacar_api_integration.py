@@ -7,7 +7,8 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-from src.core.enhanced_agent_bus.api import app
+
+from enhanced_agent_bus.api import app
 
 client = TestClient(app)
 

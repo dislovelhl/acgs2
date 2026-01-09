@@ -1,17 +1,12 @@
 """
-Tests for validationresultfallback.
+ACGS-2 Enhanced Agent Bus - HITL Manager Tests
+Constitutional Hash: cdd01ef066bc6cf2
 
+Comprehensive tests for the HITLManager class and validationresultfallback.
 Tests cover:
 - validationresultfallback functionality
 - Error handling and edge cases
 - Integration with related components
-"""
-
-"""
-ACGS-2 Enhanced Agent Bus - HITL Manager Tests
-Constitutional Hash: cdd01ef066bc6cf2
-
-Comprehensive tests for the HITLManager class.
 """
 
 from dataclasses import dataclass, field
@@ -141,7 +136,7 @@ class TestValidationResultFallback:
 
     def test_validation_result_creation(self):
         """Test ValidationResult creation with defaults."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
 
         result = ValidationResult()
         assert result.is_valid is True
@@ -152,7 +147,7 @@ class TestValidationResultFallback:
 
     def test_validation_result_add_error(self):
         """Test add_error sets is_valid to False."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
 
         result = ValidationResult()
         result.add_error("Test error")
@@ -162,7 +157,7 @@ class TestValidationResultFallback:
 
     def test_validation_result_to_dict(self):
         """Test to_dict serialization."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
 
         result = ValidationResult(
             is_valid=False,
@@ -183,7 +178,7 @@ class TestValidationResultFallback:
     def test_validation_result_with_custom_metadata(self):
         """Test ValidationResult with custom metadata."""
 
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
 
         metadata = {
             "item_id": "item-123",

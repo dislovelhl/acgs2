@@ -11,7 +11,7 @@ import pytest
 
 # Import module under test
 try:
-    from src.core.enhanced_agent_bus.recovery_orchestrator import (
+    from enhanced_agent_bus.recovery_orchestrator import (
         CONSTITUTIONAL_HASH,
         RecoveryConstitutionalError,
         RecoveryOrchestrator,
@@ -52,7 +52,7 @@ class TestConstitutionalCompliance:
     def test_constitutional_hash_in_module(self):
         """Verify constitutional hash is exported."""
         try:
-            from src.core.enhanced_agent_bus import recovery_orchestrator as ro_mod
+            from enhanced_agent_bus import recovery_orchestrator as ro_mod
         except (ImportError, ModuleNotFoundError):
             import recovery_orchestrator as ro_mod
         assert hasattr(ro_mod, "CONSTITUTIONAL_HASH")
@@ -849,7 +849,7 @@ class TestModuleExports:
     def _get_module(self):
         """Helper to get module with fallback imports."""
         try:
-            from src.core.enhanced_agent_bus import recovery_orchestrator
+            from enhanced_agent_bus import recovery_orchestrator
 
             return recovery_orchestrator
         except (ImportError, ModuleNotFoundError):

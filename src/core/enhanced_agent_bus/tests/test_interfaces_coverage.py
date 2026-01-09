@@ -6,7 +6,7 @@ Tests for interfaces.py protocol definitions.
 """
 
 try:
-    from src.core.enhanced_agent_bus.interfaces import (
+    from enhanced_agent_bus.interfaces import (
         AgentRegistry,
         MessageHandler,
         MessageRouter,
@@ -14,7 +14,7 @@ try:
         ProcessingStrategy,
         ValidationStrategy,
     )
-    from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
 except ImportError:
     from interfaces import (
         AgentRegistry,
@@ -179,7 +179,7 @@ class TestInterfacesAllExports:
     def test_all_defined(self):
         """__all__ is defined in interfaces module."""
         try:
-            from src.core.enhanced_agent_bus import interfaces
+            from enhanced_agent_bus import interfaces
         except ImportError:
             import interfaces
         assert hasattr(interfaces, "__all__")
@@ -188,7 +188,7 @@ class TestInterfacesAllExports:
     def test_all_contains_agent_registry(self):
         """__all__ contains AgentRegistry."""
         try:
-            from src.core.enhanced_agent_bus import interfaces
+            from enhanced_agent_bus import interfaces
         except ImportError:
             import interfaces
         assert "AgentRegistry" in interfaces.__all__
@@ -196,7 +196,7 @@ class TestInterfacesAllExports:
     def test_all_contains_message_router(self):
         """__all__ contains MessageRouter."""
         try:
-            from src.core.enhanced_agent_bus import interfaces
+            from enhanced_agent_bus import interfaces
         except ImportError:
             import interfaces
         assert "MessageRouter" in interfaces.__all__
@@ -204,7 +204,7 @@ class TestInterfacesAllExports:
     def test_all_contains_metrics_collector(self):
         """__all__ contains MetricsCollector."""
         try:
-            from src.core.enhanced_agent_bus import interfaces
+            from enhanced_agent_bus import interfaces
         except ImportError:
             import interfaces
         assert "MetricsCollector" in interfaces.__all__
@@ -212,7 +212,7 @@ class TestInterfacesAllExports:
     def test_all_contains_message_handler(self):
         """__all__ contains MessageHandler."""
         try:
-            from src.core.enhanced_agent_bus import interfaces
+            from enhanced_agent_bus import interfaces
         except ImportError:
             import interfaces
         assert "MessageHandler" in interfaces.__all__
@@ -220,7 +220,7 @@ class TestInterfacesAllExports:
     def test_all_exports_are_accessible(self):
         """All items in __all__ are accessible."""
         try:
-            from src.core.enhanced_agent_bus import interfaces
+            from enhanced_agent_bus import interfaces
         except ImportError:
             import interfaces
         for name in interfaces.__all__:

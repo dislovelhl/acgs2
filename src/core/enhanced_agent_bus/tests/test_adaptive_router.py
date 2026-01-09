@@ -14,11 +14,12 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from src.core.enhanced_agent_bus.deliberation_layer.adaptive_router import (
+
+from enhanced_agent_bus.deliberation_layer.adaptive_router import (
     AdaptiveRouter,
     get_adaptive_router,
 )
-from src.core.enhanced_agent_bus.models import AgentMessage, MessageStatus, MessageType
+from enhanced_agent_bus.models import AgentMessage, MessageStatus, MessageType
 
 try:
     from src.core.shared.constants import CONSTITUTIONAL_HASH
@@ -508,7 +509,7 @@ class TestGetAdaptiveRouter:
             return_value=mock_deliberation_queue,
         ):
             # Reset the singleton using the already imported module
-            from src.core.enhanced_agent_bus.deliberation_layer import (
+            from enhanced_agent_bus.deliberation_layer import (
                 adaptive_router as router_module,
             )
 

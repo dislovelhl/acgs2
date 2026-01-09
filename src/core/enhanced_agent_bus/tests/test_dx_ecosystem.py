@@ -16,7 +16,7 @@ import pytest
 
 # Import dx_ecosystem module
 try:
-    from src.core.enhanced_agent_bus.dx_ecosystem import (
+    from enhanced_agent_bus.dx_ecosystem import (
         GenUIController,
         MCPBridge,
     )
@@ -613,7 +613,7 @@ class TestModuleExports:
     def test_mcpbridge_exported(self):
         """Test that MCPBridge is properly exported."""
         try:
-            from src.core.enhanced_agent_bus.dx_ecosystem import MCPBridge
+            from enhanced_agent_bus.dx_ecosystem import MCPBridge
         except ImportError:
             from dx_ecosystem import MCPBridge
 
@@ -622,7 +622,7 @@ class TestModuleExports:
     def test_genuicontroller_exported(self):
         """Test that GenUIController is properly exported."""
         try:
-            from src.core.enhanced_agent_bus.dx_ecosystem import GenUIController
+            from enhanced_agent_bus.dx_ecosystem import GenUIController
         except ImportError:
             from dx_ecosystem import GenUIController
 
@@ -635,7 +635,7 @@ class TestConstitutionalCompliance:
     def test_constitutional_hash_in_module(self):
         """Test that module has constitutional hash in docstring."""
         try:
-            from src.core.enhanced_agent_bus import dx_ecosystem
+            from enhanced_agent_bus import dx_ecosystem
         except ImportError:
             import dx_ecosystem
 

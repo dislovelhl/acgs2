@@ -31,8 +31,8 @@ class TestMessageProcessorAdditional:
     @pytest.mark.asyncio
     async def test_prompt_injection_detection(self) -> None:
         """Test prompt injection detection path."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
 
@@ -53,8 +53,8 @@ class TestMessageProcessorAdditional:
     @pytest.mark.asyncio
     async def test_metering_constitutional_validation(self) -> None:
         """Test metering of constitutional validation."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
 
@@ -76,7 +76,7 @@ class TestMessageProcessorAdditional:
 
     def test_processed_count_property(self) -> None:
         """Test processed_count property."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.message_processor import MessageProcessor
 
         processor = MessageProcessor()
         count = processor.processed_count
@@ -90,7 +90,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_client_with_custom_url(self) -> None:
         """Test OPA client with custom URL."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(
             opa_url="http://custom-opa:8181",
@@ -104,7 +104,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_client_fallback_mode(self) -> None:
         """Test OPA client in fallback mode."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(mode="fallback")
         assert client.mode == "fallback"
@@ -112,7 +112,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_evaluate_policy_timeout(self) -> None:
         """Test policy evaluation with timeout."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
 
@@ -125,7 +125,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_health_check(self) -> None:
         """Test OPA health check."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
 
@@ -139,7 +139,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_client_close(self) -> None:
         """Test OPA client close method."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
         await client.close()
@@ -148,7 +148,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_client_embedded_mode(self) -> None:
         """Test OPA client embedded mode."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(mode="embedded")
         # May fallback to http if SDK not available
@@ -157,7 +157,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_evaluate_with_cache(self) -> None:
         """Test OPA evaluation with caching."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True, cache_ttl=60)
 
@@ -171,7 +171,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_evaluate_without_cache(self) -> None:
         """Test OPA evaluation without caching."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=False)
 
@@ -184,7 +184,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_memory_cache(self) -> None:
         """Test OPA memory cache functionality."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True)
 
@@ -196,7 +196,7 @@ class TestOPAClientAdditional:
     async def test_opa_cache_get_from_memory(self) -> None:
         """Test OPA getting from memory cache."""
 
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True, cache_ttl=300)
 
@@ -215,7 +215,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_cache_set_to_memory(self) -> None:
         """Test OPA setting to memory cache."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True)
 
@@ -232,7 +232,7 @@ class TestOPAClientAdditional:
     async def test_opa_cache_expired(self) -> None:
         """Test OPA cache expiration."""
 
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True, cache_ttl=1)  # 1 second TTL
 
@@ -252,7 +252,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_cache_disabled(self) -> None:
         """Test OPA with cache disabled."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=False)
 
@@ -268,7 +268,7 @@ class TestOPAClientAdditional:
     async def test_opa_redis_cache_get(self) -> None:
         """Test OPA getting from Redis cache."""
 
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True)
 
@@ -288,7 +288,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_redis_cache_set(self) -> None:
         """Test OPA setting to Redis cache."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True, cache_ttl=60)
 
@@ -304,7 +304,7 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_redis_cache_error(self) -> None:
         """Test OPA Redis cache error handling."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True)
 
@@ -328,14 +328,14 @@ class TestEdgeCases:
 
     def test_message_processor_init(self) -> None:
         """Test MessageProcessor initialization."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.message_processor import MessageProcessor
 
         processor = MessageProcessor()
         assert processor.constitutional_hash == CONSTITUTIONAL_HASH
 
     def test_message_processor_constitutional_hash_property(self) -> None:
         """Test MessageProcessor constitutional_hash property."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.message_processor import MessageProcessor
 
         processor = MessageProcessor()
         # Constitutional hash should be the system constant
@@ -344,7 +344,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_opa_client_init(self) -> None:
         """Test OPAClient initialization."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
         assert client is not None
@@ -352,7 +352,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_deliberation_queue_stop(self) -> None:
         """Test DeliberationQueue stop method."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
 
@@ -364,10 +364,10 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_deliberation_queue_get_pending_tasks(self) -> None:
         """Test get_pending_tasks method."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
 
@@ -397,11 +397,11 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_submit_agent_vote_success(self) -> None:
         """Test successful agent vote submission."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             VoteType,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         message = AgentMessage(
@@ -433,11 +433,11 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_submit_agent_vote_duplicate_replaces(self) -> None:
         """Test that duplicate votes from same agent are replaced."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             VoteType,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         message = AgentMessage(
@@ -475,12 +475,12 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_submit_agent_vote_on_completed_task(self) -> None:
         """Test voting on completed task fails."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             DeliberationStatus,
             VoteType,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         message = AgentMessage(
@@ -510,12 +510,12 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_consensus_reached_auto_approve(self) -> None:
         """Test that consensus triggers automatic approval."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             DeliberationStatus,
             VoteType,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue(consensus_threshold=0.5)
         message = AgentMessage(
@@ -555,11 +555,11 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_submit_human_decision_not_under_review(self) -> None:
         """Test human decision fails if not under review."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             DeliberationStatus,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         message = AgentMessage(
@@ -586,11 +586,11 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_submit_human_decision_success(self) -> None:
         """Test successful human decision submission."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             DeliberationStatus,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         message = AgentMessage(
@@ -624,11 +624,11 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_submit_human_decision_rejection(self) -> None:
         """Test human rejection counts stats correctly."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             DeliberationStatus,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         message = AgentMessage(
@@ -656,10 +656,10 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_get_item_details(self) -> None:
         """Test get_item_details method."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         message = AgentMessage(
@@ -684,7 +684,7 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_get_item_details_nonexistent(self) -> None:
         """Test get_item_details for non-existent item."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
 
@@ -695,10 +695,10 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_get_queue_status(self) -> None:
         """Test get_queue_status method."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
         message = AgentMessage(
@@ -724,10 +724,10 @@ class TestDeliberationQueueExtended:
         """Test voting_deadline property of DeliberationTask."""
         from datetime import timedelta
 
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue(default_timeout=600)
         message = AgentMessage(
@@ -754,7 +754,7 @@ class TestOPAClientExtended:
     @pytest.mark.asyncio
     async def test_evaluate_http_bool_result(self) -> None:
         """Test HTTP evaluation with boolean result."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(mode="http")
 
@@ -775,7 +775,7 @@ class TestOPAClientExtended:
     @pytest.mark.asyncio
     async def test_evaluate_http_dict_result(self) -> None:
         """Test HTTP evaluation with dict result."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(mode="http")
 
@@ -802,7 +802,7 @@ class TestOPAClientExtended:
     @pytest.mark.asyncio
     async def test_evaluate_http_unexpected_type(self) -> None:
         """Test HTTP evaluation with unexpected result type."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(mode="http")
 
@@ -822,7 +822,7 @@ class TestOPAClientExtended:
     @pytest.mark.asyncio
     async def test_evaluate_http_exception(self) -> None:
         """Test HTTP evaluation with exception."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(mode="http")
 
@@ -836,7 +836,7 @@ class TestOPAClientExtended:
     @pytest.mark.asyncio
     async def test_evaluate_policy_with_caching(self) -> None:
         """Test evaluate_policy with caching behavior."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True, cache_ttl=300)
 
@@ -857,7 +857,7 @@ class TestOPAClientExtended:
     @pytest.mark.asyncio
     async def test_get_stats(self) -> None:
         """Test get_stats method."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
         stats = client.get_stats()
@@ -871,7 +871,7 @@ class TestOPAClientExtended:
     @pytest.mark.asyncio
     async def test_generate_cache_key(self) -> None:
         """Test cache key generation."""
-        from src.core.enhanced_agent_bus.opa_client import OPAClient
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
         key1 = client._generate_cache_key({"a": 1}, "path1")
@@ -888,8 +888,8 @@ class TestMessageProcessorExtended:
     @pytest.mark.asyncio
     async def test_process_high_priority_message(self) -> None:
         """Test processing high priority message."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         processor = MessageProcessor()
         message = AgentMessage(
@@ -908,8 +908,8 @@ class TestMessageProcessorExtended:
     @pytest.mark.asyncio
     async def test_process_query_message(self) -> None:
         """Test processing query type message."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
         message = AgentMessage(
@@ -927,8 +927,8 @@ class TestMessageProcessorExtended:
     @pytest.mark.asyncio
     async def test_process_event_message(self) -> None:
         """Test processing event type message."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
         message = AgentMessage(
@@ -946,8 +946,8 @@ class TestMessageProcessorExtended:
     @pytest.mark.asyncio
     async def test_process_with_headers(self) -> None:
         """Test processing message with headers (metadata via headers field)."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
         message = AgentMessage(
@@ -966,8 +966,8 @@ class TestMessageProcessorExtended:
     @pytest.mark.asyncio
     async def test_decision_log_creation(self) -> None:
         """Test that decision logs are created correctly."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
         message = AgentMessage(
@@ -986,7 +986,7 @@ class TestMessageProcessorExtended:
 
     def test_processed_count_increments(self) -> None:
         """Test that processed count increments."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.message_processor import MessageProcessor
 
         processor = MessageProcessor()
         initial_count = processor.processed_count
@@ -1001,11 +1001,11 @@ class TestIntegrationScenarios:
     @pytest.mark.asyncio
     async def test_full_deliberation_workflow(self) -> None:
         """Test complete deliberation workflow."""
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
             VoteType,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue(consensus_threshold=0.6)
 
@@ -1051,8 +1051,8 @@ class TestIntegrationScenarios:
     @pytest.mark.asyncio
     async def test_message_processor_with_opa_fallback(self) -> None:
         """Test message processor when OPA falls back."""
-        from src.core.enhanced_agent_bus.message_processor import MessageProcessor
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.message_processor import MessageProcessor
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
 
@@ -1073,10 +1073,10 @@ class TestIntegrationScenarios:
     async def test_deliberation_queue_persistence_roundtrip(self) -> None:
         """Test persistence save and load roundtrip."""
 
-        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             persistence_path = f.name

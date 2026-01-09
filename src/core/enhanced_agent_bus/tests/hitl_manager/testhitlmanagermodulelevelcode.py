@@ -1,17 +1,12 @@
 """
-Tests for hitlmanagermodulelevelcode.
-
-Tests cover:
-- hitlmanagermodulelevelcode functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 ACGS-2 Enhanced Agent Bus - HITL Manager Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
 Comprehensive tests for the HITLManager class.
+Tests cover:
+- hitlmanagermodulelevelcode functionality
+- Error handling and edge cases
+- Integration with related components
 """
 
 from dataclasses import dataclass, field
@@ -141,20 +136,20 @@ class TestHITLManagerModuleLevelCode:
 
     def test_module_has_logger(self):
         """Test that module has logger configured."""
-        from src.core.enhanced_agent_bus.deliberation_layer import hitl_manager
+        from enhanced_agent_bus.deliberation_layer import hitl_manager
 
         assert hasattr(hitl_manager, "logger")
         assert hitl_manager.logger.name == "enhanced_agent_bus.deliberation_layer.hitl_manager"
 
     def test_constitutional_hash_constant(self):
         """Test CONSTITUTIONAL_HASH constant is available."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import CONSTITUTIONAL_HASH
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import CONSTITUTIONAL_HASH
 
         assert CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
 
     def test_deliberation_status_import(self):
         """Test DeliberationStatus is imported correctly."""
-        from src.core.enhanced_agent_bus.deliberation_layer.hitl_manager import DeliberationStatus
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import DeliberationStatus
 
         assert hasattr(DeliberationStatus, "PENDING")
         assert hasattr(DeliberationStatus, "APPROVED")

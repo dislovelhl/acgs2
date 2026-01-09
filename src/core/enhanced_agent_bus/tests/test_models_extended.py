@@ -8,7 +8,8 @@ Extended tests for models to improve coverage.
 from datetime import datetime, timezone
 
 import pytest
-from src.core.enhanced_agent_bus.models import (
+
+from enhanced_agent_bus.models import (
     CONSTITUTIONAL_HASH,
     AgentMessage,
     MessagePriority,
@@ -335,7 +336,7 @@ class TestModuleExports:
 
     def test_all_exports(self):
         """Test __all__ exports are correct."""
-        from src.core.enhanced_agent_bus.models import __all__
+        from enhanced_agent_bus.models import __all__
 
         expected = [
             "MessageContent",

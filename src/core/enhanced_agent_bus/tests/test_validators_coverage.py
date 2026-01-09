@@ -6,7 +6,7 @@ Extended tests to increase validators.py coverage.
 """
 
 try:
-    from src.core.enhanced_agent_bus.validators import (
+    from enhanced_agent_bus.validators import (
         CONSTITUTIONAL_HASH,
         ValidationResult,
         validate_constitutional_hash,

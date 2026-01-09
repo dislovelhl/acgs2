@@ -19,7 +19,7 @@ except ImportError:
 
 # Test imports - handle both package and standalone modes
 try:
-    from src.core.enhanced_agent_bus.audit_client import (
+    from enhanced_agent_bus.audit_client import (
         AuditBatchResult,
         AuditClient,
         AuditClientConfig,

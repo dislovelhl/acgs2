@@ -1,15 +1,9 @@
 import logging
-
-logger = logging.getLogger(__name__)
-"""
-ACGS-2 Adaptive Governance Tests
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 from unittest.mock import AsyncMock
 
 import pytest
-from src.core.enhanced_agent_bus.adaptive_governance import (
+
+from enhanced_agent_bus.adaptive_governance import (
     AdaptiveGovernanceEngine,
     AdaptiveThresholds,
     GovernanceDecision,
@@ -23,6 +17,8 @@ from src.core.enhanced_agent_bus.adaptive_governance import (
     initialize_adaptive_governance,
     provide_governance_feedback,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class TestAdaptiveGovernance:
@@ -392,7 +388,7 @@ if __name__ == "__main__":
 
     # Test basic imports
     try:
-        from src.core.enhanced_agent_bus.adaptive_governance import AdaptiveGovernanceEngine
+        from enhanced_agent_bus.adaptive_governance import AdaptiveGovernanceEngine  # noqa: F811
 
         logging.info("✅ Imports successful")
     except ImportError as e:

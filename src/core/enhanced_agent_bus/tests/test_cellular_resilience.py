@@ -1,7 +1,5 @@
-import logging
-
-logger = logging.getLogger(__name__)
 import asyncio
+import logging
 import time
 from unittest.mock import patch
 
@@ -9,6 +7,8 @@ import pytest
 
 from core import EnhancedAgentBus, MessageProcessor
 from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
+
+logger = logging.getLogger(__name__)
 
 
 class TestCellularResilience:
@@ -136,7 +136,7 @@ class TestCellularResilience:
         Even when use_dynamic_policy=True, isolated_mode=True should override it.
         """
         # Import the module to check its constants
-        import src.core.enhanced_agent_bus.message_processor as message_processor
+        import enhanced_agent_bus.message_processor as message_processor
 
         # Test 1: Isolated mode always disables dynamic policy regardless of setting
         # MACI is disabled for these legacy tests to isolate policy decoupling testing

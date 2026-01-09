@@ -2,8 +2,9 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH
-from src.core.enhanced_agent_bus.registry import RedisAgentRegistry
+
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
+from enhanced_agent_bus.registry import RedisAgentRegistry
 
 
 @pytest.fixture
@@ -134,9 +135,9 @@ class TestEnhancedAgentBusRedisIntegration:
             "redis.asyncio.ConnectionPool.from_url", return_value=mock_pool
         ) as mock_pool_from_url:
             with patch("redis.asyncio.Redis", return_value=mock_redis_client):
-                from src.core.enhanced_agent_bus.agent_bus import EnhancedAgentBus
-                from src.core.enhanced_agent_bus.config import BusConfiguration
-                from src.core.enhanced_agent_bus.registry import (
+                from enhanced_agent_bus.agent_bus import EnhancedAgentBus
+                from enhanced_agent_bus.config import BusConfiguration
+                from enhanced_agent_bus.registry import (
                     RedisAgentRegistry,
                 )
 

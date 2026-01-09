@@ -1,7 +1,8 @@
 """Tests for Z3 SMT Solver Integration."""
 
 import pytest
-from src.core.enhanced_agent_bus.verification.z3_adapter import (
+
+from enhanced_agent_bus.verification.z3_adapter import (
     CONSTITUTIONAL_HASH,
     ConstitutionalPolicy,
     ConstitutionalZ3Verifier,
@@ -309,7 +310,7 @@ class TestErrorHandling:
     def test_z3_unavailable(self):
         """Test behavior when Z3 is not available."""
         # Temporarily mock Z3 availability
-        import src.core.enhanced_agent_bus.verification.z3_adapter as z3_module
+        import enhanced_agent_bus.verification.z3_adapter as z3_module
 
         original_available = z3_module.Z3_AVAILABLE
         z3_module.Z3_AVAILABLE = False

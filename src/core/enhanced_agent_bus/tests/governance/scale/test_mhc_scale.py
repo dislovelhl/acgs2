@@ -5,7 +5,8 @@ import time
 import psutil
 import pytest
 import torch
-from src.core.enhanced_agent_bus.governance.stability.mhc import ManifoldHC, sinkhorn_projection
+
+from enhanced_agent_bus.governance.stability.mhc import ManifoldHC, sinkhorn_projection
 
 logger = logging.getLogger(__name__)
 

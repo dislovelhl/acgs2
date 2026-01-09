@@ -17,13 +17,13 @@ try:
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-from src.core.enhanced_agent_bus.exceptions import (
+from enhanced_agent_bus.exceptions import (
     MACICrossRoleValidationError,
     MACIRoleNotAssignedError,
     MACIRoleViolationError,
     MACISelfValidationError,
 )
-from src.core.enhanced_agent_bus.maci_enforcement import (
+from enhanced_agent_bus.maci_enforcement import (
     ROLE_PERMISSIONS,
     VALIDATION_CONSTRAINTS,
     MACIAction,
@@ -36,7 +36,7 @@ from src.core.enhanced_agent_bus.maci_enforcement import (
     MACIValidationStrategy,
     create_maci_enforcement_middleware,
 )
-from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+from enhanced_agent_bus.models import AgentMessage, MessageType
 
 # =============================================================================
 # Fixtures

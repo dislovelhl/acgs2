@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH
-    from src.core.enhanced_agent_bus.opa_client import (
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
+    from enhanced_agent_bus.opa_client import (
         OPA_SDK_AVAILABLE,
         REDIS_AVAILABLE,
         OPAClient,

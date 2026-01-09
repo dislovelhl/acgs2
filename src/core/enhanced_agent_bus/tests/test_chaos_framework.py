@@ -17,7 +17,7 @@ import pytest
 
 # Import chaos testing framework
 try:
-    from src.core.enhanced_agent_bus.chaos_testing import (
+    from enhanced_agent_bus.chaos_testing import (
         CONSTITUTIONAL_HASH,
         ChaosEngine,
         ChaosScenario,
@@ -27,7 +27,7 @@ try:
         get_chaos_engine,
         reset_chaos_engine,
     )
-    from src.core.enhanced_agent_bus.exceptions import (
+    from enhanced_agent_bus.exceptions import (
         AgentBusError,
         ConstitutionalHashMismatchError,
     )

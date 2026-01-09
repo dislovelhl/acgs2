@@ -10,15 +10,15 @@ from unittest.mock import MagicMock
 import pytest
 
 # Imports are handled via sys.modules patching in conftest.py
-from src.core.enhanced_agent_bus.core import (
+from enhanced_agent_bus.core import (
     CONSTITUTIONAL_HASH,
     EnhancedAgentBus,
     MessageProcessor,
     get_agent_bus,
     reset_agent_bus,
 )
-from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
-from src.core.enhanced_agent_bus.validators import ValidationResult
+from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+from enhanced_agent_bus.validators import ValidationResult
 
 # ============================================================================
 # MessageProcessor Tests

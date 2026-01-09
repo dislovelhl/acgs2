@@ -6,7 +6,7 @@ import torch
 # Add project root to sys.path
 sys.path.append("/home/dislove/document/acgs2")
 
-from src.core.enhanced_agent_bus.governance.stability.mhc import ManifoldHC, sinkhorn_projection
+from enhanced_agent_bus.governance.stability.mhc import ManifoldHC, sinkhorn_projection
 
 
 def test_sinkhorn_projection():

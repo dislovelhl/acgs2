@@ -2,7 +2,8 @@
 
 import pytest
 import torch
-from src.core.enhanced_agent_bus.context.mamba_hybrid import (
+
+from enhanced_agent_bus.context.mamba_hybrid import (
     CONSTITUTIONAL_HASH,
     ConstitutionalContextProcessor,
     ConstitutionalMambaHybrid,

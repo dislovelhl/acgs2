@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
-    from src.core.enhanced_agent_bus.validation_strategies import (
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
+    from enhanced_agent_bus.validation_strategies import (
         DynamicPolicyValidationStrategy,
         RustValidationStrategy,
         StaticHashValidationStrategy,

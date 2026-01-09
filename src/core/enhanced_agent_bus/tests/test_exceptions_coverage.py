@@ -8,7 +8,7 @@ Extended tests to increase exceptions.py coverage.
 import pytest
 
 try:
-    from src.core.enhanced_agent_bus.exceptions import (
+    from enhanced_agent_bus.exceptions import (
         AgentAlreadyRegisteredError,
         AgentBusError,
         AgentCapabilityError,
@@ -42,7 +42,7 @@ try:
         ReviewConsensusError,
         SignatureCollectionError,
     )
-    from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
 except ImportError:
     from exceptions import (
         AgentAlreadyRegisteredError,
