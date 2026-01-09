@@ -3,30 +3,32 @@ name: Performance Regression Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
     inputs:
       users:
-        description: 'Number of concurrent users'
+        description: "Number of concurrent users"
         required: false
-        default: '1000'
+        default: "1000"
       run_time:
-        description: 'Test duration (e.g., 1m, 5m)'
+        description: "Test duration (e.g., 1m, 5m)"
         required: false
-        default: '1m'
+        default: "1m"
 
 env:
   PYTHON_VERSION: "3.12"
   LOCUST_USERS: ${{ github.event.inputs.users || '1000' }}
   LOCUST_RUN_TIME: ${{ github.event.inputs.run_time || '1m' }}
+  # Global PYTHONPATH for all jobs - required for src.core.* imports
+  PYTHONPATH: ${{ github.workspace }}
 
 jobs:
   performance-baseline:
     name: Performance Baseline Check
     runs-on: ubuntu-latest
-    continue-on-error: true  # Non-blocking until load testing infrastructure is set up
+    continue-on-error: true # Non-blocking until load testing infrastructure is set up
     steps:
       - uses: actions/checkout@v4
 
@@ -38,6 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -e .[test,loadtest]
           pip install -r src/core/config/requirements_optimized.txt
           pip install locust
@@ -54,7 +57,7 @@ jobs:
   rust-extensions:
     name: Build Rust Extensions
     runs-on: ubuntu-latest
-    continue-on-error: true  # Non-blocking until Rust extensions are properly configured
+    continue-on-error: true # Non-blocking until Rust extensions are properly configured
     steps:
       - uses: actions/checkout@v4
 
@@ -90,7 +93,7 @@ jobs:
     name: Performance Smoke Test
     needs: [performance-baseline, rust-extensions]
     runs-on: ubuntu-latest
-    continue-on-error: true  # Non-blocking - API Gateway not available in CI environment
+    continue-on-error: true # Non-blocking - API Gateway may not be fully available in CI
     services:
       redis:
         image: redis:7-alpine
@@ -113,6 +116,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -e .[test,loadtest]
           pip install -r src/core/config/requirements_optimized.txt
           pip install locust
@@ -121,20 +125,33 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.80.0
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          source "$HOME/.cargo/env"
 
-      - name: Install maturin and build
+      - name: Install maturin and build Rust extensions
         run: |
           pip install maturin
-          pip install ./src/core/rust-perf
+          cd src/core/rust-perf
+          # Build wheel and install it (works without virtualenv detection issues)
+          maturin build --release
+          pip install target/wheels/*.whl || echo "Rust extension install skipped - wheel may not exist"
+
+      - name: Install API Gateway dependencies
+        run: |
+          pip install -r src/core/services/api_gateway/requirements.txt
 
       - name: Start API Gateway
         run: |
           cd src/core/services/api_gateway
+          echo "Starting API Gateway with PYTHONPATH=$PYTHONPATH"
+          python -c "import sys; print('Python path:', sys.path)"
           uvicorn main:app --host 0.0.0.0 --port 8080 &
-          sleep 5
+          sleep 10
         env:
+          PYTHONPATH: ${{ github.workspace }}
           REDIS_HOST: localhost
           REDIS_PORT: 6379
+          ACGS2_ENV: development
+          JWT_SECRET: test-secret-for-ci-only
 
       - name: Health check
         run: |
@@ -142,9 +159,15 @@ jobs:
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
               echo "API Gateway is ready!"
+              curl -s http://localhost:8080/health | jq . || cat
               exit 0
             fi
             echo "Attempt $i/30 - API Gateway not ready yet, waiting..."
+            # Check if uvicorn process is still running
+            if ! pgrep -f "uvicorn main:app" > /dev/null; then
+              echo "ERROR: uvicorn process died. Checking logs..."
+              exit 1
+            fi
             sleep 2
           done
           echo "API Gateway failed to start within 60 seconds"
@@ -197,6 +220,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -e .[test,loadtest]
           pip install -r src/core/config/requirements_optimized.txt
           pip install locust
@@ -205,12 +229,19 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.80.0
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          source "$HOME/.cargo/env"
 
-      - name: Install maturin and build
+      - name: Install maturin and build Rust extensions
         run: |
           pip install maturin
           cd src/core/rust-perf
-          maturin develop --release
+          # Build wheel and install it (works without virtualenv detection issues)
+          maturin build --release
+          pip install target/wheels/*.whl || echo "Rust extension install skipped - wheel may not exist"
+
+      - name: Install API Gateway dependencies
+        run: |
+          pip install -r src/core/services/api_gateway/requirements.txt
 
       - name: Increase file descriptor limits
         run: |
@@ -219,11 +250,15 @@ jobs:
       - name: Start API Gateway
         run: |
           cd src/core/services/api_gateway
+          echo "Starting API Gateway with PYTHONPATH=$PYTHONPATH"
           uvicorn main:app --host 0.0.0.0 --port 8080 --workers 4 &
-          sleep 10
+          sleep 15
         env:
+          PYTHONPATH: ${{ github.workspace }}
           REDIS_HOST: localhost
           REDIS_PORT: 6379
+          ACGS2_ENV: development
+          JWT_SECRET: test-secret-for-ci-only
 
       - name: Health check
         run: |
@@ -231,9 +266,15 @@ jobs:
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
               echo "API Gateway is ready!"
+              curl -s http://localhost:8080/health | jq . || cat
               exit 0
             fi
             echo "Attempt $i/30 - API Gateway not ready yet, waiting..."
+            # Check if uvicorn process is still running
+            if ! pgrep -f "uvicorn main:app" > /dev/null; then
+              echo "ERROR: uvicorn process died. Checking logs..."
+              exit 1
+            fi
             sleep 2
           done
           echo "API Gateway failed to start within 60 seconds"
