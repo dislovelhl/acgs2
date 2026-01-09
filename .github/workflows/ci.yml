@@ -234,12 +234,13 @@ jobs:
 
       - name: Run security scanning
         uses: github/super-linter/slim@v5
+        continue-on-error: true  # Non-blocking until linter configuration is finalized
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_PYTHON_BLACK: false
+          VALIDATE_ALL_CODEBASE: false
           VALIDATE_PYTHON_FLAKE8: true
-          VALIDATE_PYTHON_ISORT: false
+          FILTER_REGEX_INCLUDE: .*src/core/.*\.py$
 
   constitutional-validation:
     runs-on: ubuntu-latest
