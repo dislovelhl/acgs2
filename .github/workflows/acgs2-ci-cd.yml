@@ -26,7 +26,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    continue-on-error: true  # Non-blocking until linting is fully configured
+    continue-on-error: true # Non-blocking until linting is fully configured
     steps:
       - uses: actions/checkout@v4
         with:
@@ -163,7 +163,7 @@ jobs:
         run: |
           pip install -e .[test]
           pip install -r src/core/config/requirements_optimized.txt
-          pip install pytest-cov pytest-asyncio
+          pip install pytest-cov pytest-asyncio redis
 
       - name: Pytest with coverage
         working-directory: ./src/core
@@ -310,7 +310,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && vars.AZURE_CONFIGURED == 'true'
     runs-on: ubuntu-latest
     environment: staging
-    continue-on-error: true  # Non-blocking - staging deployments should not fail the pipeline
+    continue-on-error: true # Non-blocking - staging deployments should not fail the pipeline
     permissions:
       id-token: write
     steps:
@@ -342,7 +342,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') && vars.AZURE_CONFIGURED == 'true'
     runs-on: ubuntu-latest
     environment: production
-    continue-on-error: true  # Non-blocking - prod deployments handled separately
+    continue-on-error: true # Non-blocking - prod deployments handled separately
     permissions:
       id-token: write
     steps:
@@ -373,7 +373,7 @@ jobs:
     if: failure() && vars.AZURE_CONFIGURED == 'true'
     runs-on: ubuntu-latest
     environment: production
-    continue-on-error: true  # Non-blocking - rollback is best-effort
+    continue-on-error: true # Non-blocking - rollback is best-effort
     steps:
       - uses: actions/checkout@v4
 
