@@ -47,6 +47,8 @@ try:
     AGENT_BUS_AVAILABLE = True
 except ImportError:
     AGENT_BUS_AVAILABLE = False
+    # Provide fallback so PerformanceMetrics can be defined
+    CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
