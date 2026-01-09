@@ -24,7 +24,7 @@ ENV PATH=/root/.local/bin:$PATH
 
 # Copy source code
 COPY enhanced_agent_bus/ ./enhanced_agent_bus/
-COPY pyproject.toml .
+COPY enhanced_agent_bus/pyproject.toml .
 
 # Environment variables for optimization
 ENV ONNX_RUNTIME=1
