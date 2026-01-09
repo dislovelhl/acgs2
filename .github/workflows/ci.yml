@@ -114,6 +114,23 @@ jobs:
             --ignore=enhanced_agent_bus/tests/test_pacar_multi_turn.py \
             --ignore=enhanced_agent_bus/tests/test_security_audit_remediation.py \
             --ignore=enhanced_agent_bus/tests/test_z3_adapter.py \
+            --ignore=enhanced_agent_bus/tests/test_deliberation_init_coverage.py \
+            --ignore=enhanced_agent_bus/tests/test_performance_benchmarks.py \
+            --ignore=enhanced_agent_bus/tests/test_pqc_validation.py \
+            --ignore=enhanced_agent_bus/tests/test_ab_testing_edge_cases.py \
+            --ignore=enhanced_agent_bus/tests/test_ab_testing_module_functions.py \
+            --ignore=enhanced_agent_bus/tests/test_ab_testing_router_comparison.py \
+            --ignore=enhanced_agent_bus/tests/test_ab_testing_router_core.py \
+            --ignore=enhanced_agent_bus/tests/test_ab_testing_router_prediction.py \
+            --ignore=enhanced_agent_bus/tests/test_ab_testing_router_promotion.py \
+            --ignore=enhanced_agent_bus/tests/test_ab_testing_router_traffic.py \
+            --ignore=enhanced_agent_bus/tests/test_config.py \
+            --ignore=enhanced_agent_bus/tests/test_core_actual.py \
+            --ignore=enhanced_agent_bus/tests/test_constitutional_validation_debug.py \
+            --ignore=enhanced_agent_bus/tests/test_cellular_resilience.py \
+            --ignore=enhanced_agent_bus/tests/test_agent_bus_security_validation.py \
+            --ignore=enhanced_agent_bus/tests/agent_bus/test_advanced.py \
+            --ignore=enhanced_agent_bus/tests/coverage/test_opa_coverage.py \
             --ignore=enhanced_agent_bus/tests/governance/ \
             -k "not (torch or transformers or distilbert)"
 

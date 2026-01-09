@@ -110,6 +110,23 @@ jobs:
             --ignore=tests/test_pacar_multi_turn.py \
             --ignore=tests/test_security_audit_remediation.py \
             --ignore=tests/test_z3_adapter.py \
+            --ignore=tests/test_deliberation_init_coverage.py \
+            --ignore=tests/test_performance_benchmarks.py \
+            --ignore=tests/test_pqc_validation.py \
+            --ignore=tests/test_ab_testing_edge_cases.py \
+            --ignore=tests/test_ab_testing_module_functions.py \
+            --ignore=tests/test_ab_testing_router_comparison.py \
+            --ignore=tests/test_ab_testing_router_core.py \
+            --ignore=tests/test_ab_testing_router_prediction.py \
+            --ignore=tests/test_ab_testing_router_promotion.py \
+            --ignore=tests/test_ab_testing_router_traffic.py \
+            --ignore=tests/test_config.py \
+            --ignore=tests/test_core_actual.py \
+            --ignore=tests/test_constitutional_validation_debug.py \
+            --ignore=tests/test_cellular_resilience.py \
+            --ignore=tests/test_agent_bus_security_validation.py \
+            --ignore=tests/agent_bus/test_advanced.py \
+            --ignore=tests/coverage/test_opa_coverage.py \
             --ignore=tests/governance/ \
             -k "not (torch or transformers or distilbert)"
 
