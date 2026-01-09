@@ -10,8 +10,10 @@ repos:
         exclude: ^(\.auto-claude/|src/infra/deploy/gitops/|src/infra/multi-region/|.*helm.*\.yaml$)
       - id: check-added-large-files
       - id: check-json
-        exclude: ^\.auto-claude/
+        exclude: ^(\.auto-claude/|.*tsconfig.*\.json$)
       - id: check-merge-conflict
+      - id: detect-private-key
+        exclude: ^(\.agent/workflows/|src/agents/skills/|.*README\.md$|.*SKILL\.md$|.*\.tex$)
 
   - repo: local
     hooks:

@@ -212,7 +212,3 @@ services:
 
 volumes:
   redis_data:
-
-networks:
-  acgs-dev:
-    driver: bridge

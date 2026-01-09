@@ -137,7 +137,17 @@ jobs:
 
       - name: Health check
         run: |
-          curl -f http://localhost:8080/health || exit 1
+          echo "Waiting for API Gateway to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
+              echo "API Gateway is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - API Gateway not ready yet, waiting..."
+            sleep 2
+          done
+          echo "API Gateway failed to start within 60 seconds"
+          exit 1
 
       - name: Run smoke test (100 users, 30s)
         run: |
@@ -216,7 +226,17 @@ jobs:
 
       - name: Health check
         run: |
-          curl -f http://localhost:8080/health || exit 1
+          echo "Waiting for API Gateway to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
+              echo "API Gateway is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - API Gateway not ready yet, waiting..."
+            sleep 2
+          done
+          echo "API Gateway failed to start within 60 seconds"
+          exit 1
 
       - name: Run performance regression test
         run: |
