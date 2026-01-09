@@ -46,10 +46,7 @@ except ImportError:
         get_chaos_engine,
         reset_chaos_engine,
     )
-    from exceptions import (
-        AgentBusError,
-        ConstitutionalHashMismatchError,
-    )
+    from exceptions import AgentBusError, ConstitutionalHashMismatchError
 
 
 class TestChaosScenario:

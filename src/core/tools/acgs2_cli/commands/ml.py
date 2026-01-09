@@ -14,14 +14,20 @@ from acgs2_sdk import MLGovernanceService, create_client
 
 @click.group()
 @click.pass_context
-def ml(ctx):
+def ml(_ctx):
     """ML Governance management commands"""
     pass
 
 
+@ml.command()
+def status(_ctx):
+    """Check status of ML services."""
+    click.echo("Checking ML services status...")
+
+
 @ml.group()
 @click.pass_context
-def models(ctx):
+def models(_ctx):
     """ML model management"""
     pass
 
@@ -381,7 +387,7 @@ def submit_feedback(
 
 @ml.group()
 @click.pass_context
-def abtests(ctx):
+def abtests(_ctx):
     """A/B test management"""
     pass
 
@@ -499,7 +505,7 @@ def get_ab_test_results(ctx, test_id: str):
 
                 click.secho(f"📊 A/B Test Results: {test_id}", fg="blue", bold=True)
                 for key, value in results.items():
-                    if isinstance(value, (int, float)):
+                    if isinstance(value, int | float):
                         click.echo(f"{key}: {value}")
                     else:
                         click.echo(f"{key}: {json.dumps(value, indent=2)}")

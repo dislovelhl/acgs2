@@ -24,7 +24,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.main import app  # noqa: E402, I001
 
-
 # Test constants
 ORG_A_ID = "org-alpha-001"
 ORG_B_ID = "org-beta-002"

@@ -24,7 +24,11 @@ if str(ANALYTICS_ENGINE_PATH) not in sys.path:
     sys.path.insert(0, str(ANALYTICS_ENGINE_PATH))
 
 try:
-    from anomaly_detector import AnomalyDetectionResult, AnomalyDetector, DetectedAnomaly
+    from anomaly_detector import (
+        AnomalyDetectionResult,
+        AnomalyDetector,
+        DetectedAnomaly,
+    )
 except ImportError:
     AnomalyDetectionResult = None
     AnomalyDetector = None

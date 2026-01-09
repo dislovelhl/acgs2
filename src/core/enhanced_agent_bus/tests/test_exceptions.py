@@ -13,37 +13,30 @@ import pytest
 # Add parent directory to path for local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from exceptions import (
+from exceptions import (  # Agent; Bus Operations; Configuration; Constitutional; Deliberation; Message; Policy/OPA
     CONSTITUTIONAL_HASH,
     AgentAlreadyRegisteredError,
     AgentBusError,
     AgentCapabilityError,
-    # Agent
     AgentError,
     AgentNotRegisteredError,
     BusAlreadyStartedError,
     BusNotStartedError,
-    # Bus Operations
     BusOperationError,
-    # Configuration
     ConfigurationError,
-    # Constitutional
     ConstitutionalError,
     ConstitutionalHashMismatchError,
     ConstitutionalValidationError,
-    # Deliberation
     DeliberationError,
     DeliberationTimeoutError,
     HandlerExecutionError,
     MessageDeliveryError,
-    # Message
     MessageError,
     MessageRoutingError,
     MessageTimeoutError,
     MessageValidationError,
     OPAConnectionError,
     OPANotInitializedError,
-    # Policy/OPA
     PolicyError,
     PolicyEvaluationError,
     PolicyNotFoundError,

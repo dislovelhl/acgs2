@@ -29,9 +29,7 @@ from typing import Any, Dict
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.core.enhanced_agent_bus.profiling import (  # noqa: E402
-    get_global_profiler,
-)
+from src.core.enhanced_agent_bus.profiling import get_global_profiler  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

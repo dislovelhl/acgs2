@@ -87,7 +87,7 @@ class TestAuditHashChain:
 
         # Verify chain integrity
         previous_hash = "genesis"
-        for i, (entry, expected_hash) in enumerate(entries):
+        for i, (_, expected_hash) in enumerate(entries):
             stored_entry = aud.entries[i]
 
             # Check hash chain

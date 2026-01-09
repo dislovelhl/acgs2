@@ -18,6 +18,15 @@ atomic_float = "0.1"
 tokio = { version = "1.40", features = ["full"] }
 tracing = "0.1"
 thiserror = "1.0"
+once_cell = "1.19"
+moka = { version = "0.12", features = ["future"] }
+regex = "1.10"
+reqwest = { version = "0.12", features = ["json"] }
+uuid = { version = "1.7", features = ["v4"] }
+parking_lot = "0.12"
+futures = "0.3"
+rayon = "1.8"
+pyo3-async-runtimes = { version = "0.23", features = ["tokio-runtime"] }
 
 [dependencies.ort]
 version = "2.0.0-rc.10"
@@ -26,7 +35,7 @@ optional = true
 
 [dependencies.tokenizers]
 version = "0.19"
-features = ["onig"]
+features = ["onig", "http", "hf-hub"]
 
 [dev-dependencies]
 criterion = "0.5"

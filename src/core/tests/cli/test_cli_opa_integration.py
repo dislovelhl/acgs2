@@ -28,7 +28,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from cli.opa_service import OPAService  # noqa: E402, I001
 from cli.policy_cli import app  # noqa: E402, I001
 
-
 # Create CLI runner for testing
 runner = CliRunner()
 

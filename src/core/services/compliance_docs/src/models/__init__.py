@@ -9,20 +9,9 @@ from .euaiact import (
     EUAIActQuarterlyReport,
     EUAIActRiskAssessment,
 )
-from .gdpr import (
-    GDPRArticle30Record,
-    GDPRProcessingActivity,
-)
-from .iso27001 import (
-    ISO27001ComplianceReport,
-    ISO27001Control,
-    ISO27001Evidence,
-)
-from .soc2 import (
-    SOC2ComplianceReport,
-    SOC2ControlMapping,
-    SOC2Evidence,
-)
+from .gdpr import GDPRArticle30Record, GDPRProcessingActivity
+from .iso27001 import ISO27001ComplianceReport, ISO27001Control, ISO27001Evidence
+from .soc2 import SOC2ComplianceReport, SOC2ControlMapping, SOC2Evidence
 
 __all__ = [
     # SOC 2 models

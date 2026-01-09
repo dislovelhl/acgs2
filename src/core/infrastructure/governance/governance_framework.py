@@ -6,6 +6,7 @@ Provides core governance framework initialization, state management,
 policy loading, and audit trail capabilities for constitutional AI governance.
 """
 
+import asyncio
 import logging
 import threading
 import time

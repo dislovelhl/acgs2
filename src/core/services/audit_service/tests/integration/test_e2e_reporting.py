@@ -36,14 +36,8 @@ except ImportError:
 # Import application components
 try:
     from app.main import app as fastapi_app
-    from app.services.email_service import (
-        EmailResult,
-        EmailService,
-    )
-    from app.tasks.report_tasks import (
-        generate_report_async,
-        generate_scheduled_report,
-    )
+    from app.services.email_service import EmailResult, EmailService
+    from app.tasks.report_tasks import generate_report_async, generate_scheduled_report
 
     IMPORTS_AVAILABLE = True
 except ImportError as e:

@@ -6,6 +6,7 @@ Transit secrets engine operations for signing, verification,
 encryption, and decryption using HashiCorp Vault.
 """
 
+# ruff: noqa: E402
 import base64
 import logging
 import re

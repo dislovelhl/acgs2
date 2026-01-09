@@ -1,9 +1,7 @@
 """
 Constitutional Hash: cdd01ef066bc6cf2
-"""
 
-# ruff: noqa: I001
-"""Initial database schema for Policy Marketplace
+Initial database schema for Policy Marketplace
 
 Creates all core tables for the policy marketplace:
 - templates: Main template storage with metadata and access control
@@ -14,8 +12,9 @@ Creates all core tables for the policy marketplace:
 Revision ID: 001_initial_schema
 Revises:
 Create Date: 2026-01-02
-
 """
+
+# ruff: noqa: I001, E402
 
 from typing import Sequence, Union
 

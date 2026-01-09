@@ -171,7 +171,9 @@ class BlockchainAnchorManager:
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized LOCAL anchor backend")
 
                 elif backend == AnchorBackend.ETHEREUM_L2:
-                    from ..blockchain.ethereum_l2.ethereum_client import EthereumL2Client
+                    from ..blockchain.ethereum_l2.ethereum_client import (
+                        EthereumL2Client,
+                    )
 
                     self._backends[backend] = EthereumL2Client(
                         network=self.config.ethereum_network,
@@ -191,7 +193,9 @@ class BlockchainAnchorManager:
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized ARWEAVE anchor backend")
 
                 elif backend == AnchorBackend.HYPERLEDGER:
-                    from ..blockchain.hyperledger_fabric.fabric_client import FabricClient
+                    from ..blockchain.hyperledger_fabric.fabric_client import (
+                        FabricClient,
+                    )
 
                     self._backends[backend] = FabricClient(config={})
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized HYPERLEDGER anchor backend")

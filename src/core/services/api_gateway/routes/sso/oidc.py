@@ -8,14 +8,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
-from src.core.shared.auth.oidc_handler import (
-    OIDCConfigurationError,
-    OIDCUserInfo,
-)
-from src.core.shared.auth.provisioning import (
-    ProvisioningResult,
-    get_provisioner,
-)
+from src.core.shared.auth.oidc_handler import OIDCConfigurationError, OIDCUserInfo
+from src.core.shared.auth.provisioning import ProvisioningResult, get_provisioner
 from src.core.shared.config import settings
 from src.core.shared.types import JSONDict
 from starlette.requests import Request as StarletteRequest
@@ -93,9 +87,11 @@ async def oidc_callback(
         # JIT Provisioning
         provisioner = get_provisioner(
             auto_provision_enabled=settings.sso.auto_provision_users,
-            default_roles=[settings.sso.default_role_on_provision]
-            if settings.sso.default_role_on_provision
-            else None,
+            default_roles=(
+                [settings.sso.default_role_on_provision]
+                if settings.sso.default_role_on_provision
+                else None
+            ),
             allowed_domains=settings.sso.allowed_domains,
         )
 

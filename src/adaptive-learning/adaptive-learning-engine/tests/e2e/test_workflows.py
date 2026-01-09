@@ -26,13 +26,8 @@ from typing import Any, Dict, List, Tuple
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 from src.api.endpoints import initialize_services, router
-from src.api.models import (
-    DriftStatusEnum,
-    ModelStateEnum,
-    SafetyStatusEnum,
-)
+from src.api.models import DriftStatusEnum, ModelStateEnum, SafetyStatusEnum
 from src.models.model_manager import ModelManager
 from src.models.online_learner import OnlineLearner
 from src.monitoring.drift_detector import DriftDetector

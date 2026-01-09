@@ -119,9 +119,9 @@ class OrganizationIdentity:
             role=FederationRole(data["role"]),
             trust_level=TrustLevel(data["trust_level"]),
             compliance_frameworks=[ComplianceFramework(f) for f in data["compliance_frameworks"]],
-            verified_at=datetime.fromisoformat(data["verified_at"])
-            if data.get("verified_at")
-            else None,
+            verified_at=(
+                datetime.fromisoformat(data["verified_at"]) if data.get("verified_at") else None
+            ),
             metadata=data.get("metadata", {}),
         )
 
@@ -730,9 +730,9 @@ class PolicySyncProtocol:
             owner_org_id=data["owner_org_id"],
             version=data["version"],
             effective_from=datetime.fromisoformat(data["effective_from"]),
-            expires_at=datetime.fromisoformat(data["expires_at"])
-            if data.get("expires_at")
-            else None,
+            expires_at=(
+                datetime.fromisoformat(data["expires_at"]) if data.get("expires_at") else None
+            ),
             inheritance_chain=data.get("inheritance_chain", []),
             allowed_orgs=set(data.get("allowed_orgs", [])),
             required_compliance=[

@@ -684,9 +684,9 @@ class TestBatchInference:
 
         messages = [
             {
-                "content": f"test message {i} with security alert"
-                if i % 5 == 0
-                else f"normal message {i}"
+                "content": (
+                    f"test message {i} with security alert" if i % 5 == 0 else f"normal message {i}"
+                )
             }
             for i in range(50)
         ]

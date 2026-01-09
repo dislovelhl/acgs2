@@ -8,10 +8,7 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from ..base import (
-    AuthenticationError,
-    IntegrationResult,
-)
+from ..base import AuthenticationError, IntegrationResult
 from ..pagerduty_models import PagerDutyCredentials
 from .payload_builder import PagerDutyPayloadBuilder
 

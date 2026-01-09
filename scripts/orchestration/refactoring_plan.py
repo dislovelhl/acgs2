@@ -82,7 +82,7 @@ def main():
 
             suggestions = planner.suggest_refactoring(file_info)
             if suggestions:
-                for suggestion in suggestions:
+                for _ in suggestions:
                     pass
 
             # Write to file

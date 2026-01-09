@@ -20,6 +20,7 @@ Key Features:
 - Thread-safe operation with locking mechanisms
 """
 
+import asyncio
 import logging
 import time
 from datetime import datetime, timezone

@@ -31,11 +31,7 @@ from .dialog import (
 )
 
 # Agent Bus integration
-from .integration import (
-    AgentBusIntegration,
-    GovernanceDecision,
-    IntegrationConfig,
-)
+from .integration import AgentBusIntegration, GovernanceDecision, IntegrationConfig
 
 # NLU components
 from .nlu import (

@@ -103,9 +103,9 @@ class TDDWorkflow:
             validations.append(
                 {
                     "valid": test_failed,
-                    "message": "Test fails as expected"
-                    if test_failed
-                    else "Test should fail in RED phase",
+                    "message": (
+                        "Test fails as expected" if test_failed else "Test should fail in RED phase"
+                    ),
                 }
             )
 
@@ -163,9 +163,11 @@ class TDDWorkflow:
         validations.append(
             {
                 "valid": is_minimal,
-                "message": "Implementation appears minimal"
-                if is_minimal
-                else "Implementation may be over-engineered",
+                "message": (
+                    "Implementation appears minimal"
+                    if is_minimal
+                    else "Implementation may be over-engineered"
+                ),
             }
         )
 
@@ -210,9 +212,11 @@ class TDDWorkflow:
         validations.append(
             {
                 "valid": test_passed,
-                "message": "Tests still pass after refactoring"
-                if test_passed
-                else "Tests broken by refactoring",
+                "message": (
+                    "Tests still pass after refactoring"
+                    if test_passed
+                    else "Tests broken by refactoring"
+                ),
             }
         )
 
@@ -221,9 +225,9 @@ class TDDWorkflow:
         validations.append(
             {
                 "valid": code_changed,
-                "message": "Code was refactored"
-                if code_changed
-                else "No refactoring applied (optional)",
+                "message": (
+                    "Code was refactored" if code_changed else "No refactoring applied (optional)"
+                ),
             }
         )
 
@@ -233,9 +237,11 @@ class TDDWorkflow:
             validations.append(
                 {
                     "valid": quality_improved,
-                    "message": "Code quality improved"
-                    if quality_improved
-                    else "Consider further refactoring for better quality",
+                    "message": (
+                        "Code quality improved"
+                        if quality_improved
+                        else "Consider further refactoring for better quality"
+                    ),
                 }
             )
 

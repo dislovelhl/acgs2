@@ -1006,7 +1006,7 @@ class SentinelAdapter(BaseIntegration):
                     error_msg = f"Batch delivery failed: HTTP {response.status_code}"
 
                 logger.warning(
-                    f"Sentinel batch delivery failed with status {response.status_code}: {error_msg}"
+                    f"Sentinel batch delivery failed with status {response.status_code}: {error_msg}"  # noqa: E501
                 )
                 return [
                     IntegrationResult(

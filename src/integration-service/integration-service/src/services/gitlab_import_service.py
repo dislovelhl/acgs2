@@ -638,9 +638,9 @@ class GitLabImportService:
             metadata={
                 "author": issue.get("author", {}).get("username") if issue.get("author") else None,
                 "user_notes_count": issue.get("user_notes_count", 0),
-                "milestone": issue.get("milestone", {}).get("title")
-                if issue.get("milestone")
-                else None,
+                "milestone": (
+                    issue.get("milestone", {}).get("title") if issue.get("milestone") else None
+                ),
                 "web_url": issue.get("web_url"),
                 "confidential": issue.get("confidential", False),
                 "issue_type": issue.get("issue_type"),

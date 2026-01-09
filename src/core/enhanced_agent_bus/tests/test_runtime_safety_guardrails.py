@@ -391,10 +391,7 @@ class TestGuardrailConfiguration:
 
     def test_custom_configuration(self):
         """Test custom configuration."""
-        from ..runtime_safety_guardrails import (
-            AgentEngineConfig,
-            InputSanitizerConfig,
-        )
+        from ..runtime_safety_guardrails import AgentEngineConfig, InputSanitizerConfig
 
         config = RuntimeSafetyGuardrailsConfig(
             input_sanitizer=InputSanitizerConfig(max_input_length=500),

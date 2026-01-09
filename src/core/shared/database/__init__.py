@@ -18,13 +18,7 @@ Usage:
             yield session
 """
 
-from .session import (
-    Base,
-    SessionLocal,
-    engine,
-    get_async_session,
-    init_db,
-)
+from .session import Base, SessionLocal, engine, get_async_session, init_db
 
 __all__ = [
     "Base",

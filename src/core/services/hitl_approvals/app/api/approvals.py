@@ -13,7 +13,11 @@ from sqlalchemy.orm import selectinload
 
 from ..database import get_db
 from ..models.approval_request import ApprovalRequest
-from ..schemas.approval import ApprovalDecisionCreate, ApprovalRequestCreate, ApprovalRequestSchema
+from ..schemas.approval import (
+    ApprovalDecisionCreate,
+    ApprovalRequestCreate,
+    ApprovalRequestSchema,
+)
 from ..services.approval_chain_engine import ApprovalChainEngine
 
 logger = logging.getLogger(__name__)

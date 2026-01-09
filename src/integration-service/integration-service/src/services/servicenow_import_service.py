@@ -474,7 +474,7 @@ class ServiceNowImportService:
                         progress.successful_items += 1
                     except Exception as e:
                         logger.error(
-                            f"Failed to transform record {record.get('number', 'unknown')}: {str(e)}"
+                            f"Failed to transform record {record.get('number', 'unknown')}: {str(e)}"  # noqa: E501
                         )
                         progress.failed_items += 1
 

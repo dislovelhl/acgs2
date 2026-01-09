@@ -22,6 +22,7 @@ if enhanced_agent_bus_dir not in sys.path:
     sys.path.insert(0, enhanced_agent_bus_dir)
 
 # Import the FastAPI app
+# ruff: noqa: E402
 import api
 
 

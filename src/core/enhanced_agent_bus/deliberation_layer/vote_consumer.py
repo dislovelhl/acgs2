@@ -177,9 +177,11 @@ class VoteEventConsumer:
             agent_id=agent_id,
             decision=decision,
             reason=vote_event.get("reasoning"),
-            timestamp=datetime.fromisoformat(vote_event["timestamp"].replace("Z", "+00:00"))
-            if isinstance(vote_event.get("timestamp"), str)
-            else vote_event.get("timestamp", datetime.now(timezone.utc)),
+            timestamp=(
+                datetime.fromisoformat(vote_event["timestamp"].replace("Z", "+00:00"))
+                if isinstance(vote_event.get("timestamp"), str)
+                else vote_event.get("timestamp", datetime.now(timezone.utc))
+            ),
         )
 
         # Add vote via VotingService (which will update Redis and check resolution)

@@ -24,9 +24,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from .vault_http_client import (
-    VaultHttpClient,
-)
+from .vault_http_client import VaultHttpClient
 
 # Import from refactored modules
 from .vault_models import (

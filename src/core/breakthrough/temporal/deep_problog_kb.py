@@ -53,7 +53,7 @@ except ImportError:
                 return [("result", 0.8)]  # Mock result
 
         def get_evaluatable(self):
-            return MockEngine()
+            return self.Engine()
 
     problog = MockProbLog()
     PROBLOG_AVAILABLE = False

@@ -5,7 +5,9 @@ import sys
 sys.path.append(os.getcwd())
 
 from src.core.services.compliance_docs.src.generators.base import BaseGenerator
-from src.core.services.compliance_docs.src.generators.docx_generator import DOCXGenerator
+from src.core.services.compliance_docs.src.generators.docx_generator import (
+    DOCXGenerator,
+)
 
 print(f"BaseGenerator: {BaseGenerator}")
 print(f"BaseGenerator bases: {BaseGenerator.__bases__}")

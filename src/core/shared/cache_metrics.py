@@ -11,12 +11,7 @@ import time
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional
 
-from prometheus_client import (
-    REGISTRY,
-    Counter,
-    Gauge,
-    Histogram,
-)
+from prometheus_client import REGISTRY, Counter, Gauge, Histogram
 
 # ============================================================================
 # Metric Registration Helpers (handle duplicate registration gracefully)

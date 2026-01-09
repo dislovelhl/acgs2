@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.safety.bounds_checker import (
     CheckResult,
     SafetyAlert,
@@ -22,7 +21,6 @@ from src.safety.bounds_checker import (
     SafetyMetrics,
     SafetyStatus,
 )
-
 
 # =============================================================================
 # Test Fixtures

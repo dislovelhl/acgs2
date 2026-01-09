@@ -10,12 +10,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from exceptions import MessageDeliveryError
-from kafka_bus import (
-    KAFKA_AVAILABLE,
-    Blackboard,
-    KafkaEventBus,
-    Orchestrator,
-)
+from kafka_bus import KAFKA_AVAILABLE, Blackboard, KafkaEventBus, Orchestrator
 from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
 
 # =============================================================================

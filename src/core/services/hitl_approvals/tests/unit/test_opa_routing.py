@@ -4,7 +4,9 @@ from uuid import uuid4
 
 import pytest
 from src.core.services.hitl_approvals.app.models.approval_chain import ApprovalChain
-from src.core.services.hitl_approvals.app.services.approval_chain_engine import ApprovalChainEngine
+from src.core.services.hitl_approvals.app.services.approval_chain_engine import (
+    ApprovalChainEngine,
+)
 
 
 @pytest.mark.asyncio

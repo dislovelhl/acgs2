@@ -17,22 +17,11 @@ try:
         KafkaEventBus,
         Orchestrator,
     )
-    from enhanced_agent_bus.models import (
-        CONSTITUTIONAL_HASH,
-        AgentMessage,
-        MessageType,
-    )
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 except ImportError:
     from exceptions import MessageDeliveryError
-    from kafka_bus import (
-        KAFKA_AVAILABLE,
-        Blackboard,
-        KafkaEventBus,
-        Orchestrator,
-    )
-    from models import (
-        AgentMessage,
-    )
+    from kafka_bus import KAFKA_AVAILABLE, Blackboard, KafkaEventBus, Orchestrator
+    from models import AgentMessage
 
 
 class TestKafkaEventBusInit:

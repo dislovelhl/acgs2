@@ -116,7 +116,7 @@ def health(ctx):
 
 @cli.command()
 @click.pass_context
-def version(ctx):
+def version(_ctx):
     """Show ACGS-2 CLI version and constitutional hash"""
     click.secho("ACGS-2 CLI Tool", fg="blue", bold=True)
     click.echo("Version: 2.0.0")

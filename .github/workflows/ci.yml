@@ -234,7 +234,7 @@ jobs:
 
       - name: Run security scanning
         uses: github/super-linter/slim@v5
-        continue-on-error: true  # Non-blocking until linter configuration is finalized
+        continue-on-error: true # Non-blocking until linter configuration is finalized
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -298,7 +298,7 @@ jobs:
           pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
 
           # Run comprehensive validation (skip tests requiring ML dependencies)
-          python -m pytest enhanced_agent_bus/tests/test_agent_bus.py enhanced_agent_bus/tests/test_message_processor_coverage.py -v -x \
+          python -m pytest enhanced_agent_bus/tests/test_agent_bus_messaging.py enhanced_agent_bus/tests/test_message_processor_coverage.py -v -x \
             -k "not (torch or transformers or distilbert)"
 
           # Deployment Simulation (Dry Run)

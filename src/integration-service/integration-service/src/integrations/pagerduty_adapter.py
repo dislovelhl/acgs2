@@ -22,10 +22,7 @@ from .base import (
 from .pagerduty.events_client import PagerDutyEventsClient
 from .pagerduty.payload_builder import PagerDutyPayloadBuilder
 from .pagerduty.rest_client import PagerDutyRestClient
-from .pagerduty_models import (
-    PagerDutyAuthType,
-    PagerDutyCredentials,
-)
+from .pagerduty_models import PagerDutyAuthType, PagerDutyCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -263,12 +260,14 @@ class PagerDutyAdapter(BaseIntegration):
                     success=response.status_code < 500,
                     integration_name=self.name,
                     operation="test_connection",
-                    error_code=None
-                    if response.status_code < 500
-                    else f"HTTP_{response.status_code}",
-                    error_message=None
-                    if response.status_code < 500
-                    else f"Server returned status {response.status_code}",
+                    error_code=(
+                        None if response.status_code < 500 else f"HTTP_{response.status_code}"
+                    ),
+                    error_message=(
+                        None
+                        if response.status_code < 500
+                        else f"Server returned status {response.status_code}"
+                    ),
                 )
         except httpx.TimeoutException as e:
             return IntegrationResult(

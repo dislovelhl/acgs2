@@ -19,6 +19,7 @@ enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file_
 if enhanced_agent_bus_dir not in sys.path:
     sys.path.insert(0, enhanced_agent_bus_dir)
 
+# ruff: noqa: E402
 from online_learning import (
     ENABLE_COLD_START_FALLBACK,
     KAFKA_AVAILABLE,

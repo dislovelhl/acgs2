@@ -14,8 +14,6 @@ try:
     from src.core.shared.types import JSONDict
 except ImportError:
     # Handle if src is not in path (fallback for local dev)
-    from typing import Any, Dict
-
     JSONDict = Dict[str, Any]
 
 

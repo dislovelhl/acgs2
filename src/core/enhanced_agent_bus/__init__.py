@@ -16,46 +16,35 @@ except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
+from typing import Any
+
 # Refactored modules for cleaner architecture
 from .config import BusConfiguration
-from .core import (
-    EnhancedAgentBus,
-    MessageProcessor,
-)
-from .examples.validation_integration_example import (
-    IntegratedValidationSystem,
-)
-from .exceptions import (
+from .core import EnhancedAgentBus, MessageProcessor
+from .examples.validation_integration_example import IntegratedValidationSystem
+from .exceptions import (  # Base; Agent; Bus Operations; Configuration; Constitutional; Deliberation; Message; Policy/OPA
     AgentAlreadyRegisteredError,
-    # Base
     AgentBusError,
     AgentCapabilityError,
-    # Agent
     AgentError,
     AgentNotRegisteredError,
     BusAlreadyStartedError,
     BusNotStartedError,
-    # Bus Operations
     BusOperationError,
-    # Configuration
     ConfigurationError,
-    # Constitutional
     ConstitutionalError,
     ConstitutionalHashMismatchError,
     ConstitutionalValidationError,
-    # Deliberation
     DeliberationError,
     DeliberationTimeoutError,
     HandlerExecutionError,
     MessageDeliveryError,
-    # Message
     MessageError,
     MessageRoutingError,
     MessageTimeoutError,
     MessageValidationError,
     OPAConnectionError,
     OPANotInitializedError,
-    # Policy/OPA
     PolicyError,
     PolicyEvaluationError,
     PolicyNotFoundError,
@@ -78,9 +67,7 @@ from .interfaces import (
     ValidationStrategy,
 )
 from .metering_manager import MeteringManager, create_metering_manager
-from .models import (
-    CONSTITUTIONAL_HASH as MODEL_HASH,
-)
+from .models import CONSTITUTIONAL_HASH as MODEL_HASH
 from .models import (
     AgentMessage,
     MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
@@ -125,9 +112,7 @@ from .siem_integration import (
     log_security_event,
     security_audit,
 )
-from .validators import (
-    ValidationResult,
-)
+from .validators import ValidationResult
 
 # Cache Warming Integration for FastAPI startup
 # Import cache warming module for pre-populating caches at service startup
@@ -147,14 +132,14 @@ try:
 except ImportError:
     # Fallback for environments without cache warming module
     CACHE_WARMING_AVAILABLE = False
-    CacheWarmer = None
-    WarmingConfig = None
-    WarmingProgress = None
-    WarmingResult = None
-    WarmingStatus = None
-    get_cache_warmer = None
-    reset_cache_warmer = None
-    warm_cache_on_startup = None
+    CacheWarmer = Any  # type: ignore[assignment, misc]
+    WarmingConfig = Any  # type: ignore[assignment, misc]
+    WarmingProgress = Any  # type: ignore[assignment, misc]
+    WarmingResult = Any  # type: ignore[assignment, misc]
+    WarmingStatus = Any  # type: ignore[assignment, misc]
+    get_cache_warmer = Any  # type: ignore[assignment, misc]
+    reset_cache_warmer = Any  # type: ignore[assignment, misc]
+    warm_cache_on_startup = Any  # type: ignore[assignment, misc]
 
 __all__ = [
     "CONSTITUTIONAL_HASH",

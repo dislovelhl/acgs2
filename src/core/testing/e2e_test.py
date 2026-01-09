@@ -8,6 +8,7 @@ ACGS-2 End-to-End Test Suite
 Tests the complete system integration from message input to governance decision output.
 """
 
+# ruff: noqa: E402
 import logging
 import os
 import time

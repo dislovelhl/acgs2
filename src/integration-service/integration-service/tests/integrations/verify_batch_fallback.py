@@ -17,7 +17,7 @@ from pathlib import Path
 # Add integration-service/src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from integrations import (
+from integrations import (  # noqa: E402
     EventSeverity,
     IntegrationEvent,
     JiraAdapter,
@@ -25,7 +25,7 @@ from integrations import (
     ServiceNowAdapter,
     ServiceNowCredentials,
 )
-from pydantic import SecretStr
+from pydantic import SecretStr  # noqa: E402
 
 
 def create_test_events(count: int = 3) -> list[IntegrationEvent]:

@@ -702,10 +702,11 @@ class ConstitutionalEdgeCaseHandler:
             "performance_stats": {
                 "average_reflection_time_ms": sum(r.processing_time_ms for r in recent_reflections)
                 / max(1, len(recent_reflections)),
-                "reflection_trigger_rate": len(recent_reflections)
-                / max(1, len(self.reflection_history))
-                if self.reflection_history
-                else 0,
+                "reflection_trigger_rate": (
+                    len(recent_reflections) / max(1, len(self.reflection_history))
+                    if self.reflection_history
+                    else 0
+                ),
             },
         }
 

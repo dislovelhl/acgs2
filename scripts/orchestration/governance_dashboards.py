@@ -251,9 +251,11 @@ class GovernanceDashboards:
             "efficiency_metrics": {
                 "first_time_resolution_rate": 0.85,  # Would be calculated from actual data
                 "automation_rate": 0.72,
-                "error_rate": len([t for t in tasks if t.get("status") == "failed"]) / len(tasks)
-                if tasks
-                else 0,
+                "error_rate": (
+                    len([t for t in tasks if t.get("status") == "failed"]) / len(tasks)
+                    if tasks
+                    else 0
+                ),
             },
         }
 
@@ -421,12 +423,14 @@ class GovernanceDashboards:
             "trend_direction": trend_direction,
             "average_completion_rate": statistics.mean(completion_rates) if completion_rates else 0,
             "volatility": statistics.stdev(completion_rates) if len(completion_rates) > 1 else 0,
-            "peak_performance_date": max(
-                daily_stats.items(),
-                key=lambda x: x[1]["completed"] / x[1]["total"] if x[1]["total"] > 0 else 0,
-            )[0]
-            if daily_stats
-            else None,
+            "peak_performance_date": (
+                max(
+                    daily_stats.items(),
+                    key=lambda x: x[1]["completed"] / x[1]["total"] if x[1]["total"] > 0 else 0,
+                )[0]
+                if daily_stats
+                else None
+            ),
             "daily_stats": dict(daily_stats),
         }
 

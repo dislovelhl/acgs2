@@ -7,15 +7,15 @@ metadata:
     acgs2/component: compliance
     acgs2/multi-region: enabled
 spec:
-  schedule: "0 2 * * *"  # Run daily at 2 AM UTC
+  schedule: "0 2 * * *" # Run daily at 2 AM UTC
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   successfulJobsHistoryLimit: 7
-  startingDeadlineSeconds: 3600  # 1 hour deadline
+  startingDeadlineSeconds: 3600 # 1 hour deadline
   jobTemplate:
     spec:
       backoffLimit: 3
-      activeDeadlineSeconds: 3600  # 1 hour timeout
+      activeDeadlineSeconds: 3600 # 1 hour timeout
       template:
         metadata:
           labels:
@@ -25,248 +25,248 @@ spec:
           serviceAccountName: compliance-verifier
           restartPolicy: Never
           containers:
-          - name: compliance-verifier
-            image: acgs2/compliance-verifier:v1.0.0
-            imagePullPolicy: IfNotPresent
-            env:
-            - name: COMPLIANCE_CHECK_TYPE
-              value: "multi-region-residency"
-            - name: KUBERNETES_SERVICE_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: KUBERNETES_SERVICE_PORT
-              value: "443"
-            - name: TENANT_CONFIG_MAP
-              value: "tenant-residency-config"
-            - name: OPA_POLICY_PACKAGE
-              value: "acgs2.multi_region.residency"
-            - name: AUDIT_SERVICE_URL
-              value: "http://audit-service.default.svc.cluster.local:8080"
-            - name: SLACK_WEBHOOK_URL
-              valueFrom:
-                secretKeyRef:
-                  name: compliance-alerts
-                  key: slack-webhook-url
-                  optional: true
-            command:
-            - /bin/sh
-            - -c
-            - |
-              #!/bin/sh
-              set -euo pipefail
+            - name: compliance-verifier
+              image: acgs2/compliance-verifier:v1.0.0
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: COMPLIANCE_CHECK_TYPE
+                  value: "multi-region-residency"
+                - name: KUBERNETES_SERVICE_HOST
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: status.hostIP
+                - name: KUBERNETES_SERVICE_PORT
+                  value: "443"
+                - name: TENANT_CONFIG_MAP
+                  value: "tenant-residency-config"
+                - name: OPA_POLICY_PACKAGE
+                  value: "acgs2.multi_region.residency"
+                - name: AUDIT_SERVICE_URL
+                  value: "http://audit-service.default.svc.cluster.local:8080"
+                - name: SLACK_WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: compliance-alerts
+                      key: slack-webhook-url
+                      optional: true
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  #!/bin/sh
+                  set -euo pipefail
 
-              echo "Starting ACGS-2 Multi-Region Compliance Verification"
-              echo "Timestamp: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-              echo "Region: ${REGION:-unknown}"
-              echo "=========================================="
+                  echo "Starting ACGS-2 Multi-Region Compliance Verification"
+                  echo "Timestamp: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+                  echo "Region: ${REGION:-unknown}"
+                  echo "=========================================="
 
-              # Load tenant residency configuration
-              echo "Loading tenant residency configuration..."
-              kubectl get configmap tenant-residency-config -o jsonpath='{.data.tenant-residency-mapping\.json}' > /tmp/tenant-config.json
+                  # Load tenant residency configuration
+                  echo "Loading tenant residency configuration..."
+                  kubectl get configmap tenant-residency-config -o jsonpath='{.data.tenant-residency-mapping\.json}' > /tmp/tenant-config.json
 
-              if [ ! -s /tmp/tenant-config.json ]; then
-                echo "ERROR: Failed to load tenant configuration"
-                exit 1
-              fi
-
-              # Extract tenant list
-              TENANTS=$(jq -r '.["tenant-config"].tenants | keys[]' /tmp/tenant-config.json)
-
-              COMPLIANCE_REPORT="/tmp/compliance-report.json"
-              echo "{}" > "$COMPLIANCE_REPORT"
-
-              OVERALL_STATUS="PASS"
-              VIOLATION_COUNT=0
-
-              echo "Checking compliance for tenants: $TENANTS"
-              echo "=========================================="
-
-              for tenant in $TENANTS; do
-                echo "Checking tenant: $tenant"
-
-                # Get tenant region and compliance requirements
-                TENANT_REGION=$(jq -r ".\"tenant-config\".tenants.\"$tenant\".region" /tmp/tenant-config.json)
-                TENANT_COMPLIANCE=$(jq -r ".\"tenant-config\".tenants.\"$tenant\".compliance[]" /tmp/tenant-config.json | tr '\n' ',' | sed 's/,$//')
-
-                echo "  Region: $TENANT_REGION"
-                echo "  Compliance: $TENANT_COMPLIANCE"
-
-                TENANT_STATUS="PASS"
-                VIOLATIONS="[]"
-
-                # Check 1: Namespace labeling compliance
-                echo "  Checking namespace labeling..."
-                NAMESPACE_LABEL=$(kubectl get namespace "tenant-$tenant" -o jsonpath='{.metadata.labels.data-residency}' 2>/dev/null || echo "not-found")
-
-                if [ "$NAMESPACE_LABEL" != "$TENANT_REGION" ] && [ "$NAMESPACE_LABEL" != "not-found" ]; then
-                  TENANT_STATUS="FAIL"
-                  VIOLATIONS=$(echo "$VIOLATIONS" | jq ". += [{\"type\": \"namespace-label-mismatch\", \"expected\": \"$TENANT_REGION\", \"actual\": \"$NAMESPACE_LABEL\"}]")
-                  VIOLATION_COUNT=$((VIOLATION_COUNT + 1))
-                fi
-
-                # Check 2: Pod placement compliance
-                echo "  Checking pod placement..."
-                POD_COUNT=$(kubectl get pods -n "tenant-$tenant" --no-headers 2>/dev/null | wc -l)
-                if [ "$POD_COUNT" -gt 0 ]; then
-                  # Check if pods are running in correct region nodes
-                  INCORRECT_NODE_PODS=$(kubectl get pods -n "tenant-$tenant" -o json | \
-                    jq -r ".items[] | select(.spec.nodeName != null) | select(.spec.nodeName | contains(\"$TENANT_REGION\") | not) | .metadata.name" 2>/dev/null || echo "")
-
-                  if [ -n "$INCORRECT_NODE_PODS" ]; then
-                    TENANT_STATUS="FAIL"
-                    VIOLATIONS=$(echo "$VIOLATIONS" | jq ". += [{\"type\": \"pod-placement-violation\", \"pods\": \"$INCORRECT_NODE_PODS\"}]")
-                    VIOLATION_COUNT=$((VIOLATION_COUNT + 1))
+                  if [ ! -s /tmp/tenant-config.json ]; then
+                    echo "ERROR: Failed to load tenant configuration"
+                    exit 1
                   fi
-                fi
 
-                # Check 3: GDPR-specific checks
-                if echo "$TENANT_COMPLIANCE" | grep -q "GDPR"; then
-                  echo "  Checking GDPR compliance..."
+                  # Extract tenant list
+                  TENANTS=$(jq -r '.["tenant-config"].tenants | keys[]' /tmp/tenant-config.json)
 
-                  # Check for cross-region data access in audit logs (last 24 hours)
-                  if [ -n "$AUDIT_SERVICE_URL" ]; then
-                    CROSS_REGION_ACCESS=$(curl -s "${AUDIT_SERVICE_URL}/api/v1/audit/events?tenant=${tenant}&hours=24&cross_region=true" | \
-                      jq -r '.events | length' 2>/dev/null || echo "0")
+                  COMPLIANCE_REPORT="/tmp/compliance-report.json"
+                  echo "{}" > "$COMPLIANCE_REPORT"
 
-                    if [ "$CROSS_REGION_ACCESS" -gt 0 ]; then
-                      TENANT_STATUS="WARN"
-                      VIOLATIONS=$(echo "$VIOLATIONS" | jq ". += [{\"type\": \"gdpr-cross-region-access\", \"count\": $CROSS_REGION_ACCESS}]")
+                  OVERALL_STATUS="PASS"
+                  VIOLATION_COUNT=0
+
+                  echo "Checking compliance for tenants: $TENANTS"
+                  echo "=========================================="
+
+                  for tenant in $TENANTS; do
+                    echo "Checking tenant: $tenant"
+
+                    # Get tenant region and compliance requirements
+                    TENANT_REGION=$(jq -r ".\"tenant-config\".tenants.\"$tenant\".region" /tmp/tenant-config.json)
+                    TENANT_COMPLIANCE=$(jq -r ".\"tenant-config\".tenants.\"$tenant\".compliance[]" /tmp/tenant-config.json | tr '\n' ',' | sed 's/,$//')
+
+                    echo "  Region: $TENANT_REGION"
+                    echo "  Compliance: $TENANT_COMPLIANCE"
+
+                    TENANT_STATUS="PASS"
+                    VIOLATIONS="[]"
+
+                    # Check 1: Namespace labeling compliance
+                    echo "  Checking namespace labeling..."
+                    NAMESPACE_LABEL=$(kubectl get namespace "tenant-$tenant" -o jsonpath='{.metadata.labels.data-residency}' 2>/dev/null || echo "not-found")
+
+                    if [ "$NAMESPACE_LABEL" != "$TENANT_REGION" ] && [ "$NAMESPACE_LABEL" != "not-found" ]; then
+                      TENANT_STATUS="FAIL"
+                      VIOLATIONS=$(echo "$VIOLATIONS" | jq ". += [{\"type\": \"namespace-label-mismatch\", \"expected\": \"$TENANT_REGION\", \"actual\": \"$NAMESPACE_LABEL\"}]")
+                      VIOLATION_COUNT=$((VIOLATION_COUNT + 1))
                     fi
-                  fi
-                fi
 
-                # Check 4: CCPA-specific checks
-                if echo "$TENANT_COMPLIANCE" | grep -q "CCPA"; then
-                  echo "  Checking CCPA compliance..."
+                    # Check 2: Pod placement compliance
+                    echo "  Checking pod placement..."
+                    POD_COUNT=$(kubectl get pods -n "tenant-$tenant" --no-headers 2>/dev/null | wc -l)
+                    if [ "$POD_COUNT" -gt 0 ]; then
+                      # Check if pods are running in correct region nodes
+                      INCORRECT_NODE_PODS=$(kubectl get pods -n "tenant-$tenant" -o json | \
+                        jq -r ".items[] | select(.spec.nodeName != null) | select(.spec.nodeName | contains(\"$TENANT_REGION\") | not) | .metadata.name" 2>/dev/null || echo "")
 
-                  # Check for data sale without consent (would require integration with consent service)
-                  # This is a placeholder for actual CCPA compliance checks
-                  echo "  CCPA checks: Not implemented yet"
-                fi
+                      if [ -n "$INCORRECT_NODE_PODS" ]; then
+                        TENANT_STATUS="FAIL"
+                        VIOLATIONS=$(echo "$VIOLATIONS" | jq ". += [{\"type\": \"pod-placement-violation\", \"pods\": \"$INCORRECT_NODE_PODS\"}]")
+                        VIOLATION_COUNT=$((VIOLATION_COUNT + 1))
+                      fi
+                    fi
 
-                # Update compliance report
-                jq ".\"$tenant\" = {
-                  \"status\": \"$TENANT_STATUS\",
-                  \"region\": \"$TENANT_REGION\",
-                  \"compliance\": \"$TENANT_COMPLIANCE\",
-                  \"violations\": $VIOLATIONS,
-                  \"checked_at\": \"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\"
-                }" "$COMPLIANCE_REPORT" > /tmp/compliance-report-new.json && mv /tmp/compliance-report-new.json "$COMPLIANCE_REPORT"
+                    # Check 3: GDPR-specific checks
+                    if echo "$TENANT_COMPLIANCE" | grep -q "GDPR"; then
+                      echo "  Checking GDPR compliance..."
 
-                if [ "$TENANT_STATUS" = "FAIL" ]; then
-                  OVERALL_STATUS="FAIL"
-                elif [ "$TENANT_STATUS" = "WARN" ] && [ "$OVERALL_STATUS" = "PASS" ]; then
-                  OVERALL_STATUS="WARN"
-                fi
+                      # Check for cross-region data access in audit logs (last 24 hours)
+                      if [ -n "$AUDIT_SERVICE_URL" ]; then
+                        CROSS_REGION_ACCESS=$(curl -s "${AUDIT_SERVICE_URL}/api/v1/audit/events?tenant=${tenant}&hours=24&cross_region=true" | \
+                          jq -r '.events | length' 2>/dev/null || echo "0")
 
-                echo "  Status: $TENANT_STATUS"
-                echo ""
-              done
+                        if [ "$CROSS_REGION_ACCESS" -gt 0 ]; then
+                          TENANT_STATUS="WARN"
+                          VIOLATIONS=$(echo "$VIOLATIONS" | jq ". += [{\"type\": \"gdpr-cross-region-access\", \"count\": $CROSS_REGION_ACCESS}]")
+                        fi
+                      fi
+                    fi
 
-              # Final report
-              echo "=========================================="
-              echo "Compliance Verification Complete"
-              echo "Overall Status: $OVERALL_STATUS"
-              echo "Total Violations: $VIOLATION_COUNT"
-              echo "=========================================="
+                    # Check 4: CCPA-specific checks
+                    if echo "$TENANT_COMPLIANCE" | grep -q "CCPA"; then
+                      echo "  Checking CCPA compliance..."
 
-              # Save final report with summary
-              jq ".summary = {
-                \"overall_status\": \"$OVERALL_STATUS\",
-                \"violation_count\": $VIOLATION_COUNT,
-                \"regions_checked\": [\"us-east-1\", \"eu-west-1\"],
-                \"compliance_frameworks\": [\"GDPR\", \"CCPA\", \"PIPL\", \"HIPAA\"],
-                \"generated_at\": \"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\",
-                \"next_check\": \"$(date -u -d '+24 hours' '+%Y-%m-%dT%H:%M:%SZ')\"
-              }" "$COMPLIANCE_REPORT" > /tmp/final-report.json && mv /tmp/final-report.json "$COMPLIANCE_REPORT"
+                      # Check for data sale without consent (would require integration with consent service)
+                      # This is a placeholder for actual CCPA compliance checks
+                      echo "  CCPA checks: Not implemented yet"
+                    fi
 
-              # Output final report
-              cat "$COMPLIANCE_REPORT"
+                    # Update compliance report
+                    jq ".\"$tenant\" = {
+                      \"status\": \"$TENANT_STATUS\",
+                      \"region\": \"$TENANT_REGION\",
+                      \"compliance\": \"$TENANT_COMPLIANCE\",
+                      \"violations\": $VIOLATIONS,
+                      \"checked_at\": \"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\"
+                    }" "$COMPLIANCE_REPORT" > /tmp/compliance-report-new.json && mv /tmp/compliance-report-new.json "$COMPLIANCE_REPORT"
 
-              # Send alerts if violations found
-              if [ "$VIOLATION_COUNT" -gt 0 ] && [ -n "$SLACK_WEBHOOK_URL" ]; then
-                echo "Sending compliance alert to Slack..."
+                    if [ "$TENANT_STATUS" = "FAIL" ]; then
+                      OVERALL_STATUS="FAIL"
+                    elif [ "$TENANT_STATUS" = "WARN" ] && [ "$OVERALL_STATUS" = "PASS" ]; then
+                      OVERALL_STATUS="WARN"
+                    fi
 
-                SLACK_MESSAGE="{
-                  \"text\": \"🚨 ACGS-2 Compliance Violations Detected\",
-                  \"blocks\": [
-                    {
-                      \"type\": \"header\",
-                      \"text\": {
-                        \"type\": \"plain_text\",
-                        \"text\": \"ACGS-2 Compliance Alert\"
-                      }
-                    },
-                    {
-                      \"type\": \"section\",
-                      \"text\": {
-                        \"type\": \"mrkdwn\",
-                        \"text\": \"*Compliance violations detected in multi-region deployment*\"
-                      }
-                    },
-                    {
-                      \"type\": \"section\",
-                      \"fields\": [
+                    echo "  Status: $TENANT_STATUS"
+                    echo ""
+                  done
+
+                  # Final report
+                  echo "=========================================="
+                  echo "Compliance Verification Complete"
+                  echo "Overall Status: $OVERALL_STATUS"
+                  echo "Total Violations: $VIOLATION_COUNT"
+                  echo "=========================================="
+
+                  # Save final report with summary
+                  jq ".summary = {
+                    \"overall_status\": \"$OVERALL_STATUS\",
+                    \"violation_count\": $VIOLATION_COUNT,
+                    \"regions_checked\": [\"us-east-1\", \"eu-west-1\"],
+                    \"compliance_frameworks\": [\"GDPR\", \"CCPA\", \"PIPL\", \"HIPAA\"],
+                    \"generated_at\": \"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\",
+                    \"next_check\": \"$(date -u -d '+24 hours' '+%Y-%m-%dT%H:%M:%SZ')\"
+                  }" "$COMPLIANCE_REPORT" > /tmp/final-report.json && mv /tmp/final-report.json "$COMPLIANCE_REPORT"
+
+                  # Output final report
+                  cat "$COMPLIANCE_REPORT"
+
+                  # Send alerts if violations found
+                  if [ "$VIOLATION_COUNT" -gt 0 ] && [ -n "$SLACK_WEBHOOK_URL" ]; then
+                    echo "Sending compliance alert to Slack..."
+
+                    SLACK_MESSAGE="{
+                      \"text\": \"🚨 ACGS-2 Compliance Violations Detected\",
+                      \"blocks\": [
                         {
-                          \"type\": \"mrkdwn\",
-                          \"text\": \"*Status:* $OVERALL_STATUS\"
+                          \"type\": \"header\",
+                          \"text\": {
+                            \"type\": \"plain_text\",
+                            \"text\": \"ACGS-2 Compliance Alert\"
+                          }
                         },
                         {
-                          \"type\": \"mrkdwn\",
-                          \"text\": \"*Violations:* $VIOLATION_COUNT\"
+                          \"type\": \"section\",
+                          \"text\": {
+                            \"type\": \"mrkdwn\",
+                            \"text\": \"*Compliance violations detected in multi-region deployment*\"
+                          }
                         },
                         {
-                          \"type\": \"mrkdwn\",
-                          \"text\": \"*Region:* ${REGION:-unknown}\"
-                        },
-                        {
-                          \"type\": \"mrkdwn\",
-                          \"text\": \"*Time:* $(date -u '+%Y-%m-%d %H:%M UTC')\"
+                          \"type\": \"section\",
+                          \"fields\": [
+                            {
+                              \"type\": \"mrkdwn\",
+                              \"text\": \"*Status:* $OVERALL_STATUS\"
+                            },
+                            {
+                              \"type\": \"mrkdwn\",
+                              \"text\": \"*Violations:* $VIOLATION_COUNT\"
+                            },
+                            {
+                              \"type\": \"mrkdwn\",
+                              \"text\": \"*Region:* ${REGION:-unknown}\"
+                            },
+                            {
+                              \"type\": \"mrkdwn\",
+                              \"text\": \"*Time:* $(date -u '+%Y-%m-%d %H:%M UTC')\"
+                            }
+                          ]
                         }
                       ]
-                    }
-                  ]
-                }"
+                    }"
 
-                curl -X POST -H 'Content-type: application/json' \
-                  --data "$SLACK_MESSAGE" \
-                  "$SLACK_WEBHOOK_URL" || echo "Failed to send Slack alert"
-              fi
+                    curl -X POST -H 'Content-type: application/json' \
+                      --data "$SLACK_MESSAGE" \
+                      "$SLACK_WEBHOOK_URL" || echo "Failed to send Slack alert"
+                  fi
 
-              # Exit with appropriate code
-              if [ "$OVERALL_STATUS" = "FAIL" ]; then
-                echo "Exiting with failure due to compliance violations"
-                exit 1
-              elif [ "$OVERALL_STATUS" = "WARN" ]; then
-                echo "Exiting with warning due to potential compliance issues"
-                exit 0  # Warnings don't fail the job
-              else
-                echo "Compliance check passed"
-                exit 0
-              fi
+                  # Exit with appropriate code
+                  if [ "$OVERALL_STATUS" = "FAIL" ]; then
+                    echo "Exiting with failure due to compliance violations"
+                    exit 1
+                  elif [ "$OVERALL_STATUS" = "WARN" ]; then
+                    echo "Exiting with warning due to potential compliance issues"
+                    exit 0  # Warnings don't fail the job
+                  else
+                    echo "Compliance check passed"
+                    exit 0
+                  fi
 
-            resources:
-              requests:
-                cpu: 100m
-                memory: 128Mi
-              limits:
-                cpu: 500m
-                memory: 512Mi
-            securityContext:
-              allowPrivilegeEscalation: false
-              runAsNonRoot: true
-              runAsUser: 1000
-              capabilities:
-                drop:
-                  - ALL
-            volumeMounts:
-            - name: compliance-reports
-              mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                runAsNonRoot: true
+                runAsUser: 1000
+                capabilities:
+                  drop:
+                    - ALL
+              volumeMounts:
+                - name: compliance-reports
+                  mountPath: /tmp
           volumes:
-          - name: compliance-reports
-            emptyDir: {}
-          restartPolicy: Never
+            - name: compliance-reports
+              emptyDir: {}
+
 ---
 # Service account for compliance verification
 apiVersion: v1
@@ -286,12 +286,12 @@ metadata:
   labels:
     acgs2/component: compliance
 rules:
-- apiGroups: [""]
-  resources: ["pods", "namespaces", "configmaps"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: ["apps"]
-  resources: ["deployments", "statefulsets"]
-  verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list"]
 ---
 # Role binding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -302,9 +302,9 @@ metadata:
   labels:
     acgs2/component: compliance
 subjects:
-- kind: ServiceAccount
-  name: compliance-verifier
-  namespace: default
+  - kind: ServiceAccount
+    name: compliance-verifier
+    namespace: default
 roleRef:
   kind: Role
   name: compliance-verifier-role

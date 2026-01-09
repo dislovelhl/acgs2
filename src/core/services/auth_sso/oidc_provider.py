@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # Check if authlib is available
 AUTHLIB_AVAILABLE = False
 try:
-    from authlib.integrations.httpx_client import AsyncOAuth2Client
+    from authlib.integrations.httpx_client import AsyncOAuth2Client  # noqa: F401
     from authlib.jose import JsonWebKey, jwt
 
     AUTHLIB_AVAILABLE = True

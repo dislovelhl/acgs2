@@ -25,11 +25,7 @@ try:
     )
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
-    from models import (
-        CONSTITUTIONAL_HASH,
-        AgentMessage,
-        MessageType,
-    )
+    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
     from processing_strategies import (
         CompositeProcessingStrategy,
         DynamicPolicyProcessingStrategy,

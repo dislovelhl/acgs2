@@ -536,7 +536,7 @@ LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
 ne 397.
 LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 398.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
-(Font)                  OT1/cmr/m/it --> OT1/LinuxLibertineT-TLF/m/it on input 
+(Font)                  OT1/cmr/m/it --> OT1/LinuxLibertineT-TLF/m/it on input
 line 398.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
 (Font)                  OT1/cmr/bx/it --> OT1/LinuxLibertineT-TLF/m/it on input
@@ -548,10 +548,10 @@ LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
 (Font)                  OT1/cmtt/m/n --> T1/zi4/m/n on input line 399.
 LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 401.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
-(Font)                  OT1/cmr/bx/n --> OT1/LinuxLibertineT-TLF/sb/n on input 
+(Font)                  OT1/cmr/bx/n --> OT1/LinuxLibertineT-TLF/sb/n on input
 line 401.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
-(Font)                  OT1/cmr/bx/n --> OT1/LinuxLibertineT-TLF/sb/n on input 
+(Font)                  OT1/cmr/bx/n --> OT1/LinuxLibertineT-TLF/sb/n on input
 line 401.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
 (Font)                  OT1/LinuxLibertineT-TLF/m/it --> OT1/LinuxLibertineT-TL
@@ -700,7 +700,7 @@ Package: fancyhdr 2022/11/09 v4.1 Extensive control of page headers and footers
 \f@nch@O@orf=\skip75
 )
 Special comment 'acks'
-LaTeX Font Info:    Trying to load font information for T1+LinuxLibertineT-TLF 
+LaTeX Font Info:    Trying to load font information for T1+LinuxLibertineT-TLF
 on input line 3510.
 
 (/usr/share/texlive/texmf-dist/tex/latex/libertine/T1LinuxLibertineT-TLF.fd
@@ -717,7 +717,7 @@ nment
 \c@algorithm=\count312
 )
 (/usr/share/texlive/texmf-dist/tex/latex/algorithmicx/algpseudocode.sty
-Package: algpseudocode 
+Package: algpseudocode
 
 (/usr/share/texlive/texmf-dist/tex/latex/algorithmicx/algorithmicx.sty
 Package: algorithmicx 2005/04/27 v1.2 Algorithmicx
@@ -1281,7 +1281,7 @@ LaTeX Font Info:    ... okay on input line 61.
 LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 61.
 LaTeX Font Info:    ... okay on input line 61.
 LaTeX Font Info:    Checking defaults for U/ntxexa/m/n on input line 61.
-LaTeX Font Info:    Trying to load font information for U+ntxexa on input line 
+LaTeX Font Info:    Trying to load font information for U+ntxexa on input line
 61.
 
 (/usr/share/texlive/texmf-dist/tex/latex/newtx/untxexa.fd
@@ -1337,19 +1337,19 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 61.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-LaTeX Font Info:    Trying to load font information for U+ntxmia on input line 
+LaTeX Font Info:    Trying to load font information for U+ntxmia on input line
 61.
 
 (/usr/share/texlive/texmf-dist/tex/latex/newtx/untxmia.fd
 File: untxmia.fd 2018/04/14 Fontinst v1.933 font definitions for U/ntxmia.
 )
-LaTeX Font Info:    Trying to load font information for U+ntxsym on input line 
+LaTeX Font Info:    Trying to load font information for U+ntxsym on input line
 61.
 
 (/usr/share/texlive/texmf-dist/tex/latex/newtx/untxsym.fd
 File: untxsym.fd 2023/08/16 Fontinst v1.933 font definitions for U/ntxsym.
 )
-LaTeX Font Info:    Trying to load font information for U+ntxsyc on input line 
+LaTeX Font Info:    Trying to load font information for U+ntxsyc on input line
 61.
 
 (/usr/share/texlive/texmf-dist/tex/latex/newtx/untxsyc.fd
@@ -1414,7 +1414,7 @@ e
 * paper: custom
 * layout: <same size as paper>
 * layoutoffset:(h,v)=(0.0pt,0.0pt)
-* modes: includehead includefoot twoside heightrounded 
+* modes: includehead includefoot twoside heightrounded
 * h-part:(L,W,R)=(46.0pt, 395.8225pt, 46.0pt)
 * v-part:(T,H,B)=(58.0pt, 620.7pt, 44.0pt)
 * \paperwidth=487.8225pt
@@ -1519,7 +1519,7 @@ LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
 (Font)              scaled to size 8.0pt on input line 131.
  [2.2]
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1535,7 +1535,7 @@ tineT-TLF/m/n/10 (-20) Re-cent work in par-tic-i-pa-tory AI de-sign [[], []] em
 
 
 Overfull \hbox (8.42691pt too wide) in paragraph at lines 179--190
- [][] 
+ [][]
  []
 
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/sc' will be
@@ -1556,7 +1556,7 @@ LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/b/it' will be
 (Font)              scaled to size 10.0pt on input line 246.
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1573,7 +1573,7 @@ ty, non-manipulation)
  []
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1585,7 +1585,7 @@ LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/it' will be
 (Font)              scaled to size 10.0pt on input line 427.
  [8.8]
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1600,7 +1600,7 @@ LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
 (Font)              scaled to size 6.0pt on input line 527.
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1621,7 +1621,7 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             See the microtype manual for details.
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1631,11 +1631,11 @@ Package fancyhdr Warning: \headheight is too small (14.0pt):
 [13.13] [14.14{/usr/share/texlive/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-
 4.enc}]
 Overfull \hbox (22.78693pt too wide) in paragraph at lines 781--800
- [][] 
+ [][]
  []
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1647,7 +1647,7 @@ LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
 (Font)              scaled to size 8.0pt on input line 919.
 
 
-Package fancyhdr Warning: \headheight is too small (14.0pt): 
+Package fancyhdr Warning: \headheight is too small (14.0pt):
 (fancyhdr)                Make it at least 18.48402pt, for example:
 (fancyhdr)                \setlength{\headheight}{18.48402pt}.
 (fancyhdr)                You might also make \topmargin smaller to compensate:
@@ -1667,7 +1667,7 @@ L3 programming layer <2024-01-22>
  ***********
 Package rerunfilecheck Info: File `ACGS2_FAccT_enhanced.out' has not changed.
 (rerunfilecheck)             Checksum: D13AD02204C19C4E43C099EEF98C4954;11185.
- ) 
+ )
 Here is how much of TeX's memory you used:
  46108 strings out of 474222
  1009328 string characters out of 5748733
@@ -1700,4 +1700,3 @@ PDF statistics:
  484 compressed objects within 5 object streams
  173 named destinations out of 1000 (max. 500000)
  97165 words of extra memory for PDF output out of 106986 (max. 10000000)
-

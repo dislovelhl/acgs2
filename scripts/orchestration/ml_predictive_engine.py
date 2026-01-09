@@ -541,9 +541,9 @@ class MLPredictiveEngine:
             "current_monthly_cost": round(current_cost, 2),
             "recommended_monthly_cost": round(recommended_cost, 2),
             "cost_difference": round(difference, 2),
-            "cost_percentage_change": round((difference / current_cost * 100), 2)
-            if current_cost > 0
-            else 0,
+            "cost_percentage_change": (
+                round((difference / current_cost * 100), 2) if current_cost > 0 else 0
+            ),
         }
 
 

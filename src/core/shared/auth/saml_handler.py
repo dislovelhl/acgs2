@@ -63,7 +63,6 @@ from .saml_config import (
 from .saml_request_tracker import SAMLRequestTracker
 from .saml_types import (
     NAMEID_FORMAT_EMAILADDRESS,
-    NAMEID_FORMAT_PERSISTENT,
     SAMLError,
     SAMLProviderError,
     SAMLReplayError,
@@ -79,7 +78,6 @@ try:
     from saml2.metadata import create_metadata_string
     from saml2.response import AuthnResponse
     from saml2.s_utils import UnknownPrincipal, UnsupportedBinding
-    from saml2.saml import NAMEID_FORMAT_EMAILADDRESS, NAMEID_FORMAT_PERSISTENT
 
     HAS_PYSAML2 = True
 except ImportError:
@@ -91,8 +89,6 @@ except ImportError:
     AuthnResponse = None  # type: ignore[misc, assignment]
     UnknownPrincipal = Exception  # type: ignore[misc, assignment]
     UnsupportedBinding = Exception  # type: ignore[misc, assignment]
-    NAMEID_FORMAT_EMAILADDRESS = "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
-    NAMEID_FORMAT_PERSISTENT = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
 
 try:
     import httpx

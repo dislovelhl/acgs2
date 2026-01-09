@@ -17,10 +17,7 @@ from ..fixtures.architecture import (
 )
 
 # Import all fixture modules using relative imports
-from ..fixtures.constitutional import (
-    CONSTITUTIONAL_HASH,
-    ConstitutionalHashValidator,
-)
+from ..fixtures.constitutional import CONSTITUTIONAL_HASH, ConstitutionalHashValidator
 from ..fixtures.governance import (
     ConsensusType,
     PolicyEnforcement,

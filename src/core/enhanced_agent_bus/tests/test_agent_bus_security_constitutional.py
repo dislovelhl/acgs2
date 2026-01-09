@@ -9,9 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from enhanced_agent_bus.agent_bus import (
-        EnhancedAgentBus,
-    )
+    from enhanced_agent_bus.agent_bus import EnhancedAgentBus
     from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
@@ -25,9 +23,7 @@ except ImportError:
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
-    from enhanced_agent_bus.agent_bus import (
-        EnhancedAgentBus,
-    )
+    from enhanced_agent_bus.agent_bus import EnhancedAgentBus
     from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,

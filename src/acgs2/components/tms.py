@@ -456,9 +456,11 @@ class ToolMediationSystem(ToolMediationSystemInterface):
                 "resource_cost": result.telemetry.get("resource_cost"),
                 "args_summary": {k: str(type(v).__name__) for k, v in request.args.items()},
                 "error": result.error if result.error else None,
-                "result_summary": str(result.result)[:200] + "..."
-                if result.result and len(str(result.result)) > 200
-                else str(result.result),
+                "result_summary": (
+                    str(result.result)[:200] + "..."
+                    if result.result and len(str(result.result)) > 200
+                    else str(result.result)
+                ),
             },
         )
         await self.aud.append_entry(audit_entry)

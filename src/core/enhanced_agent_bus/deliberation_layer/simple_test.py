@@ -21,6 +21,7 @@ from deliberation_layer.adaptive_router import AdaptiveRouter
 from deliberation_layer.deliberation_queue import DeliberationQueue
 
 # Import deliberation components
+# ruff: noqa: E402
 from deliberation_layer.impact_scorer import calculate_message_impact
 from models import AgentMessage, MessageType, Priority
 

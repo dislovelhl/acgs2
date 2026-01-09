@@ -12,6 +12,7 @@ Tests for vector database integration, RAG retrieval, LLM reasoning,
 feedback loops, and multi-agent collaboration.
 """
 
+# ruff: noqa: E402
 import asyncio
 import logging
 from typing import Any, Dict

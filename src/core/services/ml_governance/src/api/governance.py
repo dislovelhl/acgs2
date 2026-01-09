@@ -38,9 +38,9 @@ async def predict_governance(request: PredictRequest):
             reasoning=response.reasoning,
             model_version=response.model_version,
             processing_time_ms=response.processing_time_ms,
-            ab_test_info=response.metadata.get("ab_test")
-            if hasattr(response, "metadata")
-            else None,
+            ab_test_info=(
+                response.metadata.get("ab_test") if hasattr(response, "metadata") else None
+            ),
         )
 
         return api_response

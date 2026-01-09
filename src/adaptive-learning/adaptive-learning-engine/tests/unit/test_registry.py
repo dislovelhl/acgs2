@@ -19,7 +19,6 @@ from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.registry.mlflow_client import (
     MLflowRegistry,
     ModelMetadata,
@@ -29,7 +28,6 @@ from src.registry.mlflow_client import (
     RegistryStatus,
     RollbackResult,
 )
-
 
 # =============================================================================
 # Test Fixtures

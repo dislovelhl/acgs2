@@ -35,11 +35,8 @@ if enhanced_agent_bus_dir not in sys.path:
     sys.path.insert(0, enhanced_agent_bus_dir)
 
 # Import modules for testing
-from ml_versioning import (
-    DEFAULT_MODEL_NAME,
-    MLFLOW_AVAILABLE,
-    MLflowVersionManager,
-)
+# ruff: noqa: E402
+from ml_versioning import DEFAULT_MODEL_NAME, MLFLOW_AVAILABLE, MLflowVersionManager
 
 logger = logging.getLogger(__name__)
 

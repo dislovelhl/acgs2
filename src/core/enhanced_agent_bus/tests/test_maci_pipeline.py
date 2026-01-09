@@ -6,6 +6,7 @@ import pytest
 
 logger = logging.getLogger(__name__)
 
+# ruff: noqa: E402
 from enhanced_agent_bus.verification.maci_pipeline import (
     CONSTITUTIONAL_HASH,
     AgentRole,

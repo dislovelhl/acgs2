@@ -717,7 +717,10 @@ class BaseIntegration(abc.ABC):
             metrics = adapter.metrics
             logger.info(f"Batches sent: {metrics['batches_sent']}")
             logger.info(f"Total events via batch: {metrics['batch_events_total']}")
-            logger.info(f"Batch success rate: {metrics['batches_sent']/(metrics['batches_sent']+metrics['batches_failed']):.1%}")
+            success_rate = metrics['batches_sent'] / (
+                metrics['batches_sent'] + metrics['batches_failed']
+            )
+            logger.info(f"Batch success rate: {success_rate:.1%}")
             ```
 
             Handling partial success:

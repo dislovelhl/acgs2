@@ -14,7 +14,7 @@ from acgs2_sdk import HITLApprovalsService, create_client
 
 @click.group()
 @click.pass_context
-def hitl(ctx):
+def hitl(_ctx):
     """HITL Approvals management commands"""
     pass
 
@@ -288,6 +288,13 @@ def pending(ctx, user_id: str, limit: int):
 
 @hitl.command()
 @click.pass_context
+def status(_ctx):
+    """Check status of HITL services."""
+    click.echo("Checking HITL services status...")
+
+
+@hitl.command()
+@click.pass_context
 def metrics(ctx):
     """Show HITL approval metrics"""
 
@@ -305,7 +312,7 @@ def metrics(ctx):
                 click.secho("📊 HITL Approval Metrics", fg="blue", bold=True)
 
                 for key, value in metrics.items():
-                    if isinstance(value, (int, float)):
+                    if isinstance(value, int | float):
                         click.echo(f"{key}: {value}")
                     else:
                         click.echo(f"{key}: {value}")

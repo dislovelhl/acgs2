@@ -21,6 +21,7 @@ from jwt import PyJWKClient
 # Constitutional hash enforcement
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
+# ruff: noqa: E402
 import logging
 
 logger = logging.getLogger(__name__)

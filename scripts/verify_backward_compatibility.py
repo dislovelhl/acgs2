@@ -214,11 +214,11 @@ def verify_backward_compatibility() -> Tuple[bool, List[str]]:
         print("✓ adaptive_governance is a proper Python package")
 
         # Check that submodules exist
-        from src.core.enhanced_agent_bus.adaptive_governance import (  # noqa: F401
-            governance_engine,  # noqa: F401
-            impact_scorer,  # noqa: F401
+        from src.core.enhanced_agent_bus.adaptive_governance import (  # noqa: F401  # noqa: F401  # noqa: F401; noqa: F401
+            governance_engine,
+            impact_scorer,
             models,  # noqa: F401
-            threshold_manager,  # noqa: F401
+            threshold_manager,
         )
 
         print(

@@ -44,7 +44,9 @@ async def get_stability_metrics(tenant_id: str = Depends(get_tenant_id)):
 
     except httpx.RequestError as e:
         logger.error(f"Connection error to governance service: {e}")
-        raise HTTPException(status_code=503, detail="Governance service is unreachable")
+        raise HTTPException(status_code=503, detail="Governance service is unreachable") from e
     except Exception as e:
         logger.error(f"Unexpected error fetching stability metrics: {e}")
-        raise HTTPException(status_code=500, detail="Internal error processing stability metrics")
+        raise HTTPException(
+            status_code=500, detail="Internal error processing stability metrics"
+        ) from e

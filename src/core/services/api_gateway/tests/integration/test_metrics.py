@@ -112,7 +112,11 @@ class TestStructuredLoggingIntegration:
         assert logger is not None
 
         # Verify logging functions exist
-        from src.core.shared.acgs_logging import log_error, log_request_end, log_request_start
+        from src.core.shared.acgs_logging import (
+            log_error,
+            log_request_end,
+            log_request_start,
+        )
 
         assert callable(log_request_start)
         assert callable(log_request_end)

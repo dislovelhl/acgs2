@@ -14,12 +14,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from .workflow_base import (
-    WorkflowContext,
-    WorkflowDefinition,
-    query,
-    signal,
-)
+from .workflow_base import WorkflowContext, WorkflowDefinition, query, signal
 
 try:
     from src.core.shared.constants import CONSTITUTIONAL_HASH

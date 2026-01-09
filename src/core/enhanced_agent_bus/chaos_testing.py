@@ -615,7 +615,7 @@ def chaos_test(
                 await engine.deactivate_scenario(scenario.name)
 
         @wraps(func)
-        def sync_wrapper(*args: Any, **kwargs_inner: Any) -> NoReturn:
+        def sync_wrapper(*_args: Any, **_kwargs_inner: Any) -> NoReturn:
             raise RuntimeError("chaos_test decorator only supports async functions")
 
         import asyncio

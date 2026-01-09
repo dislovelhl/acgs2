@@ -10,11 +10,7 @@ import pytest
 
 from enhanced_agent_bus.agent_bus import MACI_AVAILABLE, EnhancedAgentBus
 from enhanced_agent_bus.message_processor import MessageProcessor
-from enhanced_agent_bus.models import (
-    CONSTITUTIONAL_HASH,
-    AgentMessage,
-    MessageType,
-)
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 
 # Skip if MACI not available
 pytestmark = pytest.mark.skipif(not MACI_AVAILABLE, reason="MACI module not available")
@@ -136,10 +132,7 @@ class TestMessageProcessorMACIIntegration:
 
     def test_processor_maci_with_registry(self):
         """Test MessageProcessor with external MACI registry."""
-        from enhanced_agent_bus.maci_enforcement import (
-            MACIEnforcer,
-            MACIRoleRegistry,
-        )
+        from enhanced_agent_bus.maci_enforcement import MACIEnforcer, MACIRoleRegistry
 
         registry = MACIRoleRegistry()
         enforcer = MACIEnforcer(registry=registry)
@@ -188,10 +181,7 @@ class TestMACIProcessingStrategyIntegration:
 
     def test_maci_strategy_with_external_registry(self):
         """Test MACIProcessingStrategy with external registry."""
-        from enhanced_agent_bus.maci_enforcement import (
-            MACIEnforcer,
-            MACIRoleRegistry,
-        )
+        from enhanced_agent_bus.maci_enforcement import MACIEnforcer, MACIRoleRegistry
         from enhanced_agent_bus.processing_strategies import (
             MACIProcessingStrategy,
             PythonProcessingStrategy,
@@ -213,10 +203,7 @@ class TestMACIProcessingStrategyIntegration:
     @pytest.mark.asyncio
     async def test_maci_strategy_validates_messages(self):
         """Test that MACI strategy validates messages."""
-        from enhanced_agent_bus.maci_enforcement import (
-            MACIEnforcer,
-            MACIRoleRegistry,
-        )
+        from enhanced_agent_bus.maci_enforcement import MACIEnforcer, MACIRoleRegistry
         from enhanced_agent_bus.processing_strategies import (
             MACIProcessingStrategy,
             PythonProcessingStrategy,

@@ -48,9 +48,9 @@ class RegulatoryUpdate:
             "regulation_type": self.regulation_type.value,
             "summary": self.summary,
             "source_url": self.source_url,
-            "publication_date": self.publication_date.isoformat()
-            if self.publication_date
-            else None,
+            "publication_date": (
+                self.publication_date.isoformat() if self.publication_date else None
+            ),
             "effective_date": self.effective_date.isoformat() if self.effective_date else None,
             "impact_level": self.impact_level,
             "affected_areas": self.affected_areas,

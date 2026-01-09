@@ -8,11 +8,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 
-from .base import (
-    EventSeverity,
-    IntegrationCredentials,
-    IntegrationType,
-)
+from .base import EventSeverity, IntegrationCredentials, IntegrationType
 
 logger = logging.getLogger(__name__)
 

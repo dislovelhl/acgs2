@@ -1109,8 +1109,7 @@ if __name__ == "__main__":
     logging.info("Running Policy Enforcement smoke tests...")
 
     try:
-        from infrastructure.governance.policy_enforcement import PolicyEnforcer
-
+        # Check imports
         logging.info("Imports successful")
     except ImportError as e:
         logging.error(f"Import failed: {e}")

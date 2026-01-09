@@ -6,11 +6,7 @@ Unified OpenTelemetry instrumentation for the enhanced agent bus
 and breakthrough architecture layers.
 """
 
-from .decorators import (
-    metered,
-    timed,
-    traced,
-)
+from .decorators import metered, timed, traced
 from .telemetry import (
     CONSTITUTIONAL_HASH,
     OTEL_AVAILABLE,
@@ -20,11 +16,7 @@ from .telemetry import (
     get_meter,
     get_tracer,
 )
-from .timeout_budget import (
-    LayerTimeoutBudget,
-    LayerTimeoutError,
-    TimeoutBudgetManager,
-)
+from .timeout_budget import LayerTimeoutBudget, LayerTimeoutError, TimeoutBudgetManager
 
 __all__ = [
     # Core telemetry

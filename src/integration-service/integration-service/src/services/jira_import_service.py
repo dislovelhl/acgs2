@@ -555,16 +555,18 @@ class JiraImportService:
             updated_at=updated_at,
             labels=labels,
             metadata={
-                "priority": fields.get("priority", {}).get("name")
-                if fields.get("priority")
-                else None,
-                "reporter": fields.get("reporter", {}).get("displayName")
-                if fields.get("reporter")
-                else None,
+                "priority": (
+                    fields.get("priority", {}).get("name") if fields.get("priority") else None
+                ),
+                "reporter": (
+                    fields.get("reporter", {}).get("displayName")
+                    if fields.get("reporter")
+                    else None
+                ),
                 "components": [c.get("name") for c in fields.get("components", [])],
-                "resolution": fields.get("resolution", {}).get("name")
-                if fields.get("resolution")
-                else None,
+                "resolution": (
+                    fields.get("resolution", {}).get("name") if fields.get("resolution") else None
+                ),
             },
         )
 

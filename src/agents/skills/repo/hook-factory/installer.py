@@ -134,7 +134,9 @@ class HookInstaller:
             return settings, True
 
         except json.JSONDecodeError as e:
-            raise json.JSONDecodeError(f"Malformed JSON in {settings_path}: {e.msg}", e.doc, e.pos)
+            raise json.JSONDecodeError(
+                f"Malformed JSON in {settings_path}: {e.msg}", e.doc, e.pos
+            ) from e
 
     def save_settings(self, settings_path: Path, settings: Dict) -> bool:
         """

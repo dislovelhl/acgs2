@@ -23,8 +23,8 @@ from typing import Any, BinaryIO, Dict, List, Optional, Union
 try:
     from src.core.shared.types import DocumentData, JSONDict, JSONValue
 except ImportError:
-    from typing import Any, Dict, List, Union
-
+    # Fallback for when src.core.shared.types is not available (e.g., in some test environments)
+    # These definitions should ideally come from a central types file.
     JSONPrimitive = Union[str, int, float, bool, None]
     JSONDict = Dict[str, Any]
     JSONList = List[Any]
@@ -72,6 +72,7 @@ def _ensure_output_dir() -> Path:
     return output_path
 
 
+# ruff: noqa: E402
 from .xlsx_styles import ComplianceXLSXStyles
 
 

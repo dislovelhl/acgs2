@@ -18,6 +18,7 @@ current_dir = os.path.dirname(__file__)
 sys.path.insert(0, current_dir)
 
 # Import modules directly
+# ruff: noqa: E402
 import importlib.util
 
 

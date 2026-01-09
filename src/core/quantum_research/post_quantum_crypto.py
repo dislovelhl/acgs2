@@ -586,7 +586,7 @@ class DilithiumSignature:
         start_time = time.time()
 
         k = self.params["k"]
-        l = self.params["l"]
+        l_param = self.params["l"]
         eta = self.params["eta"]
 
         # Generate random seed
@@ -599,22 +599,22 @@ class DilithiumSignature:
         K = expanded[96:128]  # For signing
 
         # Generate matrix A
-        A = self._generate_matrix_A(rho, k, l)
+        A = self._generate_matrix_A(rho, k, l_param)
 
         # Sample secret vectors s1, s2 with small coefficients
         s1 = []
-        for i in range(l):
+        for i in range(l_param):
             s1.append(self._sample_eta(eta, rho_prime, i))
 
         s2 = []
         for i in range(k):
-            s2.append(self._sample_eta(eta, rho_prime, l + i))
+            s2.append(self._sample_eta(eta, rho_prime, l_param + i))
 
         # Compute t = A*s1 + s2
         t = []
         for i in range(k):
             t_i = np.zeros(LatticeOperations.DILITHIUM_N, dtype=np.int64)
-            for j in range(l):
+            for j in range(l_param):
                 t_i = (
                     t_i + np.convolve(A[i][j], s1[j])[: LatticeOperations.DILITHIUM_N]
                 ) % LatticeOperations.DILITHIUM_Q
@@ -642,12 +642,12 @@ class DilithiumSignature:
         # Parse secret key
         rho, K, s1, s2, t = self._parse_secret_key(secret_key)
         k = self.params["k"]
-        l = self.params["l"]
+        l_param = self.params["l"]
         gamma1 = self.params["gamma1"]
         tau = self.params["tau"]
 
         # Regenerate A
-        A = self._generate_matrix_A(rho, k, l)
+        A = self._generate_matrix_A(rho, k, l_param)
 
         # Compute message representative
         mu = hashlib.shake_256(
@@ -662,7 +662,7 @@ class DilithiumSignature:
             # Sample y with coefficients in (-gamma1, gamma1)
             y = []
             rho_prime = hashlib.shake_256(K + mu + nonce.to_bytes(2, "little")).digest(64)
-            for i in range(l):
+            for i in range(l_param):
                 y.append(self._sample_gamma1(gamma1, rho_prime, i))
             nonce += 1
 
@@ -670,7 +670,7 @@ class DilithiumSignature:
             w = []
             for i in range(k):
                 w_i = np.zeros(LatticeOperations.DILITHIUM_N, dtype=np.int64)
-                for j in range(l):
+                for j in range(l_param):
                     w_i = (
                         w_i + np.convolve(A[i][j], y[j])[: LatticeOperations.DILITHIUM_N]
                     ) % LatticeOperations.DILITHIUM_Q
@@ -685,7 +685,7 @@ class DilithiumSignature:
 
             # Compute z = y + c*s1
             z = []
-            for i in range(l):
+            for i in range(l_param):
                 z_i = (
                     y[i] + np.convolve(c, s1[i])[: LatticeOperations.DILITHIUM_N]
                 ) % LatticeOperations.DILITHIUM_Q
@@ -721,12 +721,12 @@ class DilithiumSignature:
             c_tilde, z = self._parse_signature(signature.signature)
 
             k = self.params["k"]
-            l = self.params["l"]
+            l_param = self.params["l"]
             gamma1 = self.params["gamma1"]
             tau = self.params["tau"]
 
             # Regenerate A
-            A = self._generate_matrix_A(rho, k, l)
+            A = self._generate_matrix_A(rho, k, l_param)
 
             # Reconstruct challenge c
             c = self._sample_challenge(c_tilde, tau)
@@ -735,7 +735,7 @@ class DilithiumSignature:
             w_prime = []
             for i in range(k):
                 w_i = np.zeros(LatticeOperations.DILITHIUM_N, dtype=np.int64)
-                for j in range(l):
+                for j in range(l_param):
                     w_i = (
                         w_i + np.convolve(A[i][j], z[j])[: LatticeOperations.DILITHIUM_N]
                     ) % LatticeOperations.DILITHIUM_Q
@@ -767,12 +767,12 @@ class DilithiumSignature:
             logger.error(f"Dilithium verification failed: {e}")
             return False
 
-    def _generate_matrix_A(self, rho: bytes, k: int, l: int) -> List[List[np.ndarray]]:
+    def _generate_matrix_A(self, rho: bytes, k: int, l_dim: int) -> List[List[np.ndarray]]:
         """Generate public matrix A from seed"""
         A = []
         for i in range(k):
             row = []
-            for j in range(l):
+            for j in range(l_dim):
                 seed = rho + bytes([j, i])
                 xof_output = hashlib.shake_128(seed).digest(LatticeOperations.DILITHIUM_N * 4)
 
@@ -909,13 +909,13 @@ class DilithiumSignature:
         K = sk[32:64]
 
         k = self.params["k"]
-        l = self.params["l"]
+        l_param = self.params["l"]
         n = LatticeOperations.DILITHIUM_N
 
         offset = 64
 
         s1 = []
-        for _ in range(l):
+        for _ in range(l_param):
             poly = np.zeros(n, dtype=np.int64)
             for j in range(n):
                 poly[j] = int.from_bytes(sk[offset : offset + 4], "little")
@@ -953,12 +953,12 @@ class DilithiumSignature:
     def _parse_signature(self, sig: bytes) -> Tuple[bytes, List[np.ndarray]]:
         """Parse Dilithium signature"""
         c_tilde = sig[:32]
-        l = self.params["l"]
+        l_param = self.params["l"]
         n = LatticeOperations.DILITHIUM_N
 
         z = []
         offset = 32
-        for _ in range(l):
+        for _ in range(l_param):
             poly = np.zeros(n, dtype=np.int64)
             for j in range(n):
                 if offset + 4 <= len(sig):

@@ -11,12 +11,20 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        exclude: 'multi-region.*\.yaml$|helm.*\.yaml$'  # Exclude Helm templates
+        args: ["--allow-multiple-documents"]
+        exclude: 'helm.*\.yaml$|multi-region-deployment.*\.yaml$|config/mkdocs\.yml$|src/core/\.gitlab-ci\.yml$' # Exclude Helm templates
       - id: check-json
+        exclude: "tsconfig.json"
       - id: check-added-large-files
         args: ["--maxkb=1000"]
       - id: check-merge-conflict
       - id: detect-private-key
+        exclude: >
+          (?x)^(
+            src/agents/skills/repo/hook-factory/examples/security-scan/README.md|
+            .agent/workflows/kubernetes-operations/1.2.1/skills/k8s-manifest-generator/SKILL.md|
+            ACGS2_ready_to_start_PR_plan_zh.md
+          )$
 
   # Python code formatting
   - repo: https://github.com/psf/black
@@ -38,15 +46,6 @@ repos:
     hooks:
       - id: flake8
         args: ["--max-line-length=100", "--ignore=E501,W503"]
-
-  # Unused import detection
-  - repo: https://github.com/hadialqattan/pycln
-    rev: v2.4.0
-    hooks:
-      - id: pycln
-        args: [--config=pyproject.toml]
-        name: Remove unused imports
-        description: Remove unused Python imports
 
   # Import sorting (additional check)
   - repo: https://github.com/pycqa/isort

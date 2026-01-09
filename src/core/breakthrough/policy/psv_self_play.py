@@ -25,13 +25,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set
 
-from src.core.shared.policy.models import (
-    PolicySpecification,
-    VerifiedPolicy,
-)
-from src.core.shared.policy.unified_generator import (
-    UnifiedVerifiedPolicyGenerator,
-)
+from src.core.shared.policy.models import PolicySpecification, VerifiedPolicy
+from src.core.shared.policy.unified_generator import UnifiedVerifiedPolicyGenerator
 
 from ...shared.types import JSONDict
 from .. import CONSTITUTIONAL_HASH
@@ -487,10 +482,6 @@ class PSVSelfPlay:
 
             except Exception as e:
                 logger.error(f"Error in challenge attempt: {str(e)}")
-                continue
-
-            except Exception as e:
-                logger.error(f"Unexpected error in challenge attempt: {str(e)}")
                 continue
 
         # All attempts failed

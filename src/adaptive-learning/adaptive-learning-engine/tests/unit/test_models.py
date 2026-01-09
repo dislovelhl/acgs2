@@ -13,13 +13,7 @@ import time
 from typing import Any, Dict
 
 import pytest
-
-from src.models.model_manager import (
-    ModelManager,
-    ModelVersion,
-    SwapResult,
-    SwapStatus,
-)
+from src.models.model_manager import ModelManager, ModelVersion, SwapResult, SwapStatus
 from src.models.online_learner import (
     ModelMetrics,
     ModelState,
@@ -28,7 +22,6 @@ from src.models.online_learner import (
     PredictionResult,
     TrainingResult,
 )
-
 
 # =============================================================================
 # Test Fixtures

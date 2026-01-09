@@ -9,26 +9,24 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from os import getenv
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
-from jinja2 import (
-    Environment,
-    FileSystemLoader,
-    TemplateNotFound,
-    select_autoescape,
-)
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 
 # Internal imports
 try:
-    from src.core.shared.types import JSONDict, JSONValue, TemplateContext
+    from src.core.shared.types import JSONValue, TemplateContext  # JSONDict removed
 except ImportError:
-    from typing import Any, Dict, List, Union
+    # from typing import Union  # Removed redundant import
 
     JSONPrimitive = Union[str, int, float, bool, None]
-    JSONDict = Dict[str, Any]
-    JSONList = List[Any]
-    JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
-    TemplateContext = Dict[str, JSONValue]
+    # The following lines defining JSONDict, JSONList, JSONValue, and TemplateContext
+    # are removed as per the instruction to remove redefined Dict and Union types.
+    # These types are expected to be imported from src.core.shared.types.
+    # JSONDict = Dict[str, Any]
+    # JSONList = List[Any]
+    # JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
+    # TemplateContext = Dict[str, JSONValue]
 
 # Default templates path relative to service directory
 _DEFAULT_TEMPLATES_PATH = Path(__file__).parent / "templates"

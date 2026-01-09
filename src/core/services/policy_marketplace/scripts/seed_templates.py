@@ -1,9 +1,7 @@
-"""
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 #!/usr/bin/env python3
 """
+Constitutional Hash: cdd01ef066bc6cf2
+
 Seed script for verified policy templates in the Policy Marketplace.
 
 This script loads verified template JSON files from the templates/verified directory
@@ -17,7 +15,6 @@ Environment Variables:
     MARKETPLACE_DATABASE_URL: PostgreSQL connection URL
         (default: postgresql+asyncpg://acgs2_user:acgs2_pass@localhost:5432/acgs2_marketplace)
 """
-# ruff: noqa: I001
 
 import asyncio
 import hashlib
@@ -28,12 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Template directory path
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "verified"

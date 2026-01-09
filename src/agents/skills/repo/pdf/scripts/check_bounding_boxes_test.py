@@ -110,9 +110,7 @@ class TestGetBoundingBoxMessages(unittest.TestCase):
                     "page_number": 1,
                     "label_bounding_box": [10, 10, 50, 30],
                     "entry_bounding_box": [60, 10, 150, 20],  # Height is 10
-                    "entry_text": {
-                        "font_size": 14  # Font size larger than height
-                    },
+                    "entry_text": {"font_size": 14},  # Font size larger than height
                 }
             ]
         }
@@ -131,9 +129,7 @@ class TestGetBoundingBoxMessages(unittest.TestCase):
                     "page_number": 1,
                     "label_bounding_box": [10, 10, 50, 30],
                     "entry_bounding_box": [60, 10, 150, 30],  # Height is 20
-                    "entry_text": {
-                        "font_size": 14  # Font size smaller than height
-                    },
+                    "entry_text": {"font_size": 14},  # Font size smaller than height
                 }
             ]
         }

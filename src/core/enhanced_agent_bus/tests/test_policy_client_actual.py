@@ -16,6 +16,7 @@ _parent_dir = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, _parent_dir)
 
 # Import models directly first
+# ruff: noqa: E402
 from models import AgentMessage, MessageType, Priority
 
 # Now load policy_client with mocked relative imports

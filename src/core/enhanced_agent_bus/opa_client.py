@@ -45,7 +45,10 @@ except (ImportError, ValueError):
                 OPANotInitializedError,
                 PolicyEvaluationError,
             )
-            from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
+            from src.core.enhanced_agent_bus.models import (
+                CONSTITUTIONAL_HASH,
+                AgentMessage,
+            )
             from src.core.enhanced_agent_bus.validators import ValidationResult
         except ImportError:
             # Fallback for sharing with shared package

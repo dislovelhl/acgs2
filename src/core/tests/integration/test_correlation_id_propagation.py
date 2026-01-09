@@ -20,6 +20,7 @@ Verification Steps (from spec):
 4. Verify response headers contain X-Request-ID
 """
 
+# ruff: noqa: E402
 import json
 import os
 import sys

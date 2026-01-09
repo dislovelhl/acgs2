@@ -9,16 +9,7 @@ Features conditional branching, state persistence, and human-in-the-loop interru
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Set,
-    TypeVar,
-)
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, TypeVar
 
 from .workflow_base import CONSTITUTIONAL_HASH, WorkflowContext
 

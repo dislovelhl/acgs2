@@ -169,7 +169,7 @@ class FormatDetector:
 
                 json.loads(content_stripped)
                 return "json"
-            except:
+            except (ValueError, TypeError):
                 pass
 
         # XML format

@@ -291,7 +291,7 @@ class PQCValidationStrategy:
         # Validate PQC signature
         try:
             # Convert base64 signature and public key back to bytes for validation
-            import base64
+            # import base64  # Removed unused import
 
             signature_bytes = base64.b64decode(message.pqc_signature)
 

@@ -36,6 +36,7 @@ impl Default for ScoringConfig {
 
 pub struct ImpactScorer {
     pub config: ScoringConfig,
+    #[cfg(feature = "ort")]
     onnx_session: Option<ort::session::Session>,
     tokenizer: Option<tokenizers::Tokenizer>,
     agent_request_rates: DashMap<String, Vec<DateTime<Utc>>>,
@@ -47,6 +48,7 @@ impl ImpactScorer {
     pub fn new(config: Option<ScoringConfig>, onnx_path: Option<&str>) -> Self {
         let config = config.unwrap_or_default();
 
+        #[cfg(feature = "ort")]
         let (session, tokenizer) = if let Some(path) = onnx_path {
             let session = ort::session::Session::builder()
                 .unwrap()
@@ -58,8 +60,12 @@ impl ImpactScorer {
             (None, None)
         };
 
+        #[cfg(not(feature = "ort"))]
+        let tokenizer: Option<tokenizers::Tokenizer> = None;
+
         Self {
             config,
+            #[cfg(feature = "ort")]
             onnx_session: session,
             tokenizer,
             agent_request_rates: DashMap::new(),
@@ -136,6 +142,7 @@ impl ImpactScorer {
     }
 
     fn calculate_semantic_score(&self, message: &AgentMessage) -> f32 {
+        #[cfg(feature = "ort")]
         if let (Some(_session), Some(_tokenizer)) = (&self.onnx_session, &self.tokenizer) {
             // Full BERT implementation would go here
             // For now, fallback to keyword matching if ONNX fails or is not fully implemented
@@ -143,6 +150,9 @@ impl ImpactScorer {
         } else {
             self.keyword_semantic_score(message)
         }
+
+        #[cfg(not(feature = "ort"))]
+        self.keyword_semantic_score(message)
     }
 
     fn keyword_semantic_score(&self, message: &AgentMessage) -> f32 {

@@ -385,9 +385,9 @@ class ConstitutionalTimelineEngine:
                 "severity": disruption.severity,
                 "description": f"Adaptation response: {strategy}",
             },
-            causal_chain=[disruption.disruption_id]
-            if disruption.disruption_id in self._event_index
-            else [],
+            causal_chain=(
+                [disruption.disruption_id] if disruption.disruption_id in self._event_index else []
+            ),
             actor="timeline_engine",
         )
         events.append(adaptation_event)

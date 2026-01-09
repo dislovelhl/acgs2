@@ -5,11 +5,7 @@ Provides models, configuration, and delivery infrastructure for custom webhook
 integrations with configurable authentication, retry logic, and delivery tracking.
 """
 
-from .config import (
-    WebhookFrameworkConfig,
-    WebhookRetryPolicy,
-    WebhookSecurityConfig,
-)
+from .config import WebhookFrameworkConfig, WebhookRetryPolicy, WebhookSecurityConfig
 from .delivery import (
     DeadLetterQueue,
     WebhookAuthenticationError,

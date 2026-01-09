@@ -18,12 +18,7 @@ from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from app.models import (
-    ABTestGroup,
-    PolicySignature,
-    PolicyStatus,
-    VersionStatus,
-)
+from app.models import ABTestGroup, PolicySignature, PolicyStatus, VersionStatus
 from app.services.policy_service import PolicyService
 
 # Constitutional hash constant

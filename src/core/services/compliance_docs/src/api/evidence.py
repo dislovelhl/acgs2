@@ -19,10 +19,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from ..generators import (
-    generate_pdf_to_buffer,
-    generate_xlsx_to_buffer,
-)
+from ..generators import generate_pdf_to_buffer, generate_xlsx_to_buffer
 from ..models.base import ComplianceFramework, ExportFormat
 
 logger = logging.getLogger(__name__)

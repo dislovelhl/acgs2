@@ -22,10 +22,10 @@ MOCK_STORAGE = sys._ACGS_MOCK_STORAGE
 class MockMagicMock:
     """Minimal MagicMock replacement when unittest.mock unavailable."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *_args, **_kwargs):
         pass
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *_args, **_kwargs):
         return self
 
     def __getattr__(self, name):
@@ -88,7 +88,7 @@ class MockComponent:
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *_args, **_kwargs):
         self.queue = MOCK_STORAGE["tasks"]
         self.tasks = self.queue
         self.stats = MOCK_STORAGE["stats"] or {
@@ -166,18 +166,18 @@ class MockComponent:
         # Synchronous getter methods
         if name.startswith("get_"):
             if name == "get_routing_stats":
-                return lambda *args, **kwargs: {}
+                return lambda *_args, **_kwargs: {}
             if name == "get_queue_status":
-                return lambda *args, **kwargs: {
+                return lambda *_args, **_kwargs: {
                     "stats": self.stats,
                     "queue_size": len(self.queue),
                     "processing_count": 0,
                 }
             if name == "get_stats":
-                return lambda *args, **kwargs: {}
+                return lambda *_args, **_kwargs: {}
             if name == "get_task":
                 return lambda tid: self.queue.get(tid)
-            return lambda *args, **kwargs: None
+            return lambda *_args, **_kwargs: None
 
         return async_mock
 
@@ -208,42 +208,42 @@ class MockComponent:
 
 
 # Factory functions for creating mock instances
-def create_mock_impact_scorer(*args, **kwargs) -> MockComponent:
+def create_mock_impact_scorer(*_args, **_kwargs) -> MockComponent:
     """Create a mock impact scorer."""
     return MockComponent()
 
 
-def create_mock_adaptive_router(*args, **kwargs) -> MockComponent:
+def create_mock_adaptive_router(*_args, **_kwargs) -> MockComponent:
     """Create a mock adaptive router."""
     return MockComponent()
 
 
-def create_mock_deliberation_queue(*args, **kwargs) -> MockComponent:
+def create_mock_deliberation_queue(*_args, **_kwargs) -> MockComponent:
     """Create a mock deliberation queue."""
     return MockComponent()
 
 
-def create_mock_llm_assistant(*args, **kwargs) -> MockComponent:
+def create_mock_llm_assistant(*_args, **_kwargs) -> MockComponent:
     """Create a mock LLM assistant."""
     return MockComponent()
 
 
-def create_mock_redis_queue(*args, **kwargs) -> MockComponent:
+def create_mock_redis_queue(*_args, **_kwargs) -> MockComponent:
     """Create a mock Redis queue."""
     return MockComponent()
 
 
-def create_mock_redis_voting(*args, **kwargs) -> MockComponent:
+def create_mock_redis_voting(*_args, **_kwargs) -> MockComponent:
     """Create a mock Redis voting system."""
     return MockComponent()
 
 
-def create_mock_opa_guard(*args, **kwargs) -> MockComponent:
+def create_mock_opa_guard(*_args, **_kwargs) -> MockComponent:
     """Create a mock OPA guard."""
     return MockComponent()
 
 
-def mock_calculate_message_impact(*args, **kwargs) -> float:
+def mock_calculate_message_impact(*_args, **_kwargs) -> float:
     """Mock impact calculation returning 0.0."""
     return 0.0
 

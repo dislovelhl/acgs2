@@ -201,9 +201,11 @@ class VotingService:
             "agent_id": vote.agent_id,
             "decision": vote.decision,
             "reason": vote.reason,
-            "timestamp": vote.timestamp.isoformat()
-            if isinstance(vote.timestamp, datetime)
-            else vote.timestamp,
+            "timestamp": (
+                vote.timestamp.isoformat()
+                if isinstance(vote.timestamp, datetime)
+                else vote.timestamp
+            ),
         }
 
         # Publish vote event to Kafka BEFORE updating Redis (as per spec)
@@ -217,9 +219,11 @@ class VotingService:
                     "weight": election_data.get("participant_weights", {}).get(vote.agent_id, 1.0),
                     "reasoning": vote.reason,
                     "confidence": 1.0,  # Default confidence
-                    "timestamp": vote.timestamp.isoformat()
-                    if isinstance(vote.timestamp, datetime)
-                    else vote.timestamp,
+                    "timestamp": (
+                        vote.timestamp.isoformat()
+                        if isinstance(vote.timestamp, datetime)
+                        else vote.timestamp
+                    ),
                 }
 
                 success = await self.kafka_bus.publish_vote_event(tenant_id, vote_event_dict)

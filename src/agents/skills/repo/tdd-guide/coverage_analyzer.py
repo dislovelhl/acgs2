@@ -137,7 +137,7 @@ class CoverageAnalyzer:
             return files
 
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON coverage report: {e}")
+            raise ValueError(f"Invalid JSON coverage report: {e}") from e
 
     def _parse_xml(self, content: str) -> Dict[str, Any]:
         """Parse XML/Cobertura format coverage report."""
@@ -174,7 +174,7 @@ class CoverageAnalyzer:
             return files
 
         except ET.ParseError as e:
-            raise ValueError(f"Invalid XML coverage report: {e}")
+            raise ValueError(f"Invalid XML coverage report: {e}") from e
 
     def calculate_summary(self) -> Dict[str, Any]:
         """
@@ -409,7 +409,7 @@ class CoverageAnalyzer:
             try:
                 json.loads(content_stripped)
                 return CoverageFormat.JSON
-            except:
+            except (ValueError, TypeError):
                 pass
 
         # Check for XML format

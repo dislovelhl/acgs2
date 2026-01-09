@@ -53,12 +53,12 @@ paths:
       tags:
         - Health
       responses:
-        '200':
+        "200":
           description: Service is healthy
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
+                $ref: "#/components/schemas/HealthResponse"
 
   /messages/send:
     post:
@@ -74,26 +74,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SendMessageRequest'
+              $ref: "#/components/schemas/SendMessageRequest"
       responses:
-        '200':
+        "200":
           description: Message sent successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SendMessageResponse'
-        '400':
+                $ref: "#/components/schemas/SendMessageResponse"
+        "400":
           description: Invalid message format
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Constitutional compliance violation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /messages/receive:
     get:
@@ -129,12 +129,12 @@ paths:
             maximum: 30
             default: 0
       responses:
-        '200':
+        "200":
           description: Messages retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReceiveMessagesResponse'
+                $ref: "#/components/schemas/ReceiveMessagesResponse"
 
   /constitutional/validate:
     post:
@@ -150,20 +150,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConstitutionalValidationRequest'
+              $ref: "#/components/schemas/ConstitutionalValidationRequest"
       responses:
-        '200':
+        "200":
           description: Validation completed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConstitutionalValidationResponse'
-        '400':
+                $ref: "#/components/schemas/ConstitutionalValidationResponse"
+        "400":
           description: Invalid validation request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /tasks/submit:
     post:
@@ -179,20 +179,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TaskSubmissionRequest'
+              $ref: "#/components/schemas/TaskSubmissionRequest"
       responses:
-        '202':
+        "202":
           description: Task accepted for execution
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskSubmissionResponse'
-        '400':
+                $ref: "#/components/schemas/TaskSubmissionResponse"
+        "400":
           description: Invalid task definition
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /tasks/{task_id}/status:
     get:
@@ -211,18 +211,18 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Task status retrieved
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskStatusResponse'
-        '404':
+                $ref: "#/components/schemas/TaskStatusResponse"
+        "404":
           description: Task not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /governance/evaluate:
     post:
@@ -238,20 +238,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GovernanceEvaluationRequest'
+              $ref: "#/components/schemas/GovernanceEvaluationRequest"
       responses:
-        '200':
+        "200":
           description: Governance evaluation completed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GovernanceEvaluationResponse'
-        '400':
+                $ref: "#/components/schemas/GovernanceEvaluationResponse"
+        "400":
           description: Invalid evaluation request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /metrics/impact:
     get:
@@ -284,14 +284,20 @@ paths:
             type: string
             format: date-time
       responses:
-        '200':
+        "200":
           description: Impact scores retrieved
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ImpactScoresResponse'
+                $ref: "#/components/schemas/ImpactScoresResponse"
 
 components:
+  securitySchemes:
+    InternalAuth:
+      type: apiKey
+      in: header
+      name: X-Internal-API-Key
+      description: Internal service API key for authentication
   schemas:
     HealthResponse:
       type: object
@@ -402,7 +408,7 @@ components:
         messages:
           type: array
           items:
-            $ref: '#/components/schemas/Message'
+            $ref: "#/components/schemas/Message"
         count:
           type: integer
           example: 5
@@ -753,11 +759,3 @@ components:
 
 security:
   - InternalAuth: []
-
-components:
-  securitySchemes:
-    InternalAuth:
-      type: apiKey
-      in: header
-      name: X-Internal-API-Key
-      description: Internal service API key for authentication

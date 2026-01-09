@@ -8,10 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Response
 from fastapi.responses import RedirectResponse
-from src.core.shared.auth.provisioning import (
-    ProvisioningResult,
-    get_provisioner,
-)
+from src.core.shared.auth.provisioning import ProvisioningResult, get_provisioner
 from src.core.shared.auth.saml_handler import (
     SAMLAuthenticationError,
     SAMLConfigurationError,
@@ -104,9 +101,11 @@ async def saml_acs(
         # JIT Provisioning
         provisioner = get_provisioner(
             auto_provision_enabled=settings.sso.auto_provision_users,
-            default_roles=[settings.sso.default_role_on_provision]
-            if settings.sso.default_role_on_provision
-            else None,
+            default_roles=(
+                [settings.sso.default_role_on_provision]
+                if settings.sso.default_role_on_provision
+                else None
+            ),
             allowed_domains=settings.sso.allowed_domains,
         )
 

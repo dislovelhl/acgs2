@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from ..models.import_models import (
     ImportListResponse,
+    ImportProgress,
     ImportRequest,
     ImportResponse,
     ImportStatus,
@@ -199,7 +200,9 @@ async def test_connection(
                 )
 
         elif request.source == SourceType.SERVICENOW:
-            from ..services.servicenow_import_service import create_servicenow_import_service
+            from ..services.servicenow_import_service import (
+                create_servicenow_import_service,
+            )
 
             try:
                 service = await create_servicenow_import_service(request.source_config)
@@ -328,14 +331,17 @@ async def preview_import(
 
         # Integrate with actual import services based on source_type
         if request.source_type == SourceType.GITHUB:
-            from ..services.github_import_service import GitHubImportConfig, GitHubImportService
+            from ..services.github_import_service import (
+                GitHubImportConfig,
+                GitHubImportService,
+            )
 
             # Build GitHub config from request
             config = GitHubImportConfig(
                 api_token=request.credentials.get("api_token", ""),
-                repository=request.source_config.get("repository", "")
-                if request.source_config
-                else "",
+                repository=(
+                    request.source_config.get("repository", "") if request.source_config else ""
+                ),
                 state=request.source_config.get("state", "all") if request.source_config else "all",
                 labels=request.source_config.get("labels", []) if request.source_config else [],
                 milestone=request.source_config.get("milestone") if request.source_config else None,
@@ -347,14 +353,17 @@ async def preview_import(
             )
 
         elif request.source_type == SourceType.GITLAB:
-            from ..services.gitlab_import_service import GitLabImportConfig, GitLabImportService
+            from ..services.gitlab_import_service import (
+                GitLabImportConfig,
+                GitLabImportService,
+            )
 
             # Build GitLab config from request
             config = GitLabImportConfig(
                 api_token=request.credentials.get("api_token", ""),
-                project_id=request.source_config.get("project_id", "")
-                if request.source_config
-                else "",
+                project_id=(
+                    request.source_config.get("project_id", "") if request.source_config else ""
+                ),
                 state=request.source_config.get("state", "all") if request.source_config else "all",
                 labels=request.source_config.get("labels", []) if request.source_config else [],
                 milestone=request.source_config.get("milestone") if request.source_config else None,
@@ -366,22 +375,25 @@ async def preview_import(
             )
 
         elif request.source_type == SourceType.JIRA:
-            from ..services.jira_import_service import JiraImportConfig, JiraImportService
+            from ..services.jira_import_service import (
+                JiraImportConfig,
+                JiraImportService,
+            )
 
             # Build Jira config from request
             config = JiraImportConfig(
                 server_url=request.credentials.get("server_url", ""),
                 username=request.credentials.get("username", ""),
                 api_token=request.credentials.get("api_token", ""),
-                project_key=request.source_config.get("project_key", "")
-                if request.source_config
-                else "",
-                issue_types=request.source_config.get("issue_types", [])
-                if request.source_config
-                else [],
-                status_filter=request.source_config.get("status_filter", [])
-                if request.source_config
-                else [],
+                project_key=(
+                    request.source_config.get("project_key", "") if request.source_config else ""
+                ),
+                issue_types=(
+                    request.source_config.get("issue_types", []) if request.source_config else []
+                ),
+                status_filter=(
+                    request.source_config.get("status_filter", []) if request.source_config else []
+                ),
             )
 
             service = JiraImportService(config)
@@ -400,9 +412,11 @@ async def preview_import(
                 instance_url=request.credentials.get("instance_url", ""),
                 username=request.credentials.get("username", ""),
                 password=request.credentials.get("password", ""),
-                table=request.source_config.get("table", "incident")
-                if request.source_config
-                else "incident",
+                table=(
+                    request.source_config.get("table", "incident")
+                    if request.source_config
+                    else "incident"
+                ),
                 query=request.source_config.get("query", "") if request.source_config else "",
                 fields=request.source_config.get("fields", []) if request.source_config else [],
             )
@@ -476,13 +490,15 @@ async def process_import_job(
             service = await create_jira_import_service(request_params.source_config)
 
         elif job.source_type == SourceType.SERVICENOW:
-            from ..services.servicenow_import_service import create_servicenow_import_service
+            from ..services.servicenow_import_service import (
+                create_servicenow_import_service,
+            )
 
             service = await create_servicenow_import_service(request_params.source_config)
 
         if service:
             # Define progress callback to update Redis
-            async def progress_callback(progress: ImportProgress):
+            async def progress_callback(progress: "ImportProgress"):
                 job.progress = progress
                 job.updated_at = datetime.now(timezone.utc)
                 await save_job_to_redis(redis_client, job)
@@ -492,15 +508,19 @@ async def process_import_job(
             # In a real implementation, we'd make the services support async callbacks
             # or wrap the sync callback.
 
-            # Since I can't easily change all services' fetch_items signatures to be async callback aware
-            # without checking them all, I'll just call them and update progress manually if needed.
-            # Actually, the services already have progress_callback but it's not typed as async.
+            # Since I can't easily change all services' fetch_items signatures to be
+            # async callback aware without checking them all, I'll just call them and
+            # update progress manually if needed.
+            # Actually, the services already have progress_callback but it's not typed
+            # as async.
 
             items = await service.fetch_items(
                 source_config=request_params.source_config,
                 batch_size=request_params.options.batch_size,
                 max_items=request_params.options.max_items,
-                # progress_callback=lambda p: asyncio.run_coroutine_threadsafe(progress_callback(p), asyncio.get_event_loop())
+                # progress_callback=lambda p: asyncio.run_coroutine_threadsafe(
+                #     progress_callback(p), asyncio.get_event_loop()
+                # )
             )
 
             # Close service

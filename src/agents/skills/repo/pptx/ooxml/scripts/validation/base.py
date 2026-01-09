@@ -661,7 +661,7 @@ class BaseSchemaValidator:
                 pass
 
         if new_errors:
-            for error in new_errors:
+            for _ in new_errors:
                 pass
             return False
         else:

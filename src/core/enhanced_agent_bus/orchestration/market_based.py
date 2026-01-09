@@ -337,12 +337,14 @@ class MarketBasedOrchestrator:
             "task_id": auction.task_id,
             "status": auction.status,
             "bid_count": len(auction.bids),
-            "winning_bid": {
-                "agent_id": auction.winning_bid.agent_id,
-                "bid_amount": auction.winning_bid.bid_amount,
-            }
-            if auction.winning_bid
-            else None,
+            "winning_bid": (
+                {
+                    "agent_id": auction.winning_bid.agent_id,
+                    "bid_amount": auction.winning_bid.bid_amount,
+                }
+                if auction.winning_bid
+                else None
+            ),
         }
 
     def get_market_stats(self) -> Dict[str, Any]:

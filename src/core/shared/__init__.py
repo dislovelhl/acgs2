@@ -93,12 +93,7 @@ except ImportError:
     pass
 
 try:
-    from .retry import (
-        RetryBudget,
-        exponential_backoff,
-        retry_async,
-        retry_sync,
-    )
+    from .retry import RetryBudget, exponential_backoff, retry_async, retry_sync
 except ImportError:
     pass
 

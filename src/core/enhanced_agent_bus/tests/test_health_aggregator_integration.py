@@ -197,7 +197,10 @@ class TestHealthAggregatorIntegration:
     async def test_real_world_monitoring_scenario(self, aggregator_with_registry, registry):
         """Test realistic monitoring scenario with multiple services."""
         import pybreaker
-        from src.core.shared.circuit_breaker import CircuitBreakerConfig, get_circuit_breaker
+        from src.core.shared.circuit_breaker import (
+            CircuitBreakerConfig,
+            get_circuit_breaker,
+        )
 
         # Create services with different configurations
         services = {

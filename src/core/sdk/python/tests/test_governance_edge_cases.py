@@ -591,7 +591,6 @@ class TestMultipleItems:
         governance_service,
         mock_client,
         sample_approval_request_data,
-        constitutional_hash,
     ):
         """Test approval request with multiple decisions."""
         data = sample_approval_request_data.copy()

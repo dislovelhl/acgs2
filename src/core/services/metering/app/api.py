@@ -13,12 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from src.core.shared.security.cors_config import get_cors_config
 
-from .models import (
-    CONSTITUTIONAL_HASH,
-    MeterableOperation,
-    MeteringQuota,
-    MeteringTier,
-)
+from .models import CONSTITUTIONAL_HASH, MeterableOperation, MeteringQuota, MeteringTier
 from .service import UsageMeteringService
 
 app = FastAPI(

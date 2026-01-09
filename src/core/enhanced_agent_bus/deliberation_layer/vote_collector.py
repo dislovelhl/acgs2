@@ -88,9 +88,11 @@ class VoteEvent:
             reasoning=data.get("reasoning", ""),
             confidence=float(data.get("confidence", 1.0)),
             weight=float(data.get("weight", 1.0)),
-            timestamp=datetime.fromisoformat(data["timestamp"])
-            if "timestamp" in data
-            else datetime.now(timezone.utc),
+            timestamp=(
+                datetime.fromisoformat(data["timestamp"])
+                if "timestamp" in data
+                else datetime.now(timezone.utc)
+            ),
             metadata=data.get("metadata", {}),
         )
 

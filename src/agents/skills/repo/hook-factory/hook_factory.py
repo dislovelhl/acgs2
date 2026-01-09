@@ -9,7 +9,12 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from generator import HookGenerator, HookPackage, HookRequirements, generate_hook_from_request
+from generator import (
+    HookGenerator,
+    HookPackage,
+    HookRequirements,
+    generate_hook_from_request,
+)
 from validator import HookValidator
 
 
@@ -150,7 +155,7 @@ class HookFactory:
                     f"Invalid hook name: path traversal detected in '{package.hook_name}'"
                 )
         except (ValueError, OSError) as e:
-            raise ValueError(f"Invalid hook name: {str(e)}")
+            raise ValueError(f"Invalid hook name: {str(e)}") from e
 
         output_dir.mkdir(parents=True, exist_ok=True)
 

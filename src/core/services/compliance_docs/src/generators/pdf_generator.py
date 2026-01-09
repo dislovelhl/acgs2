@@ -17,17 +17,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
-try:
-    from src.core.shared.types import DocumentData, JSONDict, JSONValue
-except ImportError:
-    from typing import Any, Dict, List, Union
-
-    JSONPrimitive = Union[str, int, float, bool, None]
-    JSONDict = Dict[str, Any]
-    JSONList = List[Any]
-    JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
-    DocumentData = Dict[str, JSONValue]
-
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4, letter
@@ -46,6 +35,12 @@ from reportlab.platypus import (
 
 from ..models.base import ComplianceFramework
 from .base import BaseGenerator
+
+JSONPrimitive = Union[str, int, float, bool, None]
+JSONDict = Dict[str, Any]
+JSONList = List[Any]
+JSONValue = Union[JSONPrimitive, JSONDict, JSONList]
+DocumentData = Dict[str, JSONValue]
 
 logger = logging.getLogger(__name__)
 

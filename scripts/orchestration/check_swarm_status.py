@@ -76,9 +76,9 @@ def check_swarm_status():
         "active_agents": active_agents,
         "utilization_percent": utilization_percent,
         "status": "active" if active_agents > 0 else "initialized",
-        "created_at": datetime.fromtimestamp(most_recent_time).isoformat()
-        if most_recent_time
-        else None,
+        "created_at": (
+            datetime.fromtimestamp(most_recent_time).isoformat() if most_recent_time else None
+        ),
         "agents": agents,
     }
 

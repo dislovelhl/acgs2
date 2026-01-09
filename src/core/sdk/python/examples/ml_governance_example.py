@@ -9,11 +9,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 
-from acgs2_sdk import (
-    ACGS2Config,
-    MLGovernanceService,
-    create_client,
-)
+from acgs2_sdk import ACGS2Config, MLGovernanceService, create_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

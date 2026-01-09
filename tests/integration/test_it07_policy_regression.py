@@ -9,12 +9,7 @@ import uuid
 
 import pytest
 
-from .conftest import (
-    MockSAS,
-    PolicyConfig,
-    SafetyDecision,
-    SafetyDecisionType,
-)
+from .conftest import MockSAS, PolicyConfig, SafetyDecision, SafetyDecisionType
 
 
 class MockPolicyStore:

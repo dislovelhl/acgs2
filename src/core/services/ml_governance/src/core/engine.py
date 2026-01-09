@@ -28,17 +28,25 @@ try:
     from evidently import ColumnMapping
 except ImportError:
     from evidently.legacy.pipeline.column_mapping import ColumnMapping
+
 from river import tree
 from sklearn.ensemble import RandomForestClassifier
 
 # Internal imports
 try:
-    from src.core.shared.types import JSONDict, JSONValue, MetadataDict, ModelID, SupportsCache
+    from src.core.shared.types import (
+        JSONDict,
+        # JSONValue,  # Removed unused import
+        MetadataDict,
+        ModelID,
+        SupportsCache,
+    )
 except ImportError:
-    from typing import Any, Dict, Protocol
+    from typing import Protocol
 
+    # Fallback if shared types not available
     JSONDict = Dict[str, Any]
-    JSONValue = Any
+    ModelArtifact = Dict[str, Any]
     MetadataDict = Dict[str, Any]
     ModelID = str
 

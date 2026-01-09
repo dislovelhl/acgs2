@@ -31,9 +31,7 @@ try:
     from enhanced_agent_bus.processing_strategies import (
         CompositeProcessingStrategy as CompositeProcessing,
     )
-    from enhanced_agent_bus.processing_strategies import (
-        PythonProcessingStrategy,
-    )
+    from enhanced_agent_bus.processing_strategies import PythonProcessingStrategy
     from enhanced_agent_bus.validation_strategies import (
         CompositeValidationStrategy,
         StaticHashValidationStrategy,

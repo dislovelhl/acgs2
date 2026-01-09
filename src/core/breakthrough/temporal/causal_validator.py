@@ -11,10 +11,7 @@ import logging
 from typing import Any, Dict
 
 from .. import CONSTITUTIONAL_HASH
-from .timeline_engine import (
-    ConstitutionalEvent,
-    ConstitutionalTimelineEngine,
-)
+from .timeline_engine import ConstitutionalEvent, ConstitutionalTimelineEngine
 
 logger = logging.getLogger(__name__)
 

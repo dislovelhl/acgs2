@@ -7,10 +7,16 @@ Uses pydantic-settings for type-safe environment configuration.
 
 import os
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import Field, SecretStr, field_validator, model_validator
-from src.core.shared.types import JSONDict
+
+try:
+    from src.core.shared.types import JSONDict
+except ImportError:
+    from typing import Any, Dict
+
+    JSONDict = Dict[str, Any]
 
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -671,9 +677,9 @@ else:
         port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))
         username: Optional[str] = field(default_factory=lambda: os.getenv("SMTP_USERNAME"))
         password: Optional[SecretStr] = field(
-            default_factory=lambda: SecretStr(os.getenv("SMTP_PASSWORD", ""))
-            if os.getenv("SMTP_PASSWORD")
-            else None
+            default_factory=lambda: (
+                SecretStr(os.getenv("SMTP_PASSWORD", "")) if os.getenv("SMTP_PASSWORD") else None
+            )
         )
         use_tls: bool = field(
             default_factory=lambda: os.getenv("SMTP_USE_TLS", "true").lower() == "true"

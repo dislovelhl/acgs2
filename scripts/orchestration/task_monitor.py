@@ -116,17 +116,17 @@ class TaskMonitor:
                     {
                         "id": task.get("id"),
                         "title": task.get("task"),
-                        "assigned_agent": assigned_agent.get("name")
-                        if assigned_agent
-                        else "Unknown",
+                        "assigned_agent": (
+                            assigned_agent.get("name") if assigned_agent else "Unknown"
+                        ),
                         "agent_type": assigned_agent.get("type") if assigned_agent else "Unknown",
                         "progress": task.get("progress", 0),
                         "estimated_effort": task.get("estimated_effort"),
-                        "assigned_at": datetime.fromtimestamp(
-                            task.get("assigned_at", 0)
-                        ).isoformat()
-                        if task.get("assigned_at")
-                        else None,
+                        "assigned_at": (
+                            datetime.fromtimestamp(task.get("assigned_at", 0)).isoformat()
+                            if task.get("assigned_at")
+                            else None
+                        ),
                     }
                 )
 
@@ -150,9 +150,9 @@ class TaskMonitor:
             },
             "performance_metrics": {
                 "task_success_rate": round(task_success_rate, 1),
-                "avg_completion_time_hours": round(avg_completion_time, 1)
-                if avg_completion_time
-                else None,
+                "avg_completion_time_hours": (
+                    round(avg_completion_time, 1) if avg_completion_time else None
+                ),
                 "active_task_count": len(active_task_details),
             },
             "active_tasks": active_task_details,

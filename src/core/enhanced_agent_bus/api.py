@@ -17,7 +17,16 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
-from fastapi import BackgroundTasks, Body, Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import (
+    BackgroundTasks,
+    Body,
+    Depends,
+    FastAPI,
+    Header,
+    HTTPException,
+    Request,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
@@ -55,31 +64,40 @@ except ImportError:
 
 try:
     from src.core.shared.security.cors_config import get_cors_config
-    from src.core.shared.security.tenant_context import TenantContextConfig, TenantContextMiddleware
+    from src.core.shared.security.tenant_context import (
+        TenantContextConfig,
+        TenantContextMiddleware,
+    )
 except ImportError:
     # Fallback for standalone/testing
-    def get_cors_config() -> Dict[str, Any]:
+    def get_cors_config() -> Dict[str, Any]:  # type: ignore[misc]
         return {}
 
-    class TenantContextConfig:
+    class TenantContextConfig:  # type: ignore[no-redef]
         @classmethod
         def from_env(cls) -> "TenantContextConfig":
             return cls()
 
-    class TenantContextMiddleware:
+    class TenantContextMiddleware:  # type: ignore[no-redef]
         pass
 
 
 try:
-    from src.core.shared.acgs_logging import create_correlation_middleware, init_service_logging
+    from src.core.shared.acgs_logging import (
+        create_correlation_middleware,
+        init_service_logging,
+    )
 
     # Initialize structured logging
     logger = init_service_logging("enhanced-agent-bus", level="INFO", json_format=True)
 except ImportError:
     # Fallback to standard logging
     logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-    create_correlation_middleware = None
+    logger = logging.getLogger(__name__)  # type: ignore[assignment]
+
+    def create_correlation_middleware() -> Any:  # type: ignore[misc]
+        return None
+
 
 try:
     from .exceptions import (
@@ -99,7 +117,7 @@ try:
     from .models import AgentMessage, MessageType, Priority
 except (ImportError, ValueError):
     try:
-        from exceptions import (
+        from exceptions import (  # type: ignore[no-redef]
             AgentBusError,
             AgentError,
             BusNotStartedError,
@@ -111,15 +129,21 @@ except (ImportError, ValueError):
             OPAConnectionError,
             PolicyError,
         )
-        from governance.ccai_framework import get_ccai_governance
-        from message_processor import MessageProcessor
-        from models import AgentMessage, MessageType, Priority
+        from governance.ccai_framework import get_ccai_governance  # type: ignore[no-redef]
+        from message_processor import MessageProcessor  # type: ignore[no-redef]
+        from models import (  # type: ignore[no-redef, attr-defined]
+            AgentMessage,
+            MessageType,
+            Priority,
+        )
     except (ImportError, ValueError):
         try:
-            from src.core.enhanced_agent_bus.governance.ccai_framework import get_ccai_governance
+            from src.core.enhanced_agent_bus.governance.ccai_framework import (
+                get_ccai_governance,
+            )
         except ImportError:
             # Mock for testing if import fails
-            def get_ccai_governance() -> None:
+            def get_ccai_governance() -> Any:  # type: ignore[misc]
                 return None
 
 
@@ -128,7 +152,7 @@ RATE_LIMIT_REQUESTS_PER_MINUTE = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE",
 
 
 def create_error_response(
-    exc: Exception, status_code: int, request_id: Optional[str] = None
+    exc: Exception, _status_code: int, request_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """Helper to create standardized error responses."""
     return {
@@ -384,7 +408,7 @@ async def correlation_id_middleware(request: Request, call_next: Callable[..., A
 
 # ===== Global Exception Handler =====
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def global_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
     """Handle all unhandled exceptions with structured error response."""
     correlation_id = correlation_id_var.get()
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -651,7 +675,9 @@ try:
     from src.core.shared.security.tenant_context import get_tenant_id
 except ImportError:
 
-    async def get_tenant_id() -> str:
+    async def get_tenant_id(  # type: ignore[misc]
+        _request: Any = None, _x_tenant_id: Optional[str] = None
+    ) -> str:
         return "default-tenant"
 
 
@@ -670,7 +696,7 @@ async def startup_event() -> None:
         # Allow fallback to mock for development if needed, but in production this should fail
         if os.environ.get("ENVIRONMENT") == "production":
             raise
-        agent_bus = {"status": "mock_initialized", "mode": "development"}
+        agent_bus = {"status": "mock_initialized", "mode": "development"}  # type: ignore[assignment]
         logger.warning("Agent bus failed to initialize, using mock mode for development")
 
 
@@ -755,7 +781,7 @@ async def health_check() -> HealthResponse:
     "/governance/stability/metrics", response_model=StabilityMetricsResponse, tags=["Governance"]
 )
 async def get_stability_metrics(
-    tenant_id: str = Depends(get_tenant_id),
+    _tenant_id: str = Depends(get_tenant_id),
 ) -> StabilityMetricsResponse:
     """
     Get real-time stability metrics from the Manifold-Constrained HyperConnection (mHC) layer.
@@ -790,9 +816,9 @@ async def get_stability_metrics(
 @app.post("/messages", response_model=MessageResponse)
 @limiter.limit("10/minute")
 async def send_message(
-    request: Request,
+    _request: Request,
     background_tasks: BackgroundTasks,
-    message_request: MessageRequest = Body(...),
+    message_request: MessageRequest = Body(...),  # noqa: B008
     session_id: Optional[str] = Header(None, alias="X-Session-ID"),
 ) -> MessageResponse:
     """
@@ -1030,7 +1056,8 @@ async def get_stats() -> Dict[str, Any]:
     tags=["Policies"],
 )
 async def validate_policy(
-    policy_data: Dict[str, Any], tenant_id: str = Depends(get_tenant_id)
+    _payload: Dict[str, Any] = Body(...),  # noqa: B008
+    tenant_id: str = Depends(get_tenant_id),
 ) -> Dict[str, Any]:
     """Validate a policy against constitutional requirements.
     ...

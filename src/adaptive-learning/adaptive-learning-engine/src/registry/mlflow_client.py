@@ -1035,7 +1035,7 @@ class MLflowRegistry:
                             )
                             versions.append(version)
                         except Exception as e:
-                            logger.warning(f"Error processing version {version_num}: {e}")
+                            logger.warning(f"Error processing version {local_version}: {e}")
 
             # Sort by version number
             versions.sort(key=lambda v: int(v.version), reverse=True)

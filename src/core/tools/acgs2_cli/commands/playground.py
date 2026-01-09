@@ -62,7 +62,7 @@ def playground(ctx, policy: str | None, context: str | None, interactive: bool):
                 if interactive:
                     await run_interactive_mode(
                         client, policy_service, compliance_service, current_policy, current_context
-                    )
+                    )  # noqa: F821
                 else:
                     # Single validation run
                     if not current_policy or not current_context:
@@ -89,7 +89,7 @@ def playground(ctx, policy: str | None, context: str | None, interactive: bool):
 
 
 async def run_interactive_mode(
-    client, policy_service, compliance_service, initial_policy, initial_context
+    _client, policy_service, compliance_service, initial_policy, initial_context
 ):
     """Run interactive policy playground"""
 

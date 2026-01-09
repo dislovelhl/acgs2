@@ -193,9 +193,11 @@ class TimeoutChecker:
                 signature = ""
 
             audit_record = {
-                "event_type": VoteEventType.ESCALATION_TRIGGERED.value
-                if VoteEventType
-                else "escalation_triggered",
+                "event_type": (
+                    VoteEventType.ESCALATION_TRIGGERED.value
+                    if VoteEventType
+                    else "escalation_triggered"
+                ),
                 "election_id": election_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "signature": signature,

@@ -19,10 +19,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import SecretStr
 
-from src.integrations.base import (
-    EventSeverity,
-    IntegrationEvent,
-)
+from src.integrations.base import EventSeverity, IntegrationEvent
 from src.integrations.pagerduty_adapter import (
     PagerDutyAdapter,
     PagerDutyAuthType,

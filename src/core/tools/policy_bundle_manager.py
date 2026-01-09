@@ -8,6 +8,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 Handles compilation, signing, and (simulated) distribution of OPA bundles.
 """
 
+# ruff: noqa: E402
 import base64
 import hashlib
 import json

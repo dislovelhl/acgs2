@@ -272,7 +272,8 @@ async def perform_manual_sync(
                     sync_parts = sync_id.split(":")
                     linear_issue_id = sync_parts[0]
 
-                    # Extract notification details (can be enhanced to get real issue details if needed)
+                    # Extract notification details (can be enhanced to get real issue details if
+                    # needed)
                     issue_title = f"Issue {linear_issue_id}"
                     issue_description = "Issue synchronized from Linear"
                     issue_url = f"https://linear.app/issue/{linear_issue_id}"

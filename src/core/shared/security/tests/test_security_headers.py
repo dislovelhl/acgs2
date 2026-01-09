@@ -31,7 +31,6 @@ from src.core.shared.security.security_headers import (  # noqa: E402, I001
     add_security_headers,
 )
 
-
 # ============================================================================
 # SecurityHeadersConfig Tests - Defaults and Basic Configuration
 # ============================================================================
@@ -857,8 +856,8 @@ class TestSecurityHeadersIntegration:
             app.add_middleware(SecurityHeadersMiddleware, config=config)
 
             @app.get("/")
-            async def root():
-                return {"env": env_name}
+            async def root(env_val=env_name):
+                return {"env": env_val}
 
             client = TestClient(app)
             response = client.get("/")

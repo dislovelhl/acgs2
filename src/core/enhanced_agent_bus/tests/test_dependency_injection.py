@@ -8,11 +8,7 @@ Tests for DI pattern implementation including interfaces, registries, and core i
 import pytest
 
 from core import EnhancedAgentBus, MessageProcessor
-from interfaces import (
-    AgentRegistry,
-    MessageRouter,
-    ValidationStrategy,
-)
+from interfaces import AgentRegistry, MessageRouter, ValidationStrategy
 from models import CONSTITUTIONAL_HASH, AgentMessage
 from registry import (
     CapabilityBasedRouter,

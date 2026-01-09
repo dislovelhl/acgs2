@@ -32,9 +32,7 @@ except ImportError:
     import sys
 
     sys.path.insert(0, "/home/dislove/document/acgs2")
-    from enhanced_agent_bus.agent_bus import (
-        EnhancedAgentBus,
-    )
+    from enhanced_agent_bus.agent_bus import EnhancedAgentBus
     from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,

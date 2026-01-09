@@ -8,6 +8,7 @@ ACGS-2 Load Test Suite
 Tests system behavior under concurrent load using Locust.
 """
 
+# ruff: noqa: E402
 import json
 import logging
 import time

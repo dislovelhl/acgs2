@@ -26,13 +26,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Union
 
-from ...shared.types import (
-    AuditTrail,
-    ContextData,
-    JSONDict,
-    JSONValue,
-    MetadataDict,
-)
+from ...shared.types import AuditTrail, ContextData, JSONDict, JSONValue, MetadataDict
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)

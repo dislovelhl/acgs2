@@ -38,7 +38,9 @@ class TestCacheServiceInitialization:
 
     def test_init_with_tiered_cache_disabled(self):
         """Test initialization with tiered cache explicitly disabled."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         assert service._tiered_cache is None
@@ -46,7 +48,9 @@ class TestCacheServiceInitialization:
 
     def test_init_with_default_parameters(self):
         """Test initialization with default parameters."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService()
         assert service.redis_url == "redis://localhost:6379"
@@ -55,7 +59,9 @@ class TestCacheServiceInitialization:
 
     def test_init_with_custom_parameters(self):
         """Test initialization with custom parameters."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(
             redis_url="redis://custom:6380",
@@ -95,14 +101,18 @@ class TestCacheServiceTieredCacheIntegration:
 
     def test_is_tiered_cache_enabled_property(self):
         """Test is_tiered_cache_enabled property."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         assert service.is_tiered_cache_enabled is False
 
     def test_tiered_cache_property_returns_manager(self):
         """Test tiered_cache property returns the manager."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         assert service.tiered_cache is None
@@ -114,7 +124,9 @@ class TestCacheServicePolicyOperations:
     @pytest.mark.asyncio
     async def test_set_policy_local_cache(self):
         """Test setting policy updates local cache."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None  # Disable Redis
@@ -129,7 +141,9 @@ class TestCacheServicePolicyOperations:
     @pytest.mark.asyncio
     async def test_get_policy_from_local_cache(self):
         """Test getting policy from local cache."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None
@@ -145,7 +159,9 @@ class TestCacheServicePolicyOperations:
     @pytest.mark.asyncio
     async def test_get_policy_expired_local_cache(self):
         """Test expired local cache returns None."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False, local_ttl=1)
         service.redis_client = None
@@ -165,7 +181,9 @@ class TestCacheServicePolicyOperations:
     @pytest.mark.asyncio
     async def test_get_policy_from_redis(self, mock_redis_client):
         """Test getting policy from Redis when not in local cache."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = mock_redis_client
@@ -181,7 +199,9 @@ class TestCacheServicePolicyOperations:
     @pytest.mark.asyncio
     async def test_set_policy_with_redis(self, mock_redis_client):
         """Test setting policy in Redis."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = mock_redis_client
@@ -201,7 +221,9 @@ class TestCacheServiceInvalidation:
     @pytest.mark.asyncio
     async def test_invalidate_policy_single_version(self):
         """Test invalidating a specific version."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None
@@ -224,7 +246,9 @@ class TestCacheServiceInvalidation:
     @pytest.mark.asyncio
     async def test_invalidate_policy_all_versions(self):
         """Test invalidating all versions of a policy."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None
@@ -256,7 +280,9 @@ class TestCacheServicePublicKeyOperations:
     @pytest.mark.asyncio
     async def test_set_public_key(self):
         """Test setting public key in cache."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None
@@ -270,7 +296,9 @@ class TestCacheServicePublicKeyOperations:
     @pytest.mark.asyncio
     async def test_get_public_key_from_local_cache(self):
         """Test getting public key from local cache."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None
@@ -291,7 +319,9 @@ class TestCacheServiceStats:
     @pytest.mark.asyncio
     async def test_get_cache_stats_basic(self):
         """Test getting basic cache stats."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None
@@ -308,7 +338,9 @@ class TestCacheServiceStats:
     @pytest.mark.asyncio
     async def test_get_cache_stats_with_redis(self, mock_redis_client):
         """Test getting cache stats with Redis connection."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = mock_redis_client
@@ -326,7 +358,9 @@ class TestCacheServiceGracefulDegradation:
     @pytest.mark.asyncio
     async def test_set_policy_redis_failure_uses_local(self, mock_redis_client):
         """Test set_policy falls back to local cache on Redis failure."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = mock_redis_client
@@ -343,7 +377,9 @@ class TestCacheServiceGracefulDegradation:
     @pytest.mark.asyncio
     async def test_get_policy_redis_failure_returns_local(self, mock_redis_client):
         """Test get_policy returns local cache on Redis failure."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = mock_redis_client
@@ -364,7 +400,9 @@ class TestCacheServiceLifecycle:
     @pytest.mark.asyncio
     async def test_close_with_redis(self, mock_redis_client):
         """Test close properly closes Redis connection."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = mock_redis_client
@@ -377,7 +415,9 @@ class TestCacheServiceLifecycle:
     @pytest.mark.asyncio
     async def test_close_without_redis(self):
         """Test close handles missing Redis gracefully."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None
@@ -392,7 +432,9 @@ class TestCacheServiceIsDegraded:
 
     def test_is_degraded_no_tiered_cache(self):
         """Test is_degraded when tiered cache is not available."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = None
@@ -401,7 +443,9 @@ class TestCacheServiceIsDegraded:
 
     def test_is_degraded_with_redis(self, mock_redis_client):
         """Test is_degraded when Redis is available."""
-        from src.core.services.policy_registry.app.services.cache_service import CacheService
+        from src.core.services.policy_registry.app.services.cache_service import (
+            CacheService,
+        )
 
         service = CacheService(use_tiered_cache=False)
         service.redis_client = mock_redis_client

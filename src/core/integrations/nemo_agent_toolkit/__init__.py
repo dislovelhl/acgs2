@@ -22,10 +22,7 @@ from nemo_agent_toolkit.mcp_bridge import (
     ACGS2MCPServer,
     ConstitutionalMCPTool,
 )
-from nemo_agent_toolkit.profiler import (
-    ConstitutionalProfiler,
-    GovernanceMetrics,
-)
+from nemo_agent_toolkit.profiler import ConstitutionalProfiler, GovernanceMetrics
 
 CONSTITUTIONAL_HASH: str = "cdd01ef066bc6cf2"
 

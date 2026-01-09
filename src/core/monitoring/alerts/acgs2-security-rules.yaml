@@ -5,4 +5,4 @@ groups:
       - record: acgs2:maci_deny_rate
         expr: rate(maci_deny_count[5m])
       - record: acgs2:ssl_errors_rate
-        expr
+        expr: rate(acgs2_ssl_errors_total[5m])

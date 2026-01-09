@@ -51,10 +51,7 @@ from typing import Any, Callable, Dict, List, Optional
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from src.core.shared.acgs_logging import get_logger
-from src.core.shared.metrics import (
-    _get_or_create_counter,
-    _get_or_create_gauge,
-)
+from src.core.shared.metrics import _get_or_create_counter, _get_or_create_gauge
 
 logger = get_logger(__name__)
 
@@ -153,9 +150,9 @@ class RateLimitConfig:
                 RateLimitRule(
                     requests=requests_per_minute,
                     window_seconds=60,
-                    burst_multiplier=burst_limit / requests_per_minute
-                    if requests_per_minute > 0
-                    else 1.5,
+                    burst_multiplier=(
+                        burst_limit / requests_per_minute if requests_per_minute > 0 else 1.5
+                    ),
                 )
             )
 

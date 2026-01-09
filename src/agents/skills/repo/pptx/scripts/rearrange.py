@@ -108,7 +108,7 @@ def duplicate_slide(pres, index):
                 )
 
     # Copy any additional image/media relationships that might be referenced elsewhere
-    for rel_id, rel in image_rels.items():
+    for _, rel in image_rels.items():
         try:
             new_slide.part.rels.get_or_add(rel.reltype, rel._target)
         except Exception:
@@ -164,7 +164,7 @@ def rearrange_presentation(template_path, output_path, slide_sequence):
     duplicated = {}  # Track duplicates: original_idx -> [duplicate_indices]
 
     # Step 1: DUPLICATE repeated slides
-    for i, template_idx in enumerate(slide_sequence):
+    for _, template_idx in enumerate(slide_sequence):
         if template_idx in duplicated and duplicated[template_idx]:
             # Already duplicated this slide, use the duplicate
             slide_map.append(duplicated[template_idx].pop(0))

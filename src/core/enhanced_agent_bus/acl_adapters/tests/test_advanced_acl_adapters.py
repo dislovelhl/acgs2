@@ -27,12 +27,7 @@ from ...acl_adapters.opa_adapter import (
     OPARequest,
     OPAResponse,
 )
-from ...acl_adapters.z3_adapter import (
-    Z3Adapter,
-    Z3AdapterConfig,
-    Z3Request,
-    Z3Response,
-)
+from ...acl_adapters.z3_adapter import Z3Adapter, Z3AdapterConfig, Z3Request, Z3Response
 
 
 class TestSimpleCircuitBreaker:

@@ -38,7 +38,6 @@ from src.core.shared.acgs_logging.audit_logger import (  # noqa: E402, I001
     get_tenant_audit_logger,
 )
 
-
 # ============================================================================
 # AuditAction Enum Tests
 # ============================================================================

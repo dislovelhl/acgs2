@@ -8,11 +8,7 @@ from the refactored 'cache' sub-package. New code should import from:
 """
 
 # Re-export metrics for backward compatibility if needed
-from src.core.shared.cache_metrics import (
-    L1_LATENCY,
-    L2_LATENCY,
-    L3_LATENCY,
-)
+from src.core.shared.cache_metrics import L1_LATENCY, L2_LATENCY, L3_LATENCY
 
 from .cache import (
     CONSTITUTIONAL_HASH,

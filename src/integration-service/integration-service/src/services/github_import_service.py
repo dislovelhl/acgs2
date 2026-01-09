@@ -605,9 +605,9 @@ class GitHubImportService:
             metadata={
                 "author": issue.get("user", {}).get("login") if issue.get("user") else None,
                 "comments": issue.get("comments", 0),
-                "milestone": issue.get("milestone", {}).get("title")
-                if issue.get("milestone")
-                else None,
+                "milestone": (
+                    issue.get("milestone", {}).get("title") if issue.get("milestone") else None
+                ),
                 "locked": issue.get("locked", False),
                 "html_url": issue.get("html_url"),
             },

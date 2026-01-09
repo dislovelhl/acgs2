@@ -71,7 +71,7 @@ except ImportError:
     logger.warning("memory_profiler not available - memory profiling will use tracemalloc")
 
 try:
-    import tracemalloc
+    import tracemalloc  # noqa: F401
 
     TRACEMALLOC_AVAILABLE = True
 except ImportError:

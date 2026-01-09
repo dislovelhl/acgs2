@@ -31,10 +31,7 @@ except ImportError:
 # Import application components
 try:
     from app.main import app as fastapi_app
-    from app.models.governance_metrics import (
-        GovernanceKPIs,
-        TrendDirection,
-    )
+    from app.models.governance_metrics import GovernanceKPIs, TrendDirection
 
     IMPORTS_AVAILABLE = True
 except ImportError as e:

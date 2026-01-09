@@ -20,6 +20,7 @@ Baseline Metrics (from previous testing):
 - Cache Hit Rate: 95%
 """
 
+# ruff: noqa: E402
 import asyncio
 import json
 import os

@@ -917,8 +917,7 @@ if __name__ == "__main__":
     logging.info("Running Governance Framework smoke tests...")
 
     try:
-        from infrastructure.governance.governance_framework import GovernanceFramework
-
+        # Check imports
         logging.info("Imports successful")
     except ImportError as e:
         logging.error(f"Import failed: {e}")

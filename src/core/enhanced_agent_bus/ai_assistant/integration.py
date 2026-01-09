@@ -41,10 +41,7 @@ except ImportError:
 
 # Import from parent package with fallback
 try:
-    from ..exceptions import (
-        ConstitutionalValidationError,
-        MessageValidationError,
-    )
+    from ..exceptions import ConstitutionalValidationError, MessageValidationError
     from ..models import AgentMessage, MessageType, Priority
     from ..validators import ValidationResult, validate_constitutional_hash
 
@@ -268,9 +265,11 @@ class AgentBusIntegration:
                 message.metadata = {
                     "session_id": context.session_id,
                     "user_id": context.user_id,
-                    "conversation_state": context.conversation_state.value
-                    if hasattr(context.conversation_state, "value")
-                    else str(context.conversation_state),
+                    "conversation_state": (
+                        context.conversation_state.value
+                        if hasattr(context.conversation_state, "value")
+                        else str(context.conversation_state)
+                    ),
                 }
 
             # Send through bus
@@ -334,9 +333,11 @@ class AgentBusIntegration:
 
             decision = GovernanceDecision(
                 is_allowed=is_allowed,
-                reason="Action verified and proven correct"
-                if is_allowed
-                else "Formal verification failed",
+                reason=(
+                    "Action verified and proven correct"
+                    if is_allowed
+                    else "Formal verification failed"
+                ),
                 policy_id=policy.policy_id,
                 confidence=policy.confidence_score,
                 verification_status=policy.verification_status.value,

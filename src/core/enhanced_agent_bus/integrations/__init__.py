@@ -37,6 +37,7 @@ import os
 CONSTITUTIONAL_HASH = os.environ.get("CONSTITUTIONAL_HASH", "cdd01ef066bc6cf2")
 
 # Import ML Governance integration client
+# ruff: noqa: E402
 from .ml_governance import (
     CircuitState,
     MLGovernanceClient,

@@ -8,6 +8,7 @@ ACGS-2 Performance Test Suite
 Tests system performance with focus on end-to-end latency < 5ms.
 """
 
+# ruff: noqa: E402
 import asyncio
 import logging
 import os

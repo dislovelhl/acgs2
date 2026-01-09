@@ -10,11 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from enhanced_agent_bus.models import (
-    CONSTITUTIONAL_HASH,
-    AgentMessage,
-    MessageType,
-)
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 from enhanced_agent_bus.processing_strategies import (
     CompositeProcessingStrategy,
     DynamicPolicyProcessingStrategy,

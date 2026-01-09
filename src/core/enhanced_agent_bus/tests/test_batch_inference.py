@@ -163,7 +163,10 @@ class TestClassLevelCaching:
 
     def test_scorer_singleton_pattern_works(self):
         """Test that get_impact_scorer returns singleton."""
-        from deliberation_layer.impact_scorer import get_impact_scorer, reset_impact_scorer
+        from deliberation_layer.impact_scorer import (
+            get_impact_scorer,
+            reset_impact_scorer,
+        )
 
         # Reset first to ensure clean state
         reset_impact_scorer()
@@ -370,9 +373,9 @@ class TestBatchScoreImpact:
         """Test batch inference with a large number of messages."""
         messages = [
             {
-                "content": f"test message {i} with security alert"
-                if i % 5 == 0
-                else f"normal message {i}"
+                "content": (
+                    f"test message {i} with security alert" if i % 5 == 0 else f"normal message {i}"
+                )
             }
             for i in range(50)
         ]
@@ -645,7 +648,10 @@ class TestGlobalFunctions:
 
     def test_calculate_message_impact_convenience(self):
         """Test calculate_message_impact convenience function."""
-        from deliberation_layer.impact_scorer import calculate_message_impact, reset_impact_scorer
+        from deliberation_layer.impact_scorer import (
+            calculate_message_impact,
+            reset_impact_scorer,
+        )
 
         reset_impact_scorer()
 

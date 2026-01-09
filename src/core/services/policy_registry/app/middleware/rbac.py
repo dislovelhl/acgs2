@@ -11,6 +11,7 @@ Implements:
 - Rate limiting per role
 """
 
+# ruff: noqa: E402
 import asyncio
 import functools
 import json

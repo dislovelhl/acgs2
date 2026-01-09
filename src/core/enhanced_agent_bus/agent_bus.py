@@ -17,10 +17,21 @@ from unittest.mock import AsyncMock, MagicMock
 # Local module imports - relative imports for cleaner code organization
 from .exceptions import BusNotStartedError, ConstitutionalHashMismatchError
 from .imports import *
-from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
+from .interfaces import (
+    AgentRegistry,
+    MessageRouter,
+    ProcessingStrategy,
+    ValidationStrategy,
+)
 from .message_processor import MessageProcessor
 from .metering_manager import create_metering_manager
-from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
+from .models import (
+    CONSTITUTIONAL_HASH,
+    AgentMessage,
+    MessageStatus,
+    MessageType,
+    Priority,
+)
 from .registry import (
     DirectMessageRouter,
     DynamicPolicyValidationStrategy,

@@ -13,8 +13,11 @@ from typing import Any, Dict, List
 
 try:
     from sentence_transformers import SentenceTransformer
-    from transformers import AutoModel, AutoTokenizer
 
+    # The original instruction had a malformed snippet for _check_transformers_available
+    # and HUGGINGFACE_AVAILABLE. Assuming the intent was to remove unused imports
+    # and keep the HUGGINGFACE_AVAILABLE flag as it was, but without the unused imports.
+    # If the intent was to introduce a new function, the provided snippet was incomplete.
     HUGGINGFACE_AVAILABLE = True
 except ImportError:
     HUGGINGFACE_AVAILABLE = False

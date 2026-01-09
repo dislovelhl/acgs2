@@ -388,7 +388,9 @@ if __name__ == "__main__":
 
     # Test basic imports
     try:
-        from enhanced_agent_bus.adaptive_governance import AdaptiveGovernanceEngine  # noqa: F811
+        from enhanced_agent_bus.adaptive_governance import (  # noqa: F811
+            AdaptiveGovernanceEngine,
+        )
 
         logging.info("✅ Imports successful")
     except ImportError as e:

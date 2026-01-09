@@ -46,6 +46,7 @@ except ImportError:
 # Optional River support
 try:
     from river import ensemble as river_ensemble
+    from river import forest as river_forest
     from river import metrics as river_metrics
     from river import preprocessing as river_preprocessing
     from river import stats as river_stats
@@ -57,6 +58,7 @@ except ImportError:
     river_metrics = None
     river_preprocessing = None
     river_stats = None
+    river_forest = None
 
 # Optional Kafka support
 try:
@@ -213,14 +215,15 @@ class RiverSklearnAdapter:
             )
 
     def _create_default_model(self) -> Any:
-        """Create the default River AdaptiveRandomForest model."""
+        """Create the default model (Adaptive Random Forest)."""
         if self.model_type == ModelType.CLASSIFIER:
-            return river_ensemble.AdaptiveRandomForestClassifier(
+            # from river import forest # Moved to top-level import
+            return river_forest.ARFClassifier(
                 n_models=self.n_models,
                 seed=self.seed,
             )
         else:
-            return river_ensemble.AdaptiveRandomForestRegressor(
+            return river_forest.ARFRegressor(
                 n_models=self.n_models,
                 seed=self.seed,
             )
@@ -567,8 +570,9 @@ class OnlineLearningPipeline:
                     proba = self._fallback_model.predict_proba([x_array])[0]
                     confidence = float(max(proba))
                     if hasattr(self._fallback_model, "classes_"):
+                        proba_list = proba.tolist() if hasattr(proba, "tolist") else list(proba)
                         probabilities = dict(
-                            zip(self._fallback_model.classes_, proba.tolist(), strict=True)
+                            zip(self._fallback_model.classes_, proba_list, strict=True)
                         )
 
                 self._fallback_predictions += 1

@@ -71,9 +71,11 @@ class GovernanceIntegrator:
             "compliant": not requires_clearance or has_clearance,
             "requires_clearance": requires_clearance,
             "has_clearance": has_clearance,
-            "reason": "Security-sensitive task requires security-cleared agent"
-            if requires_clearance and not has_clearance
-            else None,
+            "reason": (
+                "Security-sensitive task requires security-cleared agent"
+                if requires_clearance and not has_clearance
+                else None
+            ),
         }
 
     def _check_data_privacy_compliance(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -99,9 +101,11 @@ class GovernanceIntegrator:
             "compliant": has_controls,
             "involves_privacy": True,
             "has_privacy_controls": has_controls,
-            "reason": "Privacy-sensitive task requires data protection controls"
-            if not has_controls
-            else None,
+            "reason": (
+                "Privacy-sensitive task requires data protection controls"
+                if not has_controls
+                else None
+            ),
         }
 
     def _check_regulatory_compliance(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -134,9 +138,11 @@ class GovernanceIntegrator:
             "compliant": has_compliance,
             "regulated_domain": True,
             "has_compliance_framework": has_compliance,
-            "reason": "Regulated domain task requires compliance framework"
-            if not has_compliance
-            else None,
+            "reason": (
+                "Regulated domain task requires compliance framework"
+                if not has_compliance
+                else None
+            ),
         }
 
     def _check_resource_limits(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -166,9 +172,9 @@ class GovernanceIntegrator:
             "resource_limits": limits,
             "estimated_effort": effort,
             "within_limits": within_limits,
-            "reason": f"Task effort exceeds {agent_type} resource limits"
-            if not within_limits
-            else None,
+            "reason": (
+                f"Task effort exceeds {agent_type} resource limits" if not within_limits else None
+            ),
         }
 
     def _check_audit_requirements(self, task: Dict[str, Any]) -> Dict[str, Any]:

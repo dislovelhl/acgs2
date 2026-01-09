@@ -308,9 +308,9 @@ class DriftDetector:
                 drift_detections=self._drift_detections,
                 last_check_time=self._last_check_time,
                 last_drift_time=self._last_drift_time,
-                current_drift_score=self._drift_score_history[-1]
-                if self._drift_score_history
-                else 0.0,
+                current_drift_score=(
+                    self._drift_score_history[-1] if self._drift_score_history else 0.0
+                ),
                 average_drift_score=avg_score,
                 status=self._current_status,
                 consecutive_drift_count=self._consecutive_drift_count,

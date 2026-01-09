@@ -162,9 +162,11 @@ async def _fetch_logs_for_tenant(
             # Format log entry for report
             log_entry = {
                 "timestamp": entry.timestamp,
-                "date": datetime.fromtimestamp(entry.timestamp, tz=timezone.utc).isoformat()
-                if entry.timestamp
-                else None,
+                "date": (
+                    datetime.fromtimestamp(entry.timestamp, tz=timezone.utc).isoformat()
+                    if entry.timestamp
+                    else None
+                ),
                 "tenant_id": metadata.get("tenant_id", "default"),
                 "decision_type": metadata.get("decision_type", "unknown"),
                 "agent_id": metadata.get("agent_id", "unknown"),

@@ -5,12 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import logging
 from datetime import UTC, datetime
-from typing import Any, TypeVar, Union
+from typing import Any, TypeVar
 
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
-    JSONValue = Union[str, int, float, bool, None, dict[str, Any], list[Any]]  # type: ignore[misc]
+    JSONValue = str | int | float | bool | None | dict[str, Any] | list[Any]  # type: ignore[misc]
     JSONDict = dict[str, JSONValue]  # type: ignore[misc]
 from uuid import uuid4
 

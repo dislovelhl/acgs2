@@ -515,7 +515,10 @@ class TestAIAssistantCustomComponents:
     @pytest.mark.asyncio
     async def test_custom_dialog_manager(self):
         """Test using custom dialog manager."""
-        from src.core.enhanced_agent_bus.ai_assistant.dialog import ActionType, DialogAction
+        from src.core.enhanced_agent_bus.ai_assistant.dialog import (
+            ActionType,
+            DialogAction,
+        )
 
         class MockDialogManager:
             async def process_turn(self, context, nlu_result):

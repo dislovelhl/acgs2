@@ -29,7 +29,10 @@ try:
 except (ImportError, ValueError):
     # Fallback for direct execution or testing
     try:
-        from deliberation_queue import DeliberationStatus, get_deliberation_queue  # type: ignore
+        from deliberation_queue import (  # type: ignore
+            DeliberationStatus,
+            get_deliberation_queue,
+        )
         from impact_scorer import calculate_message_impact  # type: ignore
         from intent_classifier import IntentClassifier, IntentType  # type: ignore
 

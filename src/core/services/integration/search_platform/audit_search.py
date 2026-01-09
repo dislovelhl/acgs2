@@ -14,13 +14,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from .client import SearchPlatformClient, SearchPlatformConfig
-from .models import (
-    SearchDomain,
-    SearchMatch,
-    SearchOptions,
-    SearchScope,
-    TimeRange,
-)
+from .models import SearchDomain, SearchMatch, SearchOptions, SearchScope, TimeRange
 
 logger = logging.getLogger(__name__)
 

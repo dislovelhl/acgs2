@@ -4,6 +4,7 @@ Attribute-Based Access Control (ABAC) Implementation
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+# ruff: noqa: E402
 # Import type aliases from shared types
 import sys
 from dataclasses import dataclass, field
@@ -19,13 +20,7 @@ shared_path = Path(__file__).parent.parent.parent.parent.parent / "shared"
 if str(shared_path) not in sys.path:
     sys.path.insert(0, str(shared_path))
 
-from types import (
-    AttributeMap,
-    ConfigDict,
-    JSONDict,
-    JSONValue,
-    MetadataDict,
-)
+from types import AttributeMap, ConfigDict, JSONDict, JSONValue, MetadataDict
 
 
 class AttributeCategory(Enum):

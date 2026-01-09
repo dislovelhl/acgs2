@@ -137,9 +137,7 @@ class TestEnhancedAgentBusRedisIntegration:
             with patch("redis.asyncio.Redis", return_value=mock_redis_client):
                 from enhanced_agent_bus.agent_bus import EnhancedAgentBus
                 from enhanced_agent_bus.config import BusConfiguration
-                from enhanced_agent_bus.registry import (
-                    RedisAgentRegistry,
-                )
+                from enhanced_agent_bus.registry import RedisAgentRegistry
 
                 # Mock BusConfiguration.from_environment to prevent LiteLLM side effects
                 with patch(

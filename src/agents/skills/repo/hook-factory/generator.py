@@ -65,10 +65,10 @@ class HookGenerator:
         try:
             with open(self.templates_path, "r") as f:
                 return json.load(f)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Templates file not found: {self.templates_path}")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Templates file not found: {self.templates_path}") from e
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in templates file: {str(e)}")
+            raise ValueError(f"Invalid JSON in templates file: {str(e)}") from e
 
     def list_templates(self) -> List[Dict]:
         """List available templates with metadata."""

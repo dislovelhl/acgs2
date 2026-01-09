@@ -325,7 +325,7 @@ def apply_replacements(pptx_file: str, json_file: str, output_file: str):
             for _error in overflow_errors:
                 pass
         if warnings:
-            for warning in warnings:
+            for _ in warnings:
                 pass
         raise ValueError(
             f"Found {len(overflow_errors)} overflow error(s) and {len(warnings)} warning(s)"

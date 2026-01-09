@@ -766,10 +766,11 @@ class DisasterRecoveryCoordinator:
             "monitoring_active": self.monitoring_active,
             "total_incidents": len(incidents),
             "recent_incidents": incidents[:5],
-            "recovery_success_rate": len([i for i in incidents if i.get("status") == "recovered"])
-            / len(incidents)
-            if incidents
-            else 0,
+            "recovery_success_rate": (
+                len([i for i in incidents if i.get("status") == "recovered"]) / len(incidents)
+                if incidents
+                else 0
+            ),
             "last_health_check": self.last_health_check,
         }
 

@@ -19,10 +19,7 @@ from .cors_config import (
     get_strict_cors_config,
     validate_origin,
 )
-from .expression_utils import (
-    redact_pii,
-    safe_eval_expr,
-)
+from .expression_utils import redact_pii, safe_eval_expr
 from .rate_limiter import (
     REDIS_AVAILABLE,
     TENANT_CONFIG_AVAILABLE,

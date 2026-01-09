@@ -30,15 +30,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Awaitable, Callable, Dict, List, Optional, Set, Tuple, Union
 
-from ...shared.types import (
-    AuditTrail,
-    ConfigDict,
-    JSONDict,
-    StepResult,
-)
-from ...shared.types import (
-    WorkflowState as WorkflowStateData,
-)
+from ...shared.types import AuditTrail, ConfigDict, JSONDict, StepResult
+from ...shared.types import WorkflowState as WorkflowStateData
 from .. import CONSTITUTIONAL_HASH
 from ..temporal.time_r1_engine import EventType, TimeR1Engine
 
@@ -251,7 +244,7 @@ class TemporalWorkflowEngine:
         self.adaptation_strategies.append(timeout_strategy)
 
         # Strategy 2: Resource exhaustion adaptation - add resource checks
-        async def resource_adaptation(snapshot: ExecutionSnapshot) -> JSONDict:
+        async def resource_adaptation(_snapshot: ExecutionSnapshot) -> JSONDict:
             """Adapt workflow when resources are exhausted."""
             adaptations = {
                 "action": "add_resource_checks",
@@ -273,7 +266,7 @@ class TemporalWorkflowEngine:
         self.adaptation_strategies.append(resource_strategy)
 
         # Strategy 3: Dependency failure adaptation - add redundancy
-        async def dependency_adaptation(snapshot: ExecutionSnapshot) -> JSONDict:
+        async def dependency_adaptation(_snapshot: ExecutionSnapshot) -> JSONDict:
             """Adapt workflow when dependencies fail."""
             adaptations = {
                 "action": "add_redundancy",

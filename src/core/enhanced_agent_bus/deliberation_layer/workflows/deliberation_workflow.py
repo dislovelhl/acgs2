@@ -387,11 +387,13 @@ class DefaultDeliberationActivities(DeliberationActivities):
                             agent_id=vote_data.get("agent_id", agent_id),
                             decision=vote_data.get("decision", "ABSTAIN"),
                             reason=vote_data.get("reason"),
-                            timestamp=datetime.fromisoformat(
-                                vote_data["timestamp"].replace("Z", "+00:00")
-                            )
-                            if isinstance(vote_data.get("timestamp"), str)
-                            else vote_data.get("timestamp", datetime.now(timezone.utc)),
+                            timestamp=(
+                                datetime.fromisoformat(
+                                    vote_data["timestamp"].replace("Z", "+00:00")
+                                )
+                                if isinstance(vote_data.get("timestamp"), str)
+                                else vote_data.get("timestamp", datetime.now(timezone.utc))
+                            ),
                         )
                     )
 

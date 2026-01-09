@@ -17,7 +17,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from prometheus_client import CollectorRegistry
-
 from src.monitoring.drift_detector import (
     DriftAlert,
     DriftDetector,
@@ -28,7 +27,10 @@ from src.monitoring.drift_detector import (
 from src.monitoring.metrics import (
     MetricLabel,
     MetricsRegistry,
-)
+    MetricsSnapshot,
+    create_metrics_registry,
+    get_metrics_registry,
+)  # noqa: F401
 
 
 class TestMetricsRegistryInit:

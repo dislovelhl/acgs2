@@ -12,6 +12,8 @@ Features:
 """
 
 import logging
+import os
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -40,7 +42,13 @@ except ImportError:
     QDRANT_AVAILABLE = False
 
 try:
-    from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, connections
+    from pymilvus import (
+        Collection,
+        CollectionSchema,
+        DataType,
+        FieldSchema,
+        connections,
+    )
 
     MILVUS_AVAILABLE = True
 except ImportError:
@@ -470,12 +478,16 @@ class QdrantManager(VectorDatabaseManager):
         return {
             "count": len(latencies),
             "latency_p50_ms": statistics.median(latencies),
-            "latency_p95_ms": sorted(latencies)[int(len(latencies) * 0.95)]
-            if len(latencies) > 1
-            else latencies[0],
-            "latency_p99_ms": sorted(latencies)[int(len(latencies) * 0.99)]
-            if len(latencies) > 1
-            else latencies[0],
+            "latency_p95_ms": (
+                sorted(latencies)[int(len(latencies) * 0.95)]
+                if len(latencies) > 1
+                else latencies[0]
+            ),
+            "latency_p99_ms": (
+                sorted(latencies)[int(len(latencies) * 0.99)]
+                if len(latencies) > 1
+                else latencies[0]
+            ),
             "latency_avg_ms": statistics.mean(latencies),
             "latency_min_ms": min(latencies),
             "latency_max_ms": max(latencies),

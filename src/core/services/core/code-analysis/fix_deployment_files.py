@@ -5,6 +5,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 #!/usr/bin/env python3
 """Fix syntax errors in deployment files."""
 
+# ruff: noqa: E402
 import logging
 import re
 from pathlib import Path

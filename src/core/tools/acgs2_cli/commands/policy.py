@@ -4,6 +4,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
+import contextlib
 import json
 import sys
 from pathlib import Path
@@ -15,7 +16,7 @@ from acgs2_sdk import ComplianceService, PolicyService, create_client
 
 @click.group()
 @click.pass_context
-def policy(ctx):
+def policy(_ctx):  # Changed ctx to _ctx
     """Policy management commands"""
     pass
 
@@ -384,10 +385,11 @@ def test_policy(ctx, policy_file: str, context: str | None, context_file: str | 
 
                 finally:
                     # Clean up temporary policy
-                    try:
+                    with contextlib.suppress(
+                        Exception
+                    ):  # Replaced try-except with contextlib.suppress
                         await policy_service.delete(temp_policy.id)
-                    except Exception:
-                        pass  # Ignore cleanup errors
+                        # Ignore cleanup errors
 
         except Exception as e:
             click.secho(f"❌ Failed to test policy: {e}", fg="red")

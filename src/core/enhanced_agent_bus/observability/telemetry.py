@@ -227,7 +227,9 @@ def configure_telemetry(config: Optional[TelemetryConfig] = None) -> Tuple[Any, 
 
         if config.export_traces:
             try:
-                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                    OTLPSpanExporter,
+                )
 
                 exporter = OTLPSpanExporter(endpoint=config.otlp_endpoint)
 

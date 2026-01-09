@@ -8,6 +8,7 @@ ACGS-2 Constraint Generation System Tests
 Modernized to use pytest and pytest-asyncio
 """
 
+# ruff: noqa: E402
 import os
 import sys
 
@@ -16,7 +17,11 @@ import pytest
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
-from constraint_generator import ConstraintGenerator, GenerationRequest, GenerationResult
+from constraint_generator import (
+    ConstraintGenerator,
+    GenerationRequest,
+    GenerationResult,
+)
 from feedback_loop import FeedbackLoop
 from language_constraints import LanguageConstraints
 from quality_scorer import QualityScorer

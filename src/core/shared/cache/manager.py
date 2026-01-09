@@ -25,10 +25,7 @@ from src.core.shared.cache_metrics import (
     update_cache_size,
 )
 from src.core.shared.l1_cache import L1Cache
-from src.core.shared.metrics import (
-    _get_or_create_counter,
-    _get_or_create_gauge,
-)
+from src.core.shared.metrics import _get_or_create_counter, _get_or_create_gauge
 from src.core.shared.redis_config import (
     CONSTITUTIONAL_HASH,
     RedisConfig,
@@ -36,13 +33,7 @@ from src.core.shared.redis_config import (
     get_redis_config,
 )
 
-from .models import (
-    AccessRecord,
-    CacheTier,
-    T,
-    TieredCacheConfig,
-    TieredCacheStats,
-)
+from .models import AccessRecord, CacheTier, T, TieredCacheConfig, TieredCacheStats
 
 try:
     import redis.asyncio as aioredis

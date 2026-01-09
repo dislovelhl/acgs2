@@ -221,7 +221,8 @@ class SignatureTimestampError(AuthenticationError):
         Initialize signature timestamp error.
 
         Args:
-            message: Human-readable error description (default: "Request timestamp is too old or in the future")
+            message: Human-readable error description
+                (default: "Request timestamp is too old or in the future")
             details: Additional context (e.g., timestamp, age_seconds, tolerance)
         """
         super().__init__(

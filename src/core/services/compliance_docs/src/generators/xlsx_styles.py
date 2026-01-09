@@ -5,13 +5,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 from typing import Optional
 
-from openpyxl.styles import (
-    Alignment,
-    Border,
-    Font,
-    PatternFill,
-    Side,
-)
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 
 class ComplianceXLSXStyles:

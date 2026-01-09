@@ -27,7 +27,6 @@ from cli.opa_service import (  # noqa: E402, I001
 )
 from cli.policy_cli import app  # noqa: E402, I001
 
-
 # Create CLI runner for testing
 runner = CliRunner()
 

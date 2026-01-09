@@ -10,10 +10,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from .conftest import (
-    CoreEnvelope,
-    MockDMS,
-)
+from .conftest import CoreEnvelope, MockDMS
 
 
 class MockTaskOrchestrator:

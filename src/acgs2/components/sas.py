@@ -122,9 +122,9 @@ class SafetyAlignmentSystem(SafetyAlignmentSystemInterface):
                     "policy_version": decision.policy_version,
                     "query_length": len(envelope.payload.get("query", "")),
                     "session_risk_level": self.session_risks.get(envelope.session_id, 0),
-                    "outcome": "allowed"
-                    if decision.decision == SafetyDecisionType.ALLOW
-                    else "denied",
+                    "outcome": (
+                        "allowed" if decision.decision == SafetyDecisionType.ALLOW else "denied"
+                    ),
                 },
             )
             await self.npt.receive_training_event(training_event)

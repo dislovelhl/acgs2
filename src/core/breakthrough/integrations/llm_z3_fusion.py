@@ -28,7 +28,11 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from .. import CONSTITUTIONAL_HASH
-from ..verification.z3_smt_verifier import PolicySpecification, VerificationResult, Z3PolicyVerifier
+from ..verification.z3_smt_verifier import (
+    PolicySpecification,
+    VerificationResult,
+    Z3PolicyVerifier,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +46,16 @@ except ImportError:
     logger.warning("Z3 not available - using simulation mode")
 
     class MockZ3Object:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *_args, **_kwargs):
             pass
 
-    def Bool(*args):
+    def Bool(*_args):
         return MockZ3Object()
 
-    def Int(*args):
+    def Int(*_args):
         return MockZ3Object()
 
-    def Function(*args):
+    def Function(*_args):
         return MockZ3Object()
 
     def Solver():

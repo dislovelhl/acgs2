@@ -4,12 +4,12 @@ Adaptive ML models with feedback loops and drift detection
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
-    JSONValue = Union[str, int, float, bool, None, dict[str, Any], list[Any]]  # type: ignore[misc]
+    JSONValue = str | int | float | bool | None | dict[str, Any] | list[Any]  # type: ignore[misc]
     JSONDict = dict[str, JSONValue]  # type: ignore[misc]
 
 from acgs2_sdk.constants import CONSTITUTIONAL_HASH, ML_GOVERNANCE_ENDPOINT

@@ -72,9 +72,9 @@ class QuarterlyCodeReview:
 
         return {
             "coverage_files": len(coverage_data),
-            "average_coverage": sum(coverage_data.values()) / len(coverage_data)
-            if coverage_data
-            else 0,
+            "average_coverage": (
+                sum(coverage_data.values()) / len(coverage_data) if coverage_data else 0
+            ),
             "coverage_by_file": coverage_data,
         }
 

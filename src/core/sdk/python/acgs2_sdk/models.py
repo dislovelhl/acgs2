@@ -5,13 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Generic, TypeVar, Union
+from typing import Any, Generic, TypeVar
 from uuid import UUID
 
 try:
     from src.core.shared.types import JSONDict, JSONValue
 except ImportError:
-    JSONValue = Union[str, int, float, bool, None, dict[str, Any], list[Any]]  # type: ignore[misc]
+    JSONValue = str | int | float | bool | None | dict[str, Any] | list[Any]  # type: ignore[misc]
     JSONDict = dict[str, JSONValue]  # type: ignore[misc]
 
 from pydantic import BaseModel, Field, field_validator

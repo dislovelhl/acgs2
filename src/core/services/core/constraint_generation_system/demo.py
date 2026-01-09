@@ -8,6 +8,7 @@ ACGS-2 Constraint Generation System Demo
 演示约束生成系统的功能
 """
 
+# ruff: noqa: E402
 import asyncio
 import logging
 import os

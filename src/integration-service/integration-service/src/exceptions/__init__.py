@@ -81,11 +81,7 @@ from .delivery import (
     WebhookDeliveryError,
     WebhookTimeoutError,
 )
-from .integration import (
-    IntegrationConnectionError,
-    IntegrationError,
-    RateLimitError,
-)
+from .integration import IntegrationConnectionError, IntegrationError, RateLimitError
 from .retry import (
     MaxRetriesExceededError,
     NonRetryableError,

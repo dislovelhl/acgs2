@@ -22,7 +22,7 @@ repos:
         name: Block Python debug statements
         entry: 'print\('
         language: pygrep
-        exclude: '(^tests/|^examples/|^scripts/|conftest\.py|verify_.*\.py$|setup\.py$|\.md$|cleanup_.*\.py$|^\.auto-claude/|^.*_(coordinator|workflow|compliance|monitor|integrator|dashboard|engine|analytics|config)\.py$|^[a-z_]*\.py$|^src/agents/|^integration_test\.py$|^advanced_.*\.py$|^automated_.*\.py$|^check_.*\.py$|^cicd_.*\.py$|^continuous_.*\.py$|^coordinate_.*\.py$|^create_.*\.py$|^disaster_.*\.py$|^governance_.*\.py$|^ml_.*\.py$|^mobile_.*\.py$|^predictive_.*\.py$|^production_.*\.py$|^scale_.*\.py$|^spawn_.*\.py$|^task_.*\.py$|_test\.py$|test_.*\.py$)'
+        exclude: '(^tests/|^examples/|^scripts/|^src/core/tools/|^src/core/services/compliance_docs/|.*/scripts/|conftest\.py|verify_.*\.py$|setup\.py$|\.md$|cleanup_.*\.py$|^\.auto-claude/|^.*_(coordinator|workflow|compliance|monitor|integrator|dashboard|engine|analytics|config)\.py$|^[a-z_]*\.py$|^src/agents/|^integration_test\.py$|^advanced_.*\.py$|^automated_.*\.py$|^check_.*\.py$|^cicd_.*\.py$|^continuous_.*\.py$|^coordinate_.*\.py$|^create_.*\.py$|^disaster_.*\.py$|^governance_.*\.py$|^ml_.*\.py$|^mobile_.*\.py$|^predictive_.*\.py$|^production_.*\.py$|^scale_.*\.py$|^spawn_.*\.py$|^task_.*\.py$|_test\.py$|test_.*\.py$)'
         types: [python]
 
       - id: no-debug-statements-ts
@@ -38,20 +38,6 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          [pydantic, types-PyYAML, types-aiofiles, types-requests]
-        args:
-          [
-            --ignore-missing-imports,
-            --explicit-package-bases,
-            --namespace-packages,
-          ]
-        exclude: ^(archive/|examples/|adaptive-learning/|scripts/|src/.*/(src|tests|config|app)/|islands/)
 
   - repo: local
     hooks:

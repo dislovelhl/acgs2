@@ -23,22 +23,17 @@ import time
 from typing import Any, Dict, List
 
 import pytest
-from fastapi.testclient import TestClient
 
+# Create a FastAPI app for testing (without the full lifespan)
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from src.api.endpoints import initialize_services, router
-from src.api.models import (
-    DriftStatusEnum,
-    ModelStateEnum,
-    SafetyStatusEnum,
-)
+from src.api.models import DriftStatusEnum, ModelStateEnum, SafetyStatusEnum
 from src.models.model_manager import ModelManager
 from src.models.online_learner import OnlineLearner
 from src.monitoring.drift_detector import DriftDetector
 from src.monitoring.metrics import MetricsRegistry
 from src.safety.bounds_checker import SafetyBoundsChecker
-
-# Create a FastAPI app for testing (without the full lifespan)
-from fastapi import FastAPI
 
 # Test app with just the router
 test_app = FastAPI()

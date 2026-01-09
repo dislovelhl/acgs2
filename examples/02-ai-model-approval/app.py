@@ -34,10 +34,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 import requests
-from fastapi import FastAPI, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
 from approval_models import (
     ErrorResponse,
     HealthResponse,
@@ -45,6 +41,9 @@ from approval_models import (
     ModelApprovalResponse,
     RiskCategory,
 )
+from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

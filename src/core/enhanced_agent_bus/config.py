@@ -89,6 +89,11 @@ class BusConfiguration:
     llm_confidence_threshold: float = 0.8
     llm_max_tokens: int = 100
     llm_use_cache: bool = True
+    llm_enabled: bool = False
+
+    # A/B Testing Configuration
+    enable_ab_testing: bool = False
+    ab_test_llm_percentage: float = 0.0
 
     # Optional dependency injections (set to None for defaults)
     # Note: These are typed as Any to avoid circular imports at runtime
@@ -144,19 +149,22 @@ class BusConfiguration:
             redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
             kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
             audit_service_url=os.getenv("AUDIT_SERVICE_URL", "http://localhost:8001"),
-            use_dynamic_policy=os.getenv("USE_DYNAMIC_POLICY", "false").lower() == "true",
-            policy_fail_closed=os.getenv("POLICY_FAIL_CLOSED", "true").lower() == "true",
-            use_kafka=os.getenv("USE_KAFKA", "false").lower() == "true",
-            use_redis_registry=os.getenv("USE_REDIS_REGISTRY", "false").lower() == "true",
-            use_rust=os.getenv("USE_RUST", "true").lower() == "true",
-            enable_metering=os.getenv("ENABLE_METERING", "true").lower() == "true",
-            enable_maci=os.getenv("ENABLE_MACI", "true").lower() == "true",
-            maci_strict_mode=os.getenv("MACI_STRICT_MODE", "true").lower() == "true",
+            use_dynamic_policy=cls._parse_bool(os.getenv("USE_DYNAMIC_POLICY", "false")),
+            policy_fail_closed=cls._parse_bool(os.getenv("POLICY_FAIL_CLOSED", "true")),
+            use_kafka=cls._parse_bool(os.getenv("USE_KAFKA", "false")),
+            use_redis_registry=cls._parse_bool(os.getenv("USE_REDIS_REGISTRY", "false")),
+            use_rust=cls._parse_bool(os.getenv("USE_RUST", "true")),
+            enable_metering=cls._parse_bool(os.getenv("ENABLE_METERING", "true")),
+            enable_maci=cls._parse_bool(os.getenv("ENABLE_MACI", "true")),
+            maci_strict_mode=cls._parse_bool(os.getenv("MACI_STRICT_MODE", "true")),
             llm_model=os.getenv("LLM_MODEL", "anthropic/claude-3-5-sonnet-20240620"),
             llm_cache_ttl=int(os.getenv("LLM_CACHE_TTL", "3600")),
             llm_confidence_threshold=float(os.getenv("LLM_CONFIDENCE_THRESHOLD", "0.8")),
             llm_max_tokens=int(os.getenv("LLM_MAX_TOKENS", "100")),
-            llm_use_cache=os.getenv("LLM_USE_CACHE", "true").lower() == "true",
+            llm_use_cache=cls._parse_bool(os.getenv("LLM_USE_CACHE", "true")),
+            llm_enabled=cls._parse_bool(os.getenv("LLM_ENABLED", "false")),
+            enable_ab_testing=cls._parse_bool(os.getenv("ENABLE_AB_TESTING", "false")),
+            ab_test_llm_percentage=float(os.getenv("AB_TEST_LLM_PERCENTAGE", "0.0")),
         )
 
         # Initialize LiteLLM Cache if enabled
@@ -249,7 +257,7 @@ class BusConfiguration:
             "constitutional_hash": self.constitutional_hash,
             # LLM classification settings
             "llm_enabled": self.llm_enabled,
-            "llm_model_version": self.llm_model_version,
+            "llm_model_version": self.llm_model,
             "llm_cache_ttl": self.llm_cache_ttl,
             "llm_confidence_threshold": self.llm_confidence_threshold,
             "llm_max_tokens": self.llm_max_tokens,

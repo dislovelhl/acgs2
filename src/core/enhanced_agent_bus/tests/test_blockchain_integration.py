@@ -185,7 +185,8 @@ class TestAuditClient:
     @pytest.mark.asyncio
     async def test_health_check_disconnected(self):
         """health_check handles disconnected state."""
-        client = AuditClient()
+        # Use an invalid port to ensure connection failure
+        client = AuditClient(service_url="http://localhost:1")
         health = await client.health_check()
         assert health["status"] in ("unknown", "unhealthy")
         assert health["constitutional_hash"] == CONSTITUTIONAL_HASH

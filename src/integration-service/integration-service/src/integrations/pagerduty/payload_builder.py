@@ -6,10 +6,7 @@ Handles construction of payloads for PagerDuty Events and REST APIs.
 from typing import Any, Dict, List, Optional
 
 from ..base import EventSeverity, IntegrationEvent
-from ..pagerduty_models import (
-    DEFAULT_SEVERITY_MAP,
-    PagerDutyCredentials,
-)
+from ..pagerduty_models import DEFAULT_SEVERITY_MAP, PagerDutyCredentials
 
 
 class PagerDutyPayloadBuilder:
@@ -100,9 +97,11 @@ class PagerDutyPayloadBuilder:
 
         # Build the full event payload
         event_payload = {
-            "routing_key": self.credentials.integration_key.get_secret_value()
-            if self.credentials.integration_key
-            else "",
+            "routing_key": (
+                self.credentials.integration_key.get_secret_value()
+                if self.credentials.integration_key
+                else ""
+            ),
             "event_action": "trigger",
             "dedup_key": dedup_key,
             "payload": payload,
@@ -135,9 +134,11 @@ class PagerDutyPayloadBuilder:
     def build_resolve_payload(self, dedup_key: str) -> Dict[str, Any]:
         """Build the payload for resolving an incident."""
         return {
-            "routing_key": self.credentials.integration_key.get_secret_value()
-            if self.credentials.integration_key
-            else "",
+            "routing_key": (
+                self.credentials.integration_key.get_secret_value()
+                if self.credentials.integration_key
+                else ""
+            ),
             "event_action": "resolve",
             "dedup_key": dedup_key,
         }

@@ -53,7 +53,7 @@ except ImportError:
 
     # Mock Z3 classes for development
     class MockZ3Object:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *_args, **_kwargs):
             pass
 
         def __str__(self):
@@ -71,13 +71,13 @@ except ImportError:
         def __ne__(self, other):
             return False
 
-    def Bool(*args):
+    def Bool(*_args):
         return MockZ3Object()
 
-    def Int(*args):
+    def Int(*_args):
         return MockZ3Object()
 
-    def Function(*args):
+    def Function(*_args):
         return MockZ3Object()
 
     def Solver():

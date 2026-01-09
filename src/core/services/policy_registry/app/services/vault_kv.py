@@ -6,6 +6,7 @@ Key-Value secrets engine operations for secure secret storage
 and retrieval using HashiCorp Vault.
 """
 
+# ruff: noqa: E402
 import logging
 import sys
 from pathlib import Path

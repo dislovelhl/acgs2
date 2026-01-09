@@ -2,7 +2,7 @@
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-# ruff: noqa: I001
+# ruff: noqa: I001, E402
 """
 Alembic environment configuration for async migrations with SQLAlchemy 2.0
 
@@ -19,16 +19,17 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.models import Base
+from src.core.shared.config.unified import config  # noqa: E402
+from src.core.shared.database.core import Base  # noqa: E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config = context.config
+config_obj = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+if config_obj.config_file_name is not None:
+    fileConfig(config_obj.config_file_name)  # noqa: E402
 
 # add your model's MetaData object here
 # for 'autogenerate' support

@@ -6,7 +6,11 @@ Constitutional Hash: cdd01ef066bc6cf2
 import os
 
 import pytest
-from src.core.shared.security.cors_config import CORSConfig, CORSEnvironment, get_cors_config
+from src.core.shared.security.cors_config import (
+    CORSConfig,
+    CORSEnvironment,
+    get_cors_config,
+)
 
 
 def test_cors_config_production_wildcard_rejection():

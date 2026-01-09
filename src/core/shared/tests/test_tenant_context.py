@@ -41,7 +41,6 @@ from src.core.shared.security.tenant_context import (  # noqa: E402, I001
     validate_tenant_id,
 )
 
-
 # ============================================================================
 # TenantValidationError Tests
 # ============================================================================

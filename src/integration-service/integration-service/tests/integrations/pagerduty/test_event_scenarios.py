@@ -21,11 +21,7 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from src.integrations.base import (
-    EventSeverity,
-    IntegrationEvent,
-    IntegrationStatus,
-)
+from src.integrations.base import EventSeverity, IntegrationEvent, IntegrationStatus
 from src.integrations.pagerduty_adapter import (
     PagerDutyAdapter,
     PagerDutyAuthType,

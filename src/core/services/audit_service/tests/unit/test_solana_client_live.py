@@ -1,8 +1,11 @@
 import asyncio
 import logging
 import os
+from typing import AsyncGenerator
 
 import pytest
+import pytest_asyncio
+from solders.keypair import Keypair
 from src.core.services.audit_service.blockchain.solana.solana_client import SolanaClient
 
 

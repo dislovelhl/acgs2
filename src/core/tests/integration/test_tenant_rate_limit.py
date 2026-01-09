@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from fastapi import FastAPI, Request  # noqa: E402, I001
 from fastapi.testclient import TestClient  # noqa: E402
+
 from src.core.shared.security.rate_limiter import (  # noqa: E402
     CONSTITUTIONAL_HASH,
     RateLimitConfig,

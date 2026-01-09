@@ -22,10 +22,7 @@ from .. import CONSTITUTIONAL_HASH
 from ..context.jrt_context import JRTContextPreparator
 
 # Layer 1: Context & Memory
-from ..context.mamba_hybrid import (
-    ConstitutionalMambaHybrid,
-    ProcessingMode,
-)
+from ..context.mamba_hybrid import ConstitutionalMambaHybrid, ProcessingMode
 from ..context.memory_system import (
     ConstitutionalMemorySystem,
     GovernanceCase,
@@ -33,9 +30,7 @@ from ..context.memory_system import (
 )
 
 # Layer 4: Governance & Policy
-from ..governance.democratic_constitution import (
-    DemocraticConstitutionalGovernance,
-)
+from ..governance.democratic_constitution import DemocraticConstitutionalGovernance
 from ..integrations.constitutional_classifiers import (
     AgentAction,
     ConstitutionalClassifier,
@@ -47,13 +42,8 @@ from ..integrations.langgraph_orchestration import (
 
 # Integrations
 from ..integrations.mcp_server import ACGS2MCPServer
-from ..integrations.runtime_guardrails import (
-    ConstitutionalGuardrails,
-    GuardrailLevel,
-)
-from ..policy.verified_policy_generator import (
-    VerifiedPolicyGenerator,
-)
+from ..integrations.runtime_guardrails import ConstitutionalGuardrails, GuardrailLevel
+from ..policy.verified_policy_generator import VerifiedPolicyGenerator
 from ..symbolic.edge_case_handler import ConstitutionalEdgeCaseHandler
 
 # Layer 3: Temporal & Symbolic
@@ -63,18 +53,11 @@ from ..temporal.timeline_engine import (
     EventType,
     TimelineEventFactory,
 )
-from ..verification.maci_verifier import (
-    GovernanceDecision as MACIDecision,
-)
 
 # Layer 2: Verification
-from ..verification.maci_verifier import (
-    MACIRole,
-    MACIVerificationPipeline,
-)
-from ..verification.saga_transactions import (
-    SagaConstitutionalTransaction,
-)
+from ..verification.maci_verifier import GovernanceDecision as MACIDecision
+from ..verification.maci_verifier import MACIRole, MACIVerificationPipeline
+from ..verification.saga_transactions import SagaConstitutionalTransaction
 from ..verification.veriplan_z3 import VeriPlanFormalVerifier
 
 # ============================================================================

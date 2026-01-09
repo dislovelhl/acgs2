@@ -19,12 +19,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from ..base import (
-    BaseIntegration,
-    DeliveryError,
-    IntegrationEvent,
-    IntegrationResult,
-)
+from ..base import BaseIntegration, DeliveryError, IntegrationEvent, IntegrationResult
 from .credentials import LinearCredentials
 
 logger = logging.getLogger(__name__)

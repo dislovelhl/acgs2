@@ -18,7 +18,12 @@ except ImportError:
     MetadataDict = Dict[str, Any]
 
 try:
-    from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
+    from .interfaces import (
+        AgentRegistry,
+        MessageRouter,
+        ProcessingStrategy,
+        ValidationStrategy,
+    )
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
     from .validators import ValidationResult
 except (ImportError, ValueError):
@@ -29,7 +34,11 @@ except (ImportError, ValueError):
             ProcessingStrategy,
             ValidationStrategy,
         )
-        from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus  # type: ignore
+        from models import (  # type: ignore
+            CONSTITUTIONAL_HASH,
+            AgentMessage,
+            MessageStatus,
+        )
         from validators import ValidationResult  # type: ignore
     except (ImportError, ValueError):
         # Fallback for dynamic loaders
@@ -39,9 +48,7 @@ except (ImportError, ValueError):
         d = os.path.dirname(os.path.abspath(__file__))
         if d not in sys.path:
             sys.path.append(d)
-        from interfaces import (  # type: ignore
-            AgentRegistry,
-        )
+        from interfaces import AgentRegistry  # type: ignore
         from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
 
 # Import validation and processing strategies from extracted modules

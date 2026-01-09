@@ -18,6 +18,7 @@ if enhanced_agent_bus_dir not in sys.path:
     sys.path.insert(0, enhanced_agent_bus_dir)
 
 # Import using direct module loading
+# ruff: noqa: E402
 import importlib.util
 
 

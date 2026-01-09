@@ -19,12 +19,10 @@ import jwt
 from jwt import PyJWKClient
 
 # Import models from extracted module
-from .okta_models import (
+from .okta_models import (  # Exceptions; Data classes; Enums
     CONSTITUTIONAL_HASH,
-    # Exceptions
     OktaAuthError,
     OktaAuthState,
-    # Data classes
     OktaConfig,
     OktaConfigError,
     OktaGrantType,
@@ -33,7 +31,6 @@ from .okta_models import (
     OktaProvisioningError,
     OktaScope,
     OktaTokenResponse,
-    # Enums
     OktaTokenType,
     OktaUser,
     OktaUserInfo,

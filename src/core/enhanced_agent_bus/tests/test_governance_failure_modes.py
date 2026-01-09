@@ -507,7 +507,9 @@ class TestConflictingApprovals:
     async def test_voting_service_exists(self) -> None:
         """Test that voting service can be instantiated."""
         try:
-            from enhanced_agent_bus.deliberation_layer.voting_service import VotingService
+            from enhanced_agent_bus.deliberation_layer.voting_service import (
+                VotingService,
+            )
 
             service = VotingService()
             assert service is not None
@@ -518,7 +520,9 @@ class TestConflictingApprovals:
     async def test_election_creation(self) -> None:
         """Test that elections can be created for voting."""
         try:
-            from enhanced_agent_bus.deliberation_layer.voting_service import VotingService
+            from enhanced_agent_bus.deliberation_layer.voting_service import (
+                VotingService,
+            )
             from enhanced_agent_bus.models import AgentMessage, MessageType
 
             service = VotingService()

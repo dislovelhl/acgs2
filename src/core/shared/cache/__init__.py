@@ -10,15 +10,8 @@ import threading
 # Singleton pattern
 from typing import Optional
 
-from .manager import (
-    TieredCacheManager,
-)
-from .models import (
-    AccessRecord,
-    CacheTier,
-    TieredCacheConfig,
-    TieredCacheStats,
-)
+from .manager import TieredCacheManager
+from .models import AccessRecord, CacheTier, TieredCacheConfig, TieredCacheStats
 
 logger = logging.getLogger(__name__)
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

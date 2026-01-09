@@ -9,6 +9,7 @@ Requires the Search Platform to be running on localhost:9080.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+# ruff: noqa: E402
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -261,7 +262,9 @@ class TestAuditTrailSearch:
         assert isinstance(result.events, list)
         # All should be critical
         for event in result.events:
-            from src.core.services.integration.search_platform.audit_search import AuditSeverity
+            from src.core.services.integration.search_platform.audit_search import (
+                AuditSeverity,
+            )
 
             assert event.severity == AuditSeverity.CRITICAL
 

@@ -18,20 +18,11 @@ except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
 
-from .context import (
-    ContextManager,
-    ConversationContext,
-    Message,
-    MessageRole,
-)
+from .context import ContextManager, ConversationContext, Message, MessageRole
 from .dialog import ActionType, DialogAction, DialogManager
 from .integration import AgentBusIntegration, IntegrationConfig
 from .nlu import NLUEngine
-from .response import (
-    ResponseConfig,
-    ResponseGenerator,
-    TemplateResponseGenerator,
-)
+from .response import ResponseConfig, ResponseGenerator, TemplateResponseGenerator
 
 # Import centralized constitutional hash with fallback
 try:

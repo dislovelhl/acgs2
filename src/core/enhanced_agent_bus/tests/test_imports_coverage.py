@@ -40,12 +40,7 @@ class TestImportsAvailability:
 
     def test_optional_modules_can_be_none(self):
         """Optional module references can be None if unavailable."""
-        from imports import (
-            MESSAGE_QUEUE_DEPTH,
-            meter,
-            set_service_info,
-            tracer,
-        )
+        from imports import MESSAGE_QUEUE_DEPTH, meter, set_service_info, tracer
 
         # These should either be None or valid objects
         assert MESSAGE_QUEUE_DEPTH is None or callable(getattr(MESSAGE_QUEUE_DEPTH, "labels", None))
@@ -98,11 +93,7 @@ class TestMeteringImports:
 
     def test_metering_imports(self):
         """Metering components import correctly."""
-        from imports import (
-            METERING_AVAILABLE,
-            MeteringConfig,
-            MeteringHooks,
-        )
+        from imports import METERING_AVAILABLE, MeteringConfig, MeteringHooks
 
         if METERING_AVAILABLE:
             assert MeteringConfig is not None or MeteringHooks is not None
@@ -116,10 +107,7 @@ class TestOPAClientImports:
 
     def test_opa_client_imports(self):
         """OPA client components import correctly."""
-        from imports import (
-            OPA_CLIENT_AVAILABLE,
-            OPAClient,
-        )
+        from imports import OPA_CLIENT_AVAILABLE, OPAClient
 
         if OPA_CLIENT_AVAILABLE:
             assert OPAClient is not None
@@ -130,10 +118,7 @@ class TestAuditClientImports:
 
     def test_audit_client_imports(self):
         """Audit client components import correctly."""
-        from imports import (
-            AUDIT_CLIENT_AVAILABLE,
-            AuditClient,
-        )
+        from imports import AUDIT_CLIENT_AVAILABLE, AuditClient
 
         if AUDIT_CLIENT_AVAILABLE:
             assert AuditClient is not None
@@ -247,10 +232,7 @@ class TestCryptoImports:
 
     def test_crypto_imports(self):
         """Crypto components import correctly."""
-        from imports import (
-            CRYPTO_AVAILABLE,
-            CryptoService,
-        )
+        from imports import CRYPTO_AVAILABLE, CryptoService
 
         if CRYPTO_AVAILABLE:
             assert CryptoService is not None
@@ -261,10 +243,7 @@ class TestConfigImports:
 
     def test_config_imports(self):
         """Config components import correctly."""
-        from imports import (
-            CONFIG_AVAILABLE,
-            settings,
-        )
+        from imports import CONFIG_AVAILABLE, settings
 
         if CONFIG_AVAILABLE:
             assert settings is not None
@@ -275,11 +254,7 @@ class TestDeliberationImports:
 
     def test_deliberation_imports(self):
         """Deliberation components import correctly."""
-        from imports import (
-            DELIBERATION_AVAILABLE,
-            VotingService,
-            VotingStrategy,
-        )
+        from imports import DELIBERATION_AVAILABLE, VotingService, VotingStrategy
 
         if DELIBERATION_AVAILABLE:
             assert VotingService is not None or VotingStrategy is not None
@@ -290,11 +265,7 @@ class TestPolicyClientImports:
 
     def test_policy_client_imports(self):
         """Policy client components import correctly."""
-        from imports import (
-            POLICY_CLIENT_AVAILABLE,
-            PolicyClient,
-            get_policy_client,
-        )
+        from imports import POLICY_CLIENT_AVAILABLE, PolicyClient, get_policy_client
 
         if POLICY_CLIENT_AVAILABLE:
             assert PolicyClient is not None
@@ -306,10 +277,7 @@ class TestRustImports:
 
     def test_rust_imports(self):
         """Rust backend components import correctly."""
-        from imports import (
-            USE_RUST,
-            rust_bus,
-        )
+        from imports import USE_RUST, rust_bus
 
         if USE_RUST:
             assert rust_bus is not None

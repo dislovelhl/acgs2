@@ -75,7 +75,7 @@ def show_pending_reviews(deliberation_queue, llm_assistant):
                 show_review_actions(item["item_id"], deliberation_queue)
 
 
-def show_item_details(item: Dict[str, Any], llm_assistant, deliberation_queue):
+def show_item_details(item: Dict[str, Any], _llm_assistant, deliberation_queue):
     """Show detailed information about a deliberation item."""
     item_details = deliberation_queue.get_item_details(item["item_id"])
 
@@ -219,7 +219,7 @@ def show_queue_status(deliberation_queue):
         st.info("Queue is empty")
 
 
-def show_analytics(adaptive_router, deliberation_queue):
+def show_analytics(adaptive_router, _deliberation_queue):
     """Show analytics and performance metrics."""
     st.header("Analytics & Performance")
 

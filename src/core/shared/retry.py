@@ -28,15 +28,7 @@ import asyncio
 import functools
 import logging
 import random
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-)
+from typing import Any, AsyncIterator, Callable, Optional, Tuple, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 

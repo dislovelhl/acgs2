@@ -21,8 +21,6 @@ from typing import Any, BinaryIO, Dict, List, Optional, Union
 try:
     from src.core.shared.types import DocumentData, JSONDict, JSONValue
 except ImportError:
-    from typing import Any, Dict, List, Union
-
     JSONPrimitive = Union[str, int, float, bool, None]
     JSONDict = Dict[str, Any]
     JSONList = List[Any]

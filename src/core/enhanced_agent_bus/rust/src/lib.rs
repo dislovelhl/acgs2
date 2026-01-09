@@ -13,6 +13,8 @@ use uuid::Uuid;
 use chrono::Utc;
 use dashmap::DashMap;
 use parking_lot::RwLock as ParkingRwLock;
+use futures;
+use rayon;
 
 use security::detect_prompt_injection;
 use deliberation::{ImpactScorer, AdaptiveRouter};
@@ -24,7 +26,7 @@ const CONSTITUTIONAL_HASH: &str = "cdd01ef066bc6cf2";
 
 /// Message types for agent communication
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-#[pyclass]
+#[pyclass(eq, eq_int)]
 pub enum MessageType {
     Command,
     Query,
@@ -41,7 +43,7 @@ pub enum MessageType {
 
 /// Message priority levels
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[pyclass]
+#[pyclass(eq, eq_int)]
 pub enum MessagePriority {
     Critical = 0,
     High = 1,
@@ -51,7 +53,7 @@ pub enum MessagePriority {
 
 /// Message processing status
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[pyclass]
+#[pyclass(eq, eq_int)]
 pub enum MessageStatus {
     Pending,
     Processing,
@@ -254,6 +256,7 @@ impl MessageProcessor {
     }
 
     fn register_handler(&self, message_type: MessageType, handler: PyObject) -> PyResult<()> {
+        let handler = Arc::new(handler);
         let async_handler = Arc::new(move |msg: AgentMessage| {
             let handler = handler.clone();
             Box::pin(async move {
@@ -269,9 +272,9 @@ impl MessageProcessor {
     }
 
     #[pyo3(signature = (message))]
-    fn process<'py>(&self, py: Python<'py>, message: AgentMessage) -> PyResult<&'py PyAny> {
+    fn process<'py>(&self, py: Python<'py>, message: AgentMessage) -> PyResult<Bound<'py, PyAny>> {
         let processor = self.clone_internal();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
             processor.process_async(message).await
         })
     }
@@ -285,17 +288,17 @@ impl MessageProcessor {
         self.metrics.read().clone()
     }
 
-    fn enable_opa<'py>(&self, py: Python<'py>, endpoint: String) -> PyResult<&'py PyAny> {
+    fn enable_opa<'py>(&self, py: Python<'py>, endpoint: String) -> PyResult<Bound<'py, PyAny>> {
         let opa_client = self.opa_client.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
             *opa_client.write() = Some(OpaClient::new(endpoint));
             Ok(())
         })
     }
 
-    fn enable_audit<'py>(&self, py: Python<'py>, service_url: String) -> PyResult<&'py PyAny> {
+    fn enable_audit<'py>(&self, py: Python<'py>, service_url: String) -> PyResult<Bound<'py, PyAny>> {
         let audit_client = self.audit_client.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
             *audit_client.write() = Some(AuditClient::new(service_url));
             Ok(())
         })
@@ -313,9 +316,9 @@ impl MessageProcessor {
         }
     }
 
-    fn opa_health_check<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+    fn opa_health_check<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let opa_client = self.opa_client.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
             let opa = opa_client.read().clone();
             if let Some(opa) = opa {
                 let health = opa.health_check().await;
@@ -459,7 +462,7 @@ impl MessageProcessor {
 }
 
 #[pymodule]
-fn enhanced_agent_bus_rust(_py: Python, m: &PyModule) -> PyResult<()> {
+fn enhanced_agent_bus_rust(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<MessageType>()?;
     m.add_class::<MessagePriority>()?;
     m.add_class::<MessageStatus>()?;

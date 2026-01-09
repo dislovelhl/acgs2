@@ -12,7 +12,7 @@ from acgs2_sdk import create_client
 
 @click.group()
 @click.pass_context
-def tenant(ctx):
+def tenant(_ctx):
     """Tenant management commands"""
     pass
 

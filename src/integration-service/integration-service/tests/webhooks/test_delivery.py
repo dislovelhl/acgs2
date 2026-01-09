@@ -37,11 +37,7 @@ from src.webhooks.models import (
     WebhookState,
     WebhookSubscription,
 )
-from src.webhooks.retry import (
-    ExponentialBackoff,
-    RetryState,
-    should_retry_status_code,
-)
+from src.webhooks.retry import ExponentialBackoff, RetryState, should_retry_status_code
 
 if TYPE_CHECKING:
     pass

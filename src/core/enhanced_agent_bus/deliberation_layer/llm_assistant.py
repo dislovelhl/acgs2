@@ -31,10 +31,7 @@ except ImportError:
         d = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if d not in sys.path:
             sys.path.append(d)
-        from models import (  # type: ignore
-            CONSTITUTIONAL_HASH,
-            AgentMessage,
-        )
+        from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
         from utils import get_iso_timestamp  # type: ignore
 
 logger = logging.getLogger(__name__)
@@ -49,37 +46,6 @@ except ImportError:
 
 
 # Mock classes for test friendliness when LangChain is missing
-class ChatPromptTemplate:
-    @classmethod
-    def from_template(cls, template: str):
-        mock = MagicMock()
-        mock.format_messages.return_value = []
-        return mock
-
-
-class SystemMessagePromptTemplate:
-    pass
-
-
-class HumanMessagePromptTemplate:
-    pass
-
-
-class JsonOutputParser:
-    def parse(self, text: str):
-        return {}
-
-
-class ChatOpenAI:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    async def ainvoke(self, *args, **kwargs):
-        mock = MagicMock()
-        mock.content = "{}"
-        return mock
-
-
 try:
     from langchain_core.output_parsers import JsonOutputParser
     from langchain_core.prompts import (
@@ -91,9 +57,35 @@ try:
 
     LANGCHAIN_AVAILABLE = True
 except ImportError:
+    LANGCHAIN_AVAILABLE = False
     from unittest.mock import MagicMock
 
-    LANGCHAIN_AVAILABLE = False
+    # Mock classes for test friendliness when LangChain is missing
+    class ChatPromptTemplate:  # noqa: F811
+        @classmethod
+        def from_template(cls, template: str):
+            mock = MagicMock()
+            mock.format_messages.return_value = []
+            return mock
+
+    class SystemMessagePromptTemplate:  # noqa: F811
+        pass
+
+    class HumanMessagePromptTemplate:  # noqa: F811
+        pass
+
+    class JsonOutputParser:  # noqa: F811
+        def parse(self, text: str):
+            return {}
+
+    class ChatOpenAI:  # noqa: F811
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def ainvoke(self, *args, **kwargs):
+            mock = MagicMock()
+            mock.content = "{}"
+            return mock
 
 
 class LLMAssistant:

@@ -93,12 +93,8 @@ def _init_prometheus_metrics() -> None:
     """Initialize Prometheus metrics with fallback."""
     global METRICS_ENABLED, MESSAGE_QUEUE_DEPTH, set_service_info
     try:
-        from src.core.shared.metrics import (
-            MESSAGE_QUEUE_DEPTH as _mqd,
-        )
-        from src.core.shared.metrics import (
-            set_service_info as _ssi,
-        )
+        from src.core.shared.metrics import MESSAGE_QUEUE_DEPTH as _mqd
+        from src.core.shared.metrics import set_service_info as _ssi
 
         MESSAGE_QUEUE_DEPTH = _mqd
         set_service_info = _ssi
@@ -132,15 +128,11 @@ def _init_circuit_breaker() -> None:
     global circuit_breaker_health_check, initialize_core_circuit_breakers
     global CircuitBreakerConfig
     try:
-        from src.core.shared.circuit_breaker import (
-            CircuitBreakerConfig as _cbc,
-        )
+        from src.core.shared.circuit_breaker import CircuitBreakerConfig as _cbc
         from src.core.shared.circuit_breaker import (
             circuit_breaker_health_check as _cbhc,
         )
-        from src.core.shared.circuit_breaker import (
-            get_circuit_breaker as _gcb,
-        )
+        from src.core.shared.circuit_breaker import get_circuit_breaker as _gcb
         from src.core.shared.circuit_breaker import (
             initialize_core_circuit_breakers as _icb,
         )
@@ -182,25 +174,13 @@ def _init_deliberation_layer() -> None:
     global DELIBERATION_AVAILABLE, VotingService, VotingStrategy, DeliberationQueue
     try:
         try:
-            from .deliberation_layer.deliberation_queue import (
-                DeliberationQueue as _dq,
-            )
-            from .deliberation_layer.voting_service import (
-                VotingService as _vs,
-            )
-            from .deliberation_layer.voting_service import (
-                VotingStrategy as _vst,
-            )
+            from .deliberation_layer.deliberation_queue import DeliberationQueue as _dq
+            from .deliberation_layer.voting_service import VotingService as _vs
+            from .deliberation_layer.voting_service import VotingStrategy as _vst
         except ImportError:
-            from deliberation_layer.deliberation_queue import (
-                DeliberationQueue as _dq,
-            )
-            from deliberation_layer.voting_service import (
-                VotingService as _vs,
-            )
-            from deliberation_layer.voting_service import (
-                VotingStrategy as _vst,
-            )
+            from deliberation_layer.deliberation_queue import DeliberationQueue as _dq
+            from deliberation_layer.voting_service import VotingService as _vs
+            from deliberation_layer.voting_service import VotingStrategy as _vst
         VotingService = _vs
         VotingStrategy = _vst
         DeliberationQueue = _dq
@@ -306,43 +286,19 @@ def _init_metering() -> None:
     global AsyncMeteringQueue, get_metering_hooks, get_metering_queue
     try:
         try:
-            from .metering_integration import (
-                METERING_AVAILABLE as _ma,
-            )
-            from .metering_integration import (
-                AsyncMeteringQueue as _amq,
-            )
-            from .metering_integration import (
-                MeteringConfig as _mc,
-            )
-            from .metering_integration import (
-                MeteringHooks as _mh,
-            )
-            from .metering_integration import (
-                get_metering_hooks as _gmh,
-            )
-            from .metering_integration import (
-                get_metering_queue as _gmq,
-            )
+            from .metering_integration import METERING_AVAILABLE as _ma
+            from .metering_integration import AsyncMeteringQueue as _amq
+            from .metering_integration import MeteringConfig as _mc
+            from .metering_integration import MeteringHooks as _mh
+            from .metering_integration import get_metering_hooks as _gmh
+            from .metering_integration import get_metering_queue as _gmq
         except ImportError:
-            from metering_integration import (
-                METERING_AVAILABLE as _ma,
-            )
-            from metering_integration import (
-                AsyncMeteringQueue as _amq,
-            )
-            from metering_integration import (
-                MeteringConfig as _mc,
-            )
-            from metering_integration import (
-                MeteringHooks as _mh,
-            )
-            from metering_integration import (
-                get_metering_hooks as _gmh,
-            )
-            from metering_integration import (
-                get_metering_queue as _gmq,
-            )
+            from metering_integration import METERING_AVAILABLE as _ma
+            from metering_integration import AsyncMeteringQueue as _amq
+            from metering_integration import MeteringConfig as _mc
+            from metering_integration import MeteringHooks as _mh
+            from metering_integration import get_metering_hooks as _gmh
+            from metering_integration import get_metering_queue as _gmq
         MeteringHooks = _mh
         MeteringConfig = _mc
         AsyncMeteringQueue = _amq

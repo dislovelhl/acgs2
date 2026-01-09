@@ -19,10 +19,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import SecretStr
 
-from src.integrations.base import (
-    EventSeverity,
-    IntegrationEvent,
-)
+from src.integrations.base import EventSeverity, IntegrationEvent
 from src.integrations.pagerduty_adapter import (
     PagerDutyAdapter,
     PagerDutyAuthType,
@@ -221,9 +218,7 @@ class TestPagerDutyTicketMapping:
 
     def test_create_pagerduty_mapping_config_default(self):
         """Test create_pagerduty_mapping_config with default parameters."""
-        from src.integrations.ticket_mapping import (
-            TicketingProvider,
-        )
+        from src.integrations.ticket_mapping import TicketingProvider
 
         config = create_pagerduty_mapping_config()
 
@@ -318,9 +313,7 @@ class TestPagerDutyTicketMapping:
 
     def test_create_pagerduty_mapping_config_event_action_validation(self):
         """Test create_pagerduty_mapping_config validates event_action values."""
-        from src.integrations.ticket_mapping import (
-            FieldValidationType,
-        )
+        from src.integrations.ticket_mapping import FieldValidationType
 
         config = create_pagerduty_mapping_config(event_action="trigger")
 
@@ -340,9 +333,7 @@ class TestPagerDutyTicketMapping:
 
     def test_create_pagerduty_mapping_config_summary_max_length(self):
         """Test create_pagerduty_mapping_config enforces summary max length."""
-        from src.integrations.ticket_mapping import (
-            FieldValidationType,
-        )
+        from src.integrations.ticket_mapping import FieldValidationType
 
         config = create_pagerduty_mapping_config()
 
@@ -362,9 +353,7 @@ class TestPagerDutyTicketMapping:
 
     def test_create_pagerduty_mapping_config_source_max_length(self):
         """Test create_pagerduty_mapping_config enforces source max length."""
-        from src.integrations.ticket_mapping import (
-            FieldValidationType,
-        )
+        from src.integrations.ticket_mapping import FieldValidationType
 
         config = create_pagerduty_mapping_config()
 
@@ -383,9 +372,7 @@ class TestPagerDutyTicketMapping:
 
     def test_create_pagerduty_mapping_config_severity_transform(self):
         """Test create_pagerduty_mapping_config uses severity_to_pagerduty_urgency transformer."""
-        from src.integrations.ticket_mapping import (
-            FieldMappingType,
-        )
+        from src.integrations.ticket_mapping import FieldMappingType
 
         config = create_pagerduty_mapping_config()
 
@@ -415,9 +402,7 @@ class TestPagerDutyTicketMapping:
 
     def test_pagerduty_mapping_config_timestamp_field(self):
         """Test create_pagerduty_mapping_config includes timestamp field."""
-        from src.integrations.ticket_mapping import (
-            FieldMappingType,
-        )
+        from src.integrations.ticket_mapping import FieldMappingType
 
         config = create_pagerduty_mapping_config()
 

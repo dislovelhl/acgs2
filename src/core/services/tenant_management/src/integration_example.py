@@ -7,6 +7,7 @@ Example showing how to integrate tenant isolation into existing services.
 
 # Example: Integrating tenant isolation into Policy Service
 
+# ruff: noqa: E402
 from datetime import datetime
 
 from fastapi import APIRouter, Depends

@@ -9,21 +9,16 @@ import pytest
 
 try:
     from enhanced_agent_bus import core
-    from enhanced_agent_bus.core import (
-        # Constants
+    from enhanced_agent_bus.core import (  # Constants; Core Classes; Protocol Interfaces; Implementation Classes; Backward Compatibility; Functions
         CIRCUIT_BREAKER_ENABLED,
         CONSTITUTIONAL_HASH,
         DEFAULT_REDIS_URL,
         METERING_AVAILABLE,
         METRICS_ENABLED,
         USE_RUST,
-        # Core Classes
         AgentMessage,
-        # Protocol Interfaces
         AgentRegistry,
-        # Implementation Classes
         CompositeProcessingStrategy,
-        # Backward Compatibility
         ConstitutionalValidationStrategy,
         DecisionLog,
         DirectMessageRouter,
@@ -46,7 +41,6 @@ try:
         StaticHashValidationStrategy,
         ValidationResult,
         ValidationStrategy,
-        # Functions
         get_agent_bus,
         reset_agent_bus,
     )
@@ -218,11 +212,7 @@ class TestCoreMeteringExportsExpanded:
                 reset_metering,
             )
         except ImportError:
-            from core import (
-                get_metering_hooks,
-                get_metering_queue,
-                reset_metering,
-            )
+            from core import get_metering_hooks, get_metering_queue, reset_metering
 
         if METERING_AVAILABLE:
             assert callable(get_metering_hooks)

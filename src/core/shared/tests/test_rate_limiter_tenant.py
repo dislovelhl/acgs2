@@ -42,7 +42,6 @@ from src.core.shared.security.rate_limiter import (  # noqa: E402, I001
     TenantRateLimitProvider,
 )
 
-
 # ============================================================================
 # TenantQuota Dataclass Tests
 # ============================================================================

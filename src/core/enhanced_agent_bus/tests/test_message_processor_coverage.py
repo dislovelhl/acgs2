@@ -23,16 +23,8 @@ try:
     )
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
-    from message_processor import (
-        PROMPT_INJECTION_PATTERNS,
-        LRUCache,
-        MessageProcessor,
-    )
-    from models import (
-        CONSTITUTIONAL_HASH,
-        AgentMessage,
-        MessageType,
-    )
+    from message_processor import PROMPT_INJECTION_PATTERNS, LRUCache, MessageProcessor
+    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
     from validators import ValidationResult
 
 

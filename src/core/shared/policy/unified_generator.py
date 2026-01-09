@@ -371,9 +371,9 @@ class UnifiedVerifiedPolicyGenerator:
                         "backend": "z3-python+dafny-cli",
                         "proven": proven,
                     },
-                    verification_status=VerificationStatus.PROVEN
-                    if proven
-                    else VerificationStatus.VERIFIED,
+                    verification_status=(
+                        VerificationStatus.PROVEN if proven else VerificationStatus.VERIFIED
+                    ),
                     confidence_score=1.0 if proven else (0.8 if success else 0.5),
                     verified_at=datetime.now(timezone.utc),
                 )

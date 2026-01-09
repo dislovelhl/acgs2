@@ -18,7 +18,6 @@ except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
 
-import litellm
 
 from ..config import BusConfiguration
 
@@ -242,7 +241,8 @@ Respond with ONLY a JSON object in this exact format:
         Returns:
             Dict with intent, confidence, and reasoning, or None on failure.
         """
-        if not self.is_llm_available():
+        # Fallback to simple keyword matching if litellm fails
+        if not LITELLM_AVAILABLE:
             return None
 
         # Truncate content if too long

@@ -84,9 +84,11 @@ class SSOUser:
             idp_type=IdPType(data.get("idp_type", "custom_saml")),
             protocol=SSOProtocol(data.get("protocol", "saml")),
             raw_attributes=data.get("raw_attributes", {}),
-            authenticated_at=datetime.fromisoformat(data["authenticated_at"])
-            if "authenticated_at" in data
-            else datetime.now(timezone.utc),
+            authenticated_at=(
+                datetime.fromisoformat(data["authenticated_at"])
+                if "authenticated_at" in data
+                else datetime.now(timezone.utc)
+            ),
         )
 
 

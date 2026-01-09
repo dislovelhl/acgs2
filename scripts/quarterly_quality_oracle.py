@@ -348,9 +348,9 @@ class QuarterlyQualityOracle:
             "prioritized_plans": [vars(plan) for plan in sorted_plans],
             "total_estimated_effort_days": total_effort,
             "total_expected_weekly_roi": total_roi,
-            "roi_payback_period_weeks": total_effort * 8 / total_roi
-            if total_roi > 0
-            else float("inf"),
+            "roi_payback_period_weeks": (
+                total_effort * 8 / total_roi if total_roi > 0 else float("inf")
+            ),
             "implementation_strategy": self._create_implementation_strategy(sorted_plans),
         }
 

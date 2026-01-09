@@ -349,13 +349,15 @@ class NeuralPatternTraining(NeuralPatternTrainingInterface):
             "quality_score": 0.85,  # Mock quality metric
             "diversity_score": min(1.0, len(event_types) / 10),  # Mock diversity
             "contamination_rate": 0.02,  # Mock contamination check
-            "recommendations": [
-                "Increase dataset size for better generalization",
-                "Add more diverse event types",
-                "Verify PII redaction effectiveness",
-            ]
-            if total_samples < 1000
-            else ["Dataset quality acceptable"],
+            "recommendations": (
+                [
+                    "Increase dataset size for better generalization",
+                    "Add more diverse event types",
+                    "Verify PII redaction effectiveness",
+                ]
+                if total_samples < 1000
+                else ["Dataset quality acceptable"]
+            ),
         }
 
         return results

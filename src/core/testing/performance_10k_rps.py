@@ -33,6 +33,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Optional
 
+# ruff: noqa: E402
 import yaml
 from locust import FastHttpUser, between, events, task
 
