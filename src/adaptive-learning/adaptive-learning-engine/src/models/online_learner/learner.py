@@ -13,7 +13,7 @@ import time
 from collections import deque
 from typing import Any, Deque, Dict, List, Optional, Tuple
 
-from river import metrics, utils
+from river import compose, metrics, utils
 
 from .enums import ModelState, ModelType
 from .models import ModelMetrics, PredictionResult, TrainingResult
