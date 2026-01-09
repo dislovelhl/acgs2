@@ -32,7 +32,7 @@ spec:
         prometheus.io/path: "/metrics"
         # MCP-specific annotations
         acgs2/mcp-version: "1.0"
-        acgs2/neural-model: "{{ .Values.neuralModel | default "default" }}"
+        acgs2/neural-model: '{{ .Values.neuralModel | default "default" }}'
     spec:
       # Node affinity for regional deployment
       affinity:
@@ -87,7 +87,7 @@ spec:
       containers:
       - name: neural-mcp
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        imagePullPolicy: '{{ .Values.image.pullPolicy }}'
         command:
         - /usr/local/bin/neural-mcp
         - --config=/etc/neural-mcp/config.yaml
@@ -120,28 +120,28 @@ spec:
         - name: PROMETHEUS_METRICS_PORT
           value: "9090"
         - name: LOG_LEVEL
-          value: "{{ .Values.logLevel | default "info" }}"
+          value: '{{ .Values.logLevel | default "info" }}'
         # Neural-specific environment
         - name: NEURAL_MODEL_PATH
-          value: "/models/{{ .Values.neuralModel | default "default" }}"
+          value: '/models/{{ .Values.neuralModel | default "default" }}'
         - name: GPU_MEMORY_FRACTION
-          value: "{{ .Values.gpuMemoryFraction | default "0.8" }}"
+          value: '{{ .Values.gpuMemoryFraction | default "0.8" }}'
         - name: INFERENCE_BATCH_SIZE
-          value: "{{ .Values.inferenceBatchSize | default "1" }}"
+          value: '{{ .Values.inferenceBatchSize | default "1" }}'
         # Multi-region specific environment
         - name: MULTI_REGION_ENABLED
           value: "true"
         - name: PRIMARY_REGION
-          value: "{{ .Values.primaryRegion | default "us-east-1" }}"
+          value: '{{ .Values.primaryRegion | default "us-east-1" }}'
         - name: CROSS_REGION_TIMEOUT
-          value: "{{ .Values.crossRegionTimeout | default "30s" }}"
+          value: '{{ .Values.crossRegionTimeout | default "30s" }}'
         - name: HEALTH_CHECK_INTERVAL
-          value: "{{ .Values.healthCheckInterval | default "30s" }}"
+          value: '{{ .Values.healthCheckInterval | default "30s" }}'
         # Model serving environment
         - name: MODEL_CACHE_SIZE
-          value: "{{ .Values.modelCacheSize | default "2GB" }}"
+          value: '{{ .Values.modelCacheSize | default "2GB" }}'
         - name: ENABLE_MODEL_WARMUP
-          value: "{{ .Values.enableModelWarmup | default "true" }}"
+          value: '{{ .Values.enableModelWarmup | default "true" }}'
 
         ports:
         - name: mcp
@@ -157,14 +157,14 @@ spec:
         # Resource limits (GPU-aware)
         resources:
           limits:
-            cpu: "{{ .Values.resources.limits.cpu | default "2000m" }}"
-            memory: "{{ .Values.resources.limits.memory | default "4Gi" }}"
+            cpu: '{{ .Values.resources.limits.cpu | default "2000m" }}'
+            memory: '{{ .Values.resources.limits.memory | default "4Gi" }}'
             {{- if .Values.gpu.enabled }}
             nvidia.com/gpu: "{{ .Values.gpu.count | default 1 }}"
             {{- end }}
           requests:
-            cpu: "{{ .Values.resources.requests.cpu | default "500m" }}"
-            memory: "{{ .Values.resources.requests.memory | default "1Gi" }}"
+            cpu: '{{ .Values.resources.requests.cpu | default "500m" }}'
+            memory: '{{ .Values.resources.requests.memory | default "1Gi" }}'
             {{- if .Values.gpu.enabled }}
             nvidia.com/gpu: "{{ .Values.gpu.count | default 1 }}"
             {{- end }}
@@ -391,10 +391,10 @@ metadata:
 spec:
   accessModes:
     - ReadOnlyMany
-  storageClassName: "{{ .Values.storageClass | default "gp3" }}"
+  storageClassName: '{{ .Values.storageClass | default "gp3" }}'
   resources:
     requests:
-      storage: "{{ .Values.modelStorageSize | default "50Gi" }}"
+      storage: '{{ .Values.modelStorageSize | default "50Gi" }}'
 ---
 # Network Policy for multi-region security
 apiVersion: networking.k8s.io/v1
