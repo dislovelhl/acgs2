@@ -1,13 +1,4 @@
 """
-Tests for driftdetectorthreadsafety.
-
-Tests cover:
-- driftdetectorthreadsafety functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 Unit tests for the Adaptive Learning Engine monitoring module.
 
 Tests cover:

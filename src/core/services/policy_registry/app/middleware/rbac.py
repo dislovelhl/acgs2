@@ -368,18 +368,18 @@ class TokenValidator:
 
             return self._parse_claims(payload)
 
-        except jwt.ExpiredSignatureError:
+        except jwt.ExpiredSignatureError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired",
                 headers={"WWW-Authenticate": "Bearer"},
-            )
+            ) from e
         except jwt.InvalidTokenError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Invalid token: {str(e)}",
                 headers={"WWW-Authenticate": "Bearer"},
-            )
+            ) from e
 
     def _parse_claims(self, payload: Dict[str, Any]) -> TokenClaims:
         """Parse JWT payload into TokenClaims."""

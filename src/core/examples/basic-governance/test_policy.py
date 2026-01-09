@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
     # Try to import ACGS-2 client
-    from acgs2_core.shared.opa_client import OPAClient
+    from src.core.shared.opa_client import OPAClient
 except ImportError:
     # Fallback: simulate policy evaluation
     class MockOPAClient:

@@ -10,11 +10,11 @@ from pathlib import Path
 # This allows integration-service to import from src/core/shared/ at runtime
 _current_file = Path(__file__).resolve()
 _repo_root = _current_file.parent.parent.parent
-_acgs2_core_path = _repo_root / "src/core"
-if _acgs2_core_path.exists() and str(_acgs2_core_path) not in sys.path:
-    sys.path.insert(0, str(_acgs2_core_path))
+_core_path = _repo_root / "src/core"
+if _core_path.exists() and str(_core_path) not in sys.path:
+    sys.path.insert(0, str(_core_path))
 
-from . import exceptions
+from . import exceptions  # noqa: E402
 
 __version__ = "1.0.0"
 __service__ = "integration-service"

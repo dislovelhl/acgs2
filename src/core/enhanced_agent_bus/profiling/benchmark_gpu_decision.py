@@ -15,11 +15,9 @@ Output:
     - Prometheus metrics (if enabled)
 """
 
-import logging
-
-logger = logging.getLogger(__name__)
 import argparse
 import json
+import logging
 import random
 import sys
 import time
@@ -31,9 +29,11 @@ from typing import Any, Dict
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.core.enhanced_agent_bus.profiling import (
+from src.core.enhanced_agent_bus.profiling import (  # noqa: E402
     get_global_profiler,
 )
+
+logger = logging.getLogger(__name__)
 
 # Sample test messages for realistic workload simulation
 SAMPLE_MESSAGES = [

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """
 Tests for PagerDuty integration adapter - incident creation.
 
@@ -14,6 +12,7 @@ Tests cover:
 - Ticket mapping transformers and configuration
 """
 
+from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 

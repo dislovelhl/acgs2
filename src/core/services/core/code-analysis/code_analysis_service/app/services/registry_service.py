@@ -1,19 +1,15 @@
-import asyncio
-import logging
-from typing import Any
-
-# Secure credentials management
-logger = logging.getLogger(__name__)
-
 """
 ACGS Code Analysis Engine - Service Registry Client
 Integration with ACGS service registry with constitutional compliance.
 """
 
 # Constitutional Hash: cdd01ef066bc6cf2
+import asyncio
 import contextlib
+import logging
 import time
 from datetime import datetime, timezone
+from typing import Any
 
 import httpx
 from app.utils.constitutional import (

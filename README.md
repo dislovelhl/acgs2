@@ -320,7 +320,7 @@ python scripts/run_unified_tests.py --run --coverage --parallel
 
 # Run with pytest directly (parallel execution)
 cd src/core
-pytest -n auto --cov=acgs2_core --cov-branch --cov-report=term-missing --cov-fail-under=85
+pytest -n auto --cov=. --cov-branch --cov-report=term-missing --cov-fail-under=85
 
 # Run integration tests (requires services running)
 SKIP_LIVE_TESTS=false pytest tests/integration/ -v -m integration
@@ -600,4 +600,5 @@ Copyright 2024-2025 ACGS-2 Contributors.
 - **Unified Dashboard**: [Codecov](https://codecov.io) with service-level breakdown
 
 See [Testing Guide](./docs/testing-guide.md) for complete coverage documentation.
+
 # acgs2

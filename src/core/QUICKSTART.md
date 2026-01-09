@@ -46,7 +46,8 @@ pip install -r src/core/config/requirements_optimized.txt
 docker-compose up -d redis kafka opa
 
 # Run the API Gateway locally
-cd src/core/services/api_gateway
+cd src/core
+/services/api_gateway
 uvicorn main:app --reload --host 0.0.0.0 --port 8080
 ```
 

@@ -478,7 +478,7 @@ class SecureFallbackCrypto:
             if "authentication" in str(e).lower() or "tag" in str(e).lower():
                 raise DecryptionError(
                     "Decryption failed: authentication error (data may be tampered)"
-                )
+                ) from e
             raise DecryptionError(error_msg) from e
 
     def _log_audit(

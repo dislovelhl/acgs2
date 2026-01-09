@@ -1,6 +1,3 @@
-import logging
-
-logger = logging.getLogger(__name__)
 """
 ACGS-2 Configuration Validator
 Constitutional Hash: cdd01ef066bc6cf2
@@ -12,6 +9,7 @@ Provides comprehensive configuration validation for:
 - Cross-environment drift detection
 """
 
+import logging
 import os
 import sys
 from dataclasses import dataclass, field

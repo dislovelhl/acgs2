@@ -23,12 +23,55 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
+from .guardrails.enums import GuardrailLayer, SafetyAction, ViolationSeverity
+from .guardrails.models import GuardrailResult, Violation
+
 logger = logging.getLogger(__name__)
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-from .guardrails.enums import GuardrailLayer, SafetyAction, ViolationSeverity
-from .guardrails.models import GuardrailResult, Violation
+# Centralized PII patterns for synchronization across layers
+PII_PATTERNS = [
+    # Social Security Numbers (US)
+    r"\b\d{3}-\d{2}-\d{4}\b",
+    r"\b\d{9}\b",  # SSN without dashes
+    # Credit/Debit Card Numbers
+    r"\b\d{13,19}\b",  # General card number length
+    r"\b\d{4}\s\d{4}\s\d{4}\s\d{4}\b",  # Card with spaces
+    r"\b\d{4}-\d{4}-\d{4}-\d{4}\b",  # Card with dashes
+    # Email Addresses
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+    # Phone Numbers (various formats)
+    r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",  # US phone
+    r"\b\(\d{3}\)\s*\d{3}[-.]?\d{4}\b",  # US phone with parens
+    r"\b\+?\d{1,3}[-.\s]?\d{1,14}\b",  # International phone
+    # IP Addresses
+    r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",
+    # MAC Addresses
+    r"\b([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})\b",
+    # Bank Account Numbers (US routing + account)
+    r"\b\d{9}\s+\d{6,17}\b",
+    # Driver's License Numbers (various states)
+    r"\b[A-Z]\d{7}\b",  # California format
+    r"\b\d{2}\s\d{3}\s\d{4}\b",  # New York format
+    # Passport Numbers
+    r"\b[A-Z]{1,2}\d{6,9}\b",
+    # Tax ID Numbers
+    r"\b\d{2}-\d{7}\b",  # EIN format
+    # Health Insurance Numbers
+    r"\b[A-Z]{2}\d{8}\b",  # Sample health ID format
+    # API Keys/Tokens (common patterns)
+    r"\b[A-Za-z0-9]{32}\b",  # 32-char API key
+    r"\b[A-Za-z0-9]{40}\b",  # GitHub token
+    r"sk-\w{48}",  # OpenAI API key pattern
+    r"xoxb-\d+-\d+-\w{24}",  # Slack bot token
+    # Cryptocurrency Addresses
+    r"\b(1|3|bc1)[A-Za-z0-9]{25,62}\b",  # Bitcoin
+    r"\b0x[A-Fa-f0-9]{40}\b",  # Ethereum
+    # URLs with sensitive parameters
+    r"https?://[^\s]*?(password|token|key|secret|credential)[^\s]*",
+]
+
 
 
 class GuardrailComponent(ABC):
@@ -238,47 +281,7 @@ class InputSanitizer(GuardrailComponent):
 
     def _compile_pii_patterns(self) -> List[re.Pattern]:
         """Compile comprehensive PII detection patterns (GDPR/HIPAA compliant)."""
-        patterns = [
-            # Social Security Numbers (US)
-            r"\b\d{3}-\d{2}-\d{4}\b",
-            r"\b\d{9}\b",  # SSN without dashes
-            # Credit/Debit Card Numbers
-            r"\b\d{13,19}\b",  # General card number length
-            r"\b\d{4}\s\d{4}\s\d{4}\s\d{4}\b",  # Card with spaces
-            r"\b\d{4}-\d{4}-\d{4}-\d{4}\b",  # Card with dashes
-            # Email Addresses
-            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
-            # Phone Numbers (various formats)
-            r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",  # US phone
-            r"\b\(\d{3}\)\s*\d{3}[-.]?\d{4}\b",  # US phone with parens
-            r"\b\+?\d{1,3}[-.\s]?\d{1,14}\b",  # International phone
-            # IP Addresses
-            r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",
-            # MAC Addresses
-            r"\b([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})\b",
-            # Bank Account Numbers (US routing + account)
-            r"\b\d{9}\s+\d{6,17}\b",
-            # Driver's License Numbers (various states)
-            r"\b[A-Z]\d{7}\b",  # California format
-            r"\b\d{2}\s\d{3}\s\d{4}\b",  # New York format
-            # Passport Numbers
-            r"\b[A-Z]{1,2}\d{6,9}\b",
-            # Tax ID Numbers
-            r"\b\d{2}-\d{7}\b",  # EIN format
-            # Health Insurance Numbers
-            r"\b[A-Z]{2}\d{8}\b",  # Sample health ID format
-            # API Keys/Tokens (common patterns)
-            r"\b[A-Za-z0-9]{32}\b",  # 32-char API key
-            r"\b[A-Za-z0-9]{40}\b",  # GitHub token
-            r"sk-\w{48}",  # OpenAI API key pattern
-            r"xoxb-\d+-\d+-\w{24}",  # Slack bot token
-            # Cryptocurrency Addresses
-            r"\b(1|3|bc1)[A-Za-z0-9]{25,62}\b",  # Bitcoin
-            r"\b0x[A-Fa-f0-9]{40}\b",  # Ethereum
-            # URLs with sensitive parameters
-            r"https?://[^\s]*?(password|token|key|secret|credential)[^\s]*",
-        ]
-        return [re.compile(p, re.IGNORECASE) for p in patterns]
+        return [re.compile(p, re.IGNORECASE) for p in PII_PATTERNS]
 
     def _compile_injection_patterns(self) -> List[re.Pattern]:
         """Compile comprehensive injection attack patterns (OWASP compliant)."""
@@ -390,12 +393,12 @@ class InputSanitizer(GuardrailComponent):
 
             # Injection detection (on original text)
             if self.config.detect_injection:
-                injection_violations = self._detect_injection(original_text)
+                injection_violations = self._detect_injection(original_text, trace_id)
                 violations.extend(injection_violations)
 
             # PII detection
             if self.config.pii_detection:
-                pii_violations = self._detect_pii(input_text)
+                pii_violations = self._detect_pii(input_text, trace_id)
                 violations.extend(pii_violations)
 
             # Determine action
@@ -462,7 +465,7 @@ class InputSanitizer(GuardrailComponent):
             text = re.sub(f"<{tag}[^>]*>.*?</{tag}>", "", text, flags=re.IGNORECASE | re.DOTALL)
         return text
 
-    def _detect_injection(self, text: str) -> List[Violation]:
+    def _detect_injection(self, text: str, trace_id: str = "") -> List[Violation]:
         """Detect injection attacks."""
         violations = []
         for i, pattern in enumerate(self._injection_patterns):
@@ -474,12 +477,12 @@ class InputSanitizer(GuardrailComponent):
                         severity=ViolationSeverity.CRITICAL,
                         message=f"Potential injection attack detected (pattern {i})",
                         details={"pattern_index": i},
-                        trace_id="",
+                        trace_id=trace_id,
                     )
                 )
         return violations
 
-    def _detect_pii(self, text: str) -> List[Violation]:
+    def _detect_pii(self, text: str, trace_id: str = "") -> List[Violation]:
         """Detect personally identifiable information."""
         violations = []
         for i, pattern in enumerate(self._pii_patterns):
@@ -492,7 +495,7 @@ class InputSanitizer(GuardrailComponent):
                         severity=ViolationSeverity.HIGH,
                         message=f"PII detected: {len(matches)} potential matches (pattern {i})",
                         details={"pattern_index": i, "match_count": len(matches)},
-                        trace_id="",
+                        trace_id=trace_id,
                     )
                 )
         return violations
@@ -737,6 +740,7 @@ class OutputVerifier(GuardrailComponent):
     def __init__(self, config: Optional[OutputVerifierConfig] = None):
         self.config = config or OutputVerifierConfig()
         self._toxicity_patterns = self._compile_toxicity_patterns()
+        self._pii_patterns = [re.compile(p, re.IGNORECASE) for p in PII_PATTERNS]
 
     def get_layer(self) -> GuardrailLayer:
         return GuardrailLayer.OUTPUT_VERIFIER
@@ -768,17 +772,17 @@ class OutputVerifier(GuardrailComponent):
 
             # Content safety check
             if self.config.content_safety_check:
-                safety_violations = self._check_content_safety(output_text)
+                safety_violations = self._check_content_safety(output_text, trace_id)
                 violations.extend(safety_violations)
 
             # Toxicity filter
             if self.config.toxicity_filter:
-                toxicity_violations = self._check_toxicity(output_text)
+                toxicity_violations = self._check_toxicity(output_text, trace_id)
                 violations.extend(toxicity_violations)
 
             # PII redaction
             if self.config.pii_redaction:
-                output_text, pii_violations = self._redact_pii(output_text)
+                output_text, pii_violations = self._redact_pii(output_text, trace_id)
                 violations.extend(pii_violations)
                 if pii_violations:
                     modified_output = output_text
@@ -824,14 +828,16 @@ class OutputVerifier(GuardrailComponent):
             trace_id=trace_id,
         )
 
-    def _check_content_safety(self, text: str) -> List[Violation]:
+    def _check_content_safety(self, text: str, trace_id: str = "") -> List[Violation]:
         """Check content for safety violations."""
         violations = []
 
         # Check for harmful instructions
         harmful_patterns = [
-            r"\b(how\s+to|instructions?\s+for)\s+(hack|exploit|attack|build.*bomb)\b",
-            r"\b(create|make|build)\s+(virus|malware|ransomware|trojan)\b",
+            r"\b(how\s+to|instructions?\s+for|steps?\s+to)\s+(hack|exploit|attack|build.*bomb)\b",
+            r"\b(to|how\s+to|instructions?\s+for)\s+(hack|exploit|bypass|crack)\b",
+            r"\b(create|make|build|generate)\s+(virus|malware|ransomware|trojan|rootkit)\b",
+            r"\b(instructions?\s+to)\s+(harm|kill|murder|attack)\b",
         ]
 
         for pattern in harmful_patterns:
@@ -842,14 +848,14 @@ class OutputVerifier(GuardrailComponent):
                         violation_type="harmful_content",
                         severity=ViolationSeverity.CRITICAL,
                         message="Output contains potentially harmful instructions",
-                        trace_id="",
+                        trace_id=trace_id,
                     )
                 )
                 break  # Only report once
 
         return violations
 
-    def _check_toxicity(self, text: str) -> List[Violation]:
+    def _check_toxicity(self, text: str, trace_id: str = "") -> List[Violation]:
         """Check for toxic content."""
         violations = []
 
@@ -862,39 +868,31 @@ class OutputVerifier(GuardrailComponent):
                         severity=ViolationSeverity.HIGH,
                         message=f"Toxic content detected (pattern {i})",
                         details={"pattern_index": i},
-                        trace_id="",
+                        trace_id=trace_id,
                     )
                 )
 
         return violations
 
-    def _redact_pii(self, text: str) -> tuple[str, List[Violation]]:
-        """Redact PII from output."""
+    def _redact_pii(self, text: str, trace_id: str = "") -> tuple[str, List[Violation]]:
+        """Redact PII from output using synchronized patterns."""
         violations = []
         redacted = text
 
-        # Simple PII patterns (same as input sanitizer)
-        pii_patterns = [
-            r"\b\d{3}-\d{2}-\d{4}\b",  # SSN
-            r"\b\d{16}\b",  # Credit card
-            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",  # Email
-        ]
-
-        for pattern in pii_patterns:
-            compiled = re.compile(pattern, re.IGNORECASE)
-            matches = compiled.findall(text)
+        for i, pattern in enumerate(self._pii_patterns):
+            matches = pattern.findall(text)
             if matches:
                 violations.append(
                     Violation(
                         layer=self.get_layer(),
                         violation_type="pii_leak",
                         severity=ViolationSeverity.HIGH,
-                        message=f"PII detected in output: {len(matches)} instances",
-                        details={"match_count": len(matches)},
-                        trace_id="",
+                        message=f"PII detected in output: {len(matches)} instances (pattern {i})",
+                        details={"match_count": len(matches), "pattern_index": i},
+                        trace_id=trace_id,
                     )
                 )
-                redacted = compiled.sub("[REDACTED]", redacted)
+                redacted = pattern.sub("[REDACTED]", redacted)
 
         return redacted, violations
 

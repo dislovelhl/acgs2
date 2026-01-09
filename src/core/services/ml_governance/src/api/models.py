@@ -38,7 +38,7 @@ async def get_model_metrics():
         return metrics
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get model metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get model metrics: {str(e)}") from e
 
 
 @router.post("/drift-check", response_model=Optional[DriftDetectionResult])
@@ -59,7 +59,7 @@ async def check_model_drift(model_version: Optional[str] = None):
         return drift_result
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Drift check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Drift check failed: {str(e)}") from e
 
 
 @router.get("/drift-history")
@@ -79,7 +79,7 @@ async def get_drift_history(model_version: Optional[str] = None, limit: int = 10
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get drift history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get drift history: {str(e)}") from e
 
 
 @router.get("/ab-tests")
@@ -107,7 +107,7 @@ async def get_ab_tests():
         return {"ab_tests": ab_tests, "total": len(ab_tests)}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get A/B tests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get A/B tests: {str(e)}") from e
 
 
 @router.get("/online-learning-status")
@@ -135,4 +135,4 @@ async def get_online_learning_status():
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to get online learning status: {str(e)}"
-        )
+        ) from e

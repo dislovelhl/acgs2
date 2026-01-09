@@ -6,8 +6,14 @@ import logging
 import os
 import sys
 
-logger = logging.getLogger(__name__)
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("deliberation_test")
 
+# Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # Import models directly

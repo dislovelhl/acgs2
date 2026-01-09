@@ -45,10 +45,12 @@ python demo_workflow.py
 The example includes a three-step approval chain:
 
 1. **Initial Review** (10 minutes)
+
    - Approvers: junior_analysts
    - Escalation: senior_analysts (after 10 min)
 
 2. **Compliance Check** (30 minutes)
+
    - Approvers: compliance_officers
    - Escalation: compliance_managers (after 30 min)
 
@@ -59,6 +61,7 @@ The example includes a three-step approval chain:
 ## Workflow Scenarios
 
 ### Scenario 1: Standard Approval Flow
+
 ```python
 # Create approval request
 request_id = await create_approval_request(
@@ -89,6 +92,7 @@ await approve_request(
 ```
 
 ### Scenario 2: Escalation Flow
+
 ```python
 # Request times out and escalates automatically
 # Notifications sent to escalation approvers
@@ -99,6 +103,7 @@ print(f"Escalations: {len(escalation_status['request']['escalations'])}")
 ```
 
 ### Scenario 3: Rejection Flow
+
 ```python
 # Request is rejected by an approver
 await approve_request(
@@ -118,6 +123,7 @@ print(f"Final Status: {final_status['request']['status']}")
 The workflow supports multiple notification channels:
 
 ### Slack Notifications
+
 ```json
 {
   "channel": "slack",
@@ -137,7 +143,7 @@ The workflow supports multiple notification channels:
         "elements": [
           {
             "type": "button",
-            "text": {"type": "plain_text", "text": "View Details"},
+            "text": { "type": "plain_text", "text": "View Details" },
             "url": "https://acgs2.company.com/approvals/{request_id}"
           }
         ]
@@ -148,6 +154,7 @@ The workflow supports multiple notification channels:
 ```
 
 ### Microsoft Teams
+
 ```json
 {
   "channel": "teams",
@@ -163,7 +170,10 @@ The workflow supports multiple notification channels:
         "@type": "OpenUri",
         "name": "Review Request",
         "targets": [
-          {"os": "default", "uri": "https://acgs2.company.com/approvals/{request_id}"}
+          {
+            "os": "default",
+            "uri": "https://acgs2.company.com/approvals/{request_id}"
+          }
         ]
       }
     ]
@@ -216,6 +226,7 @@ Demo completed! 🎉
 ## Advanced Features
 
 ### Custom Escalation Rules
+
 ```json
 {
   "escalation_rules": [
@@ -230,6 +241,7 @@ Demo completed! 🎉
 ```
 
 ### Conditional Approval Chains
+
 ```json
 {
   "trigger_conditions": {
@@ -241,6 +253,7 @@ Demo completed! 🎉
 ```
 
 ### Audit Trail Integration
+
 ```python
 # Retrieve complete audit trail
 audit_trail = await get_audit_trail(request_id)
@@ -251,9 +264,10 @@ for entry in audit_trail:
 ## Integration with ACGS-2 Services
 
 ### Agent Bus Integration
+
 ```python
 # Trigger approval from AI decision
-from acgs2_core.shared.agent_bus_client import AgentBusClient
+from src.core.shared.agent_bus_client import AgentBusClient
 
 client = AgentBusClient()
 decision_result = await client.evaluate_governance(ai_decision_context)
@@ -266,9 +280,10 @@ if decision_result.get("requires_approval"):
 ```
 
 ### Compliance Documentation
+
 ```python
 # Generate compliance evidence for approvals
-from acgs2_core.services.compliance_docs.client import ComplianceClient
+from src.core.services.compliance_docs.client import ComplianceClient
 
 compliance_client = ComplianceClient()
 evidence = await compliance_client.generate_evidence({
@@ -307,6 +322,7 @@ For production deployment:
 **Audit logs missing**: Verify audit callback configuration
 
 ### Debug Mode
+
 ```bash
 # Enable debug logging
 export LOG_LEVEL=DEBUG

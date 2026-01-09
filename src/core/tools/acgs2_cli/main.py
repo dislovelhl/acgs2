@@ -19,14 +19,14 @@ import click
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from acgs2_sdk import ACGS2Config, create_client
+from acgs2_sdk import ACGS2Config, create_client  # noqa: E402
 
-from acgs2_cli.commands.hitl import hitl
-from acgs2_cli.commands.ml import ml
-from acgs2_cli.commands.playground import playground
-from acgs2_cli.commands.policy import policy
-from acgs2_cli.commands.tenant import tenant
-from acgs2_cli.config import CLIConfig
+from acgs2_cli.commands.hitl import hitl  # noqa: E402
+from acgs2_cli.commands.ml import ml  # noqa: E402
+from acgs2_cli.commands.playground import playground  # noqa: E402
+from acgs2_cli.commands.policy import policy  # noqa: E402
+from acgs2_cli.commands.tenant import tenant  # noqa: E402
+from acgs2_cli.config import CLIConfig  # noqa: E402
 
 # Configure logging
 logging.basicConfig(

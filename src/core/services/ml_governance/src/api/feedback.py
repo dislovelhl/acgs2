@@ -44,7 +44,7 @@ async def submit_feedback(request: FeedbackRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Feedback submission failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Feedback submission failed: {str(e)}") from e
 
 
 @router.get("/stats")
@@ -64,4 +64,4 @@ async def get_feedback_stats():
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get feedback stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get feedback stats: {str(e)}") from e

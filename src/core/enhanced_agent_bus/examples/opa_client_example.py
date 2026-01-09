@@ -9,14 +9,20 @@ import asyncio
 import logging
 import os
 import sys
-
-logger = logging.getLogger(__name__)
+import time
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from models import CONSTITUTIONAL_HASH
-from opa_client import OPAClient, close_opa_client, initialize_opa_client
+from models import CONSTITUTIONAL_HASH  # noqa: E402
+from opa_client import (  # noqa: E402
+    OPAClient,
+    close_opa_client,
+    get_opa_client,
+    initialize_opa_client,
+)
+
+logger = logging.getLogger(__name__)
 
 
 async def example_basic_usage():
@@ -106,8 +112,6 @@ async def example_with_caching():
     await client.initialize()
 
     input_data = {"agent_id": "agent_001", "constitutional_hash": CONSTITUTIONAL_HASH}
-
-    import time
 
     # First evaluation (cache miss)
     start = time.time()
@@ -221,8 +225,7 @@ async def example_global_client():
     # Initialize global client
     await initialize_opa_client(opa_url="http://localhost:8181", mode="fallback")
 
-    # Import and use global client functions
-    from opa_client import get_opa_client
+    # Use global client functions
 
     client = get_opa_client()
 

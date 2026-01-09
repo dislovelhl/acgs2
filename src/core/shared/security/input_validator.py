@@ -65,9 +65,9 @@ class InputValidator:
 
         try:
             target_path.relative_to(base_path)
-        except ValueError:
+        except ValueError as e:
             logger.warning(f"Path traversal attempt detected: {path_str} outside of {base_dir}")
-            raise HTTPException(status_code=400, detail="Invalid path")
+            raise HTTPException(status_code=400, detail="Invalid path") from e
 
         return target_path
 

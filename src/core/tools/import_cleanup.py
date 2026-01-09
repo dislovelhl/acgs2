@@ -1,6 +1,3 @@
-import logging
-
-logger = logging.getLogger(__name__)
 #!/usr/bin/env python3
 """
 ACGS-2 Import Cleanup Tool
@@ -16,11 +13,15 @@ Usage:
 Author: ACGS-2 Development Team
 """
 
+import logging
+
 import argparse
 import ast
 import os
 import sys
 from typing import Dict, List, Tuple
+
+logger = logging.getLogger(__name__)
 
 
 class ImportAnalyzer:

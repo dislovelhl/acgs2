@@ -1,9 +1,7 @@
-"""
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 #!/usr/bin/env python3
 """
+Constitutional Hash: cdd01ef066bc6cf2
+
 ACGS-2 10K RPS Load Test Validation Script
 
 Orchestrates the full 10K RPS performance validation flow:

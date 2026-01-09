@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Tuple
 
 import jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
@@ -374,11 +374,8 @@ async def check_rate_limit(user: User = Depends(get_current_user_optional)) -> U
     return user
 
 
-# =============================================================================
 # Authentication Routes
 # =============================================================================
-
-from fastapi import APIRouter
 
 auth_router = APIRouter(prefix="/auth", tags=["authentication"])
 

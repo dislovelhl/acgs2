@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager
 from alembic import command
 from alembic.config import Config
 from app.api.routes import router
+from app.api.ui import router as ui_router
+from app.api.web_interface import router as web_router
 from app.config.settings import settings
 from app.core.approval_chain import approval_engine
 from app.notifications.base import notification_manager
@@ -183,11 +185,6 @@ app.add_api_route("/metrics", create_metrics_endpoint())
 
 # Include API routes
 app.include_router(router, prefix="/hitl/approvals", tags=["approvals"])
-
-from app.api.ui import router as ui_router
-
-# Include web interface routes (no prefix for web interface)
-from app.api.web_interface import router as web_router
 
 app.include_router(web_router, tags=["web-interface"])
 app.include_router(ui_router, tags=["mobile-ui"])

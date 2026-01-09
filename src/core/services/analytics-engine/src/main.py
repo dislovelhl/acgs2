@@ -1,9 +1,7 @@
-"""
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 #!/usr/bin/env python3
 """
+Constitutional Hash: cdd01ef066bc6cf2
+
 Analytics Engine - Main Orchestrator
 
 Batch processing engine for governance analytics including:

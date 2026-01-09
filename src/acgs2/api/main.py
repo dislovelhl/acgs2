@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
+from src.core.shared.security import SecurityHeadersMiddleware, get_cors_config
 from src.core.shared.security.input_validator import InputValidator
 
 from ..core.schemas import UserRequest
@@ -132,7 +133,6 @@ app = FastAPI(
 )
 
 # Add CORS middleware using shared configuration for consistency
-from src.core.shared.security import SecurityHeadersMiddleware, get_cors_config
 
 app.add_middleware(CORSMiddleware, **get_cors_config())
 app.add_middleware(SecurityHeadersMiddleware)
@@ -221,7 +221,7 @@ async def chat(
 
     except Exception as e:
         logger.error(f"Chat request failed: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # =============================================================================
@@ -251,7 +251,7 @@ async def create_session(request: SessionCreateRequest, user=Depends(get_current
 
     except Exception as e:
         logger.error(f"Session creation failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create session")
+        raise HTTPException(status_code=500, detail="Failed to create session") from e
 
 
 @app.get("/api/v1/sessions/{session_id}", response_model=SessionResponse)
@@ -278,7 +278,7 @@ async def get_session(session_id: str):
         raise
     except Exception as e:
         logger.error(f"Session retrieval failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve session")
+        raise HTTPException(status_code=500, detail="Failed to retrieve session") from e
 
 
 @app.delete("/api/v1/sessions/{session_id}")
@@ -300,7 +300,7 @@ async def delete_session(session_id: str):
         raise
     except Exception as e:
         logger.error(f"Session deletion failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete session")
+        raise HTTPException(status_code=500, detail="Failed to delete session") from e
 
 
 # =============================================================================
@@ -361,7 +361,7 @@ async def get_metrics(
 
     except Exception as e:
         logger.error(f"Metrics retrieval failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve metrics")
+        raise HTTPException(status_code=500, detail="Failed to retrieve metrics") from e
 
 
 @app.get("/api/v1/audit/{request_id}", response_model=AuditQueryResponse)
@@ -391,7 +391,7 @@ async def get_audit_trail(request_id: str, user=Depends(require_admin)):
 
     except Exception as e:
         logger.error(f"Audit query failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve audit trail")
+        raise HTTPException(status_code=500, detail="Failed to retrieve audit trail") from e
 
 
 @app.get("/api/v1/prometheus/metrics")
@@ -405,7 +405,7 @@ async def prometheus_metrics():
         return await obs.get_prometheus_metrics()
     except Exception as e:
         logger.error(f"Prometheus metrics export failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to export metrics")
+        raise HTTPException(status_code=500, detail="Failed to export metrics") from e
 
 
 # =============================================================================

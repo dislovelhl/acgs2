@@ -15,9 +15,9 @@ core_path = Path(__file__).parent.parent.parent.parent.parent
 if str(core_path) not in sys.path:
     sys.path.insert(0, str(core_path))
 
-from shared.types import JSONDict, JSONValue
+from shared.types import JSONDict, JSONValue  # noqa: E402
 
-from ..models.abac_models import (
+from ..models.abac_models import (  # noqa: E402
     ABACPolicy,
     ABACRule,
     AccessRequest,

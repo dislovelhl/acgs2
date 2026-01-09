@@ -1,5 +1,3 @@
-import logging
-
 """
 ACGS-2 Phase 5 Verification Script
 Verifies:
@@ -8,6 +6,7 @@ Verifies:
 3. Immutable Auditing (Merkle Anchoring)
 """
 
+import logging
 import asyncio
 import sys
 from pathlib import Path
@@ -15,10 +14,10 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.core.enhanced_agent_bus.core import EnhancedAgentBus
-from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
-from src.core.services.audit_service.core.anchor_mock import BlockchainAnchor
-from src.core.services.audit_service.core.audit_ledger import AuditLedger
+from src.core.enhanced_agent_bus.core import EnhancedAgentBus  # noqa: E402
+from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority  # noqa: E402
+from src.core.services.audit_service.core.anchor_mock import BlockchainAnchor  # noqa: E402
+from src.core.services.audit_service.core.audit_ledger import AuditLedger  # noqa: E402
 
 
 async def verify_phase_5():

@@ -1,9 +1,7 @@
-"""
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 #!/usr/bin/env python3
 """
+Constitutional Hash: cdd01ef066bc6cf2
+
 ACGS-2 Performance Test Validation Script
 
 Validates Locust load test results against performance thresholds:

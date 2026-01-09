@@ -46,7 +46,7 @@ async def create_approval_request(request: CreateApprovalRequest):
         return {"request_id": request_id, "status": "created"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create approval request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create approval request: {str(e)}") from e
 
 
 @router.post("/{request_id}/approve", response_model=dict)
@@ -73,7 +73,7 @@ async def approve_request(request_id: str, approval: ApprovalResponse):
         return {"request_id": request_id, "status": "decision_recorded"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to submit approval decision: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to submit approval decision: {str(e)}") from e
 
 
 @router.get("/{request_id}/status", response_model=ApprovalStatusResponse)
@@ -94,7 +94,7 @@ async def get_request_status(request_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get request status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get request status: {str(e)}") from e
 
 
 @router.get("/", response_model=List[dict])
@@ -115,7 +115,7 @@ async def list_requests(
         return []
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list requests: {str(e)}") from e
 
 
 @router.delete("/{request_id}", response_model=dict)
@@ -130,4 +130,4 @@ async def cancel_request(request_id: str, requester_id: str):
         return {"request_id": request_id, "status": "cancelled"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to cancel request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to cancel request: {str(e)}") from e

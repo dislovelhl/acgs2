@@ -29,9 +29,9 @@ import pytest
 
 # Add parent directories to path for local imports
 _tests_dir = os.path.dirname(os.path.abspath(__file__))
-_acgs2_core_dir = os.path.dirname(os.path.dirname(_tests_dir))
-if _acgs2_core_dir not in sys.path:
-    sys.path.insert(0, _acgs2_core_dir)
+_core_dir = os.path.dirname(os.path.dirname(_tests_dir))
+if _core_dir not in sys.path:
+    sys.path.insert(0, _core_dir)
 
 # Try to import aiokafka, fall back to mock if not available
 try:

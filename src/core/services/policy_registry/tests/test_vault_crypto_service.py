@@ -22,7 +22,7 @@ if app_dir not in sys.path:
     sys.path.insert(0, app_dir)
 
 # Import the service
-from app.services.vault_crypto_service import (
+from app.services.vault_crypto_service import (  # noqa: E402
     CONSTITUTIONAL_HASH,
     VaultAuditEntry,
     VaultConfig,

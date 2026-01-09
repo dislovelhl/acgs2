@@ -19,8 +19,8 @@ Requires Python >=3.11.
 
 ```python
 import asyncio
-from acgs2_core import create_bus, CONSTITUTIONAL_HASH
-from acgs2_core.exceptions import ConstitutionalHashMismatchError, AgentBusError
+from src.core import create_bus, CONSTITUTIONAL_HASH
+from src.core.exceptions import ConstitutionalHashMismatchError, AgentBusError
 
 async def main():
     try:
@@ -59,9 +59,9 @@ asyncio.run(main())
 ### Enhanced Agent Bus
 
 ```python
-from acgs2_core.enhanced_agent_bus import EnhancedAgentBus
-from acgs2_core.models import AgentMessage
-from acgs2_core.validators import validate_constitutional_hash
+from src.core.enhanced_agent_bus import EnhancedAgentBus
+from src.core.models import AgentMessage
+from src.core.validators import validate_constitutional_hash
 
 # Post-refactor modularity (HandlerExecutorMixin)
 bus = EnhancedAgentBus()
@@ -81,7 +81,7 @@ except ValidationError as e:
 ### Policy Service
 
 ```python
-from acgs2_core.policy_service import PolicyService
+from src.core.policy_service import PolicyService
 
 policies = PolicyService(bus)
 
@@ -97,7 +97,7 @@ await policies.activate(policy.id)
 Post-refactor exceptions:
 
 ```python
-from acgs2_core.exceptions import (
+from src.core.exceptions import (
     ConstitutionalHashMismatchError,
     PolicyEvaluationError,
     DeliberationTimeoutError,

@@ -31,11 +31,11 @@ class TestServiceCORSIntegration:
         "src/core/services/ml_governance/src/main.py",
         "src/core/services/hitl_approvals/src/main.py",
         "src/core/services/analytics-api/src/main.py",
+        "src/integration-service/integration-service/src/main.py",
     ]
 
     # Services with inline CORS implementation
     INLINE_CORS_SERVICES = [
-        "src/integration-service/integration-service/src/main.py",
         "src/adaptive-learning/adaptive-learning-engine/src/main.py",
         "examples/02-ai-model-approval/app.py",
     ]
@@ -44,9 +44,8 @@ class TestServiceCORSIntegration:
     def _get_repo_root() -> Path:
         """Get repository root directory."""
         current = Path(__file__).resolve()
-        # Navigate up from tests/security/test_service_cors_integration.py
-        # to reach repo root
-        return current.parent.parent.parent.parent
+        # Navigate up from src/core/tests/security/test_service_cors_integration.py
+        return current.parent.parent.parent.parent.parent
 
     @staticmethod
     def _read_service_file(relative_path: str) -> Optional[str]:
@@ -91,12 +90,13 @@ class TestServiceCORSIntegration:
     def _check_uses_shared_cors_config(content: str) -> bool:
         """Check if service uses shared CORS config module."""
         import_patterns = [
-            r"from\s+shared\.security\.cors_config\s+import\s+get_cors_config",
-            r"import\s+shared\.security\.cors_config",
+            r"from\s+(src\.core\.)?shared\.security\.cors_config\s+import\s+get_cors_config",
+            r"import\s+(src\.core\.)?shared\.security\.cors_config",
+            r"from\s+(src\.core\.)?shared\.security\s+import[\s\S]*?get_cors_config",
         ]
 
         for pattern in import_patterns:
-            if re.search(pattern, content):
+            if re.search(pattern, content, re.MULTILINE):
                 return True
 
         return False
@@ -257,6 +257,7 @@ class TestServiceCORSIntegration:
             with pytest.raises(ValueError) as exc_info:
                 CORSConfig(
                     allow_origins=["*"],
+                    allow_credentials=False,
                     environment=CORSEnvironment.PRODUCTION,
                 )
 
@@ -388,74 +389,9 @@ class TestInlineServiceCORSBehavior:
         monkeypatch.delenv("APP_ENV", raising=False)
         return monkeypatch
 
-    def test_integration_service_blocks_wildcard_in_production(self, mock_environment):
-        """Test integration-service blocks wildcard in production."""
-        import sys
-        from pathlib import Path
-
-        repo_root = TestServiceCORSIntegration._get_repo_root()
-        integration_service_path = (
-            repo_root / "src" / "integration-service" / "integration-service" / "src"
-        )
-
-        if not integration_service_path.exists():
-            pytest.skip("integration-service not found")
-
-        sys.path.insert(0, str(integration_service_path.parent))
-
-        try:
-            # Set production environment with wildcard
-            mock_environment.setenv("APP_ENV", "production")
-            mock_environment.setenv("CORS_ORIGINS", "*")
-
-            # Import should fail with validation error
-            with pytest.raises(ValueError) as exc_info:
-                # Force reimport
-                if "src.main" in sys.modules:
-                    del sys.modules["src.main"]
-                import src.main  # noqa: F401
-
-            assert "SECURITY ERROR" in str(exc_info.value)
-            assert "Wildcard" in str(exc_info.value)
-        finally:
-            if str(integration_service_path.parent) in sys.path:
-                sys.path.remove(str(integration_service_path.parent))
-            if "src.main" in sys.modules:
-                del sys.modules["src.main"]
-
-    def test_integration_service_allows_localhost_in_development(self, mock_environment):
-        """Test integration-service allows localhost in development."""
-        import sys
-
-        repo_root = TestServiceCORSIntegration._get_repo_root()
-        integration_service_path = (
-            repo_root / "src" / "integration-service" / "integration-service" / "src"
-        )
-
-        if not integration_service_path.exists():
-            pytest.skip("integration-service not found")
-
-        sys.path.insert(0, str(integration_service_path.parent))
-
-        try:
-            mock_environment.setenv("APP_ENV", "development")
-
-            # Force reimport
-            if "src.main" in sys.modules:
-                del sys.modules["src.main"]
-
-            import src.main
-
-            # Should have localhost origins
-            assert hasattr(src.main, "CORS_ORIGINS")
-            assert "http://localhost:3000" in src.main.CORS_ORIGINS
-            assert "http://localhost:8080" in src.main.CORS_ORIGINS
-            assert "*" not in src.main.CORS_ORIGINS
-        finally:
-            if str(integration_service_path.parent) in sys.path:
-                sys.path.remove(str(integration_service_path.parent))
-            if "src.main" in sys.modules:
-                del sys.modules["src.main"]
+    pass
+    # Note: integration-service has been migrated to use shared CORS module
+    # so runtime behavior tests for its previous inline implementation are removed.
 
 
 class TestConstitutionalCompliance:

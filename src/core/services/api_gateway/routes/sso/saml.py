@@ -48,7 +48,7 @@ async def saml_metadata(
         )
     except Exception as e:
         logger.error(f"Failed to generate SAML metadata: {e}")
-        raise HTTPException(status_code=500, detail="Metadata generation failed")
+        raise HTTPException(status_code=500, detail="Metadata generation failed") from e
 
 
 @router.get("/providers", response_model=list[SSOProviderInfo])
@@ -80,10 +80,10 @@ async def saml_login(
         return RedirectResponse(url=redirect_url, status_code=302)
     except SAMLConfigurationError as e:
         logger.warning(f"SAML login failed: {e}")
-        raise HTTPException(status_code=404, detail=f"SAML provider not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=f"SAML provider not found: {str(e)}") from e
     except Exception as e:
         logger.error(f"SAML login initiation failed: {e}")
-        raise HTTPException(status_code=500, detail="Login initiation failed")
+        raise HTTPException(status_code=500, detail="Login initiation failed") from e
 
 
 @router.post("/acs", response_model=SAMLUserInfoResponse)
@@ -136,10 +136,10 @@ async def saml_acs(
         return user_info.__dict__
     except (SAMLReplayError, SAMLValidationError, SAMLAuthenticationError) as e:
         logger.warning(f"SAML authentication failed: {e}")
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail=str(e)) from e
     except Exception as e:
         logger.error(f"SAML ACS error: {e}")
-        raise HTTPException(status_code=500, detail="Assertion processing failed")
+        raise HTTPException(status_code=500, detail="Assertion processing failed") from e
 
 
 @router.get("/sls")

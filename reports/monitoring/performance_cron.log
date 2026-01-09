@@ -143,3 +143,22 @@ Performance Test Results:
 [0;31m❌ OPA: Unhealthy or not running[0m
 [0;31m❌ Services not ready for performance testing[0m
    Start services with: docker-compose -f src/core/docker-compose.dev.yml up -d
+⚡ ACGS-2 Performance Regression Testing
+========================================
+📁 Project Root: /home/dislove/document/acgs2
+📁 Results Dir: /home/dislove/document/acgs2/reports/performance
+
+🎯 Performance Targets:
+  - P99 Latency: < 0.328ms
+  - Throughput: > 2605 RPS
+  - Cache Hit Rate: > 0.95
+  - Memory Usage: < 4.0MB per pod
+  - CPU Usage: < 75.0%
+
+🔍 Checking Service Health...
+----------------------------
+[0;31m❌ Agent Bus: Unhealthy or not running[0m
+[0;31m❌ API Gateway: Unhealthy or not running[0m
+[0;31m❌ OPA: Unhealthy or not running[0m
+[0;31m❌ Services not ready for performance testing[0m
+   Start services with: docker-compose -f src/core/docker-compose.dev.yml up -d

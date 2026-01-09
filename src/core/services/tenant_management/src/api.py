@@ -69,7 +69,7 @@ async def create_tenant(
         logger.error(f"Failed to create tenant: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create tenant: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/{tenant_id}", response_model=Tenant)
@@ -88,7 +88,7 @@ async def get_tenant(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Tenant not found or access denied: {str(e)}",
-        )
+        ) from e
 
 
 @router.put("/{tenant_id}", response_model=Tenant)
@@ -107,7 +107,7 @@ async def update_tenant(
         logger.error(f"Failed to update tenant {tenant_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to update tenant: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/{tenant_id}/activate", response_model=Tenant)
@@ -127,7 +127,7 @@ async def activate_tenant(
         logger.error(f"Failed to activate tenant {tenant_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to activate tenant: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/{tenant_id}/suspend", response_model=Tenant)
@@ -148,7 +148,7 @@ async def suspend_tenant(
         logger.error(f"Failed to suspend tenant {tenant_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to suspend tenant: {str(e)}"
-        )
+        ) from e
 
 
 @router.delete("/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -165,7 +165,7 @@ async def delete_tenant(
         logger.error(f"Failed to delete tenant {tenant_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to delete tenant: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/", response_model=TenantListResponse)
@@ -201,7 +201,7 @@ async def list_tenants(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list tenants: {str(e)}",
-        )
+        ) from e
 
 
 # Resource Quota endpoints
@@ -230,7 +230,7 @@ async def check_resource_quota(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to check quota: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/{tenant_id}/quotas/consume", status_code=status.HTTP_204_NO_CONTENT)
@@ -248,7 +248,7 @@ async def consume_resource_quota(
         logger.error(f"Failed to consume quota for tenant {tenant_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to consume quota: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/{tenant_id}/usage", response_model=TenantUsageMetrics)
@@ -265,7 +265,7 @@ async def get_tenant_usage(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get usage metrics: {str(e)}",
-        )
+        ) from e
 
 
 # Access Control endpoints
@@ -302,7 +302,7 @@ async def check_resource_access(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to check access: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/{tenant_id}/access/grant", response_model=TenantAccessPolicy)
@@ -327,7 +327,7 @@ async def grant_resource_access(
         logger.error(f"Failed to grant access for tenant {tenant_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to grant access: {str(e)}"
-        )
+        ) from e
 
 
 # Health check endpoint

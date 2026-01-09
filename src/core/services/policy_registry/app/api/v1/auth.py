@@ -149,4 +149,4 @@ async def issue_token(
         raise HTTPException(
             status_code=400,
             detail="Authentication failed. Please check your credentials and try again.",
-        )
+        ) from None

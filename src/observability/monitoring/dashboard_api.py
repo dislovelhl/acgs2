@@ -33,22 +33,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from contextlib import asynccontextmanager
 
-    from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+    from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse
     from pydantic import BaseModel, Field
 
-    # Try to import memory profiler for integration
-    try:
-        import os
-        import sys
-
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src/core"))
-        from src.core.enhanced_agent_bus.memory_profiler import MemorySnapshot, get_memory_profiler
-
-        MEMORY_PROFILER_AVAILABLE = True
-    except ImportError:
-        MEMORY_PROFILER_AVAILABLE = False
+    # Performance monitoring (optional)
+    MEMORY_PROFILER_AVAILABLE = False
 
     # Import security headers middleware
     try:

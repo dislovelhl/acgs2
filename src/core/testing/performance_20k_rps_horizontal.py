@@ -1,11 +1,11 @@
-"""
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 #!/usr/bin/env python3
 """
-ACGS-2 Horizontal Scaling Load Test Suite (20K RPS)
-Validates linear scaling with 2x API Gateway instances.
+Constitutional Hash: cdd01ef066bc6cf2
+
+ACGS-2 Horizontal Scaling Performance Test (20k RPS)
+
+Validates that the system can handle 20,000 requests per second
+while maintaining sub-millisecond P99 latency across 4 nodes.
 
 Usage:
     # Test horizontal scaling via load balancer

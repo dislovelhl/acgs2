@@ -11,9 +11,9 @@ metadata:
 spec:
   description: ACGS-2 Constitutional AI Governance System
   sourceRepos:
-    - https://github.com/acgs2/acgs2-infra
-    - https://github.com/acgs2/acgs2-observability
-    - https://github.com/acgs2/src/core
+    - https://github.com/dislovelhl/acgs2/acgs2-infra
+    - https://github.com/dislovelhl/acgs2/acgs2-observability
+    - https://github.com/dislovelhl/acgs2/src/core
   destinations:
     - namespace: acgs2-system
       server: https://kubernetes.default.svc
@@ -24,11 +24,11 @@ spec:
     - namespace: argocd
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
-    - group: '*'
-      kind: '*'
+    - group: "*"
+      kind: "*"
   namespaceResourceWhitelist:
-    - group: '*'
-      kind: '*'
+    - group: "*"
+      kind: "*"
   orphanedResources:
     warn: false
   roles:
@@ -47,7 +47,7 @@ spec:
         - acgs2-developers
   syncWindows:
     - kind: allow
-      schedule: '0 1 * * *'  # Daily at 1 AM
+      schedule: "0 1 * * *" # Daily at 1 AM
       duration: 2h
       applications:
         - src/core

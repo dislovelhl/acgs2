@@ -30,7 +30,10 @@ from unittest.mock import MagicMock
 import pytest
 
 # Ensure shared modules are importable
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_repo_root = os.path.abspath(os.path.join(_current_dir, "../../../.."))
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
 
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
@@ -80,7 +83,7 @@ def create_test_app():
             return {"status": "healthy", "service": service_name}
 
         @app.get("/log-test")
-        async def log_test() -> Dict[str, str]:
+        async def log_test() -> Dict[str, bool]:
             logger = get_logger("test")
             logger.info("test_log_entry", custom_field="test_value")
             return {"logged": True}

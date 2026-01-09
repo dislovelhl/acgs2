@@ -1,9 +1,7 @@
-"""
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 #!/usr/bin/env python3
 """
+Constitutional Hash: cdd01ef066bc6cf2
+
 Generate SAML SP certificate and private key for ACGS-2.
 
 This script generates a self-signed X.509 certificate and RSA private key

@@ -49,7 +49,7 @@ async def create_policy(
         raise HTTPException(
             status_code=400,
             detail="Policy operation failed. Please verify your request and try again.",
-        )
+        ) from None
 
 
 @router.get("/{policy_id}", response_model=Dict[str, Any])
@@ -102,7 +102,7 @@ async def create_policy_version(
         raise HTTPException(
             status_code=400,
             detail="Policy operation failed. Please verify your request and try again.",
-        )
+        ) from None
 
 
 @router.get("/{policy_id}/versions/{version}", response_model=Dict[str, Any])
@@ -134,7 +134,7 @@ async def activate_policy_version(
         raise HTTPException(
             status_code=400,
             detail="Policy operation failed. Please verify your request and try again.",
-        )
+        ) from None
 
 
 @router.post("/{policy_id}/verify", response_model=Dict[str, Any])

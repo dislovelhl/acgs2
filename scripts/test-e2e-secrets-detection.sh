@@ -134,7 +134,7 @@ EOF
 
     git add test.env
     run_test "Safe .env with placeholders should PASS" "pass" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py test.env"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py test.env"
 
     # Clean up
     git rm --cached test.env > /dev/null 2>&1
@@ -150,7 +150,7 @@ EOF
 
     git add test.env
     run_test "Unsafe .env with real secret should FAIL" "fail" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py test.env"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py test.env"
 
     # Clean up
     git rm --cached test.env > /dev/null 2>&1
@@ -167,7 +167,7 @@ EOF
 
     git add .env.example
     run_test ".env.example should be EXCLUDED (pass)" "pass" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py .env.example"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py .env.example"
 
     # Clean up
     git rm --cached .env.example > /dev/null 2>&1
@@ -194,7 +194,7 @@ EOF
 
     git add config/settings.py
     run_test "Safe Python config should PASS" "pass" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py config/settings.py"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py config/settings.py"
 
     # Clean up
     git rm --cached config/settings.py > /dev/null 2>&1
@@ -212,7 +212,7 @@ EOF
 
     git add config/prod_settings.py
     run_test "Unsafe Python config should FAIL" "fail" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py config/prod_settings.py"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py config/prod_settings.py"
 
     # Clean up
     git rm --cached config/prod_settings.py > /dev/null 2>&1
@@ -236,7 +236,7 @@ EOF
 
     git add config.yaml
     run_test "Safe YAML config should PASS" "pass" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py config.yaml"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py config.yaml"
 
     # Clean up
     git rm --cached config.yaml > /dev/null 2>&1
@@ -253,7 +253,7 @@ EOF
 
     git add production.yaml
     run_test "Unsafe YAML config should FAIL" "fail" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py production.yaml"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py production.yaml"
 
     # Clean up
     git rm --cached production.yaml > /dev/null 2>&1
@@ -274,7 +274,7 @@ EOF
 
     git add config.json
     run_test "Safe JSON config should PASS" "pass" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py config.json"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py config.json"
 
     # Clean up
     git rm --cached config.json > /dev/null 2>&1
@@ -292,7 +292,7 @@ EOF
 
     git add production.json
     run_test "Unsafe JSON config should FAIL" "fail" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py production.json"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py production.json"
 
     # Clean up
     git rm --cached production.json > /dev/null 2>&1
@@ -318,7 +318,7 @@ EOF
 
     git add app.env app.py app.yaml
     run_test "Multiple safe files should PASS" "pass" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py app.env app.py app.yaml"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py app.env app.py app.yaml"
 
     # Clean up
     git rm --cached app.env app.py app.yaml > /dev/null 2>&1
@@ -343,7 +343,7 @@ EOF
 
     git add large_config.py
     run_test "Large file (500 lines) performance test" "pass" \
-        "python $PROJECT_ROOT/scripts/check-secrets-pre-commit.py large_config.py"
+        "python $PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py large_config.py"
 
     # Clean up
     git rm --cached large_config.py > /dev/null 2>&1
@@ -366,7 +366,7 @@ EOF
     echo "   Running hook to check error message..."
 
     # Capture error output
-    ERROR_OUTPUT=$(python "$PROJECT_ROOT/scripts/check-secrets-pre-commit.py" bad_config.env 2>&1 || true)
+    ERROR_OUTPUT=$(python "$PROJECT_ROOT/scripts/security/check_secrets_pre_commit.py" bad_config.env 2>&1 || true)
 
     # Check if error message contains expected elements
     if echo "$ERROR_OUTPUT" | grep -q "ACGS-2 SECRETS DETECTED"; then
@@ -544,7 +544,7 @@ else
 fi)
 
 ---
-*This report was generated automatically by scripts/test-e2e-secrets-detection.sh*
+*This report was generated automatically by scripts/security/check_secrets_pre_commit.sh*
 EOF
 
     echo "📄 Results saved to: $RESULTS_FILE"

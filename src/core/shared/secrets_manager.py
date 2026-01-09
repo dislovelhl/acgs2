@@ -205,13 +205,6 @@ class SecretsManager:
 
             if settings.vault.token:
                 # Use existing Vault infrastructure
-                from src.core.services.policy_registry.app.services.vault_http_client import (
-                    VaultHttpClient,
-                )
-                from src.core.services.policy_registry.app.services.vault_kv import (
-                    VaultKVOperations,
-                )
-
                 self._vault_client = True  # Mark as available
                 logger.info("Vault integration initialized")
         except ImportError:

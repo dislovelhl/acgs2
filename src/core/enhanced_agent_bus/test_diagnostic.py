@@ -5,10 +5,10 @@ Diagnostic script to understand test failures
 import asyncio
 import logging
 
-logger = logging.getLogger(__name__)
-
 from message_processor import MessageProcessor
 from models import AgentMessage, MessageType
+
+logger = logging.getLogger(__name__)
 
 
 async def main():

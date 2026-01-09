@@ -14,6 +14,22 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Optional
 
+from .audit_logger import (
+    AUDIT_LOGGER_AVAILABLE,
+    AuditAction,
+    AuditEntry,
+    AuditLogConfig,
+    AuditLogStore,
+    AuditQueryParams,
+    AuditQueryResult,
+    AuditSeverity,
+    InMemoryAuditStore,
+    RedisAuditStore,
+    TenantAuditLogger,
+    create_tenant_audit_logger,
+    get_tenant_audit_logger,
+)
+
 # Context variable for correlation ID
 _correlation_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
     "correlation_id", default=None
@@ -142,21 +158,6 @@ def create_correlation_middleware() -> Callable:
     return correlation_middleware
 
 
-from .audit_logger import (
-    AUDIT_LOGGER_AVAILABLE,
-    AuditAction,
-    AuditEntry,
-    AuditLogConfig,
-    AuditLogStore,
-    AuditQueryParams,
-    AuditQueryResult,
-    AuditSeverity,
-    InMemoryAuditStore,
-    RedisAuditStore,
-    TenantAuditLogger,
-    create_tenant_audit_logger,
-    get_tenant_audit_logger,
-)
 
 __all__ = [
     # Standard logger

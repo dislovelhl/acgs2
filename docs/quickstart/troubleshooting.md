@@ -831,7 +831,7 @@ docker compose -f docker-compose.dev.yml config > compose_config.txt
 
 | Resource | When to Use |
 |----------|-------------|
-| [GitHub Issues](https://github.com/ACGS-Project/ACGS-2/issues) | Bug reports, feature requests |
+| [GitHub Issues](https://github.com/dislovelhl/acgs2/issues) | Bug reports, feature requests |
 | [Community Forum](https://forum.acgs2.org) | General questions, discussions |
 | [Stack Overflow](https://stackoverflow.com/questions/tagged/acgs2) | Specific technical questions |
 | [Enterprise Support](mailto:enterprise@acgs2.org) | Production issues, SLA support |

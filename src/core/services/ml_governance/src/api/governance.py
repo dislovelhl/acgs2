@@ -46,7 +46,7 @@ async def predict_governance(request: PredictRequest):
         return api_response
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Governance prediction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Governance prediction failed: {str(e)}") from e
 
 
 @router.get("/status")
@@ -73,7 +73,7 @@ async def get_governance_status():
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get governance status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get governance status: {str(e)}") from e
 
 
 @router.get("/models/active")
@@ -96,4 +96,4 @@ async def get_active_models():
         return {"active_models": active_models}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get active models: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get active models: {str(e)}") from e

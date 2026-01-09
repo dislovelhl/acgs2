@@ -1,14 +1,18 @@
-"""
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 #!/usr/bin/env python3
 """
+Constitutional Hash: cdd01ef066bc6cf2
+
 SuperClaude Index Repository Command (/sc:index-repo)
-Repository index creator for efficient project understanding.
+High-efficiency repository indexing and metadata extraction.
 
 Usage:
-/sc:index-repo [mode=full|update|quick] [target=.]
+/sc:index-repo [target] [--mode full|update|quick]
+
+This command provides:
+- Automated repository structure analysis
+- Multi-language metadata extraction
+- Framework-specific pattern detection
+- Efficient PROJECT_INDEX.md generation
 
 Creates PROJECT_INDEX.md (3KB) and PROJECT_INDEX.json (10KB) files
 for 94% reduction in token usage vs reading entire codebase.

@@ -39,10 +39,10 @@ class DeliberationLayerProfiler:
         print(f"🔍 Profiling Deliberation Queue with {num_requests} requests...")
 
         # Import deliberation components
-        from acgs2_core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from acgs2_core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         queue = DeliberationQueue()
         latencies = []
@@ -114,8 +114,8 @@ class DeliberationLayerProfiler:
         """Profile the impact scorer throughput."""
         print(f"🎯 Profiling Impact Scorer with {num_requests} requests...")
 
-        from acgs2_core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
-        from acgs2_core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+        from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
+        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         scorer = ImpactScorer()
         latencies = []
@@ -191,11 +191,11 @@ class DeliberationLayerProfiler:
         """Profile the full deliberation pipeline."""
         print(f"🔬 Profiling Full Deliberation Pipeline with {num_requests} requests...")
 
-        from acgs2_core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+        from src.core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
-        from acgs2_core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
-        from acgs2_core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+        from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
+        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         queue = DeliberationQueue()
         scorer = ImpactScorer()

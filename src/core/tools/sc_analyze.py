@@ -1,9 +1,7 @@
-"""
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
 #!/usr/bin/env python3
 """
+Constitutional Hash: cdd01ef066bc6cf2
+
 SuperClaude Analyze Command (/sc:analyze)
 Code analysis and quality assessment system.
 

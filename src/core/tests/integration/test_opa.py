@@ -27,9 +27,9 @@ import pytest
 
 # Add parent directories to path for local imports
 _tests_dir = os.path.dirname(os.path.abspath(__file__))
-_acgs2_core_dir = os.path.dirname(os.path.dirname(_tests_dir))
-if _acgs2_core_dir not in sys.path:
-    sys.path.insert(0, _acgs2_core_dir)
+_repo_root = os.path.dirname(os.path.dirname(os.path.dirname(_tests_dir)))
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
 
 # Try to import httpx, fall back to mock if not available
 try:

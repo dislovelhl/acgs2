@@ -46,7 +46,7 @@ class EncryptionManager:
             return base64.b64encode(combined).decode("utf-8")
         except Exception as e:
             logger.error(f"Payload encryption failed: {e}")
-            raise RuntimeError("Encryption failure")
+            raise RuntimeError("Encryption failure") from e
 
     @staticmethod
     def decrypt_payload(encrypted_str: str) -> Dict[str, Any]:
@@ -69,7 +69,7 @@ class EncryptionManager:
             return json.loads(payload_bytes.decode("utf-8"))
         except Exception as e:
             logger.error(f"Payload decryption failed: {e}")
-            raise ValueError("Decryption failure")
+            raise ValueError("Decryption failure") from e
 
 
 __all__ = ["EncryptionManager"]

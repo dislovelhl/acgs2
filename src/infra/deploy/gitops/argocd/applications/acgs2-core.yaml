@@ -12,7 +12,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/acgs2/acgs2-infra
+    repoURL: https://github.com/dislovelhl/acgs2/acgs2-infra
     targetRevision: HEAD
     path: deploy/helm/acgs2
     helm:
@@ -59,7 +59,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/acgs2/acgs2-observability
+    repoURL: https://github.com/dislovelhl/acgs2/acgs2-observability
     targetRevision: HEAD
     path: monitoring
     directory:

@@ -60,10 +60,10 @@ async def oidc_login(
         return RedirectResponse(url=auth_url, status_code=302)
     except OIDCConfigurationError as e:
         logger.warning(f"OIDC login failed: {e}")
-        raise HTTPException(status_code=404, detail=f"OIDC provider not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=f"OIDC provider not found: {str(e)}") from e
     except Exception as e:
         logger.error(f"OIDC login failed: {e}")
-        raise HTTPException(status_code=500, detail="Login initiation failed")
+        raise HTTPException(status_code=500, detail="Login initiation failed") from e
 
 
 @router.get("/callback", response_model=SSOUserInfoResponse)
@@ -121,7 +121,7 @@ async def oidc_callback(
         return user_info.__dict__  # Simplified for now
     except Exception as e:
         logger.error(f"OIDC callback error: {e}")
-        raise HTTPException(status_code=500, detail="Authentication processing failed")
+        raise HTTPException(status_code=500, detail="Authentication processing failed") from e
 
 
 @router.post("/logout", response_model=SSOLogoutResponse)

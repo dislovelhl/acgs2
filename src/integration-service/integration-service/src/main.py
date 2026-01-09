@@ -18,19 +18,19 @@ core_path = Path(__file__).parent.parent.parent.parent / "core"
 if str(core_path) not in sys.path:
     sys.path.insert(0, str(core_path))
 
-from src.core.shared.security import (
+from src.core.shared.security import (  # noqa: E402
     SecurityHeadersConfig,
     SecurityHeadersMiddleware,
     get_cors_config,
 )
 
-from .api.health import configure_health_router
-from .api.health import router as health_router
-from .api.import_router import router as import_router
-from .api.linear import router as linear_router
-from .api.linear_webhooks import router as linear_webhooks_router
-from .api.policy_check import router as policy_check_router
-from .api.webhooks import router as webhooks_router
+from .api.health import configure_health_router  # noqa: E402
+from .api.health import router as health_router  # noqa: E402
+from .api.import_router import router as import_router  # noqa: E402
+from .api.linear import router as linear_router  # noqa: E402
+from .api.linear_webhooks import router as linear_webhooks_router  # noqa: E402
+from .api.policy_check import router as policy_check_router  # noqa: E402
+from .api.webhooks import router as webhooks_router  # noqa: E402
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

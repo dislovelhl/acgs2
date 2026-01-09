@@ -337,12 +337,6 @@ def session_manager():
 # =============================================================================
 
 
-class SafetyDecisionType(Enum):
-    ALLOW = "ALLOW"
-    DENY = "DENY"
-    ALLOW_WITH_CONSTRAINTS = "ALLOW_WITH_CONSTRAINTS"
-
-
 class ToolStatus(Enum):
     OK = "OK"
     ERROR = "ERROR"
@@ -353,16 +347,6 @@ class RecordType(Enum):
     SUMMARY = "SUMMARY"
     PREFERENCE = "PREFERENCE"
     TASK_ARTIFACT = "TASK_ARTIFACT"
-
-
-@dataclass
-class SafetyDecision:
-    """Response from SAS safety checks."""
-
-    decision: SafetyDecisionType
-    policy_version: str
-    rationale_codes: list[str]
-    constraints: dict = field(default_factory=dict)
 
 
 @dataclass

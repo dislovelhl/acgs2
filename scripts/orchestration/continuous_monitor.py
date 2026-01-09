@@ -139,7 +139,7 @@ Please investigate immediately.
             server.sendmail(email_config["sender"], email_config["recipients"], msg.as_string())
             server.quit()
         except Exception as e:
-            raise Exception(f"Email sending failed: {e}")
+            raise Exception(f"Email sending failed: {e}") from e
 
     async def _log_alert(self, alert: Dict[str, Any]):
         """Log alert to system logs"""

@@ -49,7 +49,12 @@ from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse
+import importlib.util
 from src.core.shared.acgs_logging import get_logger
+from src.core.shared.metrics import (
+    _get_or_create_counter,
+    _get_or_create_gauge,
+)
 
 logger = get_logger(__name__)
 
@@ -57,20 +62,10 @@ logger = get_logger(__name__)
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 # Check for Redis availability
-try:
-    import redis
-
-    REDIS_AVAILABLE = True
-except ImportError:
-    REDIS_AVAILABLE = False
+REDIS_AVAILABLE = importlib.util.find_spec("redis") is not None
 
 # Check for tenant config availability
-try:
-    from src.core.shared.config import TenantQuotaRegistry
-
-    TENANT_CONFIG_AVAILABLE = True
-except ImportError:
-    TENANT_CONFIG_AVAILABLE = False
+TENANT_CONFIG_AVAILABLE = importlib.util.find_spec("src.core.shared.config") is not None
 
 
 class RateLimitScope(str, Enum):
@@ -844,7 +839,6 @@ def configure_rate_limits(
 # Monitoring Integration
 # ============================================================================
 
-from src.core.shared.metrics import _get_or_create_counter, _get_or_create_gauge
 
 # Rate limiting metrics
 RATE_LIMIT_EXCEEDED = _get_or_create_counter(

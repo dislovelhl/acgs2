@@ -208,7 +208,7 @@ async def upload_bundle(
         raise HTTPException(
             status_code=400,
             detail="Bundle operation failed. Please verify your request and try again.",
-        )
+        ) from e
 
 
 @router.get("/{bundle_id}", response_model=Bundle)
@@ -382,4 +382,4 @@ async def push_bundle_to_registry(
                 os.unlink(tmp_path)
     except Exception as e:
         logger.error(f"Failed to push bundle to registry: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to push bundle: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to push bundle: {str(e)}") from e

@@ -491,22 +491,22 @@ class LinearClient(BaseIntegration):
             # HTTP error responses
             error_msg = f"HTTP {e.status}: {e.message}"
             if e.status == 401:
-                raise DeliveryError(f"Authentication failed: {error_msg}", self.name)
+                raise DeliveryError(f"Authentication failed: {error_msg}", self.name) from e
             elif e.status == 403:
-                raise DeliveryError(f"Permission denied: {error_msg}", self.name)
+                raise DeliveryError(f"Permission denied: {error_msg}", self.name) from e
             elif e.status == 429:
-                raise DeliveryError(f"Rate limited: {error_msg}", self.name)
+                raise DeliveryError(f"Rate limited: {error_msg}", self.name) from e
             else:
-                raise DeliveryError(f"API error: {error_msg}", self.name)
+                raise DeliveryError(f"API error: {error_msg}", self.name) from e
 
         except (aiohttp.ClientTimeout, asyncio.TimeoutError) as e:
-            raise DeliveryError(f"Request timeout: {str(e)}", self.name)
+            raise DeliveryError(f"Request timeout: {str(e)}", self.name) from e
 
         except (aiohttp.ClientError, aiohttp.ClientConnectionError) as e:
-            raise DeliveryError(f"Network error: {str(e)}", self.name)
+            raise DeliveryError(f"Network error: {str(e)}", self.name) from e
 
         except Exception as e:
-            raise DeliveryError(f"Unexpected error: {str(e)}", self.name)
+            raise DeliveryError(f"Unexpected error: {str(e)}", self.name) from e
 
     # Override retry methods to use aiohttp exception types
     @staticmethod

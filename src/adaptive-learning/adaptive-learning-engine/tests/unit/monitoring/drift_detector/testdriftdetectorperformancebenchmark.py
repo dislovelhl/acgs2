@@ -1,13 +1,4 @@
 """
-Tests for driftdetectorperformancebenchmark.
-
-Tests cover:
-- driftdetectorperformancebenchmark functionality
-- Error handling and edge cases
-- Integration with related components
-"""
-
-"""
 Unit tests for the Adaptive Learning Engine monitoring module.
 
 Tests cover:
