@@ -77,16 +77,32 @@ jobs:
           cd src/core
           source venv/bin/activate
           # Skip tests that require torch/transformers (ML dependencies not in base install)
+          # These tests import from deliberation_layer which transitively requires torch
           python -m pytest enhanced_agent_bus/tests/ --cov=enhanced_agent_bus --cov-report=term-missing --cov-report=xml --cov-fail-under=40 -q \
-            --ignore=enhanced_agent_bus/tests/test_vote_collector.py \
-            --ignore=enhanced_agent_bus/tests/test_voting_service.py \
+            --ignore=enhanced_agent_bus/tests/test_accuracy_parity.py \
+            --ignore=enhanced_agent_bus/tests/test_adaptive_router.py \
+            --ignore=enhanced_agent_bus/tests/test_advanced_workflows.py \
+            --ignore=enhanced_agent_bus/tests/test_ampo_engine.py \
+            --ignore=enhanced_agent_bus/tests/test_batch_inference.py \
+            --ignore=enhanced_agent_bus/tests/test_deliberation_feedback.py \
+            --ignore=enhanced_agent_bus/tests/test_deliberation_integration.py \
+            --ignore=enhanced_agent_bus/tests/test_deliberation_workflow_optimized.py \
+            --ignore=enhanced_agent_bus/tests/test_governance_failure_modes.py \
             --ignore=enhanced_agent_bus/tests/test_impact_scorer_comprehensive.py \
             --ignore=enhanced_agent_bus/tests/test_impact_scorer_config.py \
             --ignore=enhanced_agent_bus/tests/test_impact_scorer_module.py \
             --ignore=enhanced_agent_bus/tests/test_impact_scorer_optimized.py \
-            --ignore=enhanced_agent_bus/tests/test_batch_inference.py \
-            --ignore=enhanced_agent_bus/tests/test_deliberation_feedback.py \
+            --ignore=enhanced_agent_bus/tests/test_intent_classifier.py \
+            --ignore=enhanced_agent_bus/tests/test_llm_metrics.py \
             --ignore=enhanced_agent_bus/tests/test_mamba_hybrid_processor.py \
+            --ignore=enhanced_agent_bus/tests/test_opa_guard_mixin.py \
+            --ignore=enhanced_agent_bus/tests/test_prompt_standardization.py \
+            --ignore=enhanced_agent_bus/tests/test_sdpc_phase2_verifiers.py \
+            --ignore=enhanced_agent_bus/tests/test_sdpc_phase3_evolution.py \
+            --ignore=enhanced_agent_bus/tests/test_sdpc_routing.py \
+            --ignore=enhanced_agent_bus/tests/test_vote_collector.py \
+            --ignore=enhanced_agent_bus/tests/test_voting_service.py \
+            --ignore=enhanced_agent_bus/tests/test_vulnerable_fallbacks.py \
             --ignore=enhanced_agent_bus/tests/governance/ \
             -k "not (torch or transformers or distilbert)"
 
