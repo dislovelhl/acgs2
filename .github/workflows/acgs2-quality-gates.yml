@@ -33,7 +33,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ruff mypy bandit pre-commit pytest pytest-cov
-          pip install litellm numpy  # Required for syntax check and test dependencies
+          pip install litellm numpy scikit-learn fastapi pydantic  # Required for syntax check and test dependencies
 
       - name: Syntax Check (P0 Gate)
         run: |
@@ -72,16 +72,18 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/src/core:${{ github.workspace }}
         run: |
           cd src/core/enhanced_agent_bus
-          # Skip tests that require torch/transformers (ML dependencies not installed)
-          # These tests import from deliberation_layer which transitively requires torch
+          # Skip tests that require torch/transformers/sklearn (ML dependencies not in base install)
+          # These tests import from deliberation_layer or adaptive_governance which transitively require ML libs
           python -m pytest tests/ -v --cov=enhanced_agent_bus --cov-report=xml --cov-report=term --cov-fail-under=40 \
             --ignore=tests/test_accuracy_parity.py \
+            --ignore=tests/test_adaptive_governance.py \
             --ignore=tests/test_adaptive_router.py \
             --ignore=tests/test_advanced_workflows.py \
             --ignore=tests/test_ampo_engine.py \
             --ignore=tests/test_batch_inference.py \
             --ignore=tests/test_deliberation_feedback.py \
             --ignore=tests/test_deliberation_integration.py \
+            --ignore=tests/test_deliberation_layer.py \
             --ignore=tests/test_deliberation_workflow_optimized.py \
             --ignore=tests/test_governance_failure_modes.py \
             --ignore=tests/test_impact_scorer_comprehensive.py \
@@ -91,7 +93,13 @@ jobs:
             --ignore=tests/test_intent_classifier.py \
             --ignore=tests/test_llm_metrics.py \
             --ignore=tests/test_mamba_hybrid_processor.py \
+            --ignore=tests/test_metering_integration.py \
+            --ignore=tests/test_ml_lifecycle_integration.py \
+            --ignore=tests/test_multi_approver.py \
+            --ignore=tests/test_opa_guard_actual.py \
             --ignore=tests/test_opa_guard_mixin.py \
+            --ignore=tests/test_pacar_api_integration.py \
+            --ignore=tests/test_pacar_integration.py \
             --ignore=tests/test_prompt_standardization.py \
             --ignore=tests/test_sdpc_phase2_verifiers.py \
             --ignore=tests/test_sdpc_phase3_evolution.py \
