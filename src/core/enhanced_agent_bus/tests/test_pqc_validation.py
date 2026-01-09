@@ -30,26 +30,14 @@ if _parent_dir not in sys.path:
     sys.path.insert(0, _parent_dir)
 
 try:
-    from ..models import (
-        CONSTITUTIONAL_HASH,
-        AgentMessage,
-        MessageStatus,
-        MessageType,
-        Priority,
-    )
+    from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
     from ..validation_strategies import (
         CompositeValidationStrategy,
         PQCValidationStrategy,
         StaticHashValidationStrategy,
     )
 except ImportError:
-    from models import (
-        CONSTITUTIONAL_HASH,
-        AgentMessage,
-        MessageStatus,
-        MessageType,
-        Priority,
-    )
+    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
     from validation_strategies import (
         CompositeValidationStrategy,
         PQCValidationStrategy,

@@ -194,9 +194,7 @@ class ConstitutionalGovernanceEngine:
     async def get_governance_kpis(self, tenant_id: str = "default") -> Dict[str, Any]:
         """Get governance KPIs for a tenant."""
         try:
-            from ...services.audit_service.app.api.governance import (
-                _calculate_kpis_from_ledger,
-            )
+            from ...services.audit_service.app.api.governance import _calculate_kpis_from_ledger
 
             return await _calculate_kpis_from_ledger(tenant_id)
         except Exception as e:

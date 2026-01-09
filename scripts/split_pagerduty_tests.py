@@ -52,10 +52,10 @@ def split_pagerduty_tests():
 
             # Create the file content
             file_content = f'''"""
-Tests for PagerDuty {class_name.replace('TestPagerDuty', '').lower()}.
+Tests for PagerDuty {class_name.replace("TestPagerDuty", "").lower()}.
 
 Tests cover:
-- {class_name.replace('TestPagerDuty', '').lower()} functionality
+- {class_name.replace("TestPagerDuty", "").lower()} functionality
 - Error handling and edge cases
 - Integration with PagerDuty APIs
 """

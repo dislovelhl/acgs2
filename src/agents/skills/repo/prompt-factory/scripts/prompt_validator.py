@@ -379,9 +379,9 @@ def create_validation_report(result: Dict[str, Any], prompt_file: Path) -> str:
     report = f"""# Prompt Validation Report
 
 **File:** `{prompt_file.name}`
-**Validated:** {result['timestamp']}
-**Format:** {result['format']}
-**Score:** {result['score']}/7
+**Validated:** {result["timestamp"]}
+**Format:** {result["format"]}
+**Score:** {result["score"]}/7
 **Status:** {status}
 
 ## Validation Gates

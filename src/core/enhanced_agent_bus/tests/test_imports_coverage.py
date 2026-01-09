@@ -74,11 +74,7 @@ class TestCircuitBreakerImports:
 
     def test_circuit_breaker_flag_reflects_availability(self):
         """Circuit breaker flag reflects actual availability."""
-        from imports import (
-            CIRCUIT_BREAKER_ENABLED,
-            CircuitBreakerConfig,
-            get_circuit_breaker,
-        )
+        from imports import CIRCUIT_BREAKER_ENABLED, CircuitBreakerConfig, get_circuit_breaker
 
         if CIRCUIT_BREAKER_ENABLED:
             assert get_circuit_breaker is not None

@@ -21,10 +21,7 @@ from .services import CacheService, CryptoService, NotificationService, PolicySe
 
 # Import rate limiting middleware
 try:
-    from src.core.shared.security.rate_limiter import (
-        RateLimitConfig,
-        RateLimitMiddleware,
-    )
+    from src.core.shared.security.rate_limiter import RateLimitConfig, RateLimitMiddleware
 
     RATE_LIMIT_AVAILABLE = True
 except ImportError:

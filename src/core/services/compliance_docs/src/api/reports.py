@@ -20,11 +20,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 
-from ..generators import (
-    generate_docx_to_buffer,
-    generate_pdf_to_buffer,
-    generate_xlsx_to_buffer,
-)
+from ..generators import generate_docx_to_buffer, generate_pdf_to_buffer, generate_xlsx_to_buffer
 from ..models.base import ComplianceFramework, ExportFormat
 
 logger = logging.getLogger(__name__)

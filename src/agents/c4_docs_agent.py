@@ -271,7 +271,7 @@ Use the diagram-generator subagent for creating Mermaid syntax.
             elem_id = elem.name.lower().replace(" ", "_").replace("-", "_")
             for rel in elem.relationships:
                 target_id = rel["target"].lower().replace(" ", "_").replace("-", "_")
-                lines.append(f"    Rel({elem_id}, {target_id}, \"{rel['description']}\")")
+                lines.append(f'    Rel({elem_id}, {target_id}, "{rel["description"]}")')
 
         return "\n".join(lines)
 

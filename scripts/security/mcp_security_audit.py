@@ -303,7 +303,7 @@ class MCPSecurityAuditor:
             for rec in results["recommendations"]:
                 print(f"   - {rec}")
 
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
 
 
 def main():

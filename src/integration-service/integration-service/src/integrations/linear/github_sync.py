@@ -28,12 +28,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 try:
-    from github import (
-        Github,
-        GithubException,
-        RateLimitExceededException,
-        UnknownObjectException,
-    )
+    from github import Github, GithubException, RateLimitExceededException, UnknownObjectException
     from github.Issue import Issue as GithubIssue
     from github.IssueComment import IssueComment as GithubComment
     from github.PullRequest import PullRequest as GithubPR

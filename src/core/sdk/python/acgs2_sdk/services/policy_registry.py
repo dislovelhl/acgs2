@@ -11,12 +11,7 @@ except ImportError:
     JSONValue = str | int | float | bool | None | dict[str, Any] | list[Any]  # type: ignore[misc]
     JSONDict = dict[str, JSONValue]  # type: ignore[misc]
 
-from acgs2_sdk.models import (
-    CreatePolicyRequest,
-    Policy,
-    PolicyStatus,
-    UpdatePolicyRequest,
-)
+from acgs2_sdk.models import CreatePolicyRequest, Policy, PolicyStatus, UpdatePolicyRequest
 
 if TYPE_CHECKING:
     from acgs2_sdk.client import ACGS2Client

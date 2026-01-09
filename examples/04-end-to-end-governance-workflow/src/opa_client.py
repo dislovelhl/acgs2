@@ -179,8 +179,7 @@ class OPAClient:
             except requests.exceptions.ConnectionError as e:
                 logger.error(f"Failed to connect to OPA at {self.base_url}: {e}")
                 raise OPAConnectionError(
-                    f"OPA service is unreachable at {self.base_url}. "
-                    f"Please ensure OPA is running."
+                    f"OPA service is unreachable at {self.base_url}. Please ensure OPA is running."
                 ) from e
 
             except requests.exceptions.Timeout as e:
@@ -193,7 +192,7 @@ class OPAClient:
                     f"{e.response.status_code} - {e.response.text}"
                 )
                 raise OPAPolicyError(
-                    f"Policy evaluation failed: {e.response.status_code} - " f"{e.response.text}"
+                    f"Policy evaluation failed: {e.response.status_code} - {e.response.text}"
                 ) from e
 
             except requests.exceptions.RequestException as e:

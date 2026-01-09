@@ -17,16 +17,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
-from fastapi import (
-    BackgroundTasks,
-    Body,
-    Depends,
-    FastAPI,
-    Header,
-    HTTPException,
-    Request,
-    status,
-)
+from fastapi import BackgroundTasks, Body, Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
@@ -64,10 +55,7 @@ except ImportError:
 
 try:
     from src.core.shared.security.cors_config import get_cors_config
-    from src.core.shared.security.tenant_context import (
-        TenantContextConfig,
-        TenantContextMiddleware,
-    )
+    from src.core.shared.security.tenant_context import TenantContextConfig, TenantContextMiddleware
 except ImportError:
     # Fallback for standalone/testing
     def get_cors_config() -> Dict[str, Any]:  # type: ignore[misc]
@@ -83,10 +71,7 @@ except ImportError:
 
 
 try:
-    from src.core.shared.acgs_logging import (
-        create_correlation_middleware,
-        init_service_logging,
-    )
+    from src.core.shared.acgs_logging import create_correlation_middleware, init_service_logging
 
     # Initialize structured logging
     logger = init_service_logging("enhanced-agent-bus", level="INFO", json_format=True)
@@ -138,9 +123,7 @@ except (ImportError, ValueError):
         )
     except (ImportError, ValueError):
         try:
-            from src.core.enhanced_agent_bus.governance.ccai_framework import (
-                get_ccai_governance,
-            )
+            from src.core.enhanced_agent_bus.governance.ccai_framework import get_ccai_governance
         except ImportError:
             # Mock for testing if import fails
             def get_ccai_governance() -> Any:  # type: ignore[misc]

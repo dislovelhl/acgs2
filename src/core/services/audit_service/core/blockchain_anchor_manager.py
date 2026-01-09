@@ -22,10 +22,7 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
-    from src.core.shared.circuit_breaker import (
-        CircuitBreakerConfig,
-        get_circuit_breaker,
-    )
+    from src.core.shared.circuit_breaker import CircuitBreakerConfig, get_circuit_breaker
 
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:
@@ -171,9 +168,7 @@ class BlockchainAnchorManager:
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized LOCAL anchor backend")
 
                 elif backend == AnchorBackend.ETHEREUM_L2:
-                    from ..blockchain.ethereum_l2.ethereum_client import (
-                        EthereumL2Client,
-                    )
+                    from ..blockchain.ethereum_l2.ethereum_client import EthereumL2Client
 
                     self._backends[backend] = EthereumL2Client(
                         network=self.config.ethereum_network,
@@ -193,9 +188,7 @@ class BlockchainAnchorManager:
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized ARWEAVE anchor backend")
 
                 elif backend == AnchorBackend.HYPERLEDGER:
-                    from ..blockchain.hyperledger_fabric.fabric_client import (
-                        FabricClient,
-                    )
+                    from ..blockchain.hyperledger_fabric.fabric_client import FabricClient
 
                     self._backends[backend] = FabricClient(config={})
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized HYPERLEDGER anchor backend")

@@ -165,7 +165,7 @@ class ThresholdOptimizer:
             print(f"  Testing scenario {i}/{len(self.test_scenarios)}: {config}")
             result = self._test_threshold_config(config)
             results.append(result)
-            print(f"    Result: {result.violation_files}/{result.total_files} violations " ".1f")
+            print(f"    Result: {result.violation_files}/{result.total_files} violations .1f")
         return results
 
     def _test_threshold_config(self, config: ThresholdConfig) -> ThresholdTestResult:
@@ -482,7 +482,7 @@ class ThresholdOptimizer:
     def _prepare_visualization_data(self, results: List[ThresholdTestResult]) -> Dict[str, Any]:
         """Prepare data for visualization."""
 
-        configs = [f"Config {i+1}" for i in range(len(results))]
+        configs = [f"Config {i + 1}" for i in range(len(results))]
         violation_rates = [r.violation_rate * 100 for r in results]
         satisfaction_scores = [r.developer_satisfaction_score for r in results]
         maintenance_costs = [r.weekly_maintenance_cost for r in results]
@@ -534,7 +534,7 @@ class ThresholdOptimizer:
 
 ## 🧪 A/B Testing Results
 
-Tested {len(analysis['all_results'])} threshold configurations to find optimal balance between code quality enforcement and developer productivity.
+Tested {len(analysis["all_results"])} threshold configurations to find optimal balance between code quality enforcement and developer productivity.
 
 ---
 
@@ -544,7 +544,7 @@ Based on comprehensive analysis balancing violation detection, developer satisfa
 
 ### Recommended Thresholds
 ```json
-{json.dumps(recommendations['recommended_config'], indent=2)}
+{json.dumps(recommendations["recommended_config"], indent=2)}
 ```
 
 ### Performance Metrics
@@ -558,25 +558,25 @@ Based on comprehensive analysis balancing violation detection, developer satisfa
 ## 📋 Implementation Plan
 
 ### Phase 1: Deployment (1 week)
-{recommendations['implementation_plan']['phase_1']}
+{recommendations["implementation_plan"]["phase_1"]}
 
 ### Phase 2: Monitoring (1 month)
-{recommendations['implementation_plan']['phase_2']}
+{recommendations["implementation_plan"]["phase_2"]}
 
 ### Phase 3: Optimization (3 months)
-{recommendations['implementation_plan']['phase_3']}
+{recommendations["implementation_plan"]["phase_3"]}
 
 ---
 
 ## 📈 Expected Outcomes
 
-{chr(10).join(f"- **{k.replace('_', ' ').title()}:** {v}" for k, v in recommendations['expected_outcomes'].items())}
+{chr(10).join(f"- **{k.replace('_', ' ').title()}:** {v}" for k, v in recommendations["expected_outcomes"].items())}
 
 ---
 
 ## 📊 Monitoring Metrics
 
-{chr(10).join(f"- {metric}" for metric in recommendations['monitoring_metrics'])}
+{chr(10).join(f"- {metric}" for metric in recommendations["monitoring_metrics"])}
 
 ---
 

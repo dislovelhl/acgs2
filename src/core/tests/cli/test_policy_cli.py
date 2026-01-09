@@ -20,11 +20,8 @@ from typer.testing import CliRunner
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from cli.opa_service import (  # noqa: E402, I001
-    OPAConnectionError,
-    PolicyEvaluationResult,
-    PolicyValidationResult,
-)
+from cli.opa_service import OPAConnectionError  # noqa: E402, I001
+from cli.opa_service import PolicyEvaluationResult, PolicyValidationResult
 from cli.policy_cli import app  # noqa: E402, I001
 
 # Create CLI runner for testing

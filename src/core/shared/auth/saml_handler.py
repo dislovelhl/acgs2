@@ -51,6 +51,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 if TYPE_CHECKING:
     from saml2.client import Saml2Client
     from src.core.shared.models.sso_provider import SSOProvider
+
 from urllib.parse import urlencode
 
 from .saml_config import (

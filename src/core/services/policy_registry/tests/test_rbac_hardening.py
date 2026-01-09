@@ -29,9 +29,7 @@ def test_rbac_middleware_dev_secret_in_production(monkeypatch):
         with pytest.raises(
             ValueError, match="Insecure JWT_SECRET 'dev-secret' is forbidden in production"
         ):
-            from src.core.services.policy_registry.app.middleware.rbac import (
-                RBACMiddleware,
-            )
+            from src.core.services.policy_registry.app.middleware.rbac import RBACMiddleware
 
             RBACMiddleware(MagicMock())
 
@@ -49,9 +47,7 @@ def test_rbac_middleware_short_secret_in_production(monkeypatch):
         mock_settings.security.jwt_algorithm = "HS256"
 
         with pytest.raises(ValueError, match="JWT_SECRET must be at least 32 characters"):
-            from src.core.services.policy_registry.app.middleware.rbac import (
-                RBACMiddleware,
-            )
+            from src.core.services.policy_registry.app.middleware.rbac import RBACMiddleware
 
             RBACMiddleware(MagicMock())
 

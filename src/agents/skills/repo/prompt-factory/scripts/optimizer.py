@@ -446,20 +446,20 @@ def create_optimization_report(
         # Analysis-only report
         report = f"""# Prompt Optimization Analysis
 
-**File:** `{prompt_file.name if prompt_file else 'Unknown'}`
-**Analyzed:** {analysis['timestamp']}
+**File:** `{prompt_file.name if prompt_file else "Unknown"}`
+**Analyzed:** {analysis["timestamp"]}
 
 ## Current Statistics
 
-- **Characters:** {analysis['original_stats']['characters']:,}
-- **Words:** {analysis['original_stats']['words']:,}
-- **Est. Tokens:** ~{analysis['original_stats']['estimated_tokens']:,}
-- **Lines:** {analysis['original_stats']['lines']:,}
-- **Sections:** {analysis['original_stats']['sections']}
+- **Characters:** {analysis["original_stats"]["characters"]:,}
+- **Words:** {analysis["original_stats"]["words"]:,}
+- **Est. Tokens:** ~{analysis["original_stats"]["estimated_tokens"]:,}
+- **Lines:** {analysis["original_stats"]["lines"]:,}
+- **Sections:** {analysis["original_stats"]["sections"]}
 
 ## Optimization Opportunities
 
-**Total Potential Savings:** ~{analysis['estimated_savings']} tokens
+**Total Potential Savings:** ~{analysis["estimated_savings"]} tokens
 
 """
 
@@ -480,24 +480,24 @@ def create_optimization_report(
         # Optimization result report
         report = f"""# Prompt Optimization Report
 
-**File:** `{prompt_file.name if prompt_file else 'Unknown'}`
-**Optimized:** {optimization_result['timestamp']}
+**File:** `{prompt_file.name if prompt_file else "Unknown"}`
+**Optimized:** {optimization_result["timestamp"]}
 
 ## Results
 
 ### Before Optimization
-- **Words:** {optimization_result['original_stats']['words']:,}
-- **Est. Tokens:** ~{optimization_result['original_stats']['estimated_tokens']:,}
+- **Words:** {optimization_result["original_stats"]["words"]:,}
+- **Est. Tokens:** ~{optimization_result["original_stats"]["estimated_tokens"]:,}
 
 ### After Optimization
-- **Words:** {optimization_result['optimized_stats']['words']:,}
-- **Est. Tokens:** ~{optimization_result['optimized_stats']['estimated_tokens']:,}
+- **Words:** {optimization_result["optimized_stats"]["words"]:,}
+- **Est. Tokens:** ~{optimization_result["optimized_stats"]["estimated_tokens"]:,}
 
 ### Savings
-- **Token Reduction:** {optimization_result['token_reduction']} tokens
-- **Reduction:** {optimization_result['reduction_percentage']:.1f}%
-- **Target Achieved:** {"✅ Yes" if optimization_result['achieved_target'] else "❌ No"}
-- **Quality Maintained:** {"✅ Yes" if optimization_result['quality_maintained'] else "⚠️ Review Needed"}
+- **Token Reduction:** {optimization_result["token_reduction"]} tokens
+- **Reduction:** {optimization_result["reduction_percentage"]:.1f}%
+- **Target Achieved:** {"✅ Yes" if optimization_result["achieved_target"] else "❌ No"}
+- **Quality Maintained:** {"✅ Yes" if optimization_result["quality_maintained"] else "⚠️ Review Needed"}
 
 ## Optimizations Applied
 

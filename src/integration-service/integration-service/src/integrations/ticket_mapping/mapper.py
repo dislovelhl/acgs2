@@ -19,12 +19,7 @@ from .enums import (
     ServiceNowImpactUrgency,
     TicketingProvider,
 )
-from .models import (
-    FieldMapping,
-    FieldMappingResult,
-    TicketMappingConfig,
-    TicketMappingResult,
-)
+from .models import FieldMapping, FieldMappingResult, TicketMappingConfig, TicketMappingResult
 from .transformers import FieldTransformers, TransformFunc
 from .validators import FieldValidator
 

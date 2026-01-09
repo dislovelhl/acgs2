@@ -151,9 +151,7 @@ class TestHITLManagerWithCustomAuditLedger:
     @pytest.mark.asyncio
     async def test_custom_audit_ledger_receives_results(self, custom_audit_ledger):
         """Test that custom audit ledger receives validation results."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -185,15 +183,9 @@ class TestHITLManagerWithCustomAuditLedger:
     @pytest.mark.asyncio
     async def test_audit_records_constitutional_hash(self, custom_audit_ledger):
         """Test that audit records include constitutional hash."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from enhanced_agent_bus.models import (
-            CONSTITUTIONAL_HASH,
-            AgentMessage,
-            MessageType,
-        )
+        from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 
         queue = DeliberationQueue()
         manager = HITLManager(queue, audit_ledger=custom_audit_ledger)

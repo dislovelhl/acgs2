@@ -181,7 +181,7 @@ class AuditLogger:
         except psycopg2.Error as e:
             logger.error(f"Failed to initialize audit logger: {e}")
             raise AuditConnectionError(
-                f"Cannot connect to database at {config.host}:{config.port}. " f"Error: {e}"
+                f"Cannot connect to database at {config.host}:{config.port}. Error: {e}"
             ) from e
 
     def health_check(self) -> bool:

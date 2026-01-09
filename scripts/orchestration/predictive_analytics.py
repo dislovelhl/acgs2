@@ -347,8 +347,8 @@ class PredictiveAnalytics:
             hour = peak["hour"]
             predicted_load = peak["task_count"]
 
-            scale_up_time = f"{hour-1:02d}:00"  # Scale up 1 hour before peak
-            scale_down_time = f"{(hour+2)%24:02d}:00"  # Scale down 2 hours after peak
+            scale_up_time = f"{hour - 1:02d}:00"  # Scale up 1 hour before peak
+            scale_down_time = f"{(hour + 2) % 24:02d}:00"  # Scale down 2 hours after peak
 
             schedule.append(
                 {

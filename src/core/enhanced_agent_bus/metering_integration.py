@@ -35,12 +35,7 @@ except ImportError:
         )
         if services_path not in sys.path:
             sys.path.insert(0, services_path)
-        from app.models import (
-            CONSTITUTIONAL_HASH,
-            MeterableOperation,
-            MeteringTier,
-            UsageEvent,
-        )
+        from app.models import CONSTITUTIONAL_HASH, MeterableOperation, MeteringTier, UsageEvent
         from app.service import UsageMeteringService
 
         METERING_AVAILABLE = True

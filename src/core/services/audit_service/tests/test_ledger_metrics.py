@@ -2,10 +2,7 @@ import asyncio
 import logging
 import time
 
-from src.core.services.audit_service.core.audit_ledger import (
-    AuditLedger,
-    AuditLedgerConfig,
-)
+from src.core.services.audit_service.core.audit_ledger import AuditLedger, AuditLedgerConfig
 from src.core.services.audit_service.core.blockchain_anchor_manager import (
     AnchorBackend,
     AnchorResult,

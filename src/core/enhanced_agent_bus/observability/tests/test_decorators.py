@@ -11,12 +11,7 @@ try:
     from ..decorators import SpanContext, metered, timed, traced
     from ..telemetry import CONSTITUTIONAL_HASH
 except ImportError:
-    from observability.decorators import (  # type: ignore
-        SpanContext,
-        metered,
-        timed,
-        traced,
-    )
+    from observability.decorators import SpanContext, metered, timed, traced  # type: ignore
 
 
 class TestTracedDecorator:

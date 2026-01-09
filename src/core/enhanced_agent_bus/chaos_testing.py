@@ -39,16 +39,9 @@ except ImportError:
     get_circuit_breaker = None
 
 try:
-    from .exceptions import (
-        AgentBusError,
-        ConstitutionalHashMismatchError,
-        MessageTimeoutError,
-    )
+    from .exceptions import AgentBusError, ConstitutionalHashMismatchError, MessageTimeoutError
 except ImportError:
-    from exceptions import (  # type: ignore
-        AgentBusError,
-        ConstitutionalHashMismatchError,
-    )
+    from exceptions import AgentBusError, ConstitutionalHashMismatchError  # type: ignore
 
 logger = logging.getLogger(__name__)
 

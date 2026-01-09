@@ -30,17 +30,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Any, Awaitable, Callable, Dict, Generic, List, Optional, TypeVar, Union
 
 try:
     from src.core.shared.types import JSONDict, JSONValue

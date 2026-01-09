@@ -20,11 +20,7 @@ import httpx
 
 try:
     from .config import settings
-    from .exceptions import (
-        OPAConnectionError,
-        OPANotInitializedError,
-        PolicyEvaluationError,
-    )
+    from .exceptions import OPAConnectionError, OPANotInitializedError, PolicyEvaluationError
     from .models import CONSTITUTIONAL_HASH, AgentMessage
     from .validators import ValidationResult
 except (ImportError, ValueError):
@@ -45,10 +41,7 @@ except (ImportError, ValueError):
                 OPANotInitializedError,
                 PolicyEvaluationError,
             )
-            from src.core.enhanced_agent_bus.models import (
-                CONSTITUTIONAL_HASH,
-                AgentMessage,
-            )
+            from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
             from src.core.enhanced_agent_bus.validators import ValidationResult
         except ImportError:
             # Fallback for sharing with shared package

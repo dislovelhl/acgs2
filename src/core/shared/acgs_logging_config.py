@@ -42,11 +42,7 @@ from typing import Any, Dict, Optional
 # Try to import structlog - fall back to stdlib logging if unavailable
 try:
     import structlog
-    from structlog.contextvars import (
-        bind_contextvars,
-        clear_contextvars,
-        merge_contextvars,
-    )
+    from structlog.contextvars import bind_contextvars, clear_contextvars, merge_contextvars
 
     HAS_STRUCTLOG = True
 except ImportError:

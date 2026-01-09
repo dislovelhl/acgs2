@@ -46,7 +46,7 @@ repos:
         entry: python3 scripts/security/check_secrets_pre_commit.py
         language: python
         types: [text]
-        exclude: ^(\.gitleaksignore|\.secrets-allowlist\.yaml|tests/fixtures/secrets/|tests/unit/test_secrets_detection\.py|scripts/test-e2e-secrets-detection\.sh|\.auto-claude/|docs/quickstart/troubleshooting\.md|src/core/deploy/docker-compose\.yml)
+        exclude: ^(\.gitleaksignore|\.secrets-allowlist\.yaml|tests/fixtures/secrets/|tests/unit/test_secrets_detection\.py|scripts/|src/core/deploy/docker-compose\.yml|\.auto-claude/)
         additional_dependencies: [pyyaml]
         pass_filenames: false
 

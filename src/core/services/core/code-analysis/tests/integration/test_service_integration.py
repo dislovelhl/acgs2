@@ -49,12 +49,8 @@ class TestConstitutionalIntegration:
     @pytest.mark.constitutional
     def test_constitutional_hash_consistency(self) -> None:
         """Test constitutional hash is consistent across all modules."""
-        from code_analysis_service.app.utils.constitutional import (
-            CONSTITUTIONAL_HASH as UTILS_HASH,
-        )
-        from code_analysis_service.config.settings import (
-            CONSTITUTIONAL_HASH as SETTINGS_HASH,
-        )
+        from code_analysis_service.app.utils.constitutional import CONSTITUTIONAL_HASH as UTILS_HASH
+        from code_analysis_service.config.settings import CONSTITUTIONAL_HASH as SETTINGS_HASH
 
         assert SETTINGS_HASH == UTILS_HASH
         assert SETTINGS_HASH == "cdd01ef066bc6cf2"

@@ -10,11 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from enhanced_agent_bus.runtime_security import (
-    SecurityEvent,
-    SecurityEventType,
-    SecuritySeverity,
-)
+from enhanced_agent_bus.runtime_security import SecurityEvent, SecurityEventType, SecuritySeverity
 from enhanced_agent_bus.siem_integration import (
     AlertLevel,
     AlertManager,

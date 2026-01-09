@@ -200,9 +200,7 @@ async def test_connection(
                 )
 
         elif request.source == SourceType.SERVICENOW:
-            from ..services.servicenow_import_service import (
-                create_servicenow_import_service,
-            )
+            from ..services.servicenow_import_service import create_servicenow_import_service
 
             try:
                 service = await create_servicenow_import_service(request.source_config)
@@ -331,10 +329,7 @@ async def preview_import(
 
         # Integrate with actual import services based on source_type
         if request.source_type == SourceType.GITHUB:
-            from ..services.github_import_service import (
-                GitHubImportConfig,
-                GitHubImportService,
-            )
+            from ..services.github_import_service import GitHubImportConfig, GitHubImportService
 
             # Build GitHub config from request
             config = GitHubImportConfig(
@@ -353,10 +348,7 @@ async def preview_import(
             )
 
         elif request.source_type == SourceType.GITLAB:
-            from ..services.gitlab_import_service import (
-                GitLabImportConfig,
-                GitLabImportService,
-            )
+            from ..services.gitlab_import_service import GitLabImportConfig, GitLabImportService
 
             # Build GitLab config from request
             config = GitLabImportConfig(
@@ -375,10 +367,7 @@ async def preview_import(
             )
 
         elif request.source_type == SourceType.JIRA:
-            from ..services.jira_import_service import (
-                JiraImportConfig,
-                JiraImportService,
-            )
+            from ..services.jira_import_service import JiraImportConfig, JiraImportService
 
             # Build Jira config from request
             config = JiraImportConfig(
@@ -490,9 +479,7 @@ async def process_import_job(
             service = await create_jira_import_service(request_params.source_config)
 
         elif job.source_type == SourceType.SERVICENOW:
-            from ..services.servicenow_import_service import (
-                create_servicenow_import_service,
-            )
+            from ..services.servicenow_import_service import create_servicenow_import_service
 
             service = await create_servicenow_import_service(request_params.source_config)
 

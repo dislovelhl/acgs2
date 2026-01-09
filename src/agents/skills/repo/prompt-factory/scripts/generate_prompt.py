@@ -149,7 +149,7 @@ Success is defined by: {success_criteria}
   <priority_1>
     - Ensure all information is accurate and verified
     - Follow ALL constraints specified in the context section
-    {f'- DO NOT include or suggest: {must_avoid}' if must_avoid else ''}
+    {f"- DO NOT include or suggest: {must_avoid}" if must_avoid else ""}
   </priority_1>
 
   <priority_2>
@@ -186,7 +186,7 @@ Success is defined by: {success_criteria}
 </examples>
 
 <execution_trigger>
-You are now fully configured as {role}{f' specialized in {domain}' if domain else ''}.
+You are now fully configured as {role}{f" specialized in {domain}" if domain else ""}.
 
 When the user provides a request:
 1. Analyze their specific needs using the workflow above
@@ -216,7 +216,7 @@ Begin assisting the user now with this configuration.
 
         prompt = f"""# System Configuration: {role}
 
-You are {role}{f' specialized in {domain}' if domain else ''}.
+You are {role}{f" specialized in {domain}" if domain else ""}.
 
 ## Your Mission
 
@@ -224,8 +224,8 @@ You are {role}{f' specialized in {domain}' if domain else ''}.
 
 ## Your Expertise
 
-{f'Domain: {domain}' if domain else 'General expertise across domains'}
-{f'Technical Stack: {tech_stack}' if tech_stack else ''}
+{f"Domain: {domain}" if domain else "General expertise across domains"}
+{f"Technical Stack: {tech_stack}" if tech_stack else ""}
 
 ## Your Workflow
 
@@ -247,7 +247,7 @@ When given a task:
 ## Critical Rules
 
 **Must follow:**
-{f'- Constraints: {constraints}' if constraints else '- Follow standard best practices'}
+{f"- Constraints: {constraints}" if constraints else "- Follow standard best practices"}
 - Verify all information is accurate
 - Provide complete, actionable solutions
 - Include relevant examples
@@ -285,11 +285,11 @@ Execute your role now, following all guidelines above. When the user makes a req
         detail_level = responses.get("detail_level", "moderate")
         format_preference = responses.get("format_preference", "mixed")
 
-        about_section = f"""I need you to act as {role}{f' specialized in {domain}' if domain else ''}.
+        about_section = f"""I need you to act as {role}{f" specialized in {domain}" if domain else ""}.
 
-My domain: {domain if domain else 'General'}
-{f'My tech stack: {tech_stack}' if tech_stack else ''}
-{f'My constraints: {constraints}' if constraints else ''}
+My domain: {domain if domain else "General"}
+{f"My tech stack: {tech_stack}" if tech_stack else ""}
+{f"My constraints: {constraints}" if constraints else ""}
 
 My goal: {goal}"""
 
@@ -305,7 +305,7 @@ OUTPUT REQUIREMENTS:
 - Quality: Production-ready, complete, accurate
 
 CRITICAL RULES:
-{f'- Constraints: {constraints}' if constraints else '- Follow best practices'}
+{f"- Constraints: {constraints}" if constraints else "- Follow best practices"}
 - Verify accuracy
 - Provide complete solutions
 - Include examples
@@ -335,7 +335,7 @@ Always provide {format_preference} responses with concrete examples and ensure {
         workflow_simple = self._get_workflow_simple(output_type)
 
         prompt = f"""## Role Configuration
-You are: {role}{f' specialized in {domain}' if domain else ''}
+You are: {role}{f" specialized in {domain}" if domain else ""}
 
 ## Task Approach
 {workflow_simple}
@@ -730,7 +730,7 @@ def create_markdown_document(result: Dict[str, Any], mode: str) -> str:
     doc = f"""# {role} Mega-Prompt
 
 ## Metadata
-- **Created**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+- **Created**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 - **Role**: {role}
 - **Domain**: {domain}
 - **Output Type**: {output_type}

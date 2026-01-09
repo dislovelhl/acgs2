@@ -165,9 +165,7 @@ class TestEdgeCasesAndErrorHandling:
     @pytest.mark.asyncio
     async def test_special_characters_in_reasoning(self):
         """Test special characters in reasoning field."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -246,9 +244,7 @@ class TestEdgeCasesAndErrorHandling:
         """Test that long content is truncated in notification."""
         import logging
 
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 

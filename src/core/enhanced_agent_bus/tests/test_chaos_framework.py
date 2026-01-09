@@ -27,10 +27,7 @@ try:
         get_chaos_engine,
         reset_chaos_engine,
     )
-    from enhanced_agent_bus.exceptions import (
-        AgentBusError,
-        ConstitutionalHashMismatchError,
-    )
+    from enhanced_agent_bus.exceptions import AgentBusError, ConstitutionalHashMismatchError
 except ImportError:
     import os
     import sys

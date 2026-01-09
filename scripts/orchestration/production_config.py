@@ -315,7 +315,7 @@ WEBHOOK_SECRET={self.config.api_gateway.webhook_secret}
         """Create systemd service file"""
 
         service_content = f"""[Unit]
-Description=ACGS-2 {service_name.replace('_', ' ').title()} Service
+Description=ACGS-2 {service_name.replace("_", " ").title()} Service
 After=network.target postgresql.service redis.service
 Requires=postgresql.service redis.service
 

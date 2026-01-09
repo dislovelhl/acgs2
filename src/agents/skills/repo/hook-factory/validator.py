@@ -325,7 +325,7 @@ class HookValidator:
                             ValidationIssue(
                                 severity="warning",
                                 message=f"Unknown tool name in matcher: {tool}",
-                                fix_suggestion=f'Valid tools: {", ".join(valid_tools)}',
+                                fix_suggestion=f"Valid tools: {', '.join(valid_tools)}",
                             )
                         )
 
@@ -373,7 +373,7 @@ class HookValidator:
                         issues.append(
                             ValidationIssue(
                                 severity="warning",
-                                message=f'{event_type} hook timeout ({timeout}s) exceeds recommended max ({timing["max_time"]}s)',
+                                message=f"{event_type} hook timeout ({timeout}s) exceeds recommended max ({timing['max_time']}s)",
                                 fix_suggestion="Consider using a different event type for long operations",
                             )
                         )

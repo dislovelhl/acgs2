@@ -257,9 +257,7 @@ class TestJailbreakPrevention:
     async def test_end_to_end_jailbreak_prevention(self):
         """End-to-end test of complete jailbreak prevention pipeline."""
         try:
-            from src.core.enhanced_agent_bus.runtime_security import (
-                get_runtime_security_scanner,
-            )
+            from src.core.enhanced_agent_bus.runtime_security import get_runtime_security_scanner
 
             scanner = get_runtime_security_scanner()
 

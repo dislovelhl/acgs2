@@ -8,11 +8,7 @@ This package contains Celery tasks for:
 - Background processing
 """
 
-from .report_tasks import (
-    ReportGenerationResult,
-    generate_report_async,
-    generate_scheduled_report,
-)
+from .report_tasks import ReportGenerationResult, generate_report_async, generate_scheduled_report
 
 __all__ = [
     "generate_scheduled_report",

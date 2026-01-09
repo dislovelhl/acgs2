@@ -10,12 +10,7 @@ refactored modules. New code should import directly from:
 
 # Re-export from refactored modules for backward compatibility
 try:
-    from .agent_bus import (
-        DEFAULT_REDIS_URL,
-        EnhancedAgentBus,
-        get_agent_bus,
-        reset_agent_bus,
-    )
+    from .agent_bus import DEFAULT_REDIS_URL, EnhancedAgentBus, get_agent_bus, reset_agent_bus
     from .message_processor import MessageProcessor
 except (ImportError, ValueError):
     from agent_bus import (  # type: ignore
@@ -28,12 +23,7 @@ except (ImportError, ValueError):
 
 # Re-export models and interfaces
 try:
-    from .interfaces import (
-        AgentRegistry,
-        MessageRouter,
-        ProcessingStrategy,
-        ValidationStrategy,
-    )
+    from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
     from .models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,

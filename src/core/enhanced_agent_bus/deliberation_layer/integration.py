@@ -113,9 +113,7 @@ except (ImportError, ValueError):  # noqa: B025 - intentional fallback import pa
         # Try absolute imports (direct execution context)
         # Use deliberation_layer prefix for interfaces to avoid conflict with
         # top-level enhanced_agent_bus.interfaces module
-        from deliberation_layer.adaptive_router import (
-            get_adaptive_router,  # type: ignore
-        )
+        from deliberation_layer.adaptive_router import get_adaptive_router  # type: ignore
         from deliberation_layer.deliberation_queue import (  # type: ignore
             DeliberationStatus,
             VoteType,

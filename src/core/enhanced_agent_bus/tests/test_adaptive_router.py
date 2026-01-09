@@ -509,9 +509,7 @@ class TestGetAdaptiveRouter:
             return_value=mock_deliberation_queue,
         ):
             # Reset the singleton using the already imported module
-            from enhanced_agent_bus.deliberation_layer import (
-                adaptive_router as router_module,
-            )
+            from enhanced_agent_bus.deliberation_layer import adaptive_router as router_module
 
             router_module._adaptive_router = None
 

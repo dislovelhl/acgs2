@@ -53,11 +53,7 @@ except ImportError:
             MACIRoleViolationError,
             MACISelfValidationError,
         )
-        from models import (  # type: ignore
-            CONSTITUTIONAL_HASH,
-            AgentMessage,
-            MessageType,
-        )
+        from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType  # type: ignore
 
 logger = logging.getLogger(__name__)
 

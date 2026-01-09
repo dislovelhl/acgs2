@@ -7,11 +7,7 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Depends
 
-from ..dependencies import (
-    get_cache_service,
-    get_notification_service,
-    get_policy_service,
-)
+from ..dependencies import get_cache_service, get_notification_service, get_policy_service
 
 router = APIRouter()
 

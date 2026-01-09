@@ -137,10 +137,7 @@ class TestFallbackAuditLedgerClass:
     @pytest.mark.asyncio
     async def test_mock_audit_ledger_returns_hash(self):
         """Test that mock audit ledger returns a hash."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import (
-            AuditLedger,
-            ValidationResult,
-        )
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import AuditLedger, ValidationResult
 
         ledger = AuditLedger()
         result = ValidationResult(is_valid=True)
@@ -154,10 +151,7 @@ class TestFallbackAuditLedgerClass:
         """Test that mock audit ledger logs the result."""
         import logging
 
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import (
-            AuditLedger,
-            ValidationResult,
-        )
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import AuditLedger, ValidationResult
 
         ledger = AuditLedger()
         result = ValidationResult(is_valid=True, metadata={"test": "data"})

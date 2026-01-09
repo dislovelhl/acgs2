@@ -235,9 +235,9 @@ actionable recommendations for maintaining high code quality standards.
 
         if "error" not in analysis_data["complexity"]:
             complexity = analysis_data["complexity"]
-            report_content += f"""- **Total Files Analyzed:** {complexity.get('summary', {}).get('total_files', 0)}
-- **Files with Violations:** {complexity.get('summary', {}).get('violation_files', 0)}
-- **Clean Files:** {complexity.get('summary', {}).get('clean_files', 0)}
+            report_content += f"""- **Total Files Analyzed:** {complexity.get("summary", {}).get("total_files", 0)}
+- **Files with Violations:** {complexity.get("summary", {}).get("violation_files", 0)}
+- **Clean Files:** {complexity.get("summary", {}).get("clean_files", 0)}
 
 """
         else:
@@ -250,8 +250,8 @@ actionable recommendations for maintaining high code quality standards.
 """
 
         coverage = analysis_data["coverage"]
-        report_content += f"""- **Coverage Files:** {coverage.get('coverage_files', 0)}
-- **Average Coverage:** {coverage.get('average_coverage', 0):.1f}%
+        report_content += f"""- **Coverage Files:** {coverage.get("coverage_files", 0)}
+- **Average Coverage:** {coverage.get("average_coverage", 0):.1f}%
 
 """
 
@@ -261,10 +261,10 @@ actionable recommendations for maintaining high code quality standards.
 
         churn = analysis_data["churn"]
         if "error" not in churn:
-            report_content += f"""- **Lines Added:** {churn.get('lines_added', 0):,}
-- **Lines Deleted:** {churn.get('lines_deleted', 0):,}
-- **Net Change:** {churn.get('net_change', 0):,}
-- **Files Changed:** {churn.get('files_changed', 0)}
+            report_content += f"""- **Lines Added:** {churn.get("lines_added", 0):,}
+- **Lines Deleted:** {churn.get("lines_deleted", 0):,}
+- **Net Change:** {churn.get("net_change", 0):,}
+- **Files Changed:** {churn.get("files_changed", 0)}
 
 """
         else:
@@ -275,9 +275,9 @@ actionable recommendations for maintaining high code quality standards.
 """
 
         debt = analysis_data["technical_debt"]
-        report_content += f"""- **Large Files (>1000 lines):** {len(debt.get('large_files', []))}
-- **Missing Tests:** {len(debt.get('missing_tests', []))}
-- **Complex Functions:** {len(debt.get('complex_functions', []))}
+        report_content += f"""- **Large Files (>1000 lines):** {len(debt.get("large_files", []))}
+- **Missing Tests:** {len(debt.get("missing_tests", []))}
+- **Complex Functions:** {len(debt.get("complex_functions", []))}
 
 """
 

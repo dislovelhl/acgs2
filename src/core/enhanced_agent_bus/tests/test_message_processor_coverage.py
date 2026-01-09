@@ -15,12 +15,7 @@ try:
         LRUCache,
         MessageProcessor,
     )
-    from enhanced_agent_bus.models import (
-        CONSTITUTIONAL_HASH,
-        AgentMessage,
-        MessageType,
-        Priority,
-    )
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     from message_processor import PROMPT_INJECTION_PATTERNS, LRUCache, MessageProcessor

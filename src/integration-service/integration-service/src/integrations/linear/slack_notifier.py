@@ -44,11 +44,7 @@ from tenacity import (
 )
 
 from ...config import SlackConfig, get_slack_config
-from .deduplication import (
-    SYNC_SOURCE_SLACK,
-    LinearDeduplicationManager,
-    get_dedup_manager,
-)
+from .deduplication import SYNC_SOURCE_SLACK, LinearDeduplicationManager, get_dedup_manager
 
 logger = logging.getLogger(__name__)
 

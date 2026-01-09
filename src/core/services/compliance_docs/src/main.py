@@ -17,10 +17,7 @@ core_path = Path(__file__).parent.parent.parent.parent
 if str(core_path) not in sys.path:
     sys.path.insert(0, str(core_path))
 
-from src.core.shared.security import (  # noqa: E402
-    SecurityHeadersConfig,
-    SecurityHeadersMiddleware,
-)
+from src.core.shared.security import SecurityHeadersConfig, SecurityHeadersMiddleware  # noqa: E402
 from src.core.shared.security.cors_config import get_cors_config  # noqa: E402
 
 # Configure logging

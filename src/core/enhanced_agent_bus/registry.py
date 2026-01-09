@@ -18,12 +18,7 @@ except ImportError:
     MetadataDict = Dict[str, Any]
 
 try:
-    from .interfaces import (
-        AgentRegistry,
-        MessageRouter,
-        ProcessingStrategy,
-        ValidationStrategy,
-    )
+    from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
     from .validators import ValidationResult
 except (ImportError, ValueError):
@@ -34,11 +29,7 @@ except (ImportError, ValueError):
             ProcessingStrategy,
             ValidationStrategy,
         )
-        from models import (  # type: ignore
-            CONSTITUTIONAL_HASH,
-            AgentMessage,
-            MessageStatus,
-        )
+        from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus  # type: ignore
         from validators import ValidationResult  # type: ignore
     except (ImportError, ValueError):
         # Fallback for dynamic loaders

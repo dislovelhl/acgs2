@@ -246,9 +246,9 @@ def print_profiling_report(profile: PipelineProfile):
 
     for i, component in enumerate(sorted_components[:10]):  # Top 10
         print(
-            f"  {i+1:2d}. {component.operation:<30} "
+            f"  {i + 1:2d}. {component.operation:<30} "
             f"{component.cumulative_time:>8.3f}s "
-            f"({component.cumulative_time/profile.total_time*100:>5.1f}%) "
+            f"({component.cumulative_time / profile.total_time * 100:>5.1f}%) "
             f"calls: {component.call_count:>6}"
         )
 
@@ -281,7 +281,7 @@ def print_profiling_report(profile: PipelineProfile):
             print(f"\n  {category}:")
             for component in components[:5]:  # Top 5 per category
                 print(
-                    f"    {component.operation:<25} {component.cumulative_time:>8.3f}s ({component.cumulative_time/profile.total_time*100:>5.1f}%)"
+                    f"    {component.operation:<25} {component.cumulative_time:>8.3f}s ({component.cumulative_time / profile.total_time * 100:>5.1f}%)"
                 )
     print("\n" + "=" * 80)
 
@@ -293,9 +293,9 @@ async def main():
         volumes = [100, 500, 1000]
 
         for num_messages in volumes:
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"PROFILING WITH {num_messages} MESSAGES")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
 
             profile = await profile_message_processing(num_messages)
             print_profiling_report(profile)

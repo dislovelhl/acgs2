@@ -6,11 +6,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-from code_analysis_service.config.settings import (
-    CONSTITUTIONAL_HASH,
-    Settings,
-    get_settings,
-)
+from code_analysis_service.config.settings import CONSTITUTIONAL_HASH, Settings, get_settings
 
 
 class TestSettings:

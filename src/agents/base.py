@@ -24,9 +24,7 @@ try:
     from src.core.services.core.constitutional_retrieval_system.document_processor import (
         DocumentProcessor,
     )
-    from src.core.services.core.constitutional_retrieval_system.llm_reasoner import (
-        LLMReasoner,
-    )
+    from src.core.services.core.constitutional_retrieval_system.llm_reasoner import LLMReasoner
     from src.core.services.core.constitutional_retrieval_system.retrieval_engine import (
         RetrievalEngine,
     )

@@ -70,10 +70,7 @@ except ImportError:
 
 # Tenant context - optional for validation
 try:
-    from src.core.shared.security.tenant_context import (
-        TenantValidationError,
-        validate_tenant_id,
-    )
+    from src.core.shared.security.tenant_context import TenantValidationError, validate_tenant_id
 
     TENANT_CONTEXT_AVAILABLE = True
 except ImportError:

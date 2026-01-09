@@ -368,10 +368,10 @@ class AutomatedComplianceReporter:
         # Executive Summary
         story.append(Paragraph("Executive Summary", styles["Heading2"]))
         summary_text = f"""
-        Assessment Period: {report['assessment_period']['start_date']} to {report['assessment_period']['end_date']}<br/>
-        Overall Compliance Score: {report['compliance_score']}%<br/>
-        Compliance Level: {report['compliance_level']}<br/>
-        Next Review Date: {report['next_review_date']}
+        Assessment Period: {report["assessment_period"]["start_date"]} to {report["assessment_period"]["end_date"]}<br/>
+        Overall Compliance Score: {report["compliance_score"]}%<br/>
+        Compliance Level: {report["compliance_level"]}<br/>
+        Next Review Date: {report["next_review_date"]}
         """
         story.append(Paragraph(summary_text, styles["Normal"]))
         story.append(Spacer(1, 12))
@@ -442,15 +442,15 @@ class AutomatedComplianceReporter:
         body = f"""
 ACGS-2 Compliance Report Distribution
 
-Framework: {report['framework_name']}
-Assessment Period: {report['assessment_period']['start_date']} to {report['assessment_period']['end_date']}
-Compliance Score: {report['compliance_score']}%
-Compliance Level: {report['compliance_level']}
+Framework: {report["framework_name"]}
+Assessment Period: {report["assessment_period"]["start_date"]} to {report["assessment_period"]["end_date"]}
+Compliance Score: {report["compliance_score"]}%
+Compliance Level: {report["compliance_level"]}
 
 Report Details:
-- Total Findings: {len(report['findings'])}
-- Critical Issues: {len([f for f in report['findings'] if f.get('severity') == 'critical'])}
-- Next Review Date: {report['next_review_date']}
+- Total Findings: {len(report["findings"])}
+- Critical Issues: {len([f for f in report["findings"] if f.get("severity") == "critical"])}
+- Next Review Date: {report["next_review_date"]}
 
 This report has been automatically generated and distributed in accordance with
 regulatory compliance requirements.

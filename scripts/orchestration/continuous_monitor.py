@@ -115,15 +115,15 @@ class AlertManager:
         body = f"""
 ACGS-2 Coordination Framework Alert
 
-Severity: {alert['severity'].upper()}
-Type: {alert['type']}
-Time: {alert['timestamp']}
+Severity: {alert["severity"].upper()}
+Type: {alert["type"]}
+Time: {alert["timestamp"]}
 
 Message:
-{alert['message']}
+{alert["message"]}
 
 Details:
-{json.dumps(alert['details'], indent=2)}
+{json.dumps(alert["details"], indent=2)}
 
 This is an automated alert from the ACGS-2 governance monitoring system.
 Please investigate immediately.

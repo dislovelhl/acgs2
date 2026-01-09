@@ -129,13 +129,9 @@ def _init_circuit_breaker() -> None:
     global CircuitBreakerConfig
     try:
         from src.core.shared.circuit_breaker import CircuitBreakerConfig as _cbc
-        from src.core.shared.circuit_breaker import (
-            circuit_breaker_health_check as _cbhc,
-        )
+        from src.core.shared.circuit_breaker import circuit_breaker_health_check as _cbhc
         from src.core.shared.circuit_breaker import get_circuit_breaker as _gcb
-        from src.core.shared.circuit_breaker import (
-            initialize_core_circuit_breakers as _icb,
-        )
+        from src.core.shared.circuit_breaker import initialize_core_circuit_breakers as _icb
 
         get_circuit_breaker = _gcb
         circuit_breaker_health_check = _cbhc

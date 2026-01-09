@@ -12,15 +12,10 @@ from unittest.mock import Mock
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from src.acgs2.core.schemas import (
-    AuditEntry,
-    TelemetryEvent,
-    TrainingEvent,
-    UserRequest,
-)
+from src.acgs2.core.schemas import AuditEntry, TelemetryEvent, TrainingEvent, UserRequest
 from src.acgs2.factory import create_default_system
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 class TestEnterpriseComponents:
@@ -169,7 +164,7 @@ class TestEnterpriseComponents:
 
         # Test session termination after max denials
         for i in range(4):  # 4 more to reach max_denials_per_session (5)
-            request = UserRequest(query=f"How to hack attempt {i+2}")
+            request = UserRequest(query=f"How to hack attempt {i + 2}")
             response = await uig.handle_request(request, session_id)
             assert response.status == "refused"
 

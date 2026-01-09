@@ -182,9 +182,9 @@ class AdvancedCoordinator:
         if total_hours < 8:
             return f"{total_hours} hours"
         elif total_hours < 24:
-            return f"{total_hours/8:.1f} days"
+            return f"{total_hours / 8:.1f} days"
         else:
-            return f"{total_hours/40:.1f} weeks"
+            return f"{total_hours / 40:.1f} weeks"
 
     async def execute_workflow(self, workflow_id: str) -> Dict[str, Any]:
         """Execute workflow with parallel processing and dependency management"""
@@ -375,7 +375,7 @@ class AdvancedCoordinator:
         # Add task IDs for dependencies
         task_id_map = {}
         for i, task in enumerate(auth_tasks):
-            task_id = f"auth-{task['task'].lower().replace(' ', '-').replace('-', '')[:20]}-{i+1}"
+            task_id = f"auth-{task['task'].lower().replace(' ', '-').replace('-', '')[:20]}-{i + 1}"
             task_id_map[task["task"]] = task_id
             task["id"] = task_id
 

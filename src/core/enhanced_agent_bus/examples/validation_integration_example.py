@@ -10,13 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-from ..models import (
-    CONSTITUTIONAL_HASH,
-    AgentMessage,
-    MessageType,
-    Priority,
-    ValidationStatus,
-)
+from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority, ValidationStatus
 
 # Dangerous pattern detection for security validation
 DANGEROUS_PATTERNS = [

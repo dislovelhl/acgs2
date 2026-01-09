@@ -17,11 +17,7 @@ from unittest.mock import Mock
 import pytest
 
 from enhanced_agent_bus.acl_adapters.base import ACLAdapter, AdapterConfig
-from enhanced_agent_bus.acl_adapters.registry import (
-    AdapterRegistry,
-    get_adapter,
-    get_registry,
-)
+from enhanced_agent_bus.acl_adapters.registry import AdapterRegistry, get_adapter, get_registry
 
 try:
     from src.core.shared.constants import CONSTITUTIONAL_HASH

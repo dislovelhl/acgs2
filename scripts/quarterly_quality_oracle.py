@@ -471,24 +471,24 @@ The Quality Oracle has consulted the codebase and divined the following insights
 ## 📊 Current State Analysis
 
 ### Complexity Metrics
-- **Total Files:** {analysis['complexity'].get('summary', {}).get('total_files', 'N/A')}
-- **Violation Files:** {analysis['complexity'].get('summary', {}).get('violation_files', 'N/A')}
-- **Clean Files:** {analysis['complexity'].get('summary', {}).get('clean_files', 'N/A')}
+- **Total Files:** {analysis["complexity"].get("summary", {}).get("total_files", "N/A")}
+- **Violation Files:** {analysis["complexity"].get("summary", {}).get("violation_files", "N/A")}
+- **Clean Files:** {analysis["complexity"].get("summary", {}).get("clean_files", "N/A")}
 
 ### Coverage Analysis
-- **Current Coverage:** {analysis['coverage'].get('current_coverage', 'N/A'):.1f}%
-- **Coverage Gap:** {analysis['coverage'].get('gap', 'N/A'):.1f}%
+- **Current Coverage:** {analysis["coverage"].get("current_coverage", "N/A"):.1f}%
+- **Coverage Gap:** {analysis["coverage"].get("gap", "N/A"):.1f}%
 
 ### Predictive Analytics
-- **Complexity Growth (6 months):** {analysis['predictions']['complexity_growth'].get('predicted_6_months', 'N/A')} violations
-- **Maintenance Cost Increase:** {analysis['predictions']['maintenance_cost_increase'].get('cost_increase_percent', 'N/A'):g}%
-- **Coverage Decline Risk:** {analysis['predictions']['coverage_decline_risk'].get('risk_level', 'N/A').title()}
+- **Complexity Growth (6 months):** {analysis["predictions"]["complexity_growth"].get("predicted_6_months", "N/A")} violations
+- **Maintenance Cost Increase:** {analysis["predictions"]["maintenance_cost_increase"].get("cost_increase_percent", "N/A"):g}%
+- **Coverage Decline Risk:** {analysis["predictions"]["coverage_decline_risk"].get("risk_level", "N/A").title()}
 
 ---
 
 ## 🎯 Divine Action Plans
 
-The Oracle has revealed {len(analysis['action_plans'])} action plans for quality ascension:
+The Oracle has revealed {len(analysis["action_plans"])} action plans for quality ascension:
 
 """
 
@@ -496,16 +496,16 @@ The Oracle has revealed {len(analysis['action_plans'])} action plans for quality
             priority_emoji = {"critical": "🔴", "high": "🟡", "medium": "🟢", "low": "🔵"}.get(
                 plan["priority"], "⚪"
             )
-            report += f"""### {i}. {priority_emoji} {plan['title']}
-**Priority:** {plan['priority'].title()} | **Timeline:** {plan['timeline'].replace('_', ' ').title()}
-**Effort:** {plan['estimated_effort_days']} days | **Weekly ROI:** {plan['expected_roi_hours_week']} hours
+            report += f"""### {i}. {priority_emoji} {plan["title"]}
+**Priority:** {plan["priority"].title()} | **Timeline:** {plan["timeline"].replace("_", " ").title()}
+**Effort:** {plan["estimated_effort_days"]} days | **Weekly ROI:** {plan["expected_roi_hours_week"]} hours
 
-{plan['description']}
+{plan["description"]}
 
 **Success Criteria:**
-{chr(10).join(f"- {criteria}" for criteria in plan['success_criteria'])}
+{chr(10).join(f"- {criteria}" for criteria in plan["success_criteria"])}
 
-**Recommended Assignee:** {plan['assignee_recommendation']}
+**Recommended Assignee:** {plan["assignee_recommendation"]}
 
 ---
 
@@ -516,27 +516,27 @@ The Oracle has revealed {len(analysis['action_plans'])} action plans for quality
         report += f"""## 🗓️ Implementation Strategy
 
 ### Phase 1: Immediate Actions (Next 2 days)
-{chr(10).join(f"- {plan}" for plan in strategy['phase_1_immediate'])}
+{chr(10).join(f"- {plan}" for plan in strategy["phase_1_immediate"])}
 
 ### Phase 2: Week 1 Actions
-{chr(10).join(f"- {plan}" for plan in strategy['phase_2_week_1'])}
+{chr(10).join(f"- {plan}" for plan in strategy["phase_2_week_1"])}
 
 ### Phase 3: Month 1 Actions
-{chr(10).join(f"- {plan}" for plan in strategy['phase_3_month_1'])}
+{chr(10).join(f"- {plan}" for plan in strategy["phase_3_month_1"])}
 
 ### Phase 4: Month 3 Actions
-{chr(10).join(f"- {plan}" for plan in strategy['phase_4_month_3'])}
+{chr(10).join(f"- {plan}" for plan in strategy["phase_4_month_3"])}
 
 ---
 
 ## 📈 ROI Analysis
 
-- **Total Implementation Effort:** {analysis['recommendations']['total_estimated_effort_days']} days
-- **Total Weekly ROI:** {analysis['recommendations']['total_expected_weekly_roi']} hours saved
-- **Payback Period:** {analysis['recommendations']['roi_payback_period_weeks']:.1f} weeks
+- **Total Implementation Effort:** {analysis["recommendations"]["total_estimated_effort_days"]} days
+- **Total Weekly ROI:** {analysis["recommendations"]["total_expected_weekly_roi"]} hours saved
+- **Payback Period:** {analysis["recommendations"]["roi_payback_period_weeks"]:.1f} weeks
 
 ### Success Metrics
-{chr(10).join(f"- {metric}" for metric in strategy['success_metrics'])}
+{chr(10).join(f"- {metric}" for metric in strategy["success_metrics"])}
 
 ---
 
@@ -547,12 +547,12 @@ The Oracle has revealed {len(analysis['action_plans'])} action plans for quality
 """
 
         for i, ticket in enumerate(jira_tickets, 1):
-            report += f"""### Ticket {i}: {ticket['summary']}
-**Priority:** {ticket['priority']}
-**Assignee:** {ticket.get('assignee', 'Unassigned')}
-**Due Date:** {ticket.get('duedate', 'TBD')}
+            report += f"""### Ticket {i}: {ticket["summary"]}
+**Priority:** {ticket["priority"]}
+**Assignee:** {ticket.get("assignee", "Unassigned")}
+**Due Date:** {ticket.get("duedate", "TBD")}
 
-{ticket['description']}
+{ticket["description"]}
 
 ---
 

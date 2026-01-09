@@ -19,10 +19,7 @@ except ImportError:
 
 # Try to import from observability module, fallback to local definitions
 try:
-    from src.core.enhanced_agent_bus.observability.telemetry import (
-        MetricsRegistry,
-        TracingContext,
-    )
+    from src.core.enhanced_agent_bus.observability.telemetry import MetricsRegistry, TracingContext
     from src.core.enhanced_agent_bus.observability.timeout_budget import (
         Layer,
         LayerTimeoutBudget,

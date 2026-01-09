@@ -28,11 +28,7 @@ from src.integrations.base import (
     IntegrationStatus,
     IntegrationType,
 )
-from src.integrations.splunk_adapter import (
-    SplunkAdapter,
-    SplunkCredentials,
-    SplunkDeploymentType,
-)
+from src.integrations.splunk_adapter import SplunkAdapter, SplunkCredentials, SplunkDeploymentType
 
 if TYPE_CHECKING:
     pass

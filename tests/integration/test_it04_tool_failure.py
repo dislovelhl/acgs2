@@ -7,15 +7,7 @@ Expected: TMS retries per policy, CRE degrades gracefully, no memory corruption.
 
 import pytest
 
-from .conftest import (
-    MockCRE,
-    MockDMS,
-    MockSAS,
-    MockTMS,
-    MockUIG,
-    ToolResult,
-    ToolStatus,
-)
+from .conftest import MockCRE, MockDMS, MockSAS, MockTMS, MockUIG, ToolResult, ToolStatus
 
 
 class TestIT04ToolFailureHandling:

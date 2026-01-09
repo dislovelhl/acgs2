@@ -138,15 +138,9 @@ class TestConstitutionalCompliance:
     @pytest.mark.constitutional
     async def test_constitutional_hash_in_audit_trail(self):
         """Verify constitutional hash is maintained in audit trail."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from enhanced_agent_bus.models import (
-            CONSTITUTIONAL_HASH,
-            AgentMessage,
-            MessageType,
-        )
+        from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 
         class TrackingLedger:
             def __init__(self):
@@ -189,9 +183,7 @@ class TestConstitutionalCompliance:
     async def test_all_decisions_include_timestamp(self):
         """Verify all decisions include proper timestamps."""
 
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 

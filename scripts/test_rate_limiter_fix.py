@@ -12,10 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src/core"))
 
 from unittest.mock import AsyncMock  # noqa: E402
 
-from src.core.shared.security.rate_limiter import (  # noqa: E402
-    RateLimitMiddleware,
-    RateLimitResult,
-)
+from src.core.shared.security.rate_limiter import RateLimitMiddleware, RateLimitResult  # noqa: E402
 
 
 async def test_send_error_fix():

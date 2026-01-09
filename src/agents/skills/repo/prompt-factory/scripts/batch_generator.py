@@ -128,15 +128,15 @@ def create_summary_report(summary: Dict[str, Any], output_dir: Path):
     """Create a summary report of batch generation."""
     report = f"""# Batch Generation Report
 
-**Generated:** {summary['generated_at']}
-**Output Directory:** {summary['output_dir']}
+**Generated:** {summary["generated_at"]}
+**Output Directory:** {summary["output_dir"]}
 
 ## Summary
 
-- **Total Prompts:** {summary['total']}
-- **Successful:** {summary['successful']} ✅
-- **Failed:** {summary['failed']} ❌
-- **Success Rate:** {(summary['successful'] / summary['total'] * 100):.1f}%
+- **Total Prompts:** {summary["total"]}
+- **Successful:** {summary["successful"]} ✅
+- **Failed:** {summary["failed"]} ❌
+- **Success Rate:** {(summary["successful"] / summary["total"] * 100):.1f}%
 
 ## Details
 

@@ -10,12 +10,7 @@ import pytest
 
 from enhanced_agent_bus.agent_bus import EnhancedAgentBus
 from enhanced_agent_bus.exceptions import AgentBusError, AlignmentViolationError
-from enhanced_agent_bus.models import (
-    CONSTITUTIONAL_HASH,
-    AgentMessage,
-    MessageType,
-    Priority,
-)
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
 
 
 class BusError(

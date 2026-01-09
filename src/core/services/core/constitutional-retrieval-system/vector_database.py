@@ -42,13 +42,7 @@ except ImportError:
     QDRANT_AVAILABLE = False
 
 try:
-    from pymilvus import (
-        Collection,
-        CollectionSchema,
-        DataType,
-        FieldSchema,
-        connections,
-    )
+    from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, connections
 
     MILVUS_AVAILABLE = True
 except ImportError:

@@ -25,10 +25,7 @@ except ImportError:
 
 try:
     import pybreaker
-    from src.core.shared.circuit_breaker import (
-        CircuitBreakerConfig,
-        get_circuit_breaker,
-    )
+    from src.core.shared.circuit_breaker import CircuitBreakerConfig, get_circuit_breaker
 
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:

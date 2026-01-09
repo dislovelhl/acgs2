@@ -380,10 +380,7 @@ class TestRegistryIntegration:
     @pytest.mark.skipif(not TENANT_CONFIG_AVAILABLE, reason="TenantQuotaRegistry not available")
     def test_in_memory_override_before_registry(self):
         """Test in-memory override takes precedence over registry."""
-        from src.core.shared.config.tenant_config import (
-            TenantQuotaConfig,
-            TenantQuotaRegistry,
-        )
+        from src.core.shared.config.tenant_config import TenantQuotaConfig, TenantQuotaRegistry
 
         mock_registry = MagicMock(spec=TenantQuotaRegistry)
         mock_quota = TenantQuotaConfig(

@@ -142,7 +142,7 @@ class OutputFormatter:
         if p0:
             lines.append("### 🔴 Critical (P0)")
             for i, rec in enumerate(p0[:max_items] if max_items else p0):
-                lines.append(f"{i+1}. **{rec.get('message', 'No message')}**")
+                lines.append(f"{i + 1}. **{rec.get('message', 'No message')}**")
                 lines.append(f"   - Action: {rec.get('action', 'No action specified')}")
                 if "file" in rec:
                     lines.append(f"   - File: `{rec['file']}`")
@@ -152,14 +152,14 @@ class OutputFormatter:
             remaining = max_items - len(p0) if max_items else None
             lines.append("### 🟡 Important (P1)")
             for i, rec in enumerate(p1[:remaining] if remaining else p1):
-                lines.append(f"{i+1}. {rec.get('message', 'No message')}")
+                lines.append(f"{i + 1}. {rec.get('message', 'No message')}")
                 lines.append(f"   - Action: {rec.get('action', 'No action specified')}")
                 lines.append("")
 
         if p2 and self.verbose:
             lines.append("### 🔵 Nice to Have (P2)")
             for i, rec in enumerate(p2):
-                lines.append(f"{i+1}. {rec.get('message', 'No message')}")
+                lines.append(f"{i + 1}. {rec.get('message', 'No message')}")
                 lines.append("")
 
         return "\n".join(lines)
@@ -173,14 +173,14 @@ class OutputFormatter:
         if p0:
             lines.append("\nCritical (P0):")
             for i, rec in enumerate(p0[:max_items] if max_items else p0):
-                lines.append(f"  {i+1}. {rec.get('message', 'No message')}")
+                lines.append(f"  {i + 1}. {rec.get('message', 'No message')}")
                 lines.append(f"     Action: {rec.get('action', 'No action')}")
 
         if p1 and (not max_items or len(p0) < max_items):
             remaining = max_items - len(p0) if max_items else None
             lines.append("\nImportant (P1):")
             for i, rec in enumerate(p1[:remaining] if remaining else p1):
-                lines.append(f"  {i+1}. {rec.get('message', 'No message')}")
+                lines.append(f"  {i + 1}. {rec.get('message', 'No message')}")
 
         return "\n".join(lines)
 

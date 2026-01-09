@@ -9,18 +9,14 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 try:
-    from src.core.services.policy_registry.app.services.crypto_service import (
-        CryptoService,
-    )
+    from src.core.services.policy_registry.app.services.crypto_service import CryptoService
 except ImportError:
     # Fallback if service not in path
     import os
     import sys
 
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    from src.core.services.policy_registry.app.services.crypto_service import (
-        CryptoService,
-    )
+    from src.core.services.policy_registry.app.services.crypto_service import CryptoService
 
 logger = logging.getLogger(__name__)
 

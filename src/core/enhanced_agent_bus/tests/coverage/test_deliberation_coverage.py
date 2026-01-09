@@ -352,9 +352,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_deliberation_queue_stop(self) -> None:
         """Test DeliberationQueue stop method."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
 
         queue = DeliberationQueue()
         await queue.stop()
@@ -364,9 +362,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_deliberation_queue_get_pending_tasks(self) -> None:
         """Test get_pending_tasks method."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -656,9 +652,7 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_get_item_details(self) -> None:
         """Test get_item_details method."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -684,9 +678,7 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_get_item_details_nonexistent(self) -> None:
         """Test get_item_details for non-existent item."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
 
         queue = DeliberationQueue()
         details = queue.get_item_details("nonexistent-id")
@@ -695,9 +687,7 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_get_queue_status(self) -> None:
         """Test get_queue_status method."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -724,9 +714,7 @@ class TestDeliberationQueueExtended:
         """Test voting_deadline property of DeliberationTask."""
         from datetime import timedelta
 
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue(default_timeout=600)
@@ -1073,9 +1061,7 @@ class TestIntegrationScenarios:
     async def test_deliberation_queue_persistence_roundtrip(self) -> None:
         """Test persistence save and load roundtrip."""
 
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:

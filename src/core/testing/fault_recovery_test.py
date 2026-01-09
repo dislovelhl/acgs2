@@ -395,11 +395,7 @@ class FaultRecoveryTester:
         """Verify data integrity during a transparent fallback from Rust to Python."""
         from datetime import datetime, timezone
 
-        from src.core.enhanced_agent_bus.models import (
-            AgentMessage,
-            MessageType,
-            Priority,
-        )
+        from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         results = {
             "test_type": "rust_fallback_integrity",

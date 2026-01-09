@@ -31,9 +31,7 @@ class TestDeliberationQueuePersistence:
     @pytest.mark.asyncio
     async def test_load_tasks_file_not_found(self) -> None:
         """Test _load_tasks when file doesn't exist."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
 
         with tempfile.TemporaryDirectory() as tmpdir:
             queue = DeliberationQueue(persistence_path=os.path.join(tmpdir, "nonexistent.json"))
@@ -43,9 +41,7 @@ class TestDeliberationQueuePersistence:
     @pytest.mark.asyncio
     async def test_load_tasks_invalid_json(self) -> None:
         """Test _load_tasks with invalid JSON."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
 
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "invalid.json")
@@ -59,9 +55,7 @@ class TestDeliberationQueuePersistence:
     @pytest.mark.asyncio
     async def test_load_tasks_valid_json(self) -> None:
         """Test _load_tasks with valid JSON."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
 
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "tasks.json")
@@ -90,9 +84,7 @@ class TestDeliberationQueuePersistence:
     @pytest.mark.asyncio
     async def test_save_tasks(self) -> None:
         """Test _save_tasks persists tasks to file."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -122,9 +114,7 @@ class TestDeliberationQueuePersistence:
     @pytest.mark.asyncio
     async def test_save_tasks_exception_handling(self) -> None:
         """Test _save_tasks handles write errors."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
 
         # Use a path that will fail (read-only directory)
         queue = DeliberationQueue(persistence_path="/nonexistent/dir/tasks.json")
@@ -139,9 +129,7 @@ class TestDeliberationQueueUpdateStatus:
     @pytest.mark.asyncio
     async def test_update_status_string_to_enum(self) -> None:
         """Test update_status converts string to enum."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -167,9 +155,7 @@ class TestDeliberationQueueUpdateStatus:
     @pytest.mark.asyncio
     async def test_update_status_invalid_string(self) -> None:
         """Test update_status with invalid string."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -211,9 +197,7 @@ class TestDeliberationQueueResolveTask:
     @pytest.mark.asyncio
     async def test_resolve_task_approved(self) -> None:
         """Test resolve_task with approved=True."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageStatus, MessageType
 
         queue = DeliberationQueue()
@@ -239,9 +223,7 @@ class TestDeliberationQueueResolveTask:
     @pytest.mark.asyncio
     async def test_resolve_task_rejected(self) -> None:
         """Test resolve_task with approved=False."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
         from enhanced_agent_bus.models import AgentMessage, MessageStatus, MessageType
 
         queue = DeliberationQueue()
@@ -267,9 +249,7 @@ class TestDeliberationQueueResolveTask:
     @pytest.mark.asyncio
     async def test_resolve_task_nonexistent(self) -> None:
         """Test resolve_task with nonexistent task."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
-            DeliberationQueue,
-        )
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
 
         queue = DeliberationQueue()
 

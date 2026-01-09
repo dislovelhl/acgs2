@@ -14,11 +14,7 @@ from sqlalchemy.orm import selectinload
 from src.core.shared.audit_client import AuditClient
 
 from ..models.approval_chain import ApprovalChain
-from ..models.approval_request import (
-    ApprovalAuditLog,
-    ApprovalDecision,
-    ApprovalRequest,
-)
+from ..models.approval_request import ApprovalAuditLog, ApprovalDecision, ApprovalRequest
 from .notification_orchestrator import NotificationOrchestrator
 
 logger = logging.getLogger(__name__)

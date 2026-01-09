@@ -19,11 +19,7 @@ from uuid import uuid4
 import httpx
 
 from ..exceptions.auth import AuthenticationError
-from ..exceptions.delivery import (
-    DeliveryConnectionError,
-    DeliveryError,
-    DeliveryTimeoutError,
-)
+from ..exceptions.delivery import DeliveryConnectionError, DeliveryError, DeliveryTimeoutError
 from .config import WebhookFrameworkConfig, WebhookRetryPolicy
 from .models import (
     WebhookAuthType,

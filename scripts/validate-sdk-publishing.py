@@ -25,9 +25,9 @@ class Colors:
 
 
 def print_header(text: str):
-    print(f"\n{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"\n{Colors.BOLD}{Colors.BLUE}{'=' * 60}{Colors.END}")
     print(f"{Colors.BOLD}{Colors.BLUE}{text.center(60)}{Colors.END}")
-    print(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BOLD}{Colors.BLUE}{'=' * 60}{Colors.END}")
 
 
 def print_success(text: str):

@@ -24,13 +24,13 @@ from src.monitoring.drift_detector import (
     DriftResult,
     DriftStatus,
 )
+from src.monitoring.metrics import MetricsRegistry  # noqa: F401
 from src.monitoring.metrics import (
     MetricLabel,
-    MetricsRegistry,
     MetricsSnapshot,
     create_metrics_registry,
     get_metrics_registry,
-)  # noqa: F401
+)
 
 
 class TestMetricsRegistryInit:

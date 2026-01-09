@@ -33,14 +33,8 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
-    from .constitutional_classifier import (
-        ComplianceResult,
-        get_constitutional_classifier,
-    )
-    from .runtime_safety_guardrails import (
-        RuntimeSafetyGuardrails,
-        RuntimeSafetyGuardrailsConfig,
-    )
+    from .constitutional_classifier import ComplianceResult, get_constitutional_classifier
+    from .runtime_safety_guardrails import RuntimeSafetyGuardrails, RuntimeSafetyGuardrailsConfig
     from .security.tenant_validator import TenantValidator
     from .security_helpers import detect_prompt_injection
     from .validators import validate_constitutional_hash
