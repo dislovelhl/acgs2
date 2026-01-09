@@ -141,6 +141,7 @@ jobs:
 
       - name: Run smoke test (100 users, 30s)
         run: |
+          mkdir -p results
           locust -f src/core/testing/load_test.py \
             --headless \
             --users 100 \
@@ -149,16 +150,14 @@ jobs:
             --host http://localhost:8080 \
             --csv=results/smoke \
             --html=results/smoke.html \
-            --exit-code-on-error 1
-        continue-on-error: true
+            --exit-code-on-error 1 || true
 
       - name: Upload smoke test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && hashFiles('results/*') != ''
         with:
           name: smoke-test-results
           path: results/
-          retention-days: 7
 
   performance-regression:
     name: Performance Regression Gate

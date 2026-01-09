@@ -68,7 +68,8 @@ jobs:
         run: |
           cd src/core
           source venv/bin/activate
-          python -m pytest tests/security/test_cors_config.py tests/security/test_rate_limiter.py tests/ceos/ -v --tb=short --durations=5
+          # Run security tests without coverage threshold (subset of tests)
+          python -m pytest tests/security/test_cors_config.py tests/security/test_rate_limiter.py tests/ceos/ -v --tb=short --durations=5 --cov-fail-under=0
 
       - name: Run Enhanced Agent Bus tests with coverage
         env:
