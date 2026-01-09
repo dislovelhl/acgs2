@@ -1,8 +1,0 @@
-{
-  "sourceType": "ideation",
-  "ideationType": "documentation_gaps",
-  "ideaId": "doc-002",
-  "rationale": "Claude-flow is the primary CLI interface for managing ACGS-2 agent swarms. Enterprise users relying on this tool need comprehensive API documentation for integration and automation. The command files and service layer are particularly critical as they define the user-facing interface.",
-  "category": "documentation",
-  "priority": "medium"
-}

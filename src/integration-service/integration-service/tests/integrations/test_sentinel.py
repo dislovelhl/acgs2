@@ -19,11 +19,11 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
-from pydantic import SecretStr
-
 from exceptions.auth import AuthenticationError
 from exceptions.delivery import DeliveryError
 from exceptions.integration import RateLimitError
+from pydantic import SecretStr
+
 from src.integrations.base import (
     EventSeverity,
     IntegrationEvent,

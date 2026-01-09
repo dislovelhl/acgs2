@@ -1,9 +1,0 @@
-{
-  "sourceType": "ideation",
-  "ideationType": "performance_optimizations",
-  "ideaId": "perf-001",
-  "rationale": "The dashboard is the primary user-facing interface. Without memoization, every state change triggers re-renders of all widgets and their expensive chart computations. The chartData map transformation runs on every render even when predictions data hasn't changed. This creates noticeable lag especially with large datasets.",
-  "category": "performance",
-  "performanceCategory": "rendering",
-  "impact": "high"
-}

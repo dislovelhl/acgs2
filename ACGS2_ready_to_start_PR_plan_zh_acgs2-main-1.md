@@ -103,7 +103,7 @@
 
 ### 改动范围（建议）
 - `.pre-commit-config.yaml`
-  - `check-secrets-acgs2` 的 `exclude` 正则：移除 `|\.auto-claude/`  
+  - `check-secrets-acgs2` 的 `exclude` 正则：移除 `|\.auto-claude/`
   - 或改为只排除本地 env 文件：例如 `|\.auto-claude/\.env$`（保留对 `.auto-claude/project_index.json` 等被显式 unignore 文件的覆盖）
 - （可选）`.secrets-allowlist.yaml`：如需降低误报，可增加“更精确的 placeholder 标记”，而不是粗暴排除目录。
 
@@ -183,4 +183,3 @@
 - **一个人立即做 PR-SEC-001**（同时完成密钥轮换与模板/导出脚本）。
 - **另一个人并行做 PR-TEST-001 + PR-SEC-002**（门禁与测试稳定性）。
 - PR-REPO-001 可放到后续迭代窗口处理，但建议在对外发布前完成。
-

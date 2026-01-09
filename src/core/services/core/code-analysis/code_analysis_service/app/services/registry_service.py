@@ -6,7 +6,6 @@ Integration with ACGS service registry with constitutional compliance.
 # Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import contextlib
-import logging
 import time
 from datetime import datetime, timezone
 from typing import Any

@@ -6,8 +6,8 @@ Verifies:
 3. Immutable Auditing (Merkle Anchoring)
 """
 
-import logging
 import asyncio
+import logging
 import sys
 from pathlib import Path
 

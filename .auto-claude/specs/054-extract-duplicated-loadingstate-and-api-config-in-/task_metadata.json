@@ -1,9 +1,0 @@
-{
-  "sourceType": "ideation",
-  "ideationType": "code_quality",
-  "ideaId": "cq-002",
-  "rationale": "Code duplication leads to bugs when fixes are applied inconsistently. If the API URL structure changes or a new loading state is needed, all files must be updated independently. This violates DRY (Don't Repeat Yourself) and increases the risk of drift between implementations.",
-  "category": "refactoring",
-  "codeQualitySeverity": "minor",
-  "priority": "medium"
-}

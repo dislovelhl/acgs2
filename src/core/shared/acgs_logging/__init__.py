@@ -158,7 +158,6 @@ def create_correlation_middleware() -> Callable:
     return correlation_middleware
 
 
-
 __all__ = [
     # Standard logger
     "get_logger",

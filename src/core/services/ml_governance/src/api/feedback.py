@@ -64,4 +64,6 @@ async def get_feedback_stats():
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get feedback stats: {str(e)}") from e
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get feedback stats: {str(e)}"
+        ) from e

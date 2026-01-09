@@ -13,10 +13,9 @@ Usage:
 Author: ACGS-2 Development Team
 """
 
-import logging
-
 import argparse
 import ast
+import logging
 import os
 import sys
 from typing import Dict, List, Tuple

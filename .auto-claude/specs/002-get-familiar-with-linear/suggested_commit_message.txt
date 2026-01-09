@@ -1,3 +1,0 @@
-feat(onboarding): familiarize with Linear project management platform
-
-Review Linear's educational resources and understand their workflow system. Complete platform onboarding to establish foundational knowledge for effective project management.

@@ -25,6 +25,7 @@ Create a new tenant.
 **Authentication:** Required (MACI role: EXECUTIVE or higher)
 
 **Request Body:**
+
 ```json
 {
   "tenant_name": "Acme Corporation",
@@ -39,6 +40,7 @@ Create a new tenant.
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "tenant_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -52,6 +54,7 @@ Create a new tenant.
 ```
 
 **Errors:**
+
 - `400 Bad Request` - Invalid tenant_slug format or duplicate name/slug
 - `401 Unauthorized` - Missing or invalid authentication
 - `403 Forbidden` - Insufficient MACI role permissions
@@ -66,11 +69,13 @@ List all tenants (admin only).
 **Authentication:** Required (MACI role: AUDITOR or JUDICIAL)
 
 **Query Parameters:**
+
 - `status` (optional): Filter by status (active, suspended, deactivated)
 - `limit` (optional, default 50): Max results per page
 - `offset` (optional, default 0): Pagination offset
 
 **Response (200 OK):**
+
 ```json
 {
   "tenants": [
@@ -97,6 +102,7 @@ Get tenant details.
 **Authentication:** Required (tenant admin or system admin)
 
 **Response (200 OK):**
+
 ```json
 {
   "tenant_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -128,6 +134,7 @@ Update tenant configuration.
 **Authentication:** Required (tenant admin)
 
 **Request Body:**
+
 ```json
 {
   "status": "suspended",
@@ -137,6 +144,7 @@ Update tenant configuration.
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "tenant_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -155,9 +163,11 @@ Deactivate a tenant (soft delete).
 **Authentication:** Required (system admin only)
 
 **Query Parameters:**
+
 - `immediate` (optional, default false): Skip grace period and delete immediately
 
 **Response (202 Accepted):**
+
 ```json
 {
   "tenant_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -179,6 +189,7 @@ Configure a new enterprise integration.
 **Authentication:** Required (tenant admin)
 
 **Request Body (LDAP example):**
+
 ```json
 {
   "integration_type": "ldap",
@@ -198,6 +209,7 @@ Configure a new enterprise integration.
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "integration_id": "789e4567-e89b-12d3-a456-426614174999",
@@ -212,6 +224,7 @@ Configure a new enterprise integration.
 ```
 
 **Errors:**
+
 - `400 Bad Request` - Invalid configuration for integration type
 - `409 Conflict` - Integration with same name already exists for tenant
 
@@ -224,10 +237,12 @@ List all enterprise integrations for a tenant.
 **Authentication:** Required (tenant user)
 
 **Query Parameters:**
+
 - `integration_type` (optional): Filter by type (ldap, saml, kafka, etc.)
 - `enabled` (optional): Filter by enabled status (true/false)
 
 **Response (200 OK):**
+
 ```json
 {
   "integrations": [
@@ -261,6 +276,7 @@ Get integration details.
 **Authentication:** Required (tenant admin)
 
 **Response (200 OK):**
+
 ```json
 {
   "integration_id": "789e4567-e89b-12d3-a456-426614174999",
@@ -294,6 +310,7 @@ Test integration connectivity.
 **Authentication:** Required (tenant admin)
 
 **Response (200 OK):**
+
 ```json
 {
   "integration_id": "789e4567-e89b-12d3-a456-426614174999",
@@ -310,6 +327,7 @@ Test integration connectivity.
 ```
 
 **Errors:**
+
 - `503 Service Unavailable` - Integration endpoint unreachable
 - `401 Unauthorized` - Integration credentials invalid
 
@@ -322,6 +340,7 @@ Update integration configuration.
 **Authentication:** Required (tenant admin)
 
 **Request Body:**
+
 ```json
 {
   "enabled": false,
@@ -332,6 +351,7 @@ Update integration configuration.
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "integration_id": "789e4567-e89b-12d3-a456-426614174999",
@@ -362,6 +382,7 @@ Create a role mapping rule.
 **Authentication:** Required (tenant admin)
 
 **Request Body:**
+
 ```json
 {
   "integration_id": "789e4567-e89b-12d3-a456-426614174999",
@@ -374,6 +395,7 @@ Create a role mapping rule.
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "mapping_id": "456e7890-e89b-12d3-a456-426614174111",
@@ -397,6 +419,7 @@ List all role mappings for a tenant.
 **Authentication:** Required (tenant user)
 
 **Response (200 OK):**
+
 ```json
 {
   "role_mappings": [
@@ -423,6 +446,7 @@ Create a migration job.
 **Authentication:** Required (tenant admin)
 
 **Request Body:**
+
 ```json
 {
   "job_type": "policy_conversion",
@@ -437,6 +461,7 @@ Create a migration job.
 ```
 
 **Response (202 Accepted):**
+
 ```json
 {
   "job_id": "999e4567-e89b-12d3-a456-426614174222",
@@ -458,6 +483,7 @@ Get migration job status.
 **Authentication:** Required (tenant user)
 
 **Response (200 OK):**
+
 ```json
 {
   "job_id": "999e4567-e89b-12d3-a456-426614174222",
@@ -484,6 +510,7 @@ Get migration job results.
 **Authentication:** Required (tenant user)
 
 **Response (200 OK):**
+
 ```json
 {
   "job_id": "999e4567-e89b-12d3-a456-426614174222",
@@ -518,6 +545,7 @@ Cancel a running migration job.
 **Authentication:** Required (tenant admin)
 
 **Response (200 OK):**
+
 ```json
 {
   "job_id": "999e4567-e89b-12d3-a456-426614174222",
@@ -539,6 +567,7 @@ Query tenant audit log.
 **Authentication:** Required (tenant admin or AUDITOR role)
 
 **Query Parameters:**
+
 - `start_time` (required): ISO 8601 timestamp for range start
 - `end_time` (required): ISO 8601 timestamp for range end
 - `event_category` (optional): Filter by category (authentication, governance, etc.)
@@ -548,6 +577,7 @@ Query tenant audit log.
 - `offset` (optional, default 0): Pagination offset
 
 **Response (200 OK):**
+
 ```json
 {
   "audit_events": [
@@ -580,18 +610,75 @@ Export audit log for compliance reporting.
 **Authentication:** Required (tenant admin)
 
 **Query Parameters:**
+
 - `start_time` (required): ISO 8601 timestamp
 - `end_time` (required): ISO 8601 timestamp
 - `format` (optional, default json): Export format (json, csv, pdf)
 - `event_category` (optional): Filter by category
 
 **Response (200 OK):**
+
 ```json
 {
   "export_id": "exp_123456",
   "status": "processing",
   "estimated_completion": "2026-01-07T16:45:00Z",
   "download_url": null,
+  "constitutional_hash": "cdd01ef066bc6cf2"
+}
+```
+
+### Legacy System Migration
+
+#### POST /tenants/{tenant_id}/migrations
+
+Start a new migration job from a legacy system.
+
+**Purpose:** Initiate the process of importing policies and logs from a supported legacy AI governance system.
+
+**Authentication:** Required (MACI role: EXECUTIVE or higher)
+
+**Request Body:**
+
+```json
+{
+  "source_system": "legacy-ai-gov-v1",
+  "source_config": {
+    "api_url": "https://legacy.internal.com",
+    "auth_token": "secret-token"
+  },
+  "migration_type": "full",
+  "shadow_mode_days": 14,
+  "constitutional_hash": "cdd01ef066bc6cf2"
+}
+```
+
+**Response (202 Accepted):**
+
+```json
+{
+  "job_id": "mig_abc123",
+  "status": "pending",
+  "created_at": "2026-01-07T14:20:00Z",
+  "estimated_completion": "2026-01-07T15:00:00Z"
+}
+```
+
+#### GET /tenants/{tenant_id}/migrations/{job_id}
+
+Get migration job status and results.
+
+**Response (200 OK):**
+
+```json
+{
+  "job_id": "mig_abc123",
+  "status": "completed",
+  "progress_percentage": 100,
+  "policies_converted": 45,
+  "logs_imported": 1250,
+  "errors": [],
+  "completed_at": "2026-01-07T14:45:00Z",
   "constitutional_hash": "cdd01ef066bc6cf2"
 }
 ```
@@ -605,6 +692,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
 JWT claims must include:
+
 - `tenant_id`: Tenant identifier for RLS enforcement
 - `maci_role`: MACI role for permission checking
 - `sub`: User or agent identifier
@@ -648,7 +736,11 @@ Tenants can configure webhooks for integration events:
 ```json
 {
   "webhook_url": "https://acme.com/acgs2-events",
-  "events": ["policy.updated", "migration.completed", "integration.health_changed"],
+  "events": [
+    "policy.updated",
+    "migration.completed",
+    "integration.health_changed"
+  ],
   "secret": "webhook_secret_for_signature_verification"
 }
 ```

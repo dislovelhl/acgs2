@@ -204,26 +204,31 @@ This is the tests coverage details for the spec detailed in @.agent-os/specs/202
 ### External Service Mocks
 
 - **LDAP Server Mock**
+
   - Library: `ldap3` with `MockSyncStrategy`
   - Mock responses: successful bind, user search, group search
   - Mock failures: connection timeout, invalid credentials, server unavailable
 
 - **SAML IdP Mock**
+
   - Library: `requests_mock` for HTTP interactions
   - Mock responses: valid SAML response with signature, expired assertion
   - Mock failures: invalid signature, missing required attributes
 
 - **OAuth Provider Mock**
+
   - Library: `responses` for HTTP mocking
   - Mock endpoints: authorization, token exchange, JWKS, userinfo
   - Mock failures: invalid grant, expired token, revoked token
 
 - **Kafka Broker Mock**
+
   - Library: `aiokafka` with in-memory broker
   - Mock topics: governance-events, audit-trail
   - Mock failures: broker unavailable, topic not found
 
 - **SIEM (Splunk) Mock**
+
   - Library: `requests_mock`
   - Mock endpoints: /services/collector for log ingestion
   - Mock responses: success, quota exceeded, authentication failure
@@ -327,9 +332,43 @@ Total: 138 tests minimum
 Coverage target: 95%+
 ```
 
+## Performance Benchmarks
+
+To ensure the enterprise integration doesn't degrade system performance, the following benchmarks must be met:
+
+- **Auth Latency (LDAP):** < 500ms (95th percentile, cached)
+- **Auth Latency (SAML/OIDC):** < 200ms (ACGS-2 processing time, excluding external redirect)
+- **Tenant Context Switch:** < 50ms (database session variable setup + RLS overhead)
+- **Audit Export (10k events):** < 5 seconds (JSON format generation)
+- **Policy Migration (100 policies):** < 30 seconds (conversion + validation)
+
+## Mocked Integration Testing
+
+For CI/CD and local development, the following mocks must be used:
+
+### 1. Mock LDAP Server
+
+Use `osixia/openldap` Docker image with pre-configured users and groups matching the MACI roles.
+
+- `cn=admin,dc=acgs2,dc=local` (EXECUTIVE)
+- `cn=auditor,dc=acgs2,dc=local` (AUDITOR)
+- `cn=user,dc=acgs2,dc=local` (No role, tests default mapping)
+
+### 2. Mock SAML IdP
+
+Use a local instance of `saml-idp` or similar tool to simulate Okta/Azure AD SAML responses.
+
+- EntityID: `https://mock-idp.acgs2.local/metadata`
+- Test assertions must include signed and encrypted variants.
+
+### 3. Migration Test Suite
+
+A set of sample "legacy system" exports in JSON and YAML must be maintained in `tests/data/legacy_samples/` to verify the `PolicyConverter` accuracy.
+
 ## CI/CD Integration
 
 All tests run in GitHub Actions on:
+
 - Every pull request
 - Every commit to main branch
 - Nightly full test suite with all integration tests

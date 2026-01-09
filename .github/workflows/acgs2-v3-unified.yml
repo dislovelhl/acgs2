@@ -193,7 +193,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Optimized Image
         run: |
-          docker build -t acgs2-bus:v3 -f src/core/Dockerfile.optimized src/core/
+          docker build -t acgs2-bus:v3 -f src/core/deploy/Dockerfile.optimized src/core/
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin

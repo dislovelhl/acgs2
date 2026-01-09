@@ -73,7 +73,6 @@ PII_PATTERNS = [
 ]
 
 
-
 class GuardrailComponent(ABC):
     """Abstract base class for guardrail components."""
 

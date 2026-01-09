@@ -1,8 +1,0 @@
-{
-  "sourceType": "ideation",
-  "ideationType": "documentation_gaps",
-  "ideaId": "doc-005",
-  "rationale": "The adaptive learning engine is a core differentiator for ACGS-2, enabling 'ML-based adaptive governance' as stated in the README. Contributors and auditors need to understand the safety bounds checking, drift detection thresholds, and online learning approaches to verify correctness and contribute improvements. Current docstrings focus on API usage rather than algorithmic explanation.",
-  "category": "documentation",
-  "priority": "medium"
-}

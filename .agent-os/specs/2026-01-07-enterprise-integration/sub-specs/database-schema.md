@@ -6,6 +6,43 @@ This is the database schema implementation for the spec detailed in @.agent-os/s
 > Version: 1.0.0
 > Constitutional Hash: cdd01ef066bc6cf2
 
+## Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    TENANTS ||--o{ ENTERPRISE_INTEGRATIONS : owns
+    TENANTS ||--o{ TENANT_ROLE_MAPPINGS : defines
+    TENANTS ||--o{ MIGRATION_JOBS : executes
+    TENANTS ||--o{ TENANT_AUDIT_LOG : generates
+    TENANTS ||--o{ POLICIES : isolates
+    TENANTS ||--o{ AGENT_MESSAGES : isolates
+    TENANTS ||--o{ DELIBERATION_TASKS : isolates
+
+    TENANTS {
+        uuid tenant_id PK
+        string tenant_name
+        string tenant_slug
+        string status
+        int max_rpm
+        string admin_email
+    }
+
+    ENTERPRISE_INTEGRATIONS {
+        uuid integration_id PK
+        uuid tenant_id FK
+        string provider_type
+        jsonb config
+    }
+
+    MIGRATION_JOBS {
+        uuid job_id PK
+        uuid tenant_id FK
+        string status
+        int progress
+        jsonb results
+    }
+```
+
 ## Schema Changes Overview
 
 This spec introduces multi-tenant support and enterprise integration configuration storage. All new tables include `tenant_id` for isolation, and Row-Level Security (RLS) policies ensure cross-tenant data protection.
