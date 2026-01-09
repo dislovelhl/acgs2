@@ -82,10 +82,11 @@ def online_learner() -> OnlineLearner:
 
 
 @pytest.fixture
-def model_manager(online_learner: OnlineLearner) -> ModelManager:
+def model_manager() -> ModelManager:
     """Fresh ModelManager for testing."""
     return ModelManager(
-        initial_model=online_learner,
+        min_training_samples=5,  # Low for quick testing
+        learning_rate=0.1,
     )
 
 

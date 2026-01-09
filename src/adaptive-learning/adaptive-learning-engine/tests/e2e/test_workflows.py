@@ -64,10 +64,11 @@ def e2e_online_learner() -> OnlineLearner:
 
 
 @pytest.fixture(scope="function")
-def e2e_model_manager(e2e_online_learner: OnlineLearner) -> ModelManager:
+def e2e_model_manager() -> ModelManager:
     """Create ModelManager for E2E testing."""
     return ModelManager(
-        initial_model=e2e_online_learner,
+        min_training_samples=10,  # Low threshold for quick E2E tests
+        learning_rate=0.1,
     )
 
 
