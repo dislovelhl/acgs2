@@ -62,8 +62,8 @@ known-first-party = ["src", "shared", "services", "enhanced_agent_bus", "routes"
 "**/alembic/*.py" = ["I001", "F401", "E402"]
 # Allow print statements in verification/debugging scripts and CLI tools
 "**/verify_*.py" = ["T20"]
-"**/tests/*" = ["T20", "E402"]
-"scripts/*.py" = ["T20", "E402"]
+"**/tests/**" = ["T20", "E402"]
+"**/scripts/**" = ["T20", "E402"]
 "**/seed_*.py" = ["T20"]
 "src/core/testing/*.py" = ["E402"]
 "src/core/tools/*.py" = ["E402"]
