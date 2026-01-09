@@ -20,8 +20,9 @@ tracing = "0.1"
 thiserror = "1.0"
 
 [dependencies.ort]
-version = "1.20.0"
-features = ["cuda"]  # or "tensorrt" if using GPU
+version = "2.0.0-rc.10"
+optional = true
+# Note: cuda feature removed for CI compatibility - enable locally for GPU acceleration
 
 [dependencies.tokenizers]
 version = "0.19"
