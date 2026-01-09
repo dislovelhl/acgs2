@@ -19,13 +19,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
+        run: |
+          trivy fs --format sarif --output trivy-results.sarif .
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3

@@ -175,9 +175,11 @@ jobs:
           file: ./src/core/coverage.xml
 
       - name: Rust setup ${{ matrix.rust }}
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          source "$HOME/.cargo/env"
+          rustup component add clippy
 
       - name: Cargo test
         working-directory: ./src/core/enhanced_agent_bus/rust

@@ -25,7 +25,9 @@ jobs:
           pip-audit -r src/core/config/requirements_optimized.txt
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Cargo Audit
         run: |
@@ -73,7 +75,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Cargo Test
         run: |
           cd src/core/enhanced_agent_bus/rust && cargo test
@@ -105,13 +109,12 @@ jobs:
       - name: Build Optimized Image
         run: |
           docker build -t acgs2-bus:v3 -f src/core/Dockerfile.optimized src/core/
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
       - name: Trivy Scan
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          image-ref: acgs2-bus:v3
-          exit-code: "1"
-          severity: "HIGH,CRITICAL"
-          ignore-unfixed: true
+        run: |
+          trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed acgs2-bus:v3
 
   kyverno-test:
     name: Kyverno Policy Test

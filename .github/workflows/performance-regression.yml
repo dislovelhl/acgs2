@@ -56,10 +56,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.80.0
-          components: clippy
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.80.0
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          source "$HOME/.cargo/env"
+          rustup component add clippy
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -112,9 +113,9 @@ jobs:
           pip install -r src/core/config/requirements_optimized.txt
 
       - name: Set up Rust and build extensions
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.80.0
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.80.0
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install maturin and build
         run: |
@@ -187,9 +188,9 @@ jobs:
           pip install -r src/core/config/requirements_optimized.txt
 
       - name: Set up Rust and build extensions
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.80.0
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.80.0
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install maturin and build
         run: |
