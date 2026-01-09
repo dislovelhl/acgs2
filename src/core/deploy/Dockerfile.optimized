@@ -1,35 +1,22 @@
-# Build stage
-FROM nvidia/cuda:12.2.0-cudnn8-runtime-ubuntu22.04 as builder
+# Build stage - using Python slim for CI compatibility
+# For GPU deployments, replace with nvidia/cuda:12.4.0-cudnn-runtime-ubuntu22.04
+FROM python:3.11-slim-bookworm AS builder
 
 WORKDIR /app
 
-# Install Python 3.11 and build dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 \
-    python3.11-dev \
-    python3-pip \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
-
-# Set up Python symlinks
-RUN ln -sf /usr/bin/python3.11 /usr/bin/python3 && ln -sf /usr/bin/python3.11 /usr/bin/python
 
 COPY config/requirements_optimized.txt ./requirements.txt
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 # Final stage
-FROM nvidia/cuda:12.2.0-cudnn8-runtime-ubuntu22.04
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
-
-# Install Python 3.11 runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN ln -sf /usr/bin/python3.11 /usr/bin/python3 && ln -sf /usr/bin/python3.11 /usr/bin/python
 
 # Copy installed packages from builder
 COPY --from=builder /root/.local /root/.local
@@ -39,11 +26,9 @@ ENV PATH=/root/.local/bin:$PATH
 COPY enhanced_agent_bus/ ./enhanced_agent_bus/
 COPY pyproject.toml .
 
-# Environment variables for optimization and GPU
+# Environment variables for optimization
 ENV ONNX_RUNTIME=1
 ENV TRANSFORMERS_OFFLINE=1
-ENV CUDA_VISIBLE_DEVICES=0
-ENV ORT_CUDA_UNAVAILABLE=0
 
 EXPOSE 8000
 
