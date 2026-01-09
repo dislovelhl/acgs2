@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 pyo3 = { version = "0.23.0", features = ["extension-module", "abi3-py38", "serde"] }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = "1.0"
-zkp = "0.5"
+zkp = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 dashmap = "6.0"
 atomic_float = "0.1"
