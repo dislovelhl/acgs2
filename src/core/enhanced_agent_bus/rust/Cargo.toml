@@ -34,7 +34,7 @@ optional = true
 # Note: cuda feature removed for CI compatibility - enable locally for GPU acceleration
 
 [dependencies.tokenizers]
-version = "0.19"
+version = "0.22"
 features = ["onig", "http", "hf-hub"]
 
 [dev-dependencies]
