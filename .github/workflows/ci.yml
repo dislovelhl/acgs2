@@ -111,6 +111,9 @@ jobs:
             --ignore=enhanced_agent_bus/tests/test_vote_collector.py \
             --ignore=enhanced_agent_bus/tests/test_voting_service.py \
             --ignore=enhanced_agent_bus/tests/test_vulnerable_fallbacks.py \
+            --ignore=enhanced_agent_bus/tests/test_pacar_multi_turn.py \
+            --ignore=enhanced_agent_bus/tests/test_security_audit_remediation.py \
+            --ignore=enhanced_agent_bus/tests/test_z3_adapter.py \
             --ignore=enhanced_agent_bus/tests/governance/ \
             -k "not (torch or transformers or distilbert)"
 

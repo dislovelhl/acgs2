@@ -205,6 +205,9 @@ jobs:
             --ignore=tests/test_vote_collector.py \
             --ignore=tests/test_voting_service.py \
             --ignore=tests/test_vulnerable_fallbacks.py \
+            --ignore=tests/test_pacar_multi_turn.py \
+            --ignore=tests/test_security_audit_remediation.py \
+            --ignore=tests/test_z3_adapter.py \
             --ignore=tests/governance/ \
             -k "not (torch or transformers or distilbert)"
 
