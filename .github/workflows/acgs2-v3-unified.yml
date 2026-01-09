@@ -49,7 +49,7 @@ jobs:
         run: |
           pip install -e .[test]
           pip install -r src/core/config/requirements_optimized.txt
-          pip install pytest-cov
+          pip install pytest-cov pytest-asyncio
       - name: Run All Tests with Coverage
         env:
           PYTHONPATH: ${{ github.workspace }}/src/core:${{ github.workspace }}
