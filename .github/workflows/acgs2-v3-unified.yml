@@ -135,7 +135,7 @@ jobs:
             --ignore=tests/test_tenant_isolation.py \
             -k "not (torch or transformers or distilbert)"
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: ./src/core/enhanced_agent_bus/coverage.xml
           flags: unittests

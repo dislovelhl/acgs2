@@ -155,7 +155,7 @@ jobs:
           python testing/comprehensive_profiler.py --iterations 50 --baseline | grep -E "(P99|P95|Throughput)" | tail -3
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./src/core/coverage.xml
           flags: src/core,claude-flow,neural-mcp
