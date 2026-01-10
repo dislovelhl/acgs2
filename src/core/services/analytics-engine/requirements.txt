@@ -1,0 +1,30 @@
+# ACGS-2 Analytics Engine Dependencies
+# Updated: 2025-01-02
+# Constitutional Hash: cdd01ef066bc6cf2
+
+# Machine Learning & Data Science
+scikit-learn>=1.6.0
+prophet>=1.1.6
+pandas>=2.2.3
+numpy>=1.26.4
+
+# AI/LLM Integration
+openai>=1.58.1
+
+# PDF Export
+reportlab>=4.2.5
+
+# Database/Cache
+redis>=7.1.0
+
+# Messaging (Kafka consumption)
+aiokafka>=0.12.0
+
+# Data Validation
+pydantic>=2.12.0
+
+# Security (Multiple CVEs fixed in 46.x)
+cryptography>=46.0.3
+
+# Utilities
+python-dateutil>=2.9.0

@@ -1,0 +1,37 @@
+# ACGS-2 Audit Service Dependencies
+# Updated: 2025-01-02
+# Constitutional Hash: cdd01ef066bc6cf2
+
+# Web Framework (CVE-2024-24762 fixed)
+fastapi>=0.127.0
+uvicorn[standard]>=0.40.0
+
+# Data Validation
+pydantic>=2.12.0
+
+# Database/Cache
+redis>=7.1.0
+
+# Security (Multiple CVEs fixed in 46.x)
+cryptography>=46.0.3
+
+# Messaging
+aiokafka>=0.12.0
+
+# Form handling (security fix)
+python-multipart>=0.0.20
+
+# Authentication
+PyJWT>=2.10.0
+
+# PDF Generation (requires Pango system libraries)
+weasyprint>=62.0
+
+# Templating for report generation
+Jinja2>=3.1.0
+
+# Task scheduling
+celery>=5.4.0
+
+# CSV export (stdlib, listed for documentation)
+# csv - built-in module, no pip install required
