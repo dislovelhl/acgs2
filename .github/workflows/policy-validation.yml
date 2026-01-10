@@ -264,7 +264,7 @@ jobs:
           ls -la /tmp/policy-bundle/
 
       - name: Upload Bundle Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: policy-bundle
           path: /tmp/policy-bundle/
