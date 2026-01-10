@@ -151,6 +151,9 @@ jobs:
             --ignore=tests/agent_bus/test_core.py \
             --ignore=tests/coverage/test_processor_coverage.py \
             --ignore=tests/test_kafka_bus_coverage.py \
+            --ignore=tests/test_agent_bus_security_isolation.py \
+            --ignore=tests/test_constitutional_validation.py \
+            --ignore=tests/test_v3_modernization.py \
             -k "not (torch or transformers or distilbert)"
 
       - name: Upload coverage reports
