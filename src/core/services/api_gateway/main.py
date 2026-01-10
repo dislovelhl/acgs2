@@ -15,8 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
 from pydantic import BaseModel, Field
 from routes import admin_sso_router, sso_router
+from src.core.shared.acgs_logging_config import configure_logging, get_logger
 from src.core.shared.config import settings
-from src.core.shared.logging_config import configure_logging, get_logger
 from src.core.shared.metrics import track_request_metrics
 from src.core.shared.otel_config import init_otel
 from src.core.shared.security.auth import UserClaims, get_current_user_optional

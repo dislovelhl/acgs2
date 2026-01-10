@@ -19,6 +19,7 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 from routes.sso import get_saml_handler
+from src.core.shared.acgs_logging_config import configure_logging, get_logger
 from src.core.shared.auth.saml_config import (
     SAMLConfigurationError,
     SAMLIdPConfig,
