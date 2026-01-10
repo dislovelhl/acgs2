@@ -317,11 +317,11 @@ jobs:
       - name: Create deployment artifact
         run: |
           cd src/core
-          tar -czf src/core-${{ github.sha }}.tar.gz .
-          echo "artifact_name=src/core-${{ github.sha }}.tar.gz" >> $GITHUB_ENV
+          tar -czf core-${{ github.sha }}.tar.gz .
+          echo "artifact_name=core-${{ github.sha }}.tar.gz" >> $GITHUB_ENV
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
         with:
           name: src/core-deployment
-          path: src/core/src/core-${{ github.sha }}.tar.gz
+          path: src/core/core-${{ github.sha }}.tar.gz
