@@ -279,14 +279,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push multi-arch images
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: ./src/core
           file: ./src/core/deploy/Dockerfile.optimized
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ env.REGISTRY }}:${{ github.sha }},${{ env.REGISTRY }}:latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.REGISTRY }}/core:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
