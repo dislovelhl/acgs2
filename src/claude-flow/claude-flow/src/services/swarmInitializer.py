@@ -209,9 +209,9 @@ async def initialize_swarm(
 
             except ImportError:
                 log_warning(logger, "GitHub client not available, using mock integration")
-                swarm_config[
-                    "github_webhook_url"
-                ] = f"https://api.acgs2.dev/webhooks/github/{swarm_id}"
+                swarm_config["github_webhook_url"] = (
+                    f"https://api.acgs2.dev/webhooks/github/{swarm_id}"
+                )
                 swarm_config["github_integration_active"] = False
                 swarm_config["github_mock_mode"] = True
 

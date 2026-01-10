@@ -90,6 +90,14 @@ class SafetyBoundsChecker:
             },
         )
 
+    def pause_learning(self) -> None:
+        """Public method to pause learning (wrapper for _pause_learning)."""
+        self._pause_learning()
+
+    def resume_learning(self) -> None:
+        """Public method to resume learning (wrapper for _resume_learning)."""
+        self._resume_learning()
+
     def check_model(
         self,
         model: Any,

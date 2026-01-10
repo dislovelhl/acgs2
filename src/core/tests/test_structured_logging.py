@@ -5,15 +5,13 @@ import json
 import sys
 import unittest
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from src.core.shared.acgs_logging import (
     clear_correlation_id,
-    create_correlation_middleware,
     get_logger,
     init_service_logging,
     set_correlation_id,
 )
-from src.core.shared.otel_config import init_otel
 
 
 class TestStructuredLogging(unittest.TestCase):

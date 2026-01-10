@@ -7,8 +7,8 @@ import logging
 from typing import Any, Dict, Optional
 
 import redis.asyncio as redis
+from src.core.enhanced_agent_bus.config import BusConfiguration
 
-from ..config import BusConfiguration
 from .conversation import ConversationMessage, ConversationState, MessageRole
 
 logger = logging.getLogger(__name__)

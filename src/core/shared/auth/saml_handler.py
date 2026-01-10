@@ -42,18 +42,26 @@ Usage:
     user_info = await handler.process_acs_response(saml_response, request_id)
 """
 
+# Standard library
 import logging
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
-
-if TYPE_CHECKING:
-    from saml2.client import Saml2Client
-    from src.core.shared.models.sso_provider import SSOProvider
-
 from urllib.parse import urlencode
 
+# Third-party
+try:
+    import httpx
+    HAS_HTTPX = True
+except ImportError:
+    HAS_HTTPX = False
+    httpx = None  # type: ignore[assignment]
+
+if TYPE_CHECKING:
+    from src.core.shared.models.sso_provider import SSOProvider
+
+# Local package imports
 from .saml_config import (
     CONSTITUTIONAL_HASH,
     SAMLConfig,
@@ -64,7 +72,6 @@ from .saml_config import (
 from .saml_request_tracker import SAMLRequestTracker
 from .saml_types import (
     NAMEID_FORMAT_EMAILADDRESS,
-    SAMLAuthenticationError,  # noqa: F401 - re-exported for API Gateway routes
     SAMLError,
     SAMLProviderError,
     SAMLReplayError,
@@ -72,7 +79,7 @@ from .saml_types import (
     SAMLValidationError,
 )
 
-# Optional PySAML2 imports
+# Optional PySAML2 imports (wrap in try/except)
 try:
     from saml2 import BINDING_HTTP_POST, BINDING_HTTP_REDIRECT
     from saml2.client import Saml2Client
@@ -91,14 +98,6 @@ except ImportError:
     AuthnResponse = None  # type: ignore[misc, assignment]
     UnknownPrincipal = Exception  # type: ignore[misc, assignment]
     UnsupportedBinding = Exception  # type: ignore[misc, assignment]
-
-try:
-    import httpx
-
-    HAS_HTTPX = True
-except ImportError:
-    HAS_HTTPX = False
-    httpx = None  # type: ignore[assignment]
 
 # Production-ready timeouts
 DEFAULT_TIMEOUT = 10.0

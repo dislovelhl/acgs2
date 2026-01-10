@@ -343,9 +343,9 @@ class WebhookDeliveryEngine:
 
         elif webhook_config.auth_type == WebhookAuthType.BEARER:
             if webhook_config.auth_value:
-                headers[
-                    webhook_config.auth_header
-                ] = f"Bearer {webhook_config.auth_value.get_secret_value()}"
+                headers[webhook_config.auth_header] = (
+                    f"Bearer {webhook_config.auth_value.get_secret_value()}"
+                )
 
         elif webhook_config.auth_type == WebhookAuthType.BASIC:
             if webhook_config.auth_value:

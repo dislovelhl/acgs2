@@ -401,9 +401,7 @@ class MetricsCalculator:
 
         # Identify flaky tests (if failure history available)
         flaky_tests = [
-            test
-            for test in tests
-            if test.get("failure_rate", 0) > 0.1  # Failed >10% of time
+            test for test in tests if test.get("failure_rate", 0) > 0.1  # Failed >10% of time
         ]
 
         return {

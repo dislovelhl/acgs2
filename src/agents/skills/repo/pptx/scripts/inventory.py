@@ -432,9 +432,9 @@ class ShapeData:
         self.frame_overflow_bottom: Optional[float] = None
         self.slide_overflow_right: Optional[float] = None
         self.slide_overflow_bottom: Optional[float] = None
-        self.overlapping_shapes: Dict[
-            str, float
-        ] = {}  # Dict of shape_id -> overlap area in sq inches
+        self.overlapping_shapes: Dict[str, float] = (
+            {}
+        )  # Dict of shape_id -> overlap area in sq inches
         self.warnings: List[str] = []
         self._estimate_frame_overflow()
         self._calculate_slide_overflow()

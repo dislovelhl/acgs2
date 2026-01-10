@@ -19,7 +19,7 @@ except ImportError:
     JSONValue = Any
 
 
-from ..config import BusConfiguration
+from src.core.enhanced_agent_bus.config import BusConfiguration
 
 
 class IntentType(Enum):
