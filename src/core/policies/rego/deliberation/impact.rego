@@ -168,8 +168,8 @@ temporal_risk if {
     # Check if action is performed outside business hours (example: 00:00 - 06:00 UTC)
     # Rego time functions can parse RFC3339
     now_ns := time.now_ns()
-    hour := time.date(now_ns)[3] # [Y, M, D, h, m, s, ns, tz]
-    hour < 6 # High risk late night operations
+    clock := time.clock(now_ns) # Returns [hour, minute, second]
+    clock[0] < 6 # High risk late night operations (hour < 6)
 }
 
 temporal_risk if {
