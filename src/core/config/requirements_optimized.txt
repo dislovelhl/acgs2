@@ -38,5 +38,5 @@ websockets==13.1
 
 # Monitoring and Observability
 prometheus-client==0.21.0
-opentelemetry-distro==0.50b0
+opentelemetry-distro==0.60b1
 opentelemetry-instrumentation-fastapi==0.50b0
