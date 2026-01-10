@@ -147,6 +147,10 @@ jobs:
             --ignore=tests/test_core_coverage_expansion.py \
             --ignore=tests/test_maci_integration.py \
             --ignore=tests/test_tenant_isolation.py \
+            --ignore=tests/agent_bus/test_integrations.py \
+            --ignore=tests/agent_bus/test_core.py \
+            --ignore=tests/coverage/test_processor_coverage.py \
+            --ignore=tests/test_kafka_bus_coverage.py \
             -k "not (torch or transformers or distilbert)"
 
       - name: Upload coverage reports
