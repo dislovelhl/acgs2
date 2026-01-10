@@ -12,7 +12,7 @@ jobs:
     name: Security Audit (SCA)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -39,7 +39,7 @@ jobs:
     needs: security-audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -155,7 +155,7 @@ jobs:
     # Rust acceleration is optional - continue on error until pyo3 0.23 API migration is complete
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Rust
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -171,7 +171,7 @@ jobs:
     # Adaptive Learning is optional - continue on error until tests are stabilized
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -190,7 +190,7 @@ jobs:
     needs: [test-python, test-rust, test-adaptive-learning]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
@@ -212,7 +212,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true  # Policy tests - non-blocking until policies are properly configured
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate K8s Manifests
         run: |
           # Validate YAML syntax of K8s manifests
