@@ -13,7 +13,7 @@ import data.acgs.deliberation
 # Test Constitutional Policy
 
 test_constitutional_valid_message if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "conversation_id": "conv-456",
@@ -34,11 +34,11 @@ test_constitutional_valid_message if {
         }
     }
 
-    constitutional.allow with input as input
+    constitutional.allow with input as mock_input
 }
 
 test_constitutional_invalid_hash if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "conversation_id": "conv-456",
@@ -59,12 +59,12 @@ test_constitutional_invalid_hash if {
         }
     }
 
-    not constitutional.allow with input as input
-    count(constitutional.violations) > 0 with input as input
+    not constitutional.allow with input as mock_input
+    count(constitutional.violations) > 0 with input as mock_input
 }
 
 test_constitutional_missing_fields if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "content": {},
@@ -75,11 +75,11 @@ test_constitutional_missing_fields if {
         }
     }
 
-    not constitutional.allow with input as input
+    not constitutional.allow with input as mock_input
 }
 
 test_constitutional_tenant_isolation if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "conversation_id": "conv-456",
@@ -100,11 +100,11 @@ test_constitutional_tenant_isolation if {
         }
     }
 
-    not constitutional.allow with input as input
+    not constitutional.allow with input as mock_input
 }
 
 test_constitutional_priority_escalation if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "conversation_id": "conv-456",
@@ -125,13 +125,13 @@ test_constitutional_priority_escalation if {
         }
     }
 
-    not constitutional.allow with input as input
+    not constitutional.allow with input as mock_input
 }
 
 # Test Authorization Policy
 
 test_authz_valid_coordinator if {
-    input := {
+    mock_input := {
         "agent": {
             "agent_id": "coord-1",
             "role": "coordinator",
@@ -155,11 +155,11 @@ test_authz_valid_coordinator if {
         "message_type": "command"
     }
 
-    authz.allow with input as input
+    authz.allow with input as mock_input
 }
 
 test_authz_system_admin_override if {
-    input := {
+    mock_input := {
         "agent": {
             "agent_id": "admin-1",
             "role": "system_admin",
@@ -183,11 +183,11 @@ test_authz_system_admin_override if {
         "message_type": "governance_request"
     }
 
-    authz.allow with input as input
+    authz.allow with input as mock_input
 }
 
 test_authz_unauthorized_action if {
-    input := {
+    mock_input := {
         "agent": {
             "agent_id": "guest-1",
             "role": "guest",
@@ -211,11 +211,11 @@ test_authz_unauthorized_action if {
         "message_type": "governance_request"
     }
 
-    not authz.allow with input as input
+    not authz.allow with input as mock_input
 }
 
 test_authz_rate_limit_exceeded if {
-    input := {
+    mock_input := {
         "agent": {
             "agent_id": "worker-1",
             "role": "worker",
@@ -239,11 +239,11 @@ test_authz_rate_limit_exceeded if {
         "message_type": "query"
     }
 
-    not authz.allow with input as input
+    not authz.allow with input as mock_input
 }
 
 test_authz_cross_tenant_denied if {
-    input := {
+    mock_input := {
         "agent": {
             "agent_id": "worker-1",
             "role": "worker",
@@ -267,13 +267,13 @@ test_authz_cross_tenant_denied if {
         "message_type": "query"
     }
 
-    not authz.allow with input as input
+    not authz.allow with input as mock_input
 }
 
 # Test Deliberation Policy
 
 test_deliberation_high_impact if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "message_type": "governance_request",
@@ -288,13 +288,13 @@ test_deliberation_high_impact if {
         }
     }
 
-    deliberation.route_to_deliberation with input as input
-    deliberation.routing_decision.lane == "deliberation" with input as input
-    deliberation.routing_decision.requires_human_review == true with input as input
+    deliberation.route_to_deliberation with input as mock_input
+    deliberation.routing_decision.lane == "deliberation" with input as mock_input
+    deliberation.routing_decision.requires_human_review == true with input as mock_input
 }
 
 test_deliberation_fast_lane if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "message_type": "heartbeat",
@@ -309,12 +309,12 @@ test_deliberation_fast_lane if {
         }
     }
 
-    not deliberation.route_to_deliberation with input as input
-    deliberation.routing_decision.lane == "fast" with input as input
+    not deliberation.route_to_deliberation with input as mock_input
+    deliberation.routing_decision.lane == "fast" with input as mock_input
 }
 
 test_deliberation_high_risk_action if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "message_type": "command",
@@ -329,12 +329,12 @@ test_deliberation_high_risk_action if {
         }
     }
 
-    deliberation.route_to_deliberation with input as input
-    deliberation.high_risk_action with input as input
+    deliberation.route_to_deliberation with input as mock_input
+    deliberation.high_risk_action with input as mock_input
 }
 
 test_deliberation_sensitive_content if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "message_type": "command",
@@ -353,12 +353,12 @@ test_deliberation_sensitive_content if {
         }
     }
 
-    deliberation.route_to_deliberation with input as input
-    deliberation.sensitive_content_detected with input as input
+    deliberation.route_to_deliberation with input as mock_input
+    deliberation.sensitive_content_detected with input as mock_input
 }
 
 test_deliberation_forced if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "message_type": "query",
@@ -373,12 +373,12 @@ test_deliberation_forced if {
         }
     }
 
-    deliberation.route_to_deliberation with input as input
-    deliberation.forced_deliberation with input as input
+    deliberation.route_to_deliberation with input as mock_input
+    deliberation.forced_deliberation with input as mock_input
 }
 
 test_deliberation_multi_agent_vote if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "message_type": "governance_request",
@@ -393,11 +393,11 @@ test_deliberation_multi_agent_vote if {
         }
     }
 
-    deliberation.routing_decision.requires_multi_agent_vote == true with input as input
+    deliberation.routing_decision.requires_multi_agent_vote == true with input as mock_input
 }
 
 test_deliberation_constitutional_risk if {
-    input := {
+    mock_input := {
         "message": {
             "message_id": "msg-123",
             "message_type": "command",
@@ -414,6 +414,6 @@ test_deliberation_constitutional_risk if {
         }
     }
 
-    deliberation.route_to_deliberation with input as input
-    deliberation.constitutional_risk_detected with input as input
+    deliberation.route_to_deliberation with input as mock_input
+    deliberation.constitutional_risk_detected with input as mock_input
 }
