@@ -120,6 +120,8 @@ jobs:
           pip install -e .[test,loadtest]
           pip install -r src/core/config/requirements_optimized.txt
           pip install locust
+          # Install shared module dependencies
+          pip install structlog orjson pydantic-settings pybreaker prometheus-client
 
       - name: Set up Rust and build extensions
         run: |
@@ -131,7 +133,6 @@ jobs:
         run: |
           pip install maturin
           cd src/core/rust-perf
-          # Build wheel and install it (works without virtualenv detection issues)
           maturin build --release
           pip install target/wheels/*.whl || echo "Rust extension install skipped - wheel may not exist"
 
@@ -139,13 +140,29 @@ jobs:
         run: |
           pip install -r src/core/services/api_gateway/requirements.txt
 
+      - name: Pre-flight import check
+        run: |
+          cd src/core/services/api_gateway
+          echo "Testing imports with PYTHONPATH=$PYTHONPATH"
+          python -c "import sys; print('sys.path:', sys.path[:3])"
+          python -c "from src.core.shared.config import settings; print('Config import OK')"
+          python -c "import main; print('Main import OK')"
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          ACGS2_ENV: development
+          JWT_SECRET: test-secret-for-ci-only
+
       - name: Start API Gateway
         run: |
           cd src/core/services/api_gateway
-          echo "Starting API Gateway with PYTHONPATH=$PYTHONPATH"
-          python -c "import sys; print('Python path:', sys.path)"
-          uvicorn main:app --host 0.0.0.0 --port 8080 &
-          sleep 10
+          echo "Starting API Gateway..."
+          uvicorn main:app --host 0.0.0.0 --port 8080 > /tmp/uvicorn.log 2>&1 &
+          echo $! > /tmp/uvicorn.pid
+          sleep 5
+          echo "=== Initial uvicorn output ==="
+          cat /tmp/uvicorn.log || true
         env:
           PYTHONPATH: ${{ github.workspace }}
           REDIS_HOST: localhost
@@ -162,15 +179,18 @@ jobs:
               curl -s http://localhost:8080/health | jq . || cat
               exit 0
             fi
-            echo "Attempt $i/30 - API Gateway not ready yet, waiting..."
-            # Check if uvicorn process is still running
-            if ! pgrep -f "uvicorn main:app" > /dev/null; then
-              echo "ERROR: uvicorn process died. Checking logs..."
+            echo "Attempt $i/30 - API Gateway not ready yet..."
+            if [ -f /tmp/uvicorn.pid ] && ! ps -p $(cat /tmp/uvicorn.pid) > /dev/null 2>&1; then
+              echo "ERROR: uvicorn process died"
+              echo "=== UVICORN LOG ==="
+              cat /tmp/uvicorn.log || echo "No log file"
               exit 1
             fi
             sleep 2
           done
           echo "API Gateway failed to start within 60 seconds"
+          echo "=== UVICORN LOG ==="
+          cat /tmp/uvicorn.log || echo "No log file"
           exit 1
 
       - name: Run smoke test (100 users, 30s)
@@ -224,6 +244,8 @@ jobs:
           pip install -e .[test,loadtest]
           pip install -r src/core/config/requirements_optimized.txt
           pip install locust
+          # Install shared module dependencies
+          pip install structlog orjson pydantic-settings pybreaker prometheus-client
 
       - name: Set up Rust and build extensions
         run: |
@@ -235,7 +257,6 @@ jobs:
         run: |
           pip install maturin
           cd src/core/rust-perf
-          # Build wheel and install it (works without virtualenv detection issues)
           maturin build --release
           pip install target/wheels/*.whl || echo "Rust extension install skipped - wheel may not exist"
 
@@ -247,12 +268,29 @@ jobs:
         run: |
           ulimit -n 65535 || true
 
+      - name: Pre-flight import check
+        run: |
+          cd src/core/services/api_gateway
+          echo "Testing imports with PYTHONPATH=$PYTHONPATH"
+          python -c "import sys; print('sys.path:', sys.path[:3])"
+          python -c "from src.core.shared.config import settings; print('Config import OK')"
+          python -c "import main; print('Main import OK')"
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          ACGS2_ENV: development
+          JWT_SECRET: test-secret-for-ci-only
+
       - name: Start API Gateway
         run: |
           cd src/core/services/api_gateway
-          echo "Starting API Gateway with PYTHONPATH=$PYTHONPATH"
-          uvicorn main:app --host 0.0.0.0 --port 8080 --workers 4 &
-          sleep 15
+          echo "Starting API Gateway..."
+          uvicorn main:app --host 0.0.0.0 --port 8080 --workers 4 > /tmp/uvicorn.log 2>&1 &
+          echo $! > /tmp/uvicorn.pid
+          sleep 10
+          echo "=== Initial uvicorn output ==="
+          cat /tmp/uvicorn.log || true
         env:
           PYTHONPATH: ${{ github.workspace }}
           REDIS_HOST: localhost
@@ -269,15 +307,18 @@ jobs:
               curl -s http://localhost:8080/health | jq . || cat
               exit 0
             fi
-            echo "Attempt $i/30 - API Gateway not ready yet, waiting..."
-            # Check if uvicorn process is still running
-            if ! pgrep -f "uvicorn main:app" > /dev/null; then
-              echo "ERROR: uvicorn process died. Checking logs..."
+            echo "Attempt $i/30 - API Gateway not ready yet..."
+            if [ -f /tmp/uvicorn.pid ] && ! ps -p $(cat /tmp/uvicorn.pid) > /dev/null 2>&1; then
+              echo "ERROR: uvicorn process died"
+              echo "=== UVICORN LOG ==="
+              cat /tmp/uvicorn.log || echo "No log file"
               exit 1
             fi
             sleep 2
           done
           echo "API Gateway failed to start within 60 seconds"
+          echo "=== UVICORN LOG ==="
+          cat /tmp/uvicorn.log || echo "No log file"
           exit 1
 
       - name: Run performance regression test
@@ -298,13 +339,11 @@ jobs:
           echo "=== Performance Validation ==="
           echo "Checking P99 latency < 1ms and throughput targets..."
 
-          # Check if results exist
           if [ ! -f results/regression_stats.csv ]; then
             echo "ERROR: No results file found"
             exit 1
           fi
 
-          # Display results summary
           cat results/regression_stats.csv
 
           echo ""
