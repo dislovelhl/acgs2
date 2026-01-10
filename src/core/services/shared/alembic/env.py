@@ -24,7 +24,7 @@ from src.core.shared.database import Base
 # This is required for autogenerate to detect table changes
 from src.core.shared.models import (
     SAMLOutstandingRequest,  # noqa: F401
-    )
+)
 
 # Alembic Config object for access to .ini values
 config = context.config
