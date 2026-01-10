@@ -243,9 +243,9 @@ class TestKeywordScoringLatency:
             metrics.call_count += 1
 
         # Assert P99 < 10ms (keyword scoring should be very fast)
-        assert metrics.latency_p99 < PERFORMANCE_TARGETS["p99_latency_ms"], (
-            f"P99 latency {metrics.latency_p99:.2f}ms exceeds target {PERFORMANCE_TARGETS['p99_latency_ms']}ms"
-        )
+        assert (
+            metrics.latency_p99 < PERFORMANCE_TARGETS["p99_latency_ms"]
+        ), f"P99 latency {metrics.latency_p99:.2f}ms exceeds target {PERFORMANCE_TARGETS['p99_latency_ms']}ms"
 
     def test_batch_score_latency(self, scorer, sample_messages):
         """Benchmark batch message scoring latency."""
@@ -267,9 +267,9 @@ class TestKeywordScoringLatency:
 
         # Per-message latency in batch
         per_message_p99 = metrics.latency_p99 / batch_size
-        assert per_message_p99 < PERFORMANCE_TARGETS["p99_latency_ms"], (
-            f"Per-message P99 {per_message_p99:.2f}ms exceeds target"
-        )
+        assert (
+            per_message_p99 < PERFORMANCE_TARGETS["p99_latency_ms"]
+        ), f"Per-message P99 {per_message_p99:.2f}ms exceeds target"
 
     def test_batch_50_under_2_seconds(self, scorer, sample_messages):
         """Test batch of 50 messages completes in under 2 seconds."""
@@ -281,9 +281,9 @@ class TestKeywordScoringLatency:
         elapsed = time.perf_counter() - start
 
         assert len(results) == 50
-        assert elapsed < PERFORMANCE_TARGETS["batch_50_latency_sec"], (
-            f"Batch 50 took {elapsed:.2f}s, target is <{PERFORMANCE_TARGETS['batch_50_latency_sec']}s"
-        )
+        assert (
+            elapsed < PERFORMANCE_TARGETS["batch_50_latency_sec"]
+        ), f"Batch 50 took {elapsed:.2f}s, target is <{PERFORMANCE_TARGETS['batch_50_latency_sec']}s"
 
 
 class TestBatchThroughput:
@@ -397,9 +397,9 @@ class TestBatchThroughput:
         throughput = batch_size * metrics.throughput_per_sec
 
         # For keyword scoring (fallback path), should easily exceed 500 req/sec
-        assert throughput >= PERFORMANCE_TARGETS["throughput_req_per_sec"], (
-            f"Throughput {throughput:.0f} req/sec below target {PERFORMANCE_TARGETS['throughput_req_per_sec']}"
-        )
+        assert (
+            throughput >= PERFORMANCE_TARGETS["throughput_req_per_sec"]
+        ), f"Throughput {throughput:.0f} req/sec below target {PERFORMANCE_TARGETS['throughput_req_per_sec']}"
 
     def test_throughput_scales_with_batch_size(self, scorer, sample_messages):
         """Test that throughput scales with batch size."""
@@ -425,9 +425,9 @@ class TestBatchThroughput:
         # Verify throughput increases with batch size (not necessarily linearly)
         assert throughputs[8] >= throughputs[1] * 0.9, "Batch 8 should not be slower than batch 1"
         assert throughputs[16] >= throughputs[8] * 0.9, "Batch 16 should not be slower than batch 8"
-        assert throughputs[32] >= throughputs[16] * 0.9, (
-            "Batch 32 should not be slower than batch 16"
-        )
+        assert (
+            throughputs[32] >= throughputs[16] * 0.9
+        ), "Batch 32 should not be slower than batch 16"
 
 
 class TestMemoryUsage:
@@ -492,9 +492,9 @@ class TestMemoryUsage:
         peak_mb = peak / (1024 * 1024)
 
         # Should stay well under 2GB
-        assert peak_mb < PERFORMANCE_TARGETS["peak_memory_gb"] * 1024, (
-            f"Peak memory {peak_mb:.2f}MB exceeds {PERFORMANCE_TARGETS['peak_memory_gb']}GB"
-        )
+        assert (
+            peak_mb < PERFORMANCE_TARGETS["peak_memory_gb"] * 1024
+        ), f"Peak memory {peak_mb:.2f}MB exceeds {PERFORMANCE_TARGETS['peak_memory_gb']}GB"
 
     def test_batch_scoring_memory(self, scorer, sample_messages):
         """Test memory usage during batch scoring."""
@@ -514,9 +514,9 @@ class TestMemoryUsage:
         peak_mb = peak / (1024 * 1024)
 
         # Should stay well under 2GB
-        assert peak_mb < PERFORMANCE_TARGETS["peak_memory_gb"] * 1024, (
-            f"Peak memory {peak_mb:.2f}MB exceeds {PERFORMANCE_TARGETS['peak_memory_gb']}GB"
-        )
+        assert (
+            peak_mb < PERFORMANCE_TARGETS["peak_memory_gb"] * 1024
+        ), f"Peak memory {peak_mb:.2f}MB exceeds {PERFORMANCE_TARGETS['peak_memory_gb']}GB"
 
     @pytest.mark.skipif(not PSUTIL_AVAILABLE, reason="psutil not available")
     def test_process_memory_usage(self, scorer, sample_messages):
@@ -590,9 +590,9 @@ class TestLatencyPercentiles:
             metrics.latency_ms.append(elapsed_ms)
 
         # P95 should be under 10ms
-        assert metrics.latency_p95 < PERFORMANCE_TARGETS["p99_latency_ms"], (
-            f"P95 latency {metrics.latency_p95:.2f}ms > {PERFORMANCE_TARGETS['p99_latency_ms']}ms"
-        )
+        assert (
+            metrics.latency_p95 < PERFORMANCE_TARGETS["p99_latency_ms"]
+        ), f"P95 latency {metrics.latency_p95:.2f}ms > {PERFORMANCE_TARGETS['p99_latency_ms']}ms"
 
     def test_p99_latency(self, scorer, sample_messages):
         """Test P99 latency meets target."""
@@ -607,9 +607,9 @@ class TestLatencyPercentiles:
                 metrics.latency_ms.append(elapsed_ms)
 
         # P99 should meet target
-        assert metrics.latency_p99 < PERFORMANCE_TARGETS["p99_latency_ms"], (
-            f"P99 latency {metrics.latency_p99:.2f}ms > {PERFORMANCE_TARGETS['p99_latency_ms']}ms"
-        )
+        assert (
+            metrics.latency_p99 < PERFORMANCE_TARGETS["p99_latency_ms"]
+        ), f"P99 latency {metrics.latency_p99:.2f}ms > {PERFORMANCE_TARGETS['p99_latency_ms']}ms"
 
     def test_latency_consistency(self, scorer, sample_messages):
         """Test latency is consistent across runs."""
@@ -658,9 +658,9 @@ class TestColdStartPerformance:
         elapsed = time.perf_counter() - start
 
         # Cold start should be under 5 seconds (for keyword-only, much faster)
-        assert elapsed < PERFORMANCE_TARGETS["cold_start_sec"], (
-            f"Cold start took {elapsed:.2f}s > {PERFORMANCE_TARGETS['cold_start_sec']}s"
-        )
+        assert (
+            elapsed < PERFORMANCE_TARGETS["cold_start_sec"]
+        ), f"Cold start took {elapsed:.2f}s > {PERFORMANCE_TARGETS['cold_start_sec']}s"
 
         # Cleanup
         reset_impact_scorer()
@@ -914,14 +914,14 @@ class TestBaselineComparison:
                 metrics.latency_ms.append(elapsed_ms)
 
         # Should beat baseline
-        assert metrics.latency_p99 < BASELINE_P99_MS, (
-            f"P99 {metrics.latency_p99:.2f}ms >= baseline {BASELINE_P99_MS}ms"
-        )
+        assert (
+            metrics.latency_p99 < BASELINE_P99_MS
+        ), f"P99 {metrics.latency_p99:.2f}ms >= baseline {BASELINE_P99_MS}ms"
 
         # Should also meet target
-        assert metrics.latency_p99 < PERFORMANCE_TARGETS["p99_latency_ms"], (
-            f"P99 {metrics.latency_p99:.2f}ms >= target {PERFORMANCE_TARGETS['p99_latency_ms']}ms"
-        )
+        assert (
+            metrics.latency_p99 < PERFORMANCE_TARGETS["p99_latency_ms"]
+        ), f"P99 {metrics.latency_p99:.2f}ms >= target {PERFORMANCE_TARGETS['p99_latency_ms']}ms"
 
     def test_meets_stretch_goal(self, scorer):
         """Test if stretch goal of <5ms P99 is achievable."""

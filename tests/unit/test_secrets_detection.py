@@ -425,9 +425,9 @@ class TestFixturesValidation:
             pytest.skip("safe_placeholders.py fixture not found")
 
         findings = secrets_hook.scan_file_for_secrets(str(safe_placeholders_fixture))
-        assert len(findings) == 0, (
-            f"Safe placeholders should not trigger detection, but found: {findings}"
-        )
+        assert (
+            len(findings) == 0
+        ), f"Safe placeholders should not trigger detection, but found: {findings}"
 
     def test_unsafe_secrets_fixture_fails(self, unsafe_secrets_fixture):
         """Test that unsafe_secrets.py should fail (secrets detected)."""
@@ -661,9 +661,9 @@ class TestGitleaksIntegration:
                 cwd=str(project_root),
             )
             # Should pass (exit code 0) as no secrets detected
-            assert result.returncode == 0, (
-                f"gitleaks should pass on safe placeholders: {result.stderr}"
-            )
+            assert (
+                result.returncode == 0
+            ), f"gitleaks should pass on safe placeholders: {result.stderr}"
         except subprocess.TimeoutExpired:
             pytest.skip("gitleaks timed out")
 

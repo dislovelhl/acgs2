@@ -38,16 +38,16 @@ def test_rust_weighted_sinkhorn():
         # Check row sums
         row_sums = W_tensor.sum(dim=1)
         print(f"Row Sums: {row_sums}")
-        assert torch.allclose(row_sums, torch.tensor(r), atol=1e-4), (
-            f"Row sums mismatch: {row_sums} vs {r}"
-        )
+        assert torch.allclose(
+            row_sums, torch.tensor(r), atol=1e-4
+        ), f"Row sums mismatch: {row_sums} vs {r}"
 
         # Check col sums
         col_sums = W_tensor.sum(dim=0)
         print(f"Col Sums: {col_sums}")
-        assert torch.allclose(col_sums, torch.tensor(c), atol=1e-4), (
-            f"Col sums mismatch: {col_sums} vs {c}"
-        )
+        assert torch.allclose(
+            col_sums, torch.tensor(c), atol=1e-4
+        ), f"Col sums mismatch: {col_sums} vs {c}"
 
         print("SUCCESS: Weighted Sinkhorn converged to target marginals.")
         return True

@@ -180,9 +180,9 @@ def verify_backward_compatibility() -> Tuple[bool, List[str]]:
 
         actual_all = adaptive_governance.__all__
 
-        assert set(actual_all) == set(expected_all), (
-            f"__all__ mismatch. Expected: {expected_all}, Got: {actual_all}"
-        )
+        assert set(actual_all) == set(
+            expected_all
+        ), f"__all__ mismatch. Expected: {expected_all}, Got: {actual_all}"
 
         print("✓ __all__ export list matches original (15 items)")
         print("  Classes/Enums: AdaptiveGovernanceEngine, AdaptiveThresholds, ImpactScorer,")
