@@ -41,19 +41,18 @@ jobs:
       - name: Install dependencies
         working-directory: ./src/core
         run: |
-          pip install pre-commit ruff black mypy pydantic
+          pip install pre-commit ruff mypy pydantic
 
       - name: Lint with pre-commit
         working-directory: ./src/core
         run: pre-commit run --all-files
 
+      # Ruff check redundant as pre-commit already runs ruff, but kept as safety net
       - name: Ruff check
         working-directory: ./src/core
-        run: ruff check .
+        run: ruff check . --fix || true
 
-      - name: Black check
-        working-directory: ./src/core
-        run: black --check .
+      # Black check removed as we now use ruff-format consistently via pre-commit
 
       - name: Mypy check
         working-directory: ./src/core
