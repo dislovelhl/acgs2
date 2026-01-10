@@ -9,71 +9,35 @@ import time
 from contextlib import nullcontext
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
-try:
-    from core.shared.types import JSONDict, JSONValue
-except ImportError:
-    JSONDict = Dict[str, Any]
-    JSONValue = Any
+from core.shared.types import JSONDict, JSONValue
 
-try:
-    from .config import BusConfiguration
-    from .imports import (
-        CIRCUIT_BREAKER_ENABLED,
-        METERING_AVAILABLE,
-        METRICS_ENABLED,
-        POLICY_CLIENT_AVAILABLE,
-        USE_RUST,
-        CircuitBreakerConfig,
-        get_circuit_breaker,
-        get_metering_hooks,
-        get_opa_client,
-        get_policy_client,
-        rust_bus,
-    )
-    from .interfaces import ProcessingStrategy
-    from .memory_profiler import ProfilingLevel, get_memory_profiler
-    from .models import (
-        CONSTITUTIONAL_HASH,
-        AgentMessage,
-        MessageStatus,
-        MessageType,
-        Priority,
-    )
-    from .runtime_security import get_runtime_security_scanner
-    from .utils import LRUCache
-    from .validators import ValidationResult
-except (ImportError, ValueError):
-    from config import BusConfiguration  # type: ignore  # type: ignore
-    from imports import (
-        CIRCUIT_BREAKER_ENABLED,  # type: ignore
-        METERING_AVAILABLE,
-        POLICY_CLIENT_AVAILABLE,
-        USE_RUST,
-        CircuitBreakerConfig,
-        get_circuit_breaker,
-        get_metering_hooks,
-        get_opa_client,
-        get_policy_client,
-        rust_bus,
-    )
-    from interfaces import ProcessingStrategy  # type: ignore
-
-    try:
-        from memory_profiler import get_memory_profiler  # type: ignore
-    except ImportError:
-        # Extreme fallback if even absolute import fails
-        def get_memory_profiler(*args: Any, **kwargs: Any) -> None:
-            return None
-
-    from models import (
-        CONSTITUTIONAL_HASH,
-        AgentMessage,  # type: ignore
-        MessageType,
-        Priority,
-    )
-    from runtime_security import get_runtime_security_scanner  # type: ignore
-    from utils import LRUCache  # type: ignore
-    from validators import ValidationResult  # type: ignore
+# Local imports
+from .config import BusConfiguration
+from .imports import (
+    CIRCUIT_BREAKER_ENABLED,
+    METERING_AVAILABLE,
+    METRICS_ENABLED,
+    POLICY_CLIENT_AVAILABLE,
+    USE_RUST,
+    CircuitBreakerConfig,
+    get_circuit_breaker,
+    get_metering_hooks,
+    get_opa_client,
+    get_policy_client,
+    rust_bus,
+)
+from .interfaces import ProcessingStrategy
+from .memory_profiler import ProfilingLevel, get_memory_profiler
+from .models import (
+    CONSTITUTIONAL_HASH,
+    AgentMessage,
+    MessageStatus,
+    MessageType,
+    Priority,
+)
+from .runtime_security import get_runtime_security_scanner
+from .utils import LRUCache
+from .validators import ValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -146,52 +110,16 @@ class MessageProcessor:
         self._validation_cache = LRUCache(maxsize=1000)
 
         # SDPC Phase 2/3 Verifiers
-        try:
-            from .deliberation_layer.intent_classifier import (
-                IntentClassifier,
-                IntentType,
-            )
-            from .sdpc.ampo_engine import AMPOEngine
-            from .sdpc.asc_verifier import ASCVerifier
-            from .sdpc.evolution_controller import EvolutionController
-            from .sdpc.graph_check import GraphCheckVerifier
-            from .sdpc.pacar_verifier import PACARVerifier
-        except (ImportError, ValueError):
-            try:
-                from deliberation_layer.intent_classifier import (  # type: ignore
-                    IntentClassifier,
-                    IntentType,
-                )
-                from sdpc.ampo_engine import AMPOEngine  # type: ignore
-                from sdpc.asc_verifier import ASCVerifier  # type: ignore
-                from sdpc.evolution_controller import (
-                    EvolutionController,  # type: ignore
-                )
-                from sdpc.graph_check import GraphCheckVerifier  # type: ignore
-                from sdpc.pacar_verifier import PACARVerifier  # type: ignore
-            except (ImportError, ValueError):
-                # Third fallback for deep module nesting in some test runners
-                from core.enhanced_agent_bus.deliberation_layer.intent_classifier import (  # type: ignore
-                    IntentClassifier,
-                    IntentType,
-                )
-                from core.enhanced_agent_bus.sdpc.ampo_engine import (
-                    AMPOEngine,  # type: ignore
-                )
-                from core.enhanced_agent_bus.sdpc.asc_verifier import (
-                    ASCVerifier,  # type: ignore
-                )
-                from core.enhanced_agent_bus.sdpc.evolution_controller import (
-                    EvolutionController,
-                )
-
-                # type: ignore
-                from core.enhanced_agent_bus.sdpc.graph_check import (
-                    GraphCheckVerifier,  # type: ignore
-                )
-                from core.enhanced_agent_bus.sdpc.pacar_verifier import (
-                    PACARVerifier,  # type: ignore
-                )
+        # SDPC Phase 2/3 Verifiers
+        from core.enhanced_agent_bus.deliberation_layer.intent_classifier import (
+            IntentClassifier,
+            IntentType,
+        )
+        from core.enhanced_agent_bus.sdpc.ampo_engine import AMPOEngine
+        from core.enhanced_agent_bus.sdpc.asc_verifier import ASCVerifier
+        from core.enhanced_agent_bus.sdpc.evolution_controller import EvolutionController
+        from core.enhanced_agent_bus.sdpc.graph_check import GraphCheckVerifier
+        from core.enhanced_agent_bus.sdpc.pacar_verifier import PACARVerifier
 
         self.config = kwargs.get("config") or BusConfiguration.from_environment()
         self.intent_classifier = IntentClassifier(config=self.config)
@@ -211,24 +139,14 @@ class MessageProcessor:
             )
 
     def _auto_select_strategy(self) -> ProcessingStrategy:
-        try:
-            from .processing_strategies import (
-                CompositeProcessingStrategy,
-                OPAProcessingStrategy,
-                PythonProcessingStrategy,
-                RustProcessingStrategy,
-            )
-            from .validation_strategies import StaticHashValidationStrategy
-        except (ImportError, ValueError):
-            from processing_strategies import (  # type: ignore
-                CompositeProcessingStrategy,
-                OPAProcessingStrategy,
-                PythonProcessingStrategy,
-                RustProcessingStrategy,
-            )
-            from validation_strategies import (
-                StaticHashValidationStrategy,  # type: ignore
-            )
+        from core.enhanced_agent_bus.processing_strategies import (
+            CompositeProcessingStrategy,
+            MACIProcessingStrategy,
+            OPAProcessingStrategy,
+            PythonProcessingStrategy,
+            RustProcessingStrategy,
+        )
+        from core.enhanced_agent_bus.validation_strategies import StaticHashValidationStrategy
 
         py_proc = PythonProcessingStrategy(StaticHashValidationStrategy(strict=True))
         if self._isolated_mode:
@@ -241,10 +159,6 @@ class MessageProcessor:
         strategies.append(py_proc)
         base = CompositeProcessingStrategy(strategies) if len(strategies) > 1 else strategies[0]
         if self._enable_maci:
-            try:
-                from .processing_strategies import MACIProcessingStrategy
-            except (ImportError, ValueError):
-                from processing_strategies import MACIProcessingStrategy  # type: ignore
             return MACIProcessingStrategy(
                 base, self._maci_registry, self._maci_enforcer, self._maci_strict_mode
             )

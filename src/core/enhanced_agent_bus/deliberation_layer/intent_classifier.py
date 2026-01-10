@@ -12,14 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-try:
-    from core.shared.types import JSONDict, JSONValue
-except ImportError:
-    JSONDict = Dict[str, Any]
-    JSONValue = Any
-
-
 from core.enhanced_agent_bus.config import BusConfiguration
+from core.shared.types import JSONDict, JSONValue
 
 
 class IntentType(Enum):

@@ -167,7 +167,7 @@ jobs:
       - name: Pytest with coverage
         working-directory: ./src/core
         env:
-          PYTHONPATH: ${{ github.workspace }}/src/core:${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}/src/core:${{ github.workspace }}
         run: |
           cd enhanced_agent_bus
           # Skip tests that require torch/transformers/sklearn (ML dependencies not in base install)
