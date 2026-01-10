@@ -16,7 +16,11 @@ try:
     )
 except ImportError:
     from models import AgentMessage
-    from registry import CapabilityBasedRouter, DirectMessageRouter, InMemoryAgentRegistry
+    from registry import (
+        CapabilityBasedRouter,
+        DirectMessageRouter,
+        InMemoryAgentRegistry,
+    )
 
 
 class TestInMemoryAgentRegistryExtended:

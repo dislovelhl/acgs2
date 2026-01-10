@@ -14,7 +14,12 @@ from src.core.shared.config import settings
 from src.core.shared.types import JSONDict
 from starlette.requests import Request as StarletteRequest
 
-from .common import SSOLogoutResponse, SSOProviderInfo, SSOUserInfoResponse, get_oidc_handler
+from .common import (
+    SSOLogoutResponse,
+    SSOProviderInfo,
+    SSOUserInfoResponse,
+    get_oidc_handler,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

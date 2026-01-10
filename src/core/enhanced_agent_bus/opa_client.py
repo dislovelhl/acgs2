@@ -20,7 +20,11 @@ import httpx
 
 try:
     from .config import settings
-    from .exceptions import OPAConnectionError, OPANotInitializedError, PolicyEvaluationError
+    from .exceptions import (
+        OPAConnectionError,
+        OPANotInitializedError,
+        PolicyEvaluationError,
+    )
     from .models import CONSTITUTIONAL_HASH, AgentMessage
     from .validators import ValidationResult
 except (ImportError, ValueError):

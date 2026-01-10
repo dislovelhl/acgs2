@@ -21,7 +21,12 @@ from ...acl_adapters.base import (
     SimpleCircuitBreaker,
     TokenBucketRateLimiter,
 )
-from ...acl_adapters.opa_adapter import OPAAdapter, OPAAdapterConfig, OPARequest, OPAResponse
+from ...acl_adapters.opa_adapter import (
+    OPAAdapter,
+    OPAAdapterConfig,
+    OPARequest,
+    OPAResponse,
+)
 from ...acl_adapters.z3_adapter import Z3Adapter, Z3AdapterConfig, Z3Request, Z3Response
 
 

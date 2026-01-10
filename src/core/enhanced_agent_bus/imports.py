@@ -189,7 +189,9 @@ def _init_crypto_service() -> None:
     """Initialize crypto service with fallback."""
     global CRYPTO_AVAILABLE, CryptoService
     try:
-        from core.services.policy_registry.app.services.crypto_service import CryptoService as _cs
+        from core.services.policy_registry.app.services.crypto_service import (
+            CryptoService as _cs,
+        )
 
         CryptoService = _cs
         CRYPTO_AVAILABLE = True

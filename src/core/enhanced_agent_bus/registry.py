@@ -18,7 +18,12 @@ except ImportError:
     MetadataDict = Dict[str, Any]
 
 try:
-    from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
+    from .interfaces import (
+        AgentRegistry,
+        MessageRouter,
+        ProcessingStrategy,
+        ValidationStrategy,
+    )
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
     from .validators import ValidationResult
 except (ImportError, ValueError):

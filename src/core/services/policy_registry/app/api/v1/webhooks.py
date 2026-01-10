@@ -71,7 +71,10 @@ async def process_policy_update(
     """Background task to compile, sign, and store new policy bundle"""
     # Lazy imports for bundle registry
     try:
-        from ....enhanced_agent_bus.bundle_registry import BundleManifest, OCIRegistryClient
+        from ....enhanced_agent_bus.bundle_registry import (
+            BundleManifest,
+            OCIRegistryClient,
+        )
     except ImportError:
         logger.error("Bundle registry module not available")
         return

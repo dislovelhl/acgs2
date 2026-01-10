@@ -568,9 +568,9 @@ class TestExamplesEndpoint:
 
         for example in data:
             for field in required_fields:
-                assert field in example, (
-                    f"Missing field '{field}' in example '{example.get('id', 'unknown')}'"
-                )
+                assert (
+                    field in example
+                ), f"Missing field '{field}' in example '{example.get('id', 'unknown')}'"
 
     def test_get_examples_have_valid_policies(self, app_with_mock_opa):
         """Test each example has non-empty policy content."""
@@ -581,9 +581,9 @@ class TestExamplesEndpoint:
 
         for example in data:
             assert example["policy"].strip(), f"Empty policy in example '{example['id']}'"
-            assert "package" in example["policy"], (
-                f"Policy missing package declaration in '{example['id']}'"
-            )
+            assert (
+                "package" in example["policy"]
+            ), f"Policy missing package declaration in '{example['id']}'"
 
     def test_get_examples_filter_by_category(self, app_with_mock_opa):
         """Test filtering examples by category."""
@@ -901,13 +901,13 @@ class TestExampleContent:
         data = response.json()
 
         for example in data:
-            assert example["test_input"] is not None, (
-                f"Example '{example['id']}' missing test_input"
-            )
+            assert (
+                example["test_input"] is not None
+            ), f"Example '{example['id']}' missing test_input"
             # test_input should be a dict (can be empty but should exist)
-            assert isinstance(example["test_input"], dict), (
-                f"Example '{example['id']}' test_input is not a dict"
-            )
+            assert isinstance(
+                example["test_input"], dict
+            ), f"Example '{example['id']}' test_input is not a dict"
 
     def test_examples_have_expected_result(self, app_with_mock_opa):
         """Test all examples have expected_result field."""
@@ -917,9 +917,9 @@ class TestExampleContent:
         data = response.json()
 
         for example in data:
-            assert example["expected_result"] is not None, (
-                f"Example '{example['id']}' missing expected_result"
-            )
+            assert (
+                example["expected_result"] is not None
+            ), f"Example '{example['id']}' missing expected_result"
 
     def test_examples_have_explanation(self, app_with_mock_opa):
         """Test all examples have non-empty explanation."""
@@ -929,9 +929,9 @@ class TestExampleContent:
         data = response.json()
 
         for example in data:
-            assert example["explanation"].strip(), (
-                f"Example '{example['id']}' has empty explanation"
-            )
+            assert example[
+                "explanation"
+            ].strip(), f"Example '{example['id']}' has empty explanation"
 
     def test_examples_have_valid_difficulty(self, app_with_mock_opa):
         """Test all examples have valid difficulty level."""
@@ -943,9 +943,9 @@ class TestExampleContent:
         data = response.json()
 
         for example in data:
-            assert example["difficulty"] in valid_difficulties, (
-                f"Example '{example['id']}' has invalid difficulty '{example['difficulty']}'"
-            )
+            assert (
+                example["difficulty"] in valid_difficulties
+            ), f"Example '{example['id']}' has invalid difficulty '{example['difficulty']}'"
 
 
 if __name__ == "__main__":

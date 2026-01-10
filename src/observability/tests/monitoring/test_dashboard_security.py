@@ -514,9 +514,9 @@ class TestSecurityHeadersCompliance:
 
         # Must allow WebSocket connections
         csp_lower = csp.lower()
-        assert "ws:" in csp_lower or "wss:" in csp_lower, (
-            "CSP must allow WebSocket connections for real-time dashboard updates"
-        )
+        assert (
+            "ws:" in csp_lower or "wss:" in csp_lower
+        ), "CSP must allow WebSocket connections for real-time dashboard updates"
 
 
 # ============================================================================

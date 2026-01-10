@@ -22,7 +22,12 @@ from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from src.api.linear_webhooks import _webhook_events, _webhook_stats, queue_webhook_event, router
+from src.api.linear_webhooks import (
+    _webhook_events,
+    _webhook_stats,
+    queue_webhook_event,
+    router,
+)
 from src.integrations.linear.webhook_auth import verify_linear_signature_sync
 
 # ============================================================================

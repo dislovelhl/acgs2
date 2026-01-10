@@ -21,7 +21,11 @@ from .models import (
     TicketingIntegrationConfig,
     WebhookConfig,
 )
-from .validation import ConfigValidationError, ConfigValidator, validate_integration_config
+from .validation import (
+    ConfigValidationError,
+    ConfigValidator,
+    validate_integration_config,
+)
 
 # Import Linear and Slack configs from the separate config.py file
 try:

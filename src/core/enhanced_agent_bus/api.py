@@ -17,7 +17,16 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
-from fastapi import BackgroundTasks, Body, Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import (
+    BackgroundTasks,
+    Body,
+    Depends,
+    FastAPI,
+    Header,
+    HTTPException,
+    Request,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
@@ -55,7 +64,10 @@ except ImportError:
 
 try:
     from core.shared.security.cors_config import get_cors_config
-    from core.shared.security.tenant_context import TenantContextConfig, TenantContextMiddleware
+    from core.shared.security.tenant_context import (
+        TenantContextConfig,
+        TenantContextMiddleware,
+    )
 except ImportError:
     # Fallback for standalone/testing
     def get_cors_config() -> Dict[str, Any]:  # type: ignore[misc]
@@ -71,7 +83,10 @@ except ImportError:
 
 
 try:
-    from core.shared.acgs_logging import create_correlation_middleware, init_service_logging
+    from core.shared.acgs_logging import (
+        create_correlation_middleware,
+        init_service_logging,
+    )
 
     # Initialize structured logging
     logger = init_service_logging("enhanced-agent-bus", level="INFO", json_format=True)
@@ -114,7 +129,9 @@ except (ImportError, ValueError):
             OPAConnectionError,
             PolicyError,
         )
-        from governance.ccai_framework import get_ccai_governance  # type: ignore[no-redef]
+        from governance.ccai_framework import (
+            get_ccai_governance,  # type: ignore[no-redef]
+        )
         from message_processor import MessageProcessor  # type: ignore[no-redef]
         from models import (  # type: ignore[no-redef, attr-defined]
             AgentMessage,
@@ -123,7 +140,9 @@ except (ImportError, ValueError):
         )
     except (ImportError, ValueError):
         try:
-            from core.enhanced_agent_bus.governance.ccai_framework import get_ccai_governance
+            from core.enhanced_agent_bus.governance.ccai_framework import (
+                get_ccai_governance,
+            )
         except ImportError:
             # Mock for testing if import fails
             def get_ccai_governance() -> Any:  # type: ignore[misc]

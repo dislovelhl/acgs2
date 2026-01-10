@@ -11,8 +11,15 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from src.core.shared.acgs_logging import create_correlation_middleware, init_service_logging
-from src.core.shared.metrics import create_metrics_endpoint, set_service_info, track_request_metrics
+from src.core.shared.acgs_logging import (
+    create_correlation_middleware,
+    init_service_logging,
+)
+from src.core.shared.metrics import (
+    create_metrics_endpoint,
+    set_service_info,
+    track_request_metrics,
+)
 from src.core.shared.security.cors_config import get_cors_config
 
 from .api import router

@@ -17,7 +17,13 @@ except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
 
-from .telemetry import CONSTITUTIONAL_HASH, OTEL_AVAILABLE, TracingContext, get_meter, get_tracer
+from .telemetry import (
+    CONSTITUTIONAL_HASH,
+    OTEL_AVAILABLE,
+    TracingContext,
+    get_meter,
+    get_tracer,
+)
 
 logger = logging.getLogger(__name__)
 

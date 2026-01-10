@@ -12,7 +12,12 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.acgs2.core.schemas import AuditEntry, TelemetryEvent, TrainingEvent, UserRequest
+from src.acgs2.core.schemas import (
+    AuditEntry,
+    TelemetryEvent,
+    TrainingEvent,
+    UserRequest,
+)
 from src.acgs2.factory import create_default_system
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

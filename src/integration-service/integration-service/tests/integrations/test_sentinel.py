@@ -30,7 +30,11 @@ from src.integrations.base import (
     IntegrationStatus,
     IntegrationType,
 )
-from src.integrations.sentinel_adapter import AzureCloud, SentinelAdapter, SentinelCredentials
+from src.integrations.sentinel_adapter import (
+    AzureCloud,
+    SentinelAdapter,
+    SentinelCredentials,
+)
 
 if TYPE_CHECKING:
     pass

@@ -20,7 +20,10 @@ from enhanced_agent_bus.deliberation_layer import (
     VotingStrategy,
     get_redis_voting_system,
 )
-from enhanced_agent_bus.deliberation_layer.vote_collector import EventDrivenVoteCollector, VoteEvent
+from enhanced_agent_bus.deliberation_layer.vote_collector import (
+    EventDrivenVoteCollector,
+    VoteEvent,
+)
 from enhanced_agent_bus.deliberation_layer.workflows.deliberation_workflow import (
     DefaultDeliberationActivities,
     DeliberationWorkflow,

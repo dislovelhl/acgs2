@@ -137,7 +137,9 @@ class TestHITLManagerAdditionalScenarios:
     @pytest.mark.asyncio
     async def test_process_approval_with_various_decisions(self):
         """Test process_approval with different decision types."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+        )
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -171,7 +173,9 @@ class TestHITLManagerAdditionalScenarios:
         """Test that request_approval logs notification correctly."""
         import logging
 
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+        )
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -200,7 +204,9 @@ class TestHITLManagerAdditionalScenarios:
         """Test that process_approval logs the decision."""
         import logging
 
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+        )
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -236,7 +242,9 @@ class TestHITLManagerAdditionalScenarios:
     @pytest.mark.asyncio
     async def test_multiple_sequential_approvals(self):
         """Test handling multiple sequential approval workflows."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+        )
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 

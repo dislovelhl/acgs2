@@ -24,7 +24,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Protocol, Set, Tuple
 
-from ...shared.types import AuditTrail, ConstitutionalContext, DecisionData, JSONDict, PolicyData
+from ...shared.types import (
+    AuditTrail,
+    ConstitutionalContext,
+    DecisionData,
+    JSONDict,
+    PolicyData,
+)
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)

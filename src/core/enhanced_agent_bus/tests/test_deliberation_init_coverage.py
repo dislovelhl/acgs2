@@ -435,7 +435,11 @@ class TestImpactScorerIntegration:
     def test_impact_scorer_types_if_available(self):
         """Test ImpactScorer types when numpy is available."""
         try:
-            from deliberation_layer import ImpactScorer, calculate_message_impact, get_impact_scorer
+            from deliberation_layer import (
+                ImpactScorer,
+                calculate_message_impact,
+                get_impact_scorer,
+            )
 
             # All should be accessible
             assert ImpactScorer is not None

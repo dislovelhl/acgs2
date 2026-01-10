@@ -21,7 +21,11 @@ from tenacity import (
     wait_exponential,
 )
 
-from ..exceptions.retry import MaxRetriesExceededError, NonRetryableError, RetryableError
+from ..exceptions.retry import (
+    MaxRetriesExceededError,
+    NonRetryableError,
+    RetryableError,
+)
 from .config import WebhookRetryPolicy
 
 logger = logging.getLogger(__name__)

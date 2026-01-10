@@ -25,7 +25,11 @@ from ..fixtures.governance import (
     SpecPolicyVerifier,
     VoteType,
 )
-from ..fixtures.observability import Layer, SpecMetricsRegistry, SpecTimeoutBudgetManager
+from ..fixtures.observability import (
+    Layer,
+    SpecMetricsRegistry,
+    SpecTimeoutBudgetManager,
+)
 from ..fixtures.resilience import (
     CircuitState,
     FailureType,

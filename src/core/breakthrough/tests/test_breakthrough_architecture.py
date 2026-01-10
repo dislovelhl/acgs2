@@ -23,12 +23,22 @@ from ..context.jrt_context import JRTContextPreparator
 
 # Layer 1: Context & Memory
 from ..context.mamba_hybrid import ConstitutionalMambaHybrid, ProcessingMode
-from ..context.memory_system import ConstitutionalMemorySystem, GovernanceCase, GovernanceDecision
+from ..context.memory_system import (
+    ConstitutionalMemorySystem,
+    GovernanceCase,
+    GovernanceDecision,
+)
 
 # Layer 4: Governance & Policy
 from ..governance.democratic_constitution import DemocraticConstitutionalGovernance
-from ..integrations.constitutional_classifiers import AgentAction, ConstitutionalClassifier
-from ..integrations.langgraph_orchestration import GovernanceGraphBuilder, GovernanceState
+from ..integrations.constitutional_classifiers import (
+    AgentAction,
+    ConstitutionalClassifier,
+)
+from ..integrations.langgraph_orchestration import (
+    GovernanceGraphBuilder,
+    GovernanceState,
+)
 
 # Integrations
 from ..integrations.mcp_server import ACGS2MCPServer

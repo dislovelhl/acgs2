@@ -20,7 +20,10 @@ from app.models.schemas import (
     SemanticSearchRequest,
     SemanticSearchResponse,
 )
-from app.utils.constitutional import CONSTITUTIONAL_HASH, ensure_constitutional_compliance
+from app.utils.constitutional import (
+    CONSTITUTIONAL_HASH,
+    ensure_constitutional_compliance,
+)
 from app.utils.logging import get_logger, log_api_request, log_api_response
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel

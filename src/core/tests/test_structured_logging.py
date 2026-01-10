@@ -1,11 +1,8 @@
-import asyncio
 import contextlib
 import io
 import json
-import sys
 import unittest
 
-from fastapi import FastAPI
 from src.core.shared.acgs_logging import (
     clear_correlation_id,
     get_logger,

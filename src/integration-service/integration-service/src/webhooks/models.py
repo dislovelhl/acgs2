@@ -10,7 +10,14 @@ from enum import Enum
 from typing import Dict, List, Literal, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 
 from ..integration_types import JSONDict, ValidatorValue
 

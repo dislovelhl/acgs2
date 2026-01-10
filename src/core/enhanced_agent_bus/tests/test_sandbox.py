@@ -31,7 +31,12 @@ except ImportError:
     logger = logging.getLogger(__name__)
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-    from sandbox import FirecrackerSandbox, SandboxProvider, WasmSandbox, get_sandbox_provider
+    from sandbox import (
+        FirecrackerSandbox,
+        SandboxProvider,
+        WasmSandbox,
+        get_sandbox_provider,
+    )
 
 
 # Constitutional Hash for validation

@@ -9,7 +9,11 @@ for proper serialization/deserialization with Pydantic v2 API.
 import json
 from datetime import datetime, timezone
 
-from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, ConversationMessage, ConversationState
+from enhanced_agent_bus.models import (
+    CONSTITUTIONAL_HASH,
+    ConversationMessage,
+    ConversationState,
+)
 
 
 class TestConversationMessageSerialization:

@@ -5,7 +5,16 @@ Constitutional Hash: cdd01ef066bc6cf2
 Protocol definitions for dependency injection in the deliberation layer.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Protocol, Union, runtime_checkable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Union,
+    runtime_checkable,
+)
 
 try:
     from core.shared.types import JSONDict, JSONValue

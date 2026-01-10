@@ -19,7 +19,12 @@ Usage:
     metrics = profiler.get_metrics()
 """
 
-from .model_profiler import ModelProfiler, ProfilingMetrics, get_global_profiler, profile_inference
+from .model_profiler import (
+    ModelProfiler,
+    ProfilingMetrics,
+    get_global_profiler,
+    profile_inference,
+)
 
 __all__ = [
     "ModelProfiler",

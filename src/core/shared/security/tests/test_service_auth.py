@@ -7,7 +7,11 @@ import time
 import jwt
 import pytest
 from fastapi import HTTPException
-from src.core.shared.security.service_auth import SERVICE_ALGORITHM, SERVICE_SECRET, ServiceAuth
+from src.core.shared.security.service_auth import (
+    SERVICE_ALGORITHM,
+    SERVICE_SECRET,
+    ServiceAuth,
+)
 
 
 class TestServiceAuth:

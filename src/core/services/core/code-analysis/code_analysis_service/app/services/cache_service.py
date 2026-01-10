@@ -10,7 +10,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 import redis.asyncio as redis
-from app.utils.constitutional import CONSTITUTIONAL_HASH, ensure_constitutional_compliance
+from app.utils.constitutional import (
+    CONSTITUTIONAL_HASH,
+    ensure_constitutional_compliance,
+)
 from app.utils.logging import get_logger, performance_logger
 
 logger = get_logger("services.cache")

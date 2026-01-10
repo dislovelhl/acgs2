@@ -28,7 +28,11 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from .. import CONSTITUTIONAL_HASH
-from ..verification.z3_smt_verifier import PolicySpecification, VerificationResult, Z3PolicyVerifier
+from ..verification.z3_smt_verifier import (
+    PolicySpecification,
+    VerificationResult,
+    Z3PolicyVerifier,
+)
 
 logger = logging.getLogger(__name__)
 

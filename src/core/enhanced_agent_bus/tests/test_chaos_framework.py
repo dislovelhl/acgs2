@@ -27,7 +27,10 @@ try:
         get_chaos_engine,
         reset_chaos_engine,
     )
-    from enhanced_agent_bus.exceptions import AgentBusError, ConstitutionalHashMismatchError
+    from enhanced_agent_bus.exceptions import (
+        AgentBusError,
+        ConstitutionalHashMismatchError,
+    )
 except ImportError:
     import os
     import sys
@@ -500,9 +503,9 @@ class TestErrorInjection:
         actual_rate = errors_injected / samples
 
         # Should be close to target rate (within 10%)
-        assert abs(actual_rate - error_rate) < 0.1, (
-            f"Expected ~{error_rate} error rate, got {actual_rate}"
-        )
+        assert (
+            abs(actual_rate - error_rate) < 0.1
+        ), f"Expected ~{error_rate} error rate, got {actual_rate}"
 
         await engine.deactivate_scenario(scenario.name)
 

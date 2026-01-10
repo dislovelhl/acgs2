@@ -200,7 +200,10 @@ class TestHealthAggregatorIntegration:
         """Test realistic monitoring scenario with multiple services."""
         import pybreaker
 
-        from core.shared.circuit_breaker import CircuitBreakerConfig, get_circuit_breaker
+        from core.shared.circuit_breaker import (
+            CircuitBreakerConfig,
+            get_circuit_breaker,
+        )
 
         # Create services with different configurations
         services = {

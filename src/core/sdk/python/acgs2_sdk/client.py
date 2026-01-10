@@ -16,7 +16,12 @@ from uuid import uuid4
 
 import httpx
 from pydantic import BaseModel
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential_jitter,
+)
 
 from acgs2_sdk.config import ACGS2Config
 from acgs2_sdk.constants import (

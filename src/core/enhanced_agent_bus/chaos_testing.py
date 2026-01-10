@@ -39,7 +39,11 @@ except ImportError:
     get_circuit_breaker = None
 
 try:
-    from .exceptions import AgentBusError, ConstitutionalHashMismatchError, MessageTimeoutError
+    from .exceptions import (
+        AgentBusError,
+        ConstitutionalHashMismatchError,
+        MessageTimeoutError,
+    )
 except ImportError:
     from exceptions import (
         AgentBusError,  # type: ignore

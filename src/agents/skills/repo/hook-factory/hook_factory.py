@@ -9,7 +9,12 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from generator import HookGenerator, HookPackage, HookRequirements, generate_hook_from_request
+from generator import (
+    HookGenerator,
+    HookPackage,
+    HookRequirements,
+    generate_hook_from_request,
+)
 from validator import HookValidator
 
 

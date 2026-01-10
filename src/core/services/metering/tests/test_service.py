@@ -11,7 +11,12 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.models import CONSTITUTIONAL_HASH, MeterableOperation, MeteringQuota, MeteringTier
+from app.models import (
+    CONSTITUTIONAL_HASH,
+    MeterableOperation,
+    MeteringQuota,
+    MeteringTier,
+)
 from app.service import UsageMeteringService
 
 

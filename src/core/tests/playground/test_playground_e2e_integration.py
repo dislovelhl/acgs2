@@ -624,9 +624,9 @@ allow {
                 f"{PLAYGROUND_BACKEND_URL}/api/validate",
                 json={"policy": example["policy"]},
             )
-            assert validate_response.json()["valid"] is True, (
-                f"Category {category} example failed validation"
-            )
+            assert (
+                validate_response.json()["valid"] is True
+            ), f"Category {category} example failed validation"
 
             # Evaluate
             eval_response = httpx.post(

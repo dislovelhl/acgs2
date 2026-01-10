@@ -42,7 +42,10 @@ try:
 
     # Import security headers middleware
     try:
-        from src.core.shared.security import SecurityHeadersConfig, SecurityHeadersMiddleware
+        from src.core.shared.security import (
+            SecurityHeadersConfig,
+            SecurityHeadersMiddleware,
+        )
 
         SECURITY_HEADERS_AVAILABLE = True
     except ImportError:

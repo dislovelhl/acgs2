@@ -32,7 +32,13 @@ try:
     )
     from .interfaces import ProcessingStrategy
     from .memory_profiler import ProfilingLevel, get_memory_profiler
-    from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
+    from .models import (
+        CONSTITUTIONAL_HASH,
+        AgentMessage,
+        MessageStatus,
+        MessageType,
+        Priority,
+    )
     from .runtime_security import get_runtime_security_scanner
     from .utils import LRUCache
     from .validators import ValidationResult
@@ -141,7 +147,10 @@ class MessageProcessor:
 
         # SDPC Phase 2/3 Verifiers
         try:
-            from .deliberation_layer.intent_classifier import IntentClassifier, IntentType
+            from .deliberation_layer.intent_classifier import (
+                IntentClassifier,
+                IntentType,
+            )
             from .sdpc.ampo_engine import AMPOEngine
             from .sdpc.asc_verifier import ASCVerifier
             from .sdpc.evolution_controller import EvolutionController
@@ -155,7 +164,9 @@ class MessageProcessor:
                 )
                 from sdpc.ampo_engine import AMPOEngine  # type: ignore
                 from sdpc.asc_verifier import ASCVerifier  # type: ignore
-                from sdpc.evolution_controller import EvolutionController  # type: ignore
+                from sdpc.evolution_controller import (
+                    EvolutionController,  # type: ignore
+                )
                 from sdpc.graph_check import GraphCheckVerifier  # type: ignore
                 from sdpc.pacar_verifier import PACARVerifier  # type: ignore
             except (ImportError, ValueError):
@@ -164,9 +175,15 @@ class MessageProcessor:
                     IntentClassifier,
                     IntentType,
                 )
-                from core.enhanced_agent_bus.sdpc.ampo_engine import AMPOEngine  # type: ignore
-                from core.enhanced_agent_bus.sdpc.asc_verifier import ASCVerifier  # type: ignore
-                from core.enhanced_agent_bus.sdpc.evolution_controller import EvolutionController
+                from core.enhanced_agent_bus.sdpc.ampo_engine import (
+                    AMPOEngine,  # type: ignore
+                )
+                from core.enhanced_agent_bus.sdpc.asc_verifier import (
+                    ASCVerifier,  # type: ignore
+                )
+                from core.enhanced_agent_bus.sdpc.evolution_controller import (
+                    EvolutionController,
+                )
 
                 # type: ignore
                 from core.enhanced_agent_bus.sdpc.graph_check import (
@@ -209,7 +226,9 @@ class MessageProcessor:
                 PythonProcessingStrategy,
                 RustProcessingStrategy,
             )
-            from validation_strategies import StaticHashValidationStrategy  # type: ignore
+            from validation_strategies import (
+                StaticHashValidationStrategy,  # type: ignore
+            )
 
         py_proc = PythonProcessingStrategy(StaticHashValidationStrategy(strict=True))
         if self._isolated_mode:

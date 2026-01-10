@@ -13,7 +13,12 @@ Usage:
     # Access playground at http://localhost:8080/playground
 """
 
-from .examples import ExamplePolicy, get_example_by_id, get_example_categories, get_example_policies
+from .examples import (
+    ExamplePolicy,
+    get_example_by_id,
+    get_example_categories,
+    get_example_policies,
+)
 
 __all__ = [
     "ExamplePolicy",

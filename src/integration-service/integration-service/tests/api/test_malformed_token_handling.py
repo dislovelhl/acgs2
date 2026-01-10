@@ -247,9 +247,9 @@ class TestMalformedTokenCrossEndpoint:
                 response = test_client.get(url, headers=malformed_auth_headers)
 
             # All should return 401
-            assert response.status_code == 401, (
-                f"{method} {url} should reject malformed token with 401"
-            )
+            assert (
+                response.status_code == 401
+            ), f"{method} {url} should reject malformed token with 401"
 
             # All should have error detail
             assert "detail" in response.json()

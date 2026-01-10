@@ -137,7 +137,9 @@ class TestActualHITLManager:
     @pytest.fixture
     async def real_queue(self):
         """Create a real DeliberationQueue."""
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+        )
 
         queue = DeliberationQueue()
         yield queue
@@ -186,7 +188,9 @@ class TestActualHITLManager:
         assert "Notification sent to slack" in caplog.text
 
         # Verify status changed
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationStatus
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationStatus,
+        )
 
         task = real_queue.get_task(item_id)
         assert task.status == DeliberationStatus.UNDER_REVIEW

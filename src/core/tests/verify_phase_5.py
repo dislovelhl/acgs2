@@ -20,7 +20,9 @@ from src.core.enhanced_agent_bus.models import (
     MessageType,
     Priority,
 )
-from src.core.services.audit_service.core.anchor_mock import BlockchainAnchor  # noqa: E402
+from src.core.services.audit_service.core.anchor_mock import (  # noqa: E402
+    BlockchainAnchor,
+)
 from src.core.services.audit_service.core.audit_ledger import AuditLedger  # noqa: E402
 
 

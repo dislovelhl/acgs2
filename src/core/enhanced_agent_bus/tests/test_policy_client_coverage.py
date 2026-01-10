@@ -21,7 +21,11 @@ try:
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     from models import AgentMessage
-    from policy_client import DEFAULT_MAX_CACHE_SIZE, PolicyRegistryClient, get_policy_client
+    from policy_client import (
+        DEFAULT_MAX_CACHE_SIZE,
+        PolicyRegistryClient,
+        get_policy_client,
+    )
 
 
 class TestPolicyRegistryClientInit:

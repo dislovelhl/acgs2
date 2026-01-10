@@ -11,8 +11,15 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from enhanced_agent_bus.agent_bus import EnhancedAgentBus, get_agent_bus, reset_agent_bus
-    from enhanced_agent_bus.exceptions import BusNotStartedError, ConstitutionalHashMismatchError
+    from enhanced_agent_bus.agent_bus import (
+        EnhancedAgentBus,
+        get_agent_bus,
+        reset_agent_bus,
+    )
+    from enhanced_agent_bus.exceptions import (
+        BusNotStartedError,
+        ConstitutionalHashMismatchError,
+    )
     from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,
@@ -25,7 +32,11 @@ except ImportError:
     import sys
 
     sys.path.insert(0, "/home/dislove/document/acgs2")
-    from enhanced_agent_bus.agent_bus import EnhancedAgentBus, get_agent_bus, reset_agent_bus
+    from enhanced_agent_bus.agent_bus import (
+        EnhancedAgentBus,
+        get_agent_bus,
+        reset_agent_bus,
+    )
     from enhanced_agent_bus.models import (
         CONSTITUTIONAL_HASH,
         AgentMessage,

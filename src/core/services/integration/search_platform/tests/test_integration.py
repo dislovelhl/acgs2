@@ -262,7 +262,9 @@ class TestAuditTrailSearch:
         assert isinstance(result.events, list)
         # All should be critical
         for event in result.events:
-            from src.core.services.integration.search_platform.audit_search import AuditSeverity
+            from src.core.services.integration.search_platform.audit_search import (
+                AuditSeverity,
+            )
 
             assert event.severity == AuditSeverity.CRITICAL
 

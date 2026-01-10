@@ -28,7 +28,11 @@ from src.integrations.base import (
     IntegrationStatus,
     IntegrationType,
 )
-from src.integrations.jira_adapter import JiraAdapter, JiraCredentials, JiraDeploymentType
+from src.integrations.jira_adapter import (
+    JiraAdapter,
+    JiraCredentials,
+    JiraDeploymentType,
+)
 
 if TYPE_CHECKING:
     pass

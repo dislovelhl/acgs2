@@ -122,9 +122,9 @@ class TestJailbreakPrevention:
 
             # Assert low false positive rate
             false_positive_rate = false_positives / total_tests
-            assert false_positive_rate <= 0.2, (
-                f"False positive rate too high: {false_positive_rate:.2%}"
-            )
+            assert (
+                false_positive_rate <= 0.2
+            ), f"False positive rate too high: {false_positive_rate:.2%}"
 
         except ImportError:
             pytest.skip("Constitutional classifier not available")
@@ -203,9 +203,9 @@ class TestJailbreakPrevention:
             # Third request should be blocked
             context3 = {"trace_id": "test3", "user_id": client_id}
             result3 = await guardrails.process_request("test", context3)
-            assert not result3.get("allowed", True), (
-                "Third request should be blocked by rate limiting"
-            )
+            assert not result3.get(
+                "allowed", True
+            ), "Third request should be blocked by rate limiting"
 
             print("✅ Rate limiting working correctly")
 
@@ -257,7 +257,9 @@ class TestJailbreakPrevention:
     async def test_end_to_end_jailbreak_prevention(self):
         """End-to-end test of complete jailbreak prevention pipeline."""
         try:
-            from src.core.enhanced_agent_bus.runtime_security import get_runtime_security_scanner
+            from src.core.enhanced_agent_bus.runtime_security import (
+                get_runtime_security_scanner,
+            )
 
             scanner = get_runtime_security_scanner()
 
@@ -274,9 +276,9 @@ class TestJailbreakPrevention:
             )
 
             # Should be blocked or flagged
-            assert not result.is_secure or result.blocked, (
-                "Jailbreak attempt should be blocked or flagged"
-            )
+            assert (
+                not result.is_secure or result.blocked
+            ), "Jailbreak attempt should be blocked or flagged"
 
             # Should have performed comprehensive checks
             expected_checks = [

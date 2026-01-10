@@ -113,9 +113,9 @@ class TestUploadDownloadFlow:
 
         # Find our uploaded template
         template_ids = [item["id"] for item in data["items"]]
-        assert self.__class__.uploaded_template_id in template_ids, (
-            "Uploaded template not found in listing"
-        )
+        assert (
+            self.__class__.uploaded_template_id in template_ids
+        ), "Uploaded template not found in listing"
 
         # Verify template details in listing
         uploaded = next(

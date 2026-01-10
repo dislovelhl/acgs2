@@ -19,7 +19,11 @@ from models import (
     MessageType,
     Priority,
 )
-from validators import ValidationResult, validate_constitutional_hash, validate_message_content
+from validators import (
+    ValidationResult,
+    validate_constitutional_hash,
+    validate_message_content,
+)
 
 
 class TestConstitutionalHashValidation:

@@ -14,7 +14,12 @@ from datetime import datetime, timezone
 # Add the ACGS-2 core to the path - validates ACGS-2 availability
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../src/core"))
 
-from ..utils.logging_config import log_error_result, log_success_result, log_warning, setup_logging
+from ..utils.logging_config import (
+    log_error_result,
+    log_success_result,
+    log_warning,
+    setup_logging,
+)
 
 # Setup logging
 logger = setup_logging(__name__, json_format=True)

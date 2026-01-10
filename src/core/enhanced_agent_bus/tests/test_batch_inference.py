@@ -43,13 +43,13 @@ class TestONNXAvailableFlag:
         try:
             import onnxruntime
 
-            assert ONNX_AVAILABLE is True, (
-                "ONNX_AVAILABLE should be True when onnxruntime is installed"
-            )
+            assert (
+                ONNX_AVAILABLE is True
+            ), "ONNX_AVAILABLE should be True when onnxruntime is installed"
         except ImportError:
-            assert ONNX_AVAILABLE is False, (
-                "ONNX_AVAILABLE should be False when onnxruntime is not installed"
-            )
+            assert (
+                ONNX_AVAILABLE is False
+            ), "ONNX_AVAILABLE should be False when onnxruntime is not installed"
 
 
 class TestTokenizationCaching:
@@ -163,7 +163,10 @@ class TestClassLevelCaching:
 
     def test_scorer_singleton_pattern_works(self):
         """Test that get_impact_scorer returns singleton."""
-        from deliberation_layer.impact_scorer import get_impact_scorer, reset_impact_scorer
+        from deliberation_layer.impact_scorer import (
+            get_impact_scorer,
+            reset_impact_scorer,
+        )
 
         # Reset first to ensure clean state
         reset_impact_scorer()
@@ -621,7 +624,10 @@ class TestGlobalFunctions:
 
     def test_reset_impact_scorer_clears_global(self):
         """Test that reset_impact_scorer clears global scorer."""
-        from deliberation_layer.impact_scorer import get_impact_scorer, reset_impact_scorer
+        from deliberation_layer.impact_scorer import (
+            get_impact_scorer,
+            reset_impact_scorer,
+        )
 
         # Get a scorer first
         scorer = get_impact_scorer()
@@ -642,7 +648,10 @@ class TestGlobalFunctions:
 
     def test_calculate_message_impact_convenience(self):
         """Test calculate_message_impact convenience function."""
-        from deliberation_layer.impact_scorer import calculate_message_impact, reset_impact_scorer
+        from deliberation_layer.impact_scorer import (
+            calculate_message_impact,
+            reset_impact_scorer,
+        )
 
         reset_impact_scorer()
 

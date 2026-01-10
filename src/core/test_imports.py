@@ -17,5 +17,5 @@ try:
         provide_governance_feedback,
     )
 
-except ImportError as e:
+except ImportError:
     exit(1)

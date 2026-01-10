@@ -3,7 +3,10 @@ import unittest
 from datetime import datetime, timezone
 
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from src.core.enhanced_agent_bus.bundle_registry import CONSTITUTIONAL_HASH, BundleManifest
+from src.core.enhanced_agent_bus.bundle_registry import (
+    CONSTITUTIONAL_HASH,
+    BundleManifest,
+)
 
 
 class TestBundleVerification(unittest.TestCase):

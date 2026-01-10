@@ -143,13 +143,17 @@ class TestHITLManagerModuleLevelCode:
 
     def test_constitutional_hash_constant(self):
         """Test CONSTITUTIONAL_HASH constant is available."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import CONSTITUTIONAL_HASH
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import (
+            CONSTITUTIONAL_HASH,
+        )
 
         assert CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
 
     def test_deliberation_status_import(self):
         """Test DeliberationStatus is imported correctly."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import DeliberationStatus
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import (
+            DeliberationStatus,
+        )
 
         assert hasattr(DeliberationStatus, "PENDING")
         assert hasattr(DeliberationStatus, "APPROVED")

@@ -149,9 +149,9 @@ class TestBusConfigurationSecurityDefaults:
             config = BusConfiguration.from_environment()
 
             assert config.enable_maci is True, "from_environment() must default enable_maci=True"
-            assert config.maci_strict_mode is True, (
-                "from_environment() must default maci_strict_mode=True"
-            )
+            assert (
+                config.maci_strict_mode is True
+            ), "from_environment() must default maci_strict_mode=True"
         finally:
             # Restore environment variables
             for var, value in original_values.items():
@@ -221,9 +221,9 @@ class TestRustValidationStrategySecurityDefaults:
         is_valid, error = await strategy.validate(message)
 
         assert is_valid is False, "Missing validate method must fail validation"
-        assert "fail closed" in error.lower() or "no validation method" in error.lower(), (
-            "Error must indicate fail-closed behavior"
-        )
+        assert (
+            "fail closed" in error.lower() or "no validation method" in error.lower()
+        ), "Error must indicate fail-closed behavior"
 
 
 class TestConstitutionalHashPresence:
@@ -239,9 +239,9 @@ class TestConstitutionalHashPresence:
     def test_config_has_constitutional_hash(self):
         """BusConfiguration MUST have constitutional hash."""
         bus_config = BusConfiguration()
-        assert bus_config.constitutional_hash == "cdd01ef066bc6cf2", (
-            "BusConfiguration must use canonical constitutional hash"
-        )
+        assert (
+            bus_config.constitutional_hash == "cdd01ef066bc6cf2"
+        ), "BusConfiguration must use canonical constitutional hash"
 
     def test_validation_strategies_has_constitutional_hash(self):
         """validation_strategies.py MUST reference constitutional hash."""
@@ -252,9 +252,9 @@ class TestConstitutionalHashPresence:
 
         # Check that strategies use constitutional hash
         strategy = StaticHashValidationStrategy()
-        assert strategy._constitutional_hash == "cdd01ef066bc6cf2", (
-            "StaticHashValidationStrategy must use canonical constitutional hash"
-        )
+        assert (
+            strategy._constitutional_hash == "cdd01ef066bc6cf2"
+        ), "StaticHashValidationStrategy must use canonical constitutional hash"
 
 
 class TestSecurityDocumentation:
@@ -275,9 +275,9 @@ class TestSecurityDocumentation:
             from ..config import BusConfiguration as BC
 
         source = inspect.getsource(BC)
-        assert "fail" in source.lower() and "closed" in source.lower(), (
-            "BusConfiguration should document fail-closed behavior in comments"
-        )
+        assert (
+            "fail" in source.lower() and "closed" in source.lower()
+        ), "BusConfiguration should document fail-closed behavior in comments"
 
     def test_maci_security_rationale_documented(self):
         """Verify MACI security rationale is documented."""
@@ -294,9 +294,9 @@ class TestSecurityDocumentation:
         has_security_context = (
             "security" in source.lower() or "gödel" in source.lower() or "bypass" in source.lower()
         )
-        assert has_maci and has_security_context, (
-            "BusConfiguration should document MACI security rationale"
-        )
+        assert (
+            has_maci and has_security_context
+        ), "BusConfiguration should document MACI security rationale"
 
 
 # Run tests directly if executed

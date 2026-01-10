@@ -258,7 +258,11 @@ class TestMACIRoleDesynchronization:
         """
         try:
             from enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
+            from enhanced_agent_bus.maci_enforcement import (
+                MACIAction,
+                MACIEnforcer,
+                MACIRole,
+            )
 
             enforcer = MACIEnforcer()
 
@@ -281,7 +285,11 @@ class TestMACIRoleDesynchronization:
         """
         try:
             from enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
+            from enhanced_agent_bus.maci_enforcement import (
+                MACIAction,
+                MACIEnforcer,
+                MACIRole,
+            )
 
             enforcer = MACIEnforcer()
 
@@ -303,7 +311,11 @@ class TestMACIRoleDesynchronization:
         """
         try:
             from enhanced_agent_bus.exceptions import MACIRoleViolationError
-            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
+            from enhanced_agent_bus.maci_enforcement import (
+                MACIAction,
+                MACIEnforcer,
+                MACIRole,
+            )
 
             enforcer = MACIEnforcer()
 
@@ -339,7 +351,11 @@ class TestMACIRoleDesynchronization:
     async def test_all_roles_can_query(self) -> None:
         """Test that all roles can perform QUERY action."""
         try:
-            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
+            from enhanced_agent_bus.maci_enforcement import (
+                MACIAction,
+                MACIEnforcer,
+                MACIRole,
+            )
 
             enforcer = MACIEnforcer()
 
@@ -444,9 +460,9 @@ class TestPartialOPAOutages:
 
             source = inspect.getsource(OPAClient)
 
-            assert "fail-closed" in source.lower() or "SECURITY" in source, (
-                "OPA client should have fail-closed architecture"
-            )
+            assert (
+                "fail-closed" in source.lower() or "SECURITY" in source
+            ), "OPA client should have fail-closed architecture"
         except ImportError:
             pytest.skip("OPA client module not available")
 
@@ -491,7 +507,9 @@ class TestConflictingApprovals:
     async def test_voting_service_exists(self) -> None:
         """Test that voting service can be instantiated."""
         try:
-            from enhanced_agent_bus.deliberation_layer.voting_service import VotingService
+            from enhanced_agent_bus.deliberation_layer.voting_service import (
+                VotingService,
+            )
 
             service = VotingService()
             assert service is not None
@@ -502,7 +520,9 @@ class TestConflictingApprovals:
     async def test_election_creation(self) -> None:
         """Test that elections can be created for voting."""
         try:
-            from enhanced_agent_bus.deliberation_layer.voting_service import VotingService
+            from enhanced_agent_bus.deliberation_layer.voting_service import (
+                VotingService,
+            )
             from enhanced_agent_bus.models import AgentMessage, MessageType
 
             service = VotingService()

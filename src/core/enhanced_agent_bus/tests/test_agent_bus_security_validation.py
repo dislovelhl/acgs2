@@ -10,7 +10,12 @@ import pytest
 
 try:
     from enhanced_agent_bus.agent_bus import EnhancedAgentBus
-    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
+    from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
+        AgentMessage,
+        MessageType,
+        Priority,
+    )
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     import sys
@@ -18,7 +23,12 @@ except ImportError:
 
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
     from enhanced_agent_bus.agent_bus import EnhancedAgentBus
-    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
+    from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
+        AgentMessage,
+        MessageType,
+        Priority,
+    )
     from enhanced_agent_bus.validators import ValidationResult
 
 

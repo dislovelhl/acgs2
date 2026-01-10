@@ -835,7 +835,10 @@ class TestKubernetesNamespaceIsolation:
     @pytest.mark.integration
     def test_namespace_naming_convention(self):
         """Test namespace naming follows tenant convention."""
-        from src.core.shared.infrastructure.k8s_manager import K8sConfig, K8sResourceManager
+        from src.core.shared.infrastructure.k8s_manager import (
+            K8sConfig,
+            K8sResourceManager,
+        )
 
         config = K8sConfig(namespace_prefix="tenant-")
         manager = K8sResourceManager(config=config)
@@ -924,8 +927,12 @@ class TestConstitutionalCompliance:
     @pytest.mark.integration
     def test_constitutional_hash_consistent(self):
         """Test constitutional hash is consistent across components."""
-        from src.core.shared.acgs_logging.audit_logger import CONSTITUTIONAL_HASH as AUDIT_HASH
-        from src.core.shared.security.tenant_context import CONSTITUTIONAL_HASH as TENANT_HASH
+        from src.core.shared.acgs_logging.audit_logger import (
+            CONSTITUTIONAL_HASH as AUDIT_HASH,
+        )
+        from src.core.shared.security.tenant_context import (
+            CONSTITUTIONAL_HASH as TENANT_HASH,
+        )
 
         assert AUDIT_HASH == "cdd01ef066bc6cf2"
         assert TENANT_HASH == "cdd01ef066bc6cf2"

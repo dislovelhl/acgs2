@@ -19,7 +19,11 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 from routes.sso import get_saml_handler
-from src.core.shared.auth.saml_config import SAMLConfigurationError, SAMLIdPConfig, SAMLSPConfig
+from src.core.shared.auth.saml_config import (
+    SAMLConfigurationError,
+    SAMLIdPConfig,
+    SAMLSPConfig,
+)
 from src.core.shared.auth.saml_handler import (
     SAMLAuthenticationError,
     SAMLHandler,
