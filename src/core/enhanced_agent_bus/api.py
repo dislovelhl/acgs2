@@ -818,7 +818,7 @@ async def get_stability_metrics(
 @app.post("/messages", response_model=MessageResponse)
 @limiter.limit("10/minute")
 async def send_message(
-    _request: Request,
+    request: Request,
     background_tasks: BackgroundTasks,
     message_request: MessageRequest = Body(...),  # noqa: B008
     session_id: Optional[str] = Header(None, alias="X-Session-ID"),

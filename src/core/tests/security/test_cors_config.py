@@ -139,6 +139,10 @@ class TestEnvironmentDetection:
             ("testing", CORSEnvironment.TEST),
         ]
 
+        # Ensure other variables don't interfere
+        monkeypatch.delenv("CORS_ENVIRONMENT", raising=False)
+        monkeypatch.delenv("ENVIRONMENT", raising=False)
+
         for alias, expected in test_cases:
             monkeypatch.setenv("ENV", alias)
             assert detect_environment() == expected
@@ -187,6 +191,9 @@ class TestGetCorsConfig:
 
     def test_production_config(self, monkeypatch):
         """Test production configuration."""
+        # Ensure other variables don't interfere
+        monkeypatch.delenv("CORS_ENVIRONMENT", raising=False)
+        monkeypatch.delenv("ENVIRONMENT", raising=False)
         monkeypatch.setenv("ENV", "production")
         monkeypatch.delenv("CORS_ALLOWED_ORIGINS", raising=False)
 

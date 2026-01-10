@@ -18,7 +18,13 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import metering integration module
-from acgs_logging import get_logger  # noqa: E402
+try:
+    from core.shared.acgs_logging import get_logger
+except ImportError:
+    try:
+        from shared.acgs_logging import get_logger
+    except ImportError:
+        from acgs_logging import get_logger  # type: ignore[import-not-found]
 
 # Import metering components (noqa for path manipulation above)
 from metering import (
