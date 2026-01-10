@@ -29,6 +29,9 @@ RUN pip install --user --no-cache-dir \
 # Final stage
 FROM python:3.11-slim-bookworm
 
+# Apply OS security updates
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy installed packages from builder
