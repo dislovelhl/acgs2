@@ -284,7 +284,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./src/core
-          file: ./src/core/Dockerfile.optimized
+          file: ./src/core/deploy/Dockerfile.optimized
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.REGISTRY }}:${{ github.sha }},${{ env.REGISTRY }}:latest
