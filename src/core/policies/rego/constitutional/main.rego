@@ -6,6 +6,7 @@
 
 package acgs.constitutional
 
+import future.keywords.contains
 import future.keywords.if
 import future.keywords.in
 
@@ -161,43 +162,43 @@ valid_capabilities if {
 }
 
 # Validation errors - provide detailed feedback
-violations[msg] {
+violations contains msg if {
     not valid_constitutional_hash
     msg := sprintf("Constitutional hash mismatch: expected %s, got %s",
         [constitutional_hash, input.message.constitutional_hash])
 }
 
-violations[msg] {
+violations contains msg if {
     not input.message.message_id
     msg := "Missing required field: message_id"
 }
 
-violations[msg] {
+violations contains msg if {
     not input.message.from_agent
     msg := "Missing required field: from_agent"
 }
 
-violations[msg] {
+violations contains msg if {
     not input.message.message_type in valid_message_types
     msg := sprintf("Invalid message_type: %s. Must be one of: %v",
         [input.message.message_type, valid_message_types])
 }
 
-violations[msg] {
+violations contains msg if {
     not valid_agent_permissions
     input.context.agent_role != "system_admin"
     msg := sprintf("Agent role '%s' not permitted to send message type '%s'",
         [input.context.agent_role, input.message.message_type])
 }
 
-violations[msg] {
+violations contains msg if {
     input.message.tenant_id != ""
     input.message.tenant_id != input.context.tenant_id
     msg := sprintf("Tenant isolation violation: message tenant '%s' does not match agent tenant '%s'",
         [input.message.tenant_id, input.context.tenant_id])
 }
 
-violations[msg] {
+violations contains msg if {
     not valid_priority_escalation
     input.context.agent_role != "system_admin"
     priority := to_number(input.message.priority)
@@ -206,17 +207,17 @@ violations[msg] {
         [input.context.agent_role, priority, max_priority])
 }
 
-violations[msg] {
+violations contains msg if {
     not valid_payload_size
     msg := sprintf("Payload size limit exceeded: %d KB (max 1024 KB)", [input.context.payload_size_kb])
 }
 
-violations[msg] {
+violations contains msg if {
     not valid_rate_limit
     msg := "Rate limit exceeded for agent"
 }
 
-violations[msg] {
+violations contains msg if {
     not valid_capabilities
     msg := "Agent lacks required capabilities for this operation"
 }
@@ -229,7 +230,7 @@ message_expired if {
     now > expiry
 }
 
-violations[msg] {
+violations contains msg if {
     message_expired
     msg := sprintf("Message has expired at %s", [input.message.expires_at])
 }

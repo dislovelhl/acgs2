@@ -1,5 +1,9 @@
 package acgs.constitutional
 
+import future.keywords.contains
+import future.keywords.if
+import future.keywords.in
+
 # Constitutional AI Policy - Enforce hash integrity (Pillar 1)
 # ACGS-2 Standard: cdd01ef066bc6cf2
 # OWASP API Sec Top 10: Broken Auth, NIST AI RMF 1.2 Integrity
@@ -7,23 +11,23 @@ package acgs.constitutional
 
 default allow := false
 
-allow {
+allow if {
 	input.constitutional_hash == "cdd01ef066bc6cf2"
 	not deprecated_features_used
 	input.tenant_id != null  # Cross-policy tenant enforcement
 }
 
 # Input validation: hash exact match (no regex for perf/security)
-deprecated_features_used {
+deprecated_features_used if {
 	input.features[_] == "eval"  # No eval/exec (OWASP A03:2021 Injection)
 }
 
-deprecated_features_used {
+deprecated_features_used if {
 	input.features[_] == "legacy_sync"  # Enforce async/await
 }
 
 # Metrics: constitutional violations (P99 eval <1ms)
-violation[msg] {
+violation contains msg if {
 	not allow
 	msg := "Constitutional hash mismatch or deprecated features detected"
 }

@@ -6,6 +6,7 @@
 
 package acgs.agent_bus.authz
 
+import future.keywords.contains
 import future.keywords.if
 import future.keywords.in
 
@@ -241,26 +242,26 @@ allow_constitutional_update if {
 }
 
 # Authorization violations for audit logging
-violations[msg] {
+violations contains msg if {
     not valid_agent_role
     msg := sprintf("Invalid or inactive agent role: %s (status: %s)",
         [input.agent.role, input.agent.status])
 }
 
-violations[msg] {
+violations contains msg if {
     not authorized_action
     input.agent.role != "system_admin"
     msg := sprintf("Agent role '%s' not authorized for action '%s'",
         [input.agent.role, input.action])
 }
 
-violations[msg] {
+violations contains msg if {
     not authorized_target
     msg := sprintf("Agent '%s' not authorized to access target '%s'",
         [input.agent.agent_id, input.target.agent_id])
 }
 
-violations[msg] {
+violations contains msg if {
     not rate_limit_check
     input.agent.role != "system_admin"
     rate_limit := data.agent_roles[input.agent.role].rate_limit_per_minute
@@ -268,13 +269,13 @@ violations[msg] {
         [input.context.current_rate, rate_limit])
 }
 
-violations[msg] {
+violations contains msg if {
     not tenant_isolation_valid
     msg := sprintf("Tenant isolation violation: agent tenant '%s' cannot access target tenant '%s'",
         [input.agent.tenant_id, input.target.tenant_id])
 }
 
-violations[msg] {
+violations contains msg if {
     token_expired
     msg := sprintf("Authentication token expired at %s",
         [input.security_context.token_expiry])

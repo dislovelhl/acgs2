@@ -6,6 +6,7 @@
 
 package acgs.deliberation
 
+import future.keywords.contains
 import future.keywords.if
 import future.keywords.in
 
@@ -286,42 +287,42 @@ timeout_seconds := 300 if {
 }
 
 # Active risk factors for audit logging
-active_risk_factors[factor] {
+active_risk_factors contains factor if {
     high_impact_score
     factor := "high_impact_score"
 }
 
-active_risk_factors[factor] {
+active_risk_factors contains factor if {
     high_risk_action
     factor := "high_risk_action"
 }
 
-active_risk_factors[factor] {
+active_risk_factors contains factor if {
     sensitive_content_detected
     factor := "sensitive_content"
 }
 
-active_risk_factors[factor] {
+active_risk_factors contains factor if {
     constitutional_risk_detected
     factor := "constitutional_risk"
 }
 
-active_risk_factors[factor] {
+active_risk_factors contains factor if {
     multi_tenant_risk
     factor := "multi_tenant_risk"
 }
 
-active_risk_factors[factor] {
+active_risk_factors contains factor if {
     temporal_risk
     factor := "temporal_risk"
 }
 
-active_risk_factors[factor] {
+active_risk_factors contains factor if {
     resource_risk
     factor := "resource_risk"
 }
 
-active_risk_factors[factor] {
+active_risk_factors contains factor if {
     forced_deliberation
     factor := "forced_deliberation"
 }
