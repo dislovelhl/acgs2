@@ -303,7 +303,7 @@ jobs:
 
           # Deployment Simulation (Dry Run)
           echo "🚀 Starting deployment simulation..."
-          make reset-chain
+          make -C ${{ github.workspace }} reset-chain
           # Simulate contract deployment or agent initialization
           echo "Simulating service initialization..."
           # mock-deploy --env production --dry-run

@@ -39,12 +39,10 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        working-directory: ./src/core
         run: |
           pip install pre-commit ruff mypy pydantic
 
       - name: Lint with pre-commit
-        working-directory: ./src/core
         run: pre-commit run --all-files
 
       # Ruff check redundant as pre-commit already runs ruff, but kept as safety net
