@@ -198,9 +198,9 @@ class TestRegistryInitialization:
     def test_init_registry_default_inmemory(self):
         """Test default InMemoryAgentRegistry is used."""
         bus = EnhancedAgentBus(use_redis_registry=False, enable_maci=False)
-        from enhanced_agent_bus.registry import InMemoryAgentRegistry
-
-        assert isinstance(bus._registry, InMemoryAgentRegistry)
+        # Use type name check to avoid import path mismatch issues
+        # (core.enhanced_agent_bus vs enhanced_agent_bus)
+        assert type(bus._registry).__name__ == "InMemoryAgentRegistry"
 
 
 class TestUnregisterAgent:

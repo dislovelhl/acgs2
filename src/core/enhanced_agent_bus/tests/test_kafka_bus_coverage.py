@@ -84,10 +84,21 @@ class TestKafkaEventBusSendMessage:
             to_agent="receiver",
         )
 
-        with pytest.raises(MessageDeliveryError) as exc_info:
+        # Use try/except with class name check to avoid import path mismatch
+        # (core.enhanced_agent_bus.exceptions vs enhanced_agent_bus.exceptions)
+        exception_raised = False
+        exception_message = ""
+        exception_type = ""
+        try:
             await bus.send_message(message)
+        except Exception as exc:
+            exception_raised = True
+            exception_type = type(exc).__name__
+            exception_message = str(exc)
 
-        assert "not started" in str(exc_info.value).lower()
+        assert exception_raised, "Expected MessageDeliveryError to be raised"
+        assert exception_type == "MessageDeliveryError"
+        assert "not started" in exception_message.lower()
 
 
 class TestKafkaEventBusStartStop:
