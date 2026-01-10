@@ -359,7 +359,7 @@ def print_results(results: TestResults) -> None:
         pass
     # for validation in results.validations:
     #     status = "PASS" if validation.passed else "FAIL"
-    #     print(f"  [{status}] {validation.message}")
+
     if results.all_passed:
         pass
     else:

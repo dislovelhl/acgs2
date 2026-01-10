@@ -296,11 +296,9 @@ except (ImportError, ValueError):
             RedisVotingProtocol,
         )
     except (ImportError, ValueError):
-        ImpactScorerProtocol = (
-            AdaptiveRouterProtocol
-        ) = (
-            DeliberationQueueProtocol
-        ) = LLMAssistantProtocol = OPAGuardProtocol = RedisQueueProtocol = RedisVotingProtocol = Any
+        ImpactScorerProtocol = AdaptiveRouterProtocol = DeliberationQueueProtocol = (
+            LLMAssistantProtocol
+        ) = OPAGuardProtocol = RedisQueueProtocol = RedisVotingProtocol = Any
 
 __all__ = [
     "AgentRegistry",

@@ -206,7 +206,7 @@ def verify_linear_signature_sync(
         >>> signature = "sha256=abc123..."
         >>> is_valid = verify_linear_signature_sync(body, signature)
         >>> if is_valid:
-        ...     print("Signature verified!")
+        ...     # Signature verified!
     """
     try:
         # Get secret from config if not provided

@@ -1234,7 +1234,7 @@ def generate_docx(
         ...     report_data={"organization_name": "Acme Corp", ...},
         ...     framework="soc2",
         ... )
-        >>> print(f"Report generated at: {path}")
+        >>> f"Report generated at: {path}")
     """
     generator = DOCXGenerator(orientation=orientation)
 

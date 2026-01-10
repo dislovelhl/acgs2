@@ -69,15 +69,3 @@ class PSVVerusPolicy:
                 "reason": f"Verification error: {str(e)}",
                 "verification_status": VerificationStatus.FAILED.value,
             }
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    async def test():
-        policy = PSVVerusPolicy()
-        test_input = {"action": "delete_database", "user": {"id": "admin_user", "role": "admin"}}
-        result = await policy.evaluate(test_input)
-        print(f"Result: {result}")
-
-    asyncio.run(test())

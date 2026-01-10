@@ -214,9 +214,9 @@ class OPAClient:
             # Verification override if OPA allowed but proof fails (Safe-fail)
             if opa_result["allowed"] and not opa_result["proven"]:
                 opa_result["allowed"] = False
-                opa_result[
-                    "reason"
-                ] = f"Action allowed by OPA but failed formal verification: {policy.verification_status.value}"
+                opa_result["reason"] = (
+                    f"Action allowed by OPA but failed formal verification: {policy.verification_status.value}"
+                )
 
             return opa_result
         except Exception as e:

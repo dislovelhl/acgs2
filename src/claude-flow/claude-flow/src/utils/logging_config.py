@@ -76,7 +76,7 @@ def log_error_result(logger: logging.Logger, error_message: str, **extra_fields)
     """
     Log an error result in JSON format.
 
-    Replaces: print(json.dumps({"success": False, "error": ...}))
+    Replaces: print (json.dumps({"success": False, "error": ...}))
 
     Args:
         logger: Logger instance
@@ -89,7 +89,7 @@ def log_error_result(logger: logging.Logger, error_message: str, **extra_fields)
 
 def log_success_result(logger: logging.Logger, result_data: Dict[str, Any]) -> None:
     """
-    Log a success result in JSON format (replaces print(json.dumps(result))).
+    Log a success result in JSON format (replaces print (json.dumps(result))).
 
     Args:
         logger: Logger instance
@@ -100,7 +100,7 @@ def log_success_result(logger: logging.Logger, result_data: Dict[str, Any]) -> N
 
 def log_warning(logger: logging.Logger, message: str, **extra_fields) -> None:
     """
-    Log a warning message (replaces print(f"Warning: ...", file=sys.stderr)).
+    Log a warning message (replaces print (f"Warning: ...", file=sys.stderr)).
 
     Args:
         logger: Logger instance

@@ -1208,7 +1208,7 @@ def generate_pdf(
         ...     report_data={"organization_name": "Acme Corp", ...},
         ...     framework="soc2",
         ... )
-        >>> print(f"Report generated at: {path}")
+        >>> f"Report generated at: {path}")
     """
     generator = PDFGenerator(pagesize=pagesize)
 

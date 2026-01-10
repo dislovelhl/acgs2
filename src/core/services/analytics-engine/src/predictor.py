@@ -385,9 +385,7 @@ class ViolationPredictor:
                 "trend_direction": (
                     "increasing"
                     if predictions[-1] > predictions[0]
-                    else "decreasing"
-                    if predictions[-1] < predictions[0]
-                    else "stable"
+                    else "decreasing" if predictions[-1] < predictions[0] else "stable"
                 ),
             }
         else:

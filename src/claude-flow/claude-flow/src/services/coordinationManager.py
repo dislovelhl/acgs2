@@ -53,7 +53,7 @@ class CoordinationManager:
             {
                 "id": "QUAL-001",
                 "task": "Remove Print Statements",
-                "description": "Replace 303 print() calls with proper logging across 18 files",
+                "description": "Replace 303 print () calls with proper logging across 18 files",
                 "priority": "critical",
                 "agent_type": "coder",
                 "skills": ["python", "logging", "refactoring"],

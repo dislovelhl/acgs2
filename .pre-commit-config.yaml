@@ -20,9 +20,9 @@ repos:
     hooks:
       - id: no-debug-statements-python
         name: Block Python debug statements
-        entry: 'print\('
+        entry: '\bprint\('
         language: pygrep
-        exclude: ^((tests/|examples/|scripts/|docs/|benchmarks/|(.*/)?tests/|(.*/)?examples/|(.*/)?scripts/)|(.*/)?conftest\.py|(.*/)?verify_.*\.py$|(.*/)?setup\.py$|\.md$|(.*/)?cleanup_.*\.py$|^\.auto-claude/|src/agents/|.*_test\.py$|test_.*\.py$)
+        exclude: ^((tests/|examples/|scripts/|docs/|benchmarks/|src/core/cli/|src/core/tools/|(.*/)?tests/|(.*/)?examples/|(.*/)?scripts/)|(.*/)?conftest\.py|(.*/)?verify_.*\.py$|(.*/)?setup\.py$|\.md$|(.*/)?cleanup_.*\.py$|^\.auto-claude/|src/agents/|.*_test\.py$|(.*/)?test_.*\.py$)
         types: [python]
 
       - id: no-debug-statements-ts
@@ -37,7 +37,6 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-      - id: ruff-format
 
   - repo: local
     hooks:

@@ -50,11 +50,9 @@ except ImportError:
     ModelID = str
 
     class SupportsCache(Protocol):  # type: ignore[no-redef]
-        def get(self, key: str) -> Optional[Any]:
-            ...
+        def get(self, key: str) -> Optional[Any]: ...
 
-        def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-            ...
+        def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None: ...
 
 
 from .models import (

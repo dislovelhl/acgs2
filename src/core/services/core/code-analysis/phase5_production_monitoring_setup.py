@@ -469,9 +469,9 @@ Generated: {datetime.now().isoformat()}
 
         # Execute monitoring setup tasks
         try:
-            self.monitoring_results[
-                "prometheus_metrics_collection"
-            ] = self.verify_prometheus_metrics_collection()
+            self.monitoring_results["prometheus_metrics_collection"] = (
+                self.verify_prometheus_metrics_collection()
+            )
             self.monitoring_results["grafana_dashboards"] = self.setup_grafana_dashboards()
             self.monitoring_results["alerting_rules"] = self.configure_alerting_rules()
             self.monitoring_results["log_aggregation"] = await self.establish_log_aggregation()

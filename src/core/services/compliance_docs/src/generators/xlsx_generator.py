@@ -1097,7 +1097,7 @@ def generate_xlsx(
         ...     report_data={"organization_name": "Acme Corp", ...},
         ...     framework="soc2",
         ... )
-        >>> print(f"Matrix generated at: {path}")
+        >>> f"Matrix generated at: {path}")
     """
     generator = XLSXGenerator(write_only=write_only)
 

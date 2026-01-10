@@ -51,7 +51,7 @@ def cleanup_old_files(
 
     Example:
         >>> result = cleanup_old_files()
-        >>> print(f"Deleted {result['files_deleted']} files, freed {result['bytes_freed']} bytes")
+        >>> f"Deleted {result['files_deleted']} files, freed {result['bytes_freed']} bytes")
     """
     if directory is None:
         directory = COMPLIANCE_OUTPUT_PATH

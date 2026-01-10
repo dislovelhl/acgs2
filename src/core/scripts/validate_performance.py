@@ -203,9 +203,7 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
             "overall_status": (
                 "fail"
                 if any(r.status == Status.FAIL for r in results)
-                else "warning"
-                if any(r.status == Status.WARNING for r in results)
-                else "pass"
+                else "warning" if any(r.status == Status.WARNING for r in results) else "pass"
             ),
         }
         logging.info(json.dumps(output, indent=2))
@@ -233,9 +231,7 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
         overall_status = (
             "FAIL"
             if any(r.status == Status.FAIL for r in results)
-            else "WARNING"
-            if any(r.status == Status.WARNING for r in results)
-            else "PASS"
+            else "WARNING" if any(r.status == Status.WARNING for r in results) else "PASS"
         )
         logging.info(f"Overall Status: {overall_status}")
         logging.info("")

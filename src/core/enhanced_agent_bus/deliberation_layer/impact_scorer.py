@@ -748,7 +748,7 @@ class ImpactScorer:
             ...     {"content": "normal status check"},
             ... ]
             >>> scores = scorer.batch_score_impact(messages)
-            >>> print(scores)  # [0.85, 0.25]
+            >>> scores  # [0.85, 0.25]
         """
         if not messages:
             return []
