@@ -178,9 +178,9 @@ class TestPagerDutyTicketMapping:
         for severity, expected_urgency in expected_mapping.items():
             event.severity = severity
             urgency = severity_to_pagerduty_urgency(event, {})
-            assert (
-                urgency == expected_urgency
-            ), f"Severity {severity.value} should map to {expected_urgency}, got {urgency}"
+            assert urgency == expected_urgency, (
+                f"Severity {severity.value} should map to {expected_urgency}, got {urgency}"
+            )
 
     def test_severity_to_pagerduty_urgency_custom_mapping(self, sample_event: IntegrationEvent):
         """Test custom urgency mapping overrides default mapping."""

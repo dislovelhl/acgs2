@@ -122,9 +122,9 @@ class TestJailbreakPrevention:
 
             # Assert low false positive rate
             false_positive_rate = false_positives / total_tests
-            assert (
-                false_positive_rate <= 0.2
-            ), f"False positive rate too high: {false_positive_rate:.2%}"
+            assert false_positive_rate <= 0.2, (
+                f"False positive rate too high: {false_positive_rate:.2%}"
+            )
 
         except ImportError:
             pytest.skip("Constitutional classifier not available")
@@ -203,9 +203,9 @@ class TestJailbreakPrevention:
             # Third request should be blocked
             context3 = {"trace_id": "test3", "user_id": client_id}
             result3 = await guardrails.process_request("test", context3)
-            assert not result3.get(
-                "allowed", True
-            ), "Third request should be blocked by rate limiting"
+            assert not result3.get("allowed", True), (
+                "Third request should be blocked by rate limiting"
+            )
 
             print("✅ Rate limiting working correctly")
 
@@ -276,9 +276,9 @@ class TestJailbreakPrevention:
             )
 
             # Should be blocked or flagged
-            assert (
-                not result.is_secure or result.blocked
-            ), "Jailbreak attempt should be blocked or flagged"
+            assert not result.is_secure or result.blocked, (
+                "Jailbreak attempt should be blocked or flagged"
+            )
 
             # Should have performed comprehensive checks
             expected_checks = [

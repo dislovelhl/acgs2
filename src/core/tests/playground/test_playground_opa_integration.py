@@ -342,9 +342,9 @@ class TestPlaygroundExamplesIntegration:
 
         for example in data:
             for field in required_fields:
-                assert (
-                    field in example
-                ), f"Missing field '{field}' in example '{example.get('id', 'unknown')}'"
+                assert field in example, (
+                    f"Missing field '{field}' in example '{example.get('id', 'unknown')}'"
+                )
 
     def test_example_policies_are_valid(self, http_client: httpx.Client):
         """Test all example policies can be validated without errors."""
@@ -357,13 +357,13 @@ class TestPlaygroundExamplesIntegration:
                 json={"policy": example["policy"]},
             )
 
-            assert (
-                validate_response.status_code == 200
-            ), f"Validation request failed for example '{example['id']}'"
+            assert validate_response.status_code == 200, (
+                f"Validation request failed for example '{example['id']}'"
+            )
             data = validate_response.json()
-            assert (
-                data["valid"] is True
-            ), f"Example '{example['id']}' has invalid policy: {data['errors']}"
+            assert data["valid"] is True, (
+                f"Example '{example['id']}' has invalid policy: {data['errors']}"
+            )
 
     def test_example_policies_can_be_evaluated(self, http_client: httpx.Client):
         """Test all example policies can be evaluated with their test input."""
@@ -379,13 +379,13 @@ class TestPlaygroundExamplesIntegration:
                 },
             )
 
-            assert (
-                evaluate_response.status_code == 200
-            ), f"Evaluation request failed for example '{example['id']}'"
+            assert evaluate_response.status_code == 200, (
+                f"Evaluation request failed for example '{example['id']}'"
+            )
             data = evaluate_response.json()
-            assert (
-                data["success"] is True
-            ), f"Example '{example['id']}' evaluation failed: {data.get('error')}"
+            assert data["success"] is True, (
+                f"Example '{example['id']}' evaluation failed: {data.get('error')}"
+            )
 
     def test_examples_cover_diverse_categories(self, http_client: httpx.Client):
         """Test examples cover multiple categories as required by spec."""

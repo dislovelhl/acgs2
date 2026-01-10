@@ -43,13 +43,13 @@ class TestONNXAvailableFlag:
         try:
             import onnxruntime
 
-            assert (
-                ONNX_AVAILABLE is True
-            ), "ONNX_AVAILABLE should be True when onnxruntime is installed"
+            assert ONNX_AVAILABLE is True, (
+                "ONNX_AVAILABLE should be True when onnxruntime is installed"
+            )
         except ImportError:
-            assert (
-                ONNX_AVAILABLE is False
-            ), "ONNX_AVAILABLE should be False when onnxruntime is not installed"
+            assert ONNX_AVAILABLE is False, (
+                "ONNX_AVAILABLE should be False when onnxruntime is not installed"
+            )
 
 
 class TestTokenizationCaching:

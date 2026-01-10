@@ -179,9 +179,9 @@ class TestReviewWorkflow:
             None,
         )
         assert template is not None, "Template not found in listing"
-        assert (
-            template["is_verified"] is True
-        ), "Template should show is_verified=true in listing (verified badge)"
+        assert template["is_verified"] is True, (
+            "Template should show is_verified=true in listing (verified badge)"
+        )
         assert template["status"] == "published"
 
     def test_10_verify_filter_by_verified_returns_approved_template(self, client: TestClient):
@@ -193,9 +193,9 @@ class TestReviewWorkflow:
 
         # Our template should be in verified results
         template_ids = [item["id"] for item in data["items"]]
-        assert (
-            self.__class__.template_id in template_ids
-        ), "Verified template should appear in is_verified=true filter results"
+        assert self.__class__.template_id in template_ids, (
+            "Verified template should appear in is_verified=true filter results"
+        )
 
     def test_11_verify_review_history(self, client: TestClient):
         """Verify review history contains the approval record."""
@@ -221,9 +221,9 @@ class TestReviewWorkflow:
 
         # Our template should NOT be in the pending queue anymore
         template_ids = [item["id"] for item in data["items"]]
-        assert (
-            self.__class__.template_id not in template_ids
-        ), "Approved template should not be in pending review queue"
+        assert self.__class__.template_id not in template_ids, (
+            "Approved template should not be in pending review queue"
+        )
 
 
 class TestRejectWorkflow:
@@ -290,9 +290,9 @@ class TestRejectWorkflow:
         data = response.json()
 
         template_ids = [item["id"] for item in data["items"]]
-        assert (
-            self.__class__.reject_template_id in template_ids
-        ), "Resubmitted template should be in review queue"
+        assert self.__class__.reject_template_id in template_ids, (
+            "Resubmitted template should be in review queue"
+        )
 
 
 class TestReviewEdgeCases:

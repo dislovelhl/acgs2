@@ -660,9 +660,9 @@ class TestDriftDetection:
 
         for drift_share, expected_severity in test_cases:
             severity = drift_detector._calculate_severity(drift_share)
-            assert (
-                severity == expected_severity
-            ), f"Expected {expected_severity} for drift_share={drift_share}, got {severity}"
+            assert severity == expected_severity, (
+                f"Expected {expected_severity} for drift_share={drift_share}, got {severity}"
+            )
 
 
 # ============================================================================

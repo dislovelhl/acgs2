@@ -553,9 +553,9 @@ class TestFaultRecovery:
 
         assert results["success"], f"Recovery test failed: {results}"
         assert results["recovery_time_seconds"] is not None, "Recovery time should be measured"
-        assert (
-            results["recovery_time_seconds"] < 60
-        ), f"Recovery took too long: {results['recovery_time_seconds']}s"
+        assert results["recovery_time_seconds"] < 60, (
+            f"Recovery took too long: {results['recovery_time_seconds']}s"
+        )
         assert results["requests_after_recovery"] > 0, "Should handle requests after recovery"
 
     @pytest.mark.asyncio
@@ -565,9 +565,9 @@ class TestFaultRecovery:
         results = await tester.test_single_service_failure_recovery("deliberation_layer")
 
         assert results["success"], f"Recovery test failed: {results}"
-        assert (
-            results["requests_after_recovery"] >= 2
-        ), "Should handle multiple requests after recovery"
+        assert results["requests_after_recovery"] >= 2, (
+            "Should handle multiple requests after recovery"
+        )
 
     @pytest.mark.asyncio
     async def test_cascading_failure_scenario(self):
@@ -577,9 +577,9 @@ class TestFaultRecovery:
 
         assert results["success"], f"Cascading recovery failed: {results}"
         assert len(results["recovery_order"]) == 2, "Should recover both services"
-        assert (
-            results["total_downtime_seconds"] < 120
-        ), f"Downtime too long: {results['total_downtime_seconds']}s"
+        assert results["total_downtime_seconds"] < 120, (
+            f"Downtime too long: {results['total_downtime_seconds']}s"
+        )
 
     @pytest.mark.asyncio
     async def test_degraded_mode_with_slow_service(self):
@@ -591,9 +591,9 @@ class TestFaultRecovery:
         assert results["requests_completed"] > 0, "Should complete some requests in degraded mode"
         # Allow higher latency in degraded mode
         if results["average_latency_ms"]:
-            assert (
-                results["average_latency_ms"] < 15000
-            ), f"Even degraded mode too slow: {results['average_latency_ms']}ms"
+            assert results["average_latency_ms"] < 15000, (
+                f"Even degraded mode too slow: {results['average_latency_ms']}ms"
+            )
 
     @pytest.mark.asyncio
     async def test_audit_data_consistency_during_failures(self):
