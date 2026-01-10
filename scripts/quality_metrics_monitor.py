@@ -69,9 +69,7 @@ class QualityMetricsMonitor:
                         try:
                             with open(os.path.join(root, file), "r", encoding="utf-8") as f:
                                 total_lines += len(f.readlines())
-                        except (
-                            Exception
-                        ):  # nosec B110 - File reading errors are expected in monitoring
+                        except Exception:  # nosec B110 - File reading errors are expected in monitoring
                             pass
 
             metrics["total_lines"] = total_lines

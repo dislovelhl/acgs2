@@ -6,8 +6,8 @@ Validates the deliberation layer implementation with simulated scenarios.
 import asyncio
 import logging
 
-from src.core.enhanced_agent_bus.deliberation_layer.integration import DeliberationLayer
-from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+from core.enhanced_agent_bus.deliberation_layer.integration import DeliberationLayer
+from core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

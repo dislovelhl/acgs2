@@ -11,7 +11,7 @@ from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -26,13 +26,13 @@ if TYPE_CHECKING:
 
 # Import centralized constitutional hash with fallback
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 # Default Redis URL with fallback
 try:
-    from src.core.shared.redis_config import get_redis_url
+    from core.shared.redis_config import get_redis_url
 
     DEFAULT_REDIS_URL = get_redis_url()
 except ImportError:
@@ -274,6 +274,6 @@ class BusConfiguration:
 
 
 try:
-    from src.core.shared.config import settings
+    from core.shared.config import settings
 except ImportError:
     settings = BusConfiguration()  # Use as fallback if shared settings not available

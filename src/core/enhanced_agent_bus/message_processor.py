@@ -10,7 +10,7 @@ from contextlib import nullcontext
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -59,7 +59,12 @@ except (ImportError, ValueError):
         def get_memory_profiler(*args: Any, **kwargs: Any) -> None:
             return None
 
-    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority  # type: ignore
+    from models import (
+        CONSTITUTIONAL_HASH,
+        AgentMessage,  # type: ignore
+        MessageType,
+        Priority,
+    )
     from runtime_security import get_runtime_security_scanner  # type: ignore
     from utils import LRUCache  # type: ignore
     from validators import ValidationResult  # type: ignore
@@ -155,23 +160,19 @@ class MessageProcessor:
                 from sdpc.pacar_verifier import PACARVerifier  # type: ignore
             except (ImportError, ValueError):
                 # Third fallback for deep module nesting in some test runners
-                from src.core.enhanced_agent_bus.deliberation_layer.intent_classifier import (  # type: ignore
+                from core.enhanced_agent_bus.deliberation_layer.intent_classifier import (  # type: ignore
                     IntentClassifier,
                     IntentType,
                 )
-                from src.core.enhanced_agent_bus.sdpc.ampo_engine import AMPOEngine  # type: ignore
-                from src.core.enhanced_agent_bus.sdpc.asc_verifier import (
-                    ASCVerifier,  # type: ignore
-                )
-                from src.core.enhanced_agent_bus.sdpc.evolution_controller import (
-                    EvolutionController,
-                )
+                from core.enhanced_agent_bus.sdpc.ampo_engine import AMPOEngine  # type: ignore
+                from core.enhanced_agent_bus.sdpc.asc_verifier import ASCVerifier  # type: ignore
+                from core.enhanced_agent_bus.sdpc.evolution_controller import EvolutionController
 
                 # type: ignore
-                from src.core.enhanced_agent_bus.sdpc.graph_check import (
+                from core.enhanced_agent_bus.sdpc.graph_check import (
                     GraphCheckVerifier,  # type: ignore
                 )
-                from src.core.enhanced_agent_bus.sdpc.pacar_verifier import (
+                from core.enhanced_agent_bus.sdpc.pacar_verifier import (
                     PACARVerifier,  # type: ignore
                 )
 

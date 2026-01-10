@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Union
 logger = logging.getLogger(__name__)
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -46,7 +46,7 @@ except ImportError:
 
 # Import centralized constitutional hash with fallback
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

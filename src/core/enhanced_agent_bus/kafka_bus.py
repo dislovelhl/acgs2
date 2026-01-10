@@ -23,8 +23,7 @@ try:
     from .models import AgentMessage, MessageType
     from .shared.config import settings
 except ImportError:
-    from src.core.shared.config import settings  # type: ignore
-
+    from core.shared.config import settings  # type: ignore
     from exceptions import MessageDeliveryError  # type: ignore
     from models import AgentMessage, MessageType  # type: ignore
 

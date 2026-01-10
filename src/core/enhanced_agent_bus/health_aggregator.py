@@ -15,14 +15,15 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
     import pybreaker
-    from src.core.shared.circuit_breaker import CircuitBreakerRegistry
+
+    from core.shared.circuit_breaker import CircuitBreakerRegistry
 
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:

@@ -21,9 +21,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from acgs_logging import get_logger  # noqa: E402
 
 # Import metering components (noqa for path manipulation above)
-from metering import (  # noqa: E402
+from metering import (
     AsyncMeteringQueue,
-    BillingStatus,
+    BillingStatus,  # noqa: E402
     MeteredDecision,
     MeteringClient,
     MeteringConfig,
@@ -34,8 +34,8 @@ from metering import (  # noqa: E402
     get_metering_queue,
 )
 
-from metering_integration import (  # noqa: E402
-    CONSTITUTIONAL_HASH,
+from metering_integration import (
+    CONSTITUTIONAL_HASH,  # noqa: E402
     METERING_AVAILABLE,
     metered_operation,
     reset_metering,
@@ -51,7 +51,7 @@ except ImportError:
 
 # Import metering models with fallback mocks
 try:
-    from src.core.services.metering.app.models import MeterableOperation, MeteringTier
+    from core.services.metering.app.models import MeterableOperation, MeteringTier
 except ImportError:
     # Create mock enums for testing when metering service not available
     from enum import Enum

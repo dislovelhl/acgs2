@@ -13,15 +13,15 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Union
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]  # type: ignore
     JSONValue = Any  # type: ignore
 
 
 # Policy imports
-from src.core.shared.policy.models import PolicySpecification, VerificationStatus
-from src.core.shared.policy.unified_generator import UnifiedVerifiedPolicyGenerator
+from core.shared.policy.models import PolicySpecification, VerificationStatus
+from core.shared.policy.unified_generator import UnifiedVerifiedPolicyGenerator
 
 from .context import ConversationContext
 from .dialog import ActionType, DialogAction
@@ -29,13 +29,13 @@ from .nlu import NLUResult
 
 # Audit imports
 try:
-    from src.core.services.audit_service.core.audit_ledger import get_audit_ledger
+    from core.services.audit_service.core.audit_ledger import get_audit_ledger
 except ImportError:
     get_audit_ledger = None
 
 # Import centralized constitutional hash with fallback
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

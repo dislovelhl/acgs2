@@ -83,9 +83,9 @@ class TestMessageProcessorDebug:
 
         # Original assertions with detailed error messages
         assert result.is_valid, f"Expected valid result, got errors: {result.errors}"
-        assert (
-            valid_message.status == MessageStatus.DELIVERED
-        ), f"Expected status DELIVERED, got {valid_message.status}"
+        assert valid_message.status == MessageStatus.DELIVERED, (
+            f"Expected status DELIVERED, got {valid_message.status}"
+        )
 
         logger.debug("\n[DEBUG] ✓ Test passed")
 
@@ -109,9 +109,9 @@ class TestMessageProcessorDebug:
         # Original assertions with detailed error messages
         assert not result.is_valid, "Expected invalid result"
         assert len(result.errors) > 0, "Expected at least one error"
-        assert (
-            "Constitutional hash mismatch" in result.errors[0]
-        ), f"Expected 'Constitutional hash mismatch' in error, got: {result.errors[0]}"
+        assert "Constitutional hash mismatch" in result.errors[0], (
+            f"Expected 'Constitutional hash mismatch' in error, got: {result.errors[0]}"
+        )
 
         logger.debug("\n[DEBUG] ✓ Test passed")
 

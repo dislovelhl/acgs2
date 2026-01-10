@@ -13,8 +13,8 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 )
 
-from src.core.enhanced_agent_bus.ai_assistant.context import ConversationContext, ConversationState
-from src.core.enhanced_agent_bus.ai_assistant.dialog import (
+from core.enhanced_agent_bus.ai_assistant.context import ConversationContext, ConversationState
+from core.enhanced_agent_bus.ai_assistant.dialog import (
     ActionType,
     ConversationFlow,
     DialogAction,
@@ -23,11 +23,11 @@ from src.core.enhanced_agent_bus.ai_assistant.dialog import (
     FlowNode,
     RuleBasedDialogPolicy,
 )
-from src.core.enhanced_agent_bus.ai_assistant.nlu import Entity, Intent, NLUResult
+from core.enhanced_agent_bus.ai_assistant.nlu import Entity, Intent, NLUResult
 
 # Import centralized constitutional hash with fallback
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

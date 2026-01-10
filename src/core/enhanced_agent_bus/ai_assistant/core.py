@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, Union
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -26,7 +26,7 @@ from .response import ResponseConfig, ResponseGenerator, TemplateResponseGenerat
 
 # Import centralized constitutional hash with fallback
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

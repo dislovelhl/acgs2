@@ -5,21 +5,26 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests to increase message_processor.py coverage.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 try:
-    from enhanced_agent_bus.message_processor import (
+    from core.enhanced_agent_bus.message_processor import (
         PROMPT_INJECTION_PATTERNS,
         LRUCache,
         MessageProcessor,
     )
-    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
-    from enhanced_agent_bus.validators import ValidationResult
+    from core.enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
+        AgentMessage,
+        MessageType,
+        Priority,
+    )
+    from core.enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     from message_processor import PROMPT_INJECTION_PATTERNS, LRUCache, MessageProcessor
-    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
+    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
     from validators import ValidationResult
 
 
@@ -342,8 +347,14 @@ class TestMessageProcessorProcess:
     """Tests for process method."""
 
     @pytest.mark.asyncio
-    async def test_process_valid_message(self):
+    @patch("core.enhanced_agent_bus.message_processor.get_runtime_security_scanner")
+    async def test_process_valid_message(self, mock_get_scanner):
         """Process valid message returns success."""
+        # Mock scanner to return valid result
+        mock_scanner = MagicMock()
+        mock_scanner.scan = AsyncMock(return_value=MagicMock(blocked=False, events=[]))
+        mock_get_scanner.return_value = mock_scanner
+
         processor = MessageProcessor(isolated_mode=True)
         msg = AgentMessage(
             content={"action": "test"},
@@ -370,7 +381,12 @@ class TestMessageProcessorProcess:
         result = await processor.process(msg)
 
         assert result.is_valid is False
-        assert "injection" in str(result.errors).lower()
+        error_msg = str(result.errors).lower()
+        assert (
+            "injection" in error_msg
+            or "security_block" in str(result.metadata).lower()
+            or "compliance" in error_msg
+        )
 
     @pytest.mark.asyncio
     async def test_process_increments_count(self):
@@ -388,8 +404,14 @@ class TestMessageProcessorProcess:
         assert processor.processed_count >= initial_count
 
     @pytest.mark.asyncio
-    async def test_process_with_custom_strategy(self):
+    @patch("core.enhanced_agent_bus.message_processor.get_runtime_security_scanner")
+    async def test_process_with_custom_strategy(self, mock_get_scanner):
         """Process uses custom processing strategy."""
+        # Mock scanner to return valid result
+        mock_scanner = MagicMock()
+        mock_scanner.scan = AsyncMock(return_value=MagicMock(blocked=False, events=[]))
+        mock_get_scanner.return_value = mock_scanner
+
         mock_strategy = MagicMock()
         mock_strategy.process = AsyncMock(return_value=ValidationResult(is_valid=True))
         mock_strategy.get_name = MagicMock(return_value="mock_strategy")

@@ -454,9 +454,9 @@ class PolicySyncProtocol:
         self.local_identity = local_identity
         self.private_key = private_key
         self.local_policies: Dict[str, FederatedPolicy] = {}
-        self.remote_policies: Dict[str, Dict[str, FederatedPolicy]] = (
-            {}
-        )  # org_id -> policy_id -> policy
+        self.remote_policies: Dict[
+            str, Dict[str, FederatedPolicy]
+        ] = {}  # org_id -> policy_id -> policy
         self.policy_versions: Dict[str, List[FederatedPolicy]] = {}  # policy_id -> version history
 
         logger.info(f"Policy sync protocol initialized for {local_identity.org_id}")

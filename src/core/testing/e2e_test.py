@@ -249,9 +249,9 @@ class E2ETestClient:
             "required_fields"
         ]
         for field in expected_fields:
-            assert (
-                field in governance_response
-            ), f"Governance response missing required field: {field}"
+            assert field in governance_response, (
+                f"Governance response missing required field: {field}"
+            )
 
         assert (
             governance_response["decision"]
@@ -285,9 +285,9 @@ class TestE2EIntegration:
             result = await client.test_end_to_end_workflow()
 
             assert result["success"], "End-to-end workflow should succeed"
-            assert (
-                result["total_latency_ms"] < 5000
-            ), f"Latency {result['total_latency_ms']}ms exceeds 5s threshold"
+            assert result["total_latency_ms"] < 5000, (
+                f"Latency {result['total_latency_ms']}ms exceeds 5s threshold"
+            )
             assert result["decision"] in [
                 "approved",
                 "rejected",
@@ -376,9 +376,9 @@ class TestE2EIntegration:
             deliberation_response = await client.send_to_service(
                 "deliberation_layer", "/process", message
             )
-            assert (
-                deliberation_response["lane"] == "deliberation"
-            ), "High impact message should go to deliberation"
+            assert deliberation_response["lane"] == "deliberation", (
+                "High impact message should go to deliberation"
+            )
 
             item_id = deliberation_response.get("item_id")
             assert item_id, "Should have deliberation item ID"

@@ -13,13 +13,13 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
 
 
-from src.core.enhanced_agent_bus.config import BusConfiguration
+from core.enhanced_agent_bus.config import BusConfiguration
 
 
 class IntentType(Enum):
@@ -112,14 +112,51 @@ except ImportError:
 class IntentClassifier:
     """Classifies user intent to determine optimal processing strategies."""
 
+    DEFAULT_CONFIDENCE = 0.5
+    BASE_CONFIDENCE = 0.7
+    MAX_RULE_CONFIDENCE = 1.0
+    CONFIDENCE_BOOST_PER_MATCH = 0.1
+
+    REASONING_KEYWORDS = ["calculate", "prove", "reason", "step by step", "analyze"]
+    FACTUAL_KEYWORDS = [
+        "tell me about",
+        "who is",
+        "what is",
+        "where is",
+        "what happened in",
+        "date of",
+        "historical",
+        "how many",
+    ]
+    CREATIVE_KEYWORDS = ["write a story", "poem", "joke", "creative", "imagine", "song"]
+
     def __init__(
-        self, model_name: str = "distilbert-base-uncased", config: Optional[BusConfiguration] = None
+        self,
+        model_name: str = "distilbert-base-uncased",
+        config: Optional[BusConfiguration] = None,
+        llm_enabled: bool = False,
+        llm_confidence_threshold: float = 0.8,
     ):
         self.model_name = model_name
         self.config = config or BusConfiguration()
-        # In a real implementation, we would load a distilled LLM or BERT model here.
+        self.llm_enabled = llm_enabled
+        self.llm_confidence_threshold = llm_confidence_threshold
+
+        # Override config if args provided
+        if llm_enabled:
+            self.config.llm_enabled = True
+        if llm_confidence_threshold:
+            self.config.llm_confidence_threshold = llm_confidence_threshold
+
+        # Ensure defaults if not in config
+        if not hasattr(self.config, "llm_enabled"):
+            self.config.llm_enabled = llm_enabled
+        if not hasattr(self.config, "llm_confidence_threshold"):
+            self.config.llm_confidence_threshold = llm_confidence_threshold
+
         # For Phase 1, we use dynamic heuristic pattern matching with an LLM fallback hook.
         logger.info(f"IntentClassifier initialized with model: {model_name}")
+        self._llm_client_initialized = False  # Used by tests
 
     def classify(self, content: str) -> IntentType:
         """Determines the intent type of the provided content."""
@@ -232,6 +269,14 @@ Respond with ONLY a JSON object in this exact format:
     # Maximum content length to send to LLM (to control costs)
     MAX_CONTENT_LENGTH: int = 2000
 
+    def _get_llm_params(self) -> JSONDict:
+        """Get LLM parameters for classification."""
+        return {
+            "model": getattr(self.config, "llm_model", "gpt-3.5-turbo"),
+            "temperature": 0.0,
+            "max_tokens": 100,
+        }
+
     async def _invoke_llm_classification(self, content: str) -> Optional[JSONDict]:
         """Invoke LLM for intent classification.
 
@@ -314,51 +359,65 @@ Respond with ONLY a JSON object in this exact format:
 
         return intent_map.get(intent_str)
 
+    async def classify_async_with_metadata(
+        self, content: str, context: Optional[JSONDict] = None
+    ) -> ClassificationResult:
+        """
+        Classify intent asynchronously and return full metadata.
+
+        Uses rule-based classification first, falling back to LLM if confidence is low
+        and LLM is enabled.
+        """
+        # 1. Rule-based classification
+        rule_intent, rule_confidence = self.classify_with_confidence(content)
+
+        # Check if we should use LLM
+        # We use LLM if:
+        # a) LLM is enabled
+        # b) Rule confidence is below threshold
+        threshold = self.llm_confidence_threshold
+        llm_enabled = self.llm_enabled
+
+        if llm_enabled and rule_confidence < threshold:
+            # Try LLM
+            llm_result_dict = await self._invoke_llm_classification(content)
+
+            if llm_result_dict:
+                llm_intent = self._parse_llm_intent(llm_result_dict)
+                if llm_intent:
+                    return ClassificationResult(
+                        intent=llm_intent,
+                        confidence=float(llm_result_dict.get("confidence", 0.8)),
+                        routing_path=RoutingPath.LLM,
+                        latency_ms=0.0,
+                        rule_based_intent=rule_intent,
+                        rule_based_confidence=rule_confidence,
+                        llm_intent=llm_intent,
+                        llm_confidence=float(llm_result_dict.get("confidence", 0.8)),
+                        llm_reasoning=llm_result_dict.get("reasoning"),
+                    )
+
+            # Fallback if LLM failed or returned no intent
+            return ClassificationResult(
+                intent=rule_intent,
+                confidence=rule_confidence,
+                routing_path=RoutingPath.LLM_FALLBACK,
+                latency_ms=0.0,
+                rule_based_intent=rule_intent,
+                rule_based_confidence=rule_confidence,
+            )
+
+        # 2. Return rule-based result matching high confidence
+        return ClassificationResult(
+            intent=rule_intent,
+            confidence=rule_confidence,
+            routing_path=RoutingPath.RULE_BASED,
+            latency_ms=0.0,
+            rule_based_intent=rule_intent,
+            rule_based_confidence=rule_confidence,
+        )
+
     async def classify_async(self, content: str, context: Optional[JSONDict] = None) -> IntentType:
         """Asynchronous classification with optional context/LLM fallback."""
-        # 1. Try heuristic classification first
-        intent = self.classify(content)
-
-        # 2. If intent is GENERAL (ambiguous), fallback to LLM
-        if intent == IntentType.GENERAL and self.config.llm_model:
-            try:
-                # Prepare prompt for intent classification
-                system_prompt = """
-                Classify the following user input into one of these categories:
-                - factual: Question about facts, data, history, or specific entities.
-                - creative: Request for story, poem, song, or creative writing.
-                - reasoning: Complex logical problem, math, or step-by-step analysis.
-                - general: Simple greeting, conversational filler, or ambiguous request.
-
-                Respond with ONLY the category name in lowercase.
-                """
-
-                response = await litellm.acompletion(
-                    model=self.config.llm_model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": content},
-                    ],
-                    max_tokens=self.config.llm_max_tokens,
-                    temperature=0,
-                    caching=self.config.llm_use_cache,
-                )
-
-                llm_intent = response.choices[0].message.content.strip().lower()
-
-                # Map LLM response to IntentType
-                for it in IntentType:
-                    if it.value == llm_intent:
-                        logger.info(
-                            f"LLM classified intent as: {llm_intent} (heuristic was GENERAL)"
-                        )
-                        return it
-
-                logger.warning(
-                    f"LLM returned unknown intent: {llm_intent}, falling back to GENERAL"
-                )
-
-            except Exception as e:
-                logger.error(f"LLM intent classification failed: {str(e)}")
-
-        return intent
+        result = await self.classify_async_with_metadata(content, context)
+        return result.intent

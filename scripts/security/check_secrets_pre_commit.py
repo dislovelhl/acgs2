@@ -421,9 +421,7 @@ def report_findings(
     print("Option 1: Remove the secret and use environment variables")  # noqa: T201
     print("   1. Remove the secret value from the file")  # noqa: T201
     print("   2. Add to .env file (ensure .env is in .gitignore)")  # noqa: T201
-    print(
-        "   3. Load via: from src.core.shared.secrets_manager import get_secrets_manager"
-    )  # noqa: T201
+    print("   3. Load via: from src.core.shared.secrets_manager import get_secrets_manager")  # noqa: T201
     print("                secret = get_secrets_manager().get('SECRET_NAME')")  # noqa: T201
     print()  # noqa: T201
     print("Option 2: If this is a development placeholder")  # noqa: T201
@@ -436,9 +434,7 @@ def report_findings(
     print("   3. Include production mitigation notes")  # noqa: T201
     print()  # noqa: T201
     print("=" * 80)  # noqa: T201
-    print(
-        f"Total findings: {total_findings} secret(s) in {len(findings_by_file)} file(s)"
-    )  # noqa: T201
+    print(f"Total findings: {total_findings} secret(s) in {len(findings_by_file)} file(s)")  # noqa: T201
     print("=" * 80)  # noqa: T201
     print()  # noqa: T201
     print("📚 Documentation: docs/SECRETS_DETECTION.md")  # noqa: T201
@@ -460,9 +456,7 @@ def main():
         print(f"   Constitutional Hash: {CONSTITUTIONAL_HASH}")  # noqa: T201
         print("   Patterns from: secrets_manager.py")  # noqa: T201
         print(f"   Allow-list from: {ALLOWLIST_CONFIG_PATH.name}")  # noqa: T201
-        print(
-            f"   Config loaded: {'✅' if ALLOWLIST_CONFIG_PATH.exists() else '⚠️ Using defaults'}"
-        )  # noqa: T201
+        print(f"   Config loaded: {'✅' if ALLOWLIST_CONFIG_PATH.exists() else '⚠️ Using defaults'}")  # noqa: T201
         print()  # noqa: T201
 
     # Get files to scan

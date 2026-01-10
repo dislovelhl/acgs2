@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # Import centralized config for MACI settings
 try:
-    from src.core.shared.config import settings as global_settings
+    from core.shared.config import settings as global_settings
 except ImportError:
     global_settings = None  # type: ignore
 
@@ -29,16 +29,16 @@ try:
     from .utils import get_iso_timestamp
 except ImportError:
     try:
-        from exceptions import (  # type: ignore
-            MACICrossRoleValidationError,
+        from exceptions import (
+            MACICrossRoleValidationError,  # type: ignore
             MACIError,
             MACIRoleNotAssignedError,
             MACIRoleViolationError,
             MACISelfValidationError,
         )
-        from models import (  # type: ignore
+        from models import (
             CONSTITUTIONAL_HASH,
-            AgentMessage,
+            AgentMessage,  # type: ignore
             MessageType,
             get_enum_value,
         )
@@ -47,13 +47,17 @@ except ImportError:
         import sys
 
         sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-        from exceptions import (  # type: ignore
-            MACICrossRoleValidationError,
+        from exceptions import (
+            MACICrossRoleValidationError,  # type: ignore
             MACIRoleNotAssignedError,
             MACIRoleViolationError,
             MACISelfValidationError,
         )
-        from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType  # type: ignore
+        from models import (
+            CONSTITUTIONAL_HASH,
+            AgentMessage,  # type: ignore
+            MessageType,
+        )
 
 logger = logging.getLogger(__name__)
 

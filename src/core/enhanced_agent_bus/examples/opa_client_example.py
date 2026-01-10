@@ -15,9 +15,9 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from models import CONSTITUTIONAL_HASH  # noqa: E402
-from opa_client import (  # noqa: E402
+from opa_client import (
     OPAClient,
-    close_opa_client,
+    close_opa_client,  # noqa: E402
     get_opa_client,
     initialize_opa_client,
 )

@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Union
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -29,9 +29,15 @@ try:
 except (ImportError, ValueError):
     # Fallback for direct execution or testing
     try:
-        from deliberation_queue import DeliberationStatus, get_deliberation_queue  # type: ignore
+        from deliberation_queue import (
+            DeliberationStatus,  # type: ignore
+            get_deliberation_queue,
+        )
         from impact_scorer import calculate_message_impact  # type: ignore
-        from intent_classifier import IntentClassifier, IntentType  # type: ignore
+        from intent_classifier import (
+            IntentClassifier,  # type: ignore
+            IntentType,
+        )
 
         try:
             from ..config import BusConfiguration

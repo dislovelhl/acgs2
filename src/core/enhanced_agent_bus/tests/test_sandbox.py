@@ -18,8 +18,8 @@ import pytest
 
 # Import sandbox module
 try:
-    from enhanced_agent_bus.sandbox import (  # noqa: E402
-        FirecrackerSandbox,
+    from enhanced_agent_bus.sandbox import (
+        FirecrackerSandbox,  # noqa: E402
         SandboxProvider,
         WasmSandbox,
         get_sandbox_provider,

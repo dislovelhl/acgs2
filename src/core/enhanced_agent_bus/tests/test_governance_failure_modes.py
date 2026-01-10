@@ -444,9 +444,9 @@ class TestPartialOPAOutages:
 
             source = inspect.getsource(OPAClient)
 
-            assert (
-                "fail-closed" in source.lower() or "SECURITY" in source
-            ), "OPA client should have fail-closed architecture"
+            assert "fail-closed" in source.lower() or "SECURITY" in source, (
+                "OPA client should have fail-closed architecture"
+            )
         except ImportError:
             pytest.skip("OPA client module not available")
 

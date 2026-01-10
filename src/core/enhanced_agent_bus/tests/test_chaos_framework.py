@@ -500,9 +500,9 @@ class TestErrorInjection:
         actual_rate = errors_injected / samples
 
         # Should be close to target rate (within 10%)
-        assert (
-            abs(actual_rate - error_rate) < 0.1
-        ), f"Expected ~{error_rate} error rate, got {actual_rate}"
+        assert abs(actual_rate - error_rate) < 0.1, (
+            f"Expected ~{error_rate} error rate, got {actual_rate}"
+        )
 
         await engine.deactivate_scenario(scenario.name)
 

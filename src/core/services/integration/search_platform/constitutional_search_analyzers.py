@@ -360,9 +360,9 @@ class FalsePositiveSuppressor:
     """
 
     def __init__(self):
-        self.feedback_db: Dict[str, Dict[str, int]] = (
-            {}
-        )  # violation_hash -> {"confirmed": count, "false_positive": count}
+        self.feedback_db: Dict[
+            str, Dict[str, int]
+        ] = {}  # violation_hash -> {"confirmed": count, "false_positive": count}
         self.ml_model = None  # Placeholder for ML model
 
     def should_suppress(self, violation: ConstitutionalViolation) -> bool:

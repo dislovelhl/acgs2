@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -41,8 +41,8 @@ try:
     )
 except ImportError:
     # Fallback for direct execution or testing
-    from opa_guard_models import (  # type: ignore
-        GUARD_CONSTITUTIONAL_HASH,
+    from opa_guard_models import (
+        GUARD_CONSTITUTIONAL_HASH,  # type: ignore
         CriticReview,
         GuardDecision,
         GuardResult,

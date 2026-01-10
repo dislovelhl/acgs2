@@ -20,7 +20,7 @@ from enhanced_agent_bus.acl_adapters.base import ACLAdapter, AdapterConfig
 from enhanced_agent_bus.acl_adapters.registry import AdapterRegistry, get_adapter, get_registry
 
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

@@ -143,9 +143,9 @@ class TestCellularResilience:
         proc_isolated = MessageProcessor(
             use_dynamic_policy=True, isolated_mode=True, enable_maci=False
         )
-        assert (
-            not proc_isolated._use_dynamic_policy
-        ), "Isolated mode should always disable dynamic policy"
+        assert not proc_isolated._use_dynamic_policy, (
+            "Isolated mode should always disable dynamic policy"
+        )
         assert proc_isolated._isolated_mode, "Isolated mode flag should be True"
 
         # Test 2: Isolated mode = False respects POLICY_CLIENT_AVAILABLE
@@ -154,7 +154,7 @@ class TestCellularResilience:
             use_dynamic_policy=True, isolated_mode=False, enable_maci=False
         )
         expected_dynamic = message_processor.POLICY_CLIENT_AVAILABLE
-        assert (
-            proc_normal._use_dynamic_policy == expected_dynamic
-        ), f"Non-isolated mode with use_dynamic_policy=True should match POLICY_CLIENT_AVAILABLE={expected_dynamic}"
+        assert proc_normal._use_dynamic_policy == expected_dynamic, (
+            f"Non-isolated mode with use_dynamic_policy=True should match POLICY_CLIENT_AVAILABLE={expected_dynamic}"
+        )
         assert not proc_normal._isolated_mode, "Non-isolated mode flag should be False"

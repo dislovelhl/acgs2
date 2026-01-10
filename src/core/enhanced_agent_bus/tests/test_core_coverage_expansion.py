@@ -230,7 +230,7 @@ class TestCoreFeatureFlags:
         # If enabled, the metrics module was imported
         if METRICS_ENABLED:
             try:
-                from src.core.shared.metrics import MESSAGES_TOTAL
+                from core.shared.metrics import MESSAGES_TOTAL
 
                 assert MESSAGES_TOTAL is not None
             except ImportError:
@@ -241,7 +241,7 @@ class TestCoreFeatureFlags:
         assert isinstance(CIRCUIT_BREAKER_ENABLED, bool)
         if CIRCUIT_BREAKER_ENABLED:
             try:
-                from src.core.shared.circuit_breaker import get_circuit_breaker
+                from core.shared.circuit_breaker import get_circuit_breaker
 
                 assert get_circuit_breaker is not None
             except ImportError:

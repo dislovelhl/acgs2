@@ -21,7 +21,7 @@ try:
     from ..models import CONSTITUTIONAL_HASH
 except (ImportError, ValueError):
     try:
-        from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH
+        from core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH
     except ImportError:
         try:
             from models import CONSTITUTIONAL_HASH
@@ -56,21 +56,25 @@ try:
 except (ImportError, ValueError):
     try:
         from adaptive_router import get_adaptive_router  # type: ignore
-        from deliberation_queue import (  # type: ignore
-            DeliberationStatus,
+        from deliberation_queue import (
+            DeliberationStatus,  # type: ignore
             VoteType,
             get_deliberation_queue,
         )
         from impact_scorer import get_impact_scorer  # type: ignore
         from llm_assistant import get_llm_assistant  # type: ignore
-        from opa_guard import GuardDecision, GuardResult, OPAGuard  # type: ignore
+        from opa_guard import (
+            GuardDecision,
+            GuardResult,  # type: ignore
+            OPAGuard,
+        )
         from redis_integration import (  # type: ignore
             get_redis_deliberation_queue,
             get_redis_voting_system,
         )
 
-        from interfaces import (  # type: ignore
-            AdaptiveRouterProtocol,
+        from interfaces import (
+            AdaptiveRouterProtocol,  # type: ignore
             DeliberationQueueProtocol,
             ImpactScorerProtocol,
             LLMAssistantProtocol,
@@ -86,21 +90,25 @@ except (ImportError, ValueError):
         if d not in sys.path:
             sys.path.append(d)
         from adaptive_router import get_adaptive_router  # type: ignore
-        from deliberation_queue import (  # type: ignore
-            DeliberationStatus,
+        from deliberation_queue import (
+            DeliberationStatus,  # type: ignore
             VoteType,
             get_deliberation_queue,
         )
         from impact_scorer import get_impact_scorer  # type: ignore
         from llm_assistant import get_llm_assistant  # type: ignore
-        from opa_guard import GuardDecision, GuardResult, OPAGuard  # type: ignore
+        from opa_guard import (
+            GuardDecision,
+            GuardResult,  # type: ignore
+            OPAGuard,
+        )
         from redis_integration import (  # type: ignore
             get_redis_deliberation_queue,
             get_redis_voting_system,
         )
 
-        from interfaces import (  # type: ignore
-            AdaptiveRouterProtocol,
+        from interfaces import (
+            AdaptiveRouterProtocol,  # type: ignore
             DeliberationQueueProtocol,
             ImpactScorerProtocol,
             LLMAssistantProtocol,

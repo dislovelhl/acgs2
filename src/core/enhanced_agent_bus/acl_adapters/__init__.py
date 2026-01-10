@@ -20,7 +20,7 @@ Adapters:
 - PolisAdapter: Democratic deliberation API (placeholder)
 
 Usage:
-    from src.core.enhanced_agent_bus.acl_adapters import AdapterRegistry, Z3Adapter
+    from core.enhanced_agent_bus.acl_adapters import AdapterRegistry, Z3Adapter
 
     registry = AdapterRegistry()
     z3 = registry.get_or_create("z3", Z3Adapter, Z3AdapterConfig())

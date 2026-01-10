@@ -27,8 +27,8 @@ except (ImportError, ValueError):
         from exceptions import AgentBusError  # type: ignore
     except ImportError:
         try:
-            from src.core.enhanced_agent_bus.config import BusConfiguration
-            from src.core.enhanced_agent_bus.exceptions import AgentBusError
+            from core.enhanced_agent_bus.config import BusConfiguration
+            from core.enhanced_agent_bus.exceptions import AgentBusError
         except ImportError:
             # Fallback for standalone usage
             BusConfiguration = None  # type: ignore
@@ -36,7 +36,7 @@ except (ImportError, ValueError):
 
 # Import constitutional hash
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = os.environ.get("CONSTITUTIONAL_HASH", "cdd01ef066bc6cf2")
 

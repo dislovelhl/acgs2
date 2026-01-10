@@ -54,8 +54,8 @@ except ImportError:
     # slowapi not available - rate limiting will be disabled
 
 try:
-    from src.core.shared.security.cors_config import get_cors_config
-    from src.core.shared.security.tenant_context import TenantContextConfig, TenantContextMiddleware
+    from core.shared.security.cors_config import get_cors_config
+    from core.shared.security.tenant_context import TenantContextConfig, TenantContextMiddleware
 except ImportError:
     # Fallback for standalone/testing
     def get_cors_config() -> Dict[str, Any]:  # type: ignore[misc]
@@ -71,7 +71,7 @@ except ImportError:
 
 
 try:
-    from src.core.shared.acgs_logging import create_correlation_middleware, init_service_logging
+    from core.shared.acgs_logging import create_correlation_middleware, init_service_logging
 
     # Initialize structured logging
     logger = init_service_logging("enhanced-agent-bus", level="INFO", json_format=True)
@@ -102,8 +102,8 @@ try:
     from .models import AgentMessage, MessageType, Priority
 except (ImportError, ValueError):
     try:
-        from exceptions import (  # type: ignore[no-redef]
-            AgentBusError,
+        from exceptions import (
+            AgentBusError,  # type: ignore[no-redef]
             AgentError,
             BusNotStartedError,
             BusOperationError,
@@ -123,7 +123,7 @@ except (ImportError, ValueError):
         )
     except (ImportError, ValueError):
         try:
-            from src.core.enhanced_agent_bus.governance.ccai_framework import get_ccai_governance
+            from core.enhanced_agent_bus.governance.ccai_framework import get_ccai_governance
         except ImportError:
             # Mock for testing if import fails
             def get_ccai_governance() -> Any:  # type: ignore[misc]
@@ -655,7 +655,7 @@ class LatencyTracker:
 _latency_tracker = LatencyTracker()
 
 try:
-    from src.core.shared.security.tenant_context import get_tenant_id
+    from core.shared.security.tenant_context import get_tenant_id
 except ImportError:
 
     async def get_tenant_id(  # type: ignore[misc]

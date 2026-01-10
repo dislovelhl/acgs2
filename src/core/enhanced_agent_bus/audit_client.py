@@ -19,13 +19,14 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
     import pybreaker
-    from src.core.shared.circuit_breaker import CircuitBreakerConfig, get_circuit_breaker
+
+    from core.shared.circuit_breaker import CircuitBreakerConfig, get_circuit_breaker
 
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:

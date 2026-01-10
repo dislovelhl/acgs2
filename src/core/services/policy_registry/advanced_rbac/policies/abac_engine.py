@@ -17,9 +17,9 @@ if str(core_path) not in sys.path:
 
 from shared.types import JSONDict, JSONValue  # noqa: E402
 
-from ..models.abac_models import (  # noqa: E402
+from ..models.abac_models import (
     ABACPolicy,
-    ABACRule,
+    ABACRule,  # noqa: E402
     AccessRequest,
     Attribute,
     AttributeCondition,

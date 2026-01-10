@@ -64,7 +64,7 @@ Production-ready AI assistant with constitutional governance integration.
 Provides NLU, dialog management, and response generation with constitutional validation.
 
 Example usage:
-    from src.core.enhanced_agent_bus.ai_assistant import AIAssistant, create_assistant
+    from core.enhanced_agent_bus.ai_assistant import AIAssistant, create_assistant
 
     # Quick start
     assistant = await create_assistant(name="My Assistant")
@@ -75,7 +75,7 @@ Example usage:
     logging.info(result.response_text)
 
     # Full control
-    from src.core.enhanced_agent_bus.ai_assistant import (
+    from core.enhanced_agent_bus.ai_assistant import (
         AIAssistant,
         AssistantConfig,
         NLUEngine,
@@ -93,7 +93,7 @@ Example usage:
 
 # Import centralized constitutional hash with fallback
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

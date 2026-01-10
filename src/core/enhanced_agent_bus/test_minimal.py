@@ -15,7 +15,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import directly from the modules
 from message_processor import MessageProcessor  # noqa: E402
-from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType  # noqa: E402
+from models import (
+    CONSTITUTIONAL_HASH,
+    AgentMessage,  # noqa: E402
+    MessageStatus,
+    MessageType,
+)
 
 
 async def test_basic():

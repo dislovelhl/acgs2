@@ -8,8 +8,9 @@ import logging
 import time
 
 import pytest
-from src.core.enhanced_agent_bus.core import MessageProcessor
-from src.core.enhanced_agent_bus.models import AgentMessage, Priority
+
+from core.enhanced_agent_bus.core import MessageProcessor
+from core.enhanced_agent_bus.models import AgentMessage, Priority
 
 # Use DEBUG level to see the circuit breaker transitions
 logging.basicConfig(level=logging.DEBUG)

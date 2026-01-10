@@ -93,8 +93,8 @@ def _init_prometheus_metrics() -> None:
     """Initialize Prometheus metrics with fallback."""
     global METRICS_ENABLED, MESSAGE_QUEUE_DEPTH, set_service_info
     try:
-        from src.core.shared.metrics import MESSAGE_QUEUE_DEPTH as _mqd
-        from src.core.shared.metrics import set_service_info as _ssi
+        from core.shared.metrics import MESSAGE_QUEUE_DEPTH as _mqd
+        from core.shared.metrics import set_service_info as _ssi
 
         MESSAGE_QUEUE_DEPTH = _mqd
         set_service_info = _ssi
@@ -128,10 +128,10 @@ def _init_circuit_breaker() -> None:
     global circuit_breaker_health_check, initialize_core_circuit_breakers
     global CircuitBreakerConfig
     try:
-        from src.core.shared.circuit_breaker import CircuitBreakerConfig as _cbc
-        from src.core.shared.circuit_breaker import circuit_breaker_health_check as _cbhc
-        from src.core.shared.circuit_breaker import get_circuit_breaker as _gcb
-        from src.core.shared.circuit_breaker import initialize_core_circuit_breakers as _icb
+        from core.shared.circuit_breaker import CircuitBreakerConfig as _cbc
+        from core.shared.circuit_breaker import circuit_breaker_health_check as _cbhc
+        from core.shared.circuit_breaker import get_circuit_breaker as _gcb
+        from core.shared.circuit_breaker import initialize_core_circuit_breakers as _icb
 
         get_circuit_breaker = _gcb
         circuit_breaker_health_check = _cbhc
@@ -189,9 +189,7 @@ def _init_crypto_service() -> None:
     """Initialize crypto service with fallback."""
     global CRYPTO_AVAILABLE, CryptoService
     try:
-        from src.core.services.policy_registry.app.services.crypto_service import (
-            CryptoService as _cs,
-        )
+        from core.services.policy_registry.app.services.crypto_service import CryptoService as _cs
 
         CryptoService = _cs
         CRYPTO_AVAILABLE = True
@@ -210,7 +208,7 @@ def _init_settings() -> None:
     """Initialize settings/config with fallback."""
     global CONFIG_AVAILABLE, settings
     try:
-        from src.core.shared.config import settings as _s
+        from core.shared.config import settings as _s
 
         settings = _s
         CONFIG_AVAILABLE = True
@@ -223,7 +221,7 @@ def _init_audit_client() -> None:
     """Initialize audit client with fallback."""
     global AUDIT_CLIENT_AVAILABLE, AuditClient
     try:
-        from src.core.shared.audit_client import AuditClient as _ac
+        from core.shared.audit_client import AuditClient as _ac
 
         AuditClient = _ac
         AUDIT_CLIENT_AVAILABLE = True
@@ -366,7 +364,7 @@ def _init_maci() -> None:
 def _init_redis_config() -> str:
     """Initialize Redis config and return default URL."""
     try:
-        from src.core.shared.redis_config import get_redis_url
+        from core.shared.redis_config import get_redis_url
 
         return get_redis_url()
     except ImportError:

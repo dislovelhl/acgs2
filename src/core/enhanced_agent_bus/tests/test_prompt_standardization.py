@@ -9,8 +9,7 @@ sys.path.append(os.path.abspath("/home/dislove/document/acgs2/src/core"))
 sys.path.append(os.path.abspath("/home/dislove/document/acgs2/src/core/enhanced_agent_bus"))
 
 # Import LLMAssistant
-from src.core.shared.constants import CONSTITUTIONAL_HASH
-
+from core.shared.constants import CONSTITUTIONAL_HASH
 from enhanced_agent_bus.deliberation_layer.llm_assistant import LLMAssistant
 from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 

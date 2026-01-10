@@ -7,7 +7,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
-    from src.core.shared.types import AgentInfo, JSONDict, JSONValue
+    from core.shared.types import AgentInfo, JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any

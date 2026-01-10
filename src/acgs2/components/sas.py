@@ -54,9 +54,9 @@ class SafetyAlignmentSystem(SafetyAlignmentSystemInterface):
         self.npt = npt
         self.policy = self._load_default_policy()
         self.session_risks: Dict[str, int] = {}
-        self.session_denials: Dict[str, List[Dict[str, Any]]] = (
-            {}
-        )  # Track denial history per session
+        self.session_denials: Dict[
+            str, List[Dict[str, Any]]
+        ] = {}  # Track denial history per session
         self.decision_log: List[SafetyDecision] = []
         self._running = True
 

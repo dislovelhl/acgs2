@@ -11,7 +11,7 @@ Available Integrations:
   enabling real-time governance model training via outcome reporting.
 
 Usage:
-    from src.core.enhanced_agent_bus.integrations import MLGovernanceClient
+    from core.enhanced_agent_bus.integrations import MLGovernanceClient
 
     # Initialize the client
     client = MLGovernanceClient(base_url="http://adaptive-learning-engine:8001")

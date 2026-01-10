@@ -11,7 +11,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 try:
-    from src.core.enhanced_agent_bus.graph_database import GraphDatabaseManager
+    from core.enhanced_agent_bus.graph_database import GraphDatabaseManager
 except ImportError:
     from .graph_database import GraphDatabaseManager
 

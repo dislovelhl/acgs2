@@ -2,16 +2,29 @@
 # For GPU deployments, replace with nvidia/cuda:12.4.0-cudnn-runtime-ubuntu22.04
 FROM python:3.11-slim-bookworm AS builder
 
+ARG TARGETPLATFORM
+ARG TARGETARCH
+
 WORKDIR /app
 
-# Install build dependencies
+# Install build dependencies - includes compilers for native extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    cmake \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy requirements
 COPY config/requirements_optimized.txt ./requirements.txt
-RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Install Python dependencies with platform-specific handling
+# Use --only-binary for packages that have pre-built wheels to avoid compilation issues
+RUN pip install --user --no-cache-dir \
+    --prefer-binary \
+    -r requirements.txt || \
+    (echo "Retrying without binary preference..." && \
+     pip install --user --no-cache-dir -r requirements.txt)
 
 # Final stage
 FROM python:3.11-slim-bookworm

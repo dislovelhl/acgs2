@@ -13,7 +13,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 )
 
-from src.core.enhanced_agent_bus.ai_assistant.nlu import (
+from core.enhanced_agent_bus.ai_assistant.nlu import (
     BasicSentimentAnalyzer,
     Entity,
     EntityExtractor,
@@ -29,7 +29,7 @@ from src.core.enhanced_agent_bus.ai_assistant.nlu import (
 
 # Import centralized constitutional hash with fallback
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

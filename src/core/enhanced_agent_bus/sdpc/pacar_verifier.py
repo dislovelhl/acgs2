@@ -20,7 +20,7 @@ except ImportError:
     aioredis = None
     REDIS_AVAILABLE = False
 
-from src.core.shared.audit_client import AuditClient
+from core.shared.audit_client import AuditClient
 
 from ..config import BusConfiguration
 from ..deliberation_layer.llm_assistant import get_llm_assistant

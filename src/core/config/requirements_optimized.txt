@@ -1,18 +1,22 @@
 # Optimized Dependencies for ACGS-2 Production - Updated to latest secure pinned versions (v3.0.0)
+# Compatible with linux/amd64 and linux/arm64 platforms
 
 cryptography==44.0.1
 fastapi==0.128.0
 pydantic==2.9.2
 uvicorn==0.32.0
 
-# ML and Local LLM
-torch==2.8.0
+# ML and Local LLM - Using versions with ARM64 support
+torch>=2.0.0
 starlette>=0.47.2
-llama-cpp-python==0.3.1
 litellm>=1.0.0
-onnxruntime-gpu>=1.20.0
+# onnxruntime (CPU) works on all platforms, use pip extra for GPU: onnxruntime-gpu
+onnxruntime>=1.20.0
 transformers>=4.30.0
 scikit-learn>=1.3.0
+
+# llama-cpp-python requires compilation on ARM64, install separately if needed
+# llama-cpp-python==0.3.1
 
 # Circuit Breaker for Fault Tolerance
 pybreaker==1.1.0
@@ -25,9 +29,8 @@ neo4j==5.25.0
 redis>=4.2.0
 
 # Additional ML Libraries for Breakthrough Components
-scikit-learn==1.5.2
-numpy==1.26.4
-pandas==2.2.3
+numpy>=1.26.0
+pandas>=2.2.0
 
 # Async and Networking
 aiofiles==24.1.0

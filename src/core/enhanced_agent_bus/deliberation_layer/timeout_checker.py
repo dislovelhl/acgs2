@@ -22,7 +22,7 @@ except ImportError:
     VoteEventType = None
 
 try:
-    from src.core.shared.config import settings
+    from core.shared.config import settings
 except ImportError:
     from ...shared.config import settings  # type: ignore
 

@@ -22,7 +22,7 @@ from enhanced_agent_bus.deliberation_layer.adaptive_router import (
 from enhanced_agent_bus.models import AgentMessage, MessageStatus, MessageType
 
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

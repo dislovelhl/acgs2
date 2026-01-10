@@ -13,9 +13,9 @@ try:
     from .agent_bus import DEFAULT_REDIS_URL, EnhancedAgentBus, get_agent_bus, reset_agent_bus
     from .message_processor import MessageProcessor
 except (ImportError, ValueError):
-    from agent_bus import (  # type: ignore
+    from agent_bus import (
         DEFAULT_REDIS_URL,
-        EnhancedAgentBus,
+        EnhancedAgentBus,  # type: ignore
         get_agent_bus,
         reset_agent_bus,
     )
@@ -49,23 +49,23 @@ try:
     from .validators import ValidationResult
 except ImportError:
     # Fallback for direct execution or testing
-    from interfaces import (  # type: ignore
+    from interfaces import (
         AgentRegistry,
-        MessageRouter,
+        MessageRouter,  # type: ignore
         ProcessingStrategy,
         ValidationStrategy,
     )
-    from models import (  # type: ignore
+    from models import (
         CONSTITUTIONAL_HASH,
-        AgentMessage,
+        AgentMessage,  # type: ignore
         DecisionLog,
         MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
         MessageStatus,
         MessageType,
         Priority,
     )
-    from registry import (  # type: ignore
-        DirectMessageRouter,
+    from registry import (
+        DirectMessageRouter,  # type: ignore
         DynamicPolicyProcessingStrategy,
         DynamicPolicyValidationStrategy,
         InMemoryAgentRegistry,
@@ -79,14 +79,14 @@ except ImportError:
 
 # Re-export feature flags
 try:
-    from src.core.shared.metrics import MESSAGES_TOTAL
+    from core.shared.metrics import MESSAGES_TOTAL
 
     METRICS_ENABLED = True
 except ImportError:
     METRICS_ENABLED = False
 
 try:
-    from src.core.shared.circuit_breaker import get_circuit_breaker
+    from core.shared.circuit_breaker import get_circuit_breaker
 
     CIRCUIT_BREAKER_ENABLED = True
 except ImportError:

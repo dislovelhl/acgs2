@@ -11,7 +11,7 @@ __constitutional_hash__ = "cdd01ef066bc6cf2"
 
 # Import centralized constitutional hash from shared module
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -117,7 +117,7 @@ from .validators import ValidationResult
 # Cache Warming Integration for FastAPI startup
 # Import cache warming module for pre-populating caches at service startup
 try:
-    from src.core.shared.cache_warming import (
+    from core.shared.cache_warming import (
         CacheWarmer,
         WarmingConfig,
         WarmingProgress,

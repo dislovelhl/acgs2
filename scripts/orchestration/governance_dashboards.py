@@ -146,7 +146,11 @@ class GovernanceDashboards:
         health_status = (
             "excellent"
             if overall_score >= 90
-            else "good" if overall_score >= 75 else "fair" if overall_score >= 60 else "poor"
+            else "good"
+            if overall_score >= 75
+            else "fair"
+            if overall_score >= 60
+            else "poor"
         )
 
         return {
@@ -177,7 +181,9 @@ class GovernanceDashboards:
         compliance_trend = (
             "improving"
             if overall_compliance > 85
-            else "stable" if overall_compliance > 75 else "declining"
+            else "stable"
+            if overall_compliance > 75
+            else "declining"
         )
 
         return {

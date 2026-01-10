@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from enhanced_agent_bus.deliberation_layer.intent_classifier import (
+from core.enhanced_agent_bus.deliberation_layer.intent_classifier import (
     ClassificationResult,
     IntentClassifier,
     IntentType,
@@ -61,20 +61,24 @@ async def test_llm_classification_ambiguous():
     # Mock LLM client as initialized
     classifier._llm_client_initialized = True
 
-    # Prepare mock LLM response for an ambiguous query
-    mock_llm_response = {
-        "choices": [
-            {
-                "message": {
-                    "content": '{"intent": "REASONING", "confidence": 0.85, "reasoning": "Query requires analysis"}'
+    # Force LITELLM_AVAILABLE to True for tests
+    with patch(
+        "core.enhanced_agent_bus.deliberation_layer.intent_classifier.LITELLM_AVAILABLE", True
+    ):
+        # Prepare mock LLM response for an ambiguous query
+        mock_llm_response = {
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"intent": "REASONING", "confidence": 0.85, "reasoning": "Query requires analysis"}'
+                    }
                 }
-            }
-        ]
-    }
+            ]
+        }
 
     # Patch litellm.acompletion to return our mock response
     with patch(
-        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        "core.enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
         new_callable=AsyncMock,
         return_value=mock_llm_response,
     ) as mock_acompletion:
@@ -99,10 +103,15 @@ async def test_llm_classification_fallback_on_failure():
     classifier._llm_client_initialized = True
 
     # Mock LLM to raise an exception
-    with patch(
-        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
-        new_callable=AsyncMock,
-        side_effect=Exception("LLM API error"),
+    with (
+        patch(
+            "core.enhanced_agent_bus.deliberation_layer.intent_classifier.LITELLM_AVAILABLE", True
+        ),
+        patch(
+            "core.enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=Exception("LLM API error"),
+        ),
     ):
         # Query with some factual keyword but low confidence
         result = await classifier.classify_async("What about this thing?")
@@ -120,18 +129,22 @@ async def test_llm_classification_with_metadata():
     )
     classifier._llm_client_initialized = True
 
-    mock_llm_response = {
-        "choices": [
-            {
-                "message": {
-                    "content": '{"intent": "CREATIVE", "confidence": 0.9, "reasoning": "Creative request"}'
+    # Force LITELLM_AVAILABLE to True
+    with patch(
+        "core.enhanced_agent_bus.deliberation_layer.intent_classifier.LITELLM_AVAILABLE", True
+    ):
+        mock_llm_response = {
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"intent": "CREATIVE", "confidence": 0.9, "reasoning": "Creative request"}'
+                    }
                 }
-            }
-        ]
-    }
+            ]
+        }
 
     with patch(
-        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        "core.enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
         new_callable=AsyncMock,
         return_value=mock_llm_response,
     ):
@@ -155,7 +168,7 @@ async def test_llm_skipped_for_high_confidence():
     classifier._llm_client_initialized = True
 
     with patch(
-        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        "core.enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
         new_callable=AsyncMock,
     ) as mock_acompletion:
         # Query with strong factual keywords - high confidence
@@ -182,45 +195,49 @@ async def test_llm_fallback_on_error():
     )
     classifier._llm_client_initialized = True
 
-    # Test Case 1: LLM raises an exception
+    # Force LITELLM_AVAILABLE to True for tests
     with patch(
-        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
-        new_callable=AsyncMock,
-        side_effect=Exception("API connection error"),
+        "core.enhanced_agent_bus.deliberation_layer.intent_classifier.LITELLM_AVAILABLE", True
     ):
-        result = await classifier.classify_async_with_metadata("Help me with something")
+        # Test Case 1: LLM raises an exception
+        with patch(
+            "core.enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+            new_callable=AsyncMock,
+            side_effect=Exception("API connection error"),
+        ):
+            result = await classifier.classify_async_with_metadata("Help me with something")
 
-        # Verify fallback to rule-based classification
-        assert isinstance(result, ClassificationResult)
-        assert result.routing_path == RoutingPath.LLM_FALLBACK
-        assert result.intent == IntentType.GENERAL  # Default for ambiguous input
-        assert result.rule_based_intent == IntentType.GENERAL
-        assert result.rule_based_confidence == classifier.DEFAULT_CONFIDENCE
-        # LLM fields should be None since LLM failed
-        assert result.llm_intent is None
-        assert result.llm_confidence is None
-        assert result.llm_reasoning is None
+            # Verify fallback to rule-based classification
+            assert isinstance(result, ClassificationResult)
+            assert result.routing_path == RoutingPath.LLM_FALLBACK
+            assert result.intent == IntentType.GENERAL  # Default for ambiguous input
+            assert result.rule_based_intent == IntentType.GENERAL
+            assert result.rule_based_confidence == classifier.DEFAULT_CONFIDENCE
+            # LLM fields should be None since LLM failed
+            assert result.llm_intent is None
+            assert result.llm_confidence is None
+            assert result.llm_reasoning is None
 
-    # Test Case 2: LLM returns empty response
-    with patch(
-        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
-        new_callable=AsyncMock,
-        return_value={"choices": []},  # Empty choices
-    ):
-        result = await classifier.classify_async_with_metadata("Process this data")
+        # Test Case 2: LLM returns empty response
+        with patch(
+            "core.enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+            new_callable=AsyncMock,
+            return_value={"choices": []},  # Empty choices
+        ):
+            result = await classifier.classify_async_with_metadata("Process this data")
 
-        assert result.routing_path == RoutingPath.LLM_FALLBACK
-        assert result.intent == IntentType.GENERAL
-        assert result.llm_intent is None
+            assert result.routing_path == RoutingPath.LLM_FALLBACK
+            assert result.intent == IntentType.GENERAL
+            assert result.llm_intent is None
 
-    # Test Case 3: LLM returns malformed response
-    with patch(
-        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
-        new_callable=AsyncMock,
-        return_value={"choices": [{"message": {"content": "invalid json"}}]},
-    ):
-        result = await classifier.classify_async_with_metadata("Another query")
+        # Test Case 3: LLM returns malformed response
+        with patch(
+            "core.enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+            new_callable=AsyncMock,
+            return_value={"choices": [{"message": {"content": "invalid json"}}]},
+        ):
+            result = await classifier.classify_async_with_metadata("Another query")
 
-        assert result.routing_path == RoutingPath.LLM_FALLBACK
-        assert result.intent == IntentType.GENERAL
-        assert result.llm_intent is None
+            assert result.routing_path == RoutingPath.LLM_FALLBACK
+            assert result.intent == IntentType.GENERAL
+            assert result.llm_intent is None

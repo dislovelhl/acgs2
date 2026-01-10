@@ -62,9 +62,9 @@ class PerformanceTester:
                     )
 
                     # Fail fast if latency exceeds threshold
-                    assert (
-                        latency_ms < self.latency_threshold
-                    ), f"Latency {latency_ms:.2f}ms exceeds threshold {self.latency_threshold}ms"
+                    assert latency_ms < self.latency_threshold, (
+                        f"Latency {latency_ms:.2f}ms exceeds threshold {self.latency_threshold}ms"
+                    )
 
                 except Exception as e:
                     logging.error(f"Iteration {i + 1} failed: {e}")
@@ -179,12 +179,12 @@ class TestPerformance:
 
         assert "error" not in stats, "Performance test should not have errors"
         assert stats["success_rate"] > 0.8, f"Success rate {stats['success_rate']:.2%} too low"
-        assert stats[
-            "within_threshold"
-        ], f"P95 latency {stats['p95_latency_ms']:.2f}ms exceeds {stats['threshold_ms']}ms"
-        assert (
-            stats["mean_latency_ms"] < 3000
-        ), f"Mean latency {stats['mean_latency_ms']:.2f}ms too high"
+        assert stats["within_threshold"], (
+            f"P95 latency {stats['p95_latency_ms']:.2f}ms exceeds {stats['threshold_ms']}ms"
+        )
+        assert stats["mean_latency_ms"] < 3000, (
+            f"Mean latency {stats['mean_latency_ms']:.2f}ms too high"
+        )
 
         logging.info("Performance Results:")
         logging.info(f"  Success Rate: {stats['success_rate']:.2%}")
@@ -202,9 +202,9 @@ class TestPerformance:
         # Each service should respond within reasonable time
         for service_name, stats in service_stats.items():
             if "error" not in stats:
-                assert (
-                    stats["mean_latency_ms"] < 1000
-                ), f"{service_name} mean latency {stats['mean_latency_ms']:.2f}ms too high"
+                assert stats["mean_latency_ms"] < 1000, (
+                    f"{service_name} mean latency {stats['mean_latency_ms']:.2f}ms too high"
+                )
                 mean_lat = stats["mean_latency_ms"]
                 p95_lat = stats["p95_latency_ms"]
                 logging.info(f"{service_name}: {mean_lat:.2f}ms mean, {p95_lat:.2f}ms p95")
@@ -250,9 +250,9 @@ class TestPerformance:
 
         if valid_latencies:
             mean_concurrent_latency = statistics.mean(valid_latencies)
-            assert (
-                mean_concurrent_latency < tester.latency_threshold * 1.5
-            ), f"Concurrent latency {mean_concurrent_latency:.2f}ms too high under load"
+            assert mean_concurrent_latency < tester.latency_threshold * 1.5, (
+                f"Concurrent latency {mean_concurrent_latency:.2f}ms too high under load"
+            )
             logging.info(f"Concurrent load test: {mean_concurrent_latency:.2f}ms mean latency")
 
 

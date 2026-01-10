@@ -13,14 +13,14 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
 
 try:
-    from src.core.shared.config import settings
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.config import settings
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     settings = None  # type: ignore
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

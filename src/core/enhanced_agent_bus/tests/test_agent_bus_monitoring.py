@@ -11,8 +11,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 try:
-    from enhanced_agent_bus.agent_bus import (  # noqa: E402
-        EnhancedAgentBus,
+    from enhanced_agent_bus.agent_bus import (
+        EnhancedAgentBus,  # noqa: E402
         get_agent_bus,
         reset_agent_bus,
     )
@@ -20,8 +20,8 @@ try:
         BusNotStartedError,
         ConstitutionalHashMismatchError,
     )
-    from enhanced_agent_bus.models import (  # noqa: E402
-        CONSTITUTIONAL_HASH,
+    from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,  # noqa: E402
         AgentMessage,
         MessageStatus,
         MessageType,

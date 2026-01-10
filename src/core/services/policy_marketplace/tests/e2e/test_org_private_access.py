@@ -194,9 +194,9 @@ class TestOrgAUserAccess:
         assert response.status_code == 200
         data = response.json()
         template_ids = [item["id"] for item in data["items"]]
-        assert (
-            TestPrivateTemplateCreation.private_template_id in template_ids
-        ), f"Org A user should see template in list. Found IDs: {template_ids}"
+        assert TestPrivateTemplateCreation.private_template_id in template_ids, (
+            f"Org A user should see template in list. Found IDs: {template_ids}"
+        )
 
     def test_03_org_a_user_can_download_template(self, client: TestClient):
         """Org A user can download the private template."""
@@ -274,9 +274,9 @@ class TestOrgBUserAccess:
         )
 
         # Should return 404 (not 403) to avoid info disclosure
-        assert (
-            response.status_code == 404
-        ), f"Org B user should get 404 on download, not {response.status_code}"
+        assert response.status_code == 404, (
+            f"Org B user should get 404 on download, not {response.status_code}"
+        )
 
 
 class TestUnauthenticatedAccess:
@@ -317,9 +317,9 @@ class TestUnauthenticatedAccess:
         )
 
         # Should return 404 (not 403) to avoid info disclosure
-        assert (
-            response.status_code == 404
-        ), f"Unauthenticated user should get 404, not {response.status_code}"
+        assert response.status_code == 404, (
+            f"Unauthenticated user should get 404, not {response.status_code}"
+        )
 
     def test_02_unauthenticated_cannot_see_template_in_list(self, client: TestClient):
         """Unauthenticated user cannot see the private template in listing."""
@@ -328,9 +328,9 @@ class TestUnauthenticatedAccess:
         assert response.status_code == 200
         data = response.json()
         template_ids = [item["id"] for item in data["items"]]
-        assert (
-            TestPrivateTemplateCreation.private_template_id not in template_ids
-        ), "Unauthenticated user should NOT see private template in list"
+        assert TestPrivateTemplateCreation.private_template_id not in template_ids, (
+            "Unauthenticated user should NOT see private template in list"
+        )
 
     def test_03_unauthenticated_gets_404_on_download(self, client: TestClient):
         """Unauthenticated user gets 404 when trying to download the private template."""
@@ -340,9 +340,9 @@ class TestUnauthenticatedAccess:
         )
 
         # Should return 404 (not 403) to avoid info disclosure
-        assert (
-            response.status_code == 404
-        ), f"Unauthenticated user should get 404 on download, not {response.status_code}"
+        assert response.status_code == 404, (
+            f"Unauthenticated user should get 404 on download, not {response.status_code}"
+        )
 
 
 class TestAdminAccess:

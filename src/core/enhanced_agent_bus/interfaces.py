@@ -9,7 +9,7 @@ These protocols enable loose coupling and testability.
 from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
 
 try:
-    from src.core.shared.types import AgentInfo, JSONDict, JSONValue, MetadataDict
+    from core.shared.types import AgentInfo, JSONDict, JSONValue, MetadataDict
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any

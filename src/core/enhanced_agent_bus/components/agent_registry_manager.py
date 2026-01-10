@@ -14,7 +14,10 @@ try:
     from ..registry import InMemoryAgentRegistry, RedisAgentRegistry
 except ImportError:
     from interfaces import AgentRegistry  # type: ignore
-    from registry import InMemoryAgentRegistry, RedisAgentRegistry  # type: ignore
+    from registry import (
+        InMemoryAgentRegistry,  # type: ignore
+        RedisAgentRegistry,
+    )
 
 logger = logging.getLogger(__name__)
 

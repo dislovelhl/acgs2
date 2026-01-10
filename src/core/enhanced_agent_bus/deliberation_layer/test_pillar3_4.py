@@ -5,8 +5,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import logging
 
-from src.core.enhanced_agent_bus.deliberation_layer.integration import DeliberationLayer
-from src.core.enhanced_agent_bus.models import AgentMessage, MessageType
+from core.enhanced_agent_bus.deliberation_layer.integration import DeliberationLayer
+from core.enhanced_agent_bus.models import AgentMessage, MessageType
 
 logger = logging.getLogger(__name__)
 

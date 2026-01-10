@@ -26,8 +26,8 @@ try:
 except (ImportError, ValueError):
     try:
         from config import settings  # type: ignore
-        from exceptions import (  # type: ignore
-            OPAConnectionError,
+        from exceptions import (
+            OPAConnectionError,  # type: ignore
             OPANotInitializedError,
             PolicyEvaluationError,
         )
@@ -35,25 +35,24 @@ except (ImportError, ValueError):
         from validators import ValidationResult  # type: ignore
     except ImportError:
         try:
-            from src.core.enhanced_agent_bus.config import settings
-            from src.core.enhanced_agent_bus.exceptions import (
+            from core.enhanced_agent_bus.config import settings
+            from core.enhanced_agent_bus.exceptions import (
                 OPAConnectionError,
                 OPANotInitializedError,
                 PolicyEvaluationError,
             )
-            from src.core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
-            from src.core.enhanced_agent_bus.validators import ValidationResult
+            from core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
+            from core.enhanced_agent_bus.validators import ValidationResult
         except ImportError:
             # Fallback for sharing with shared package
-            from src.core.shared.config import settings  # type: ignore
-
+            from core.shared.config import settings  # type: ignore
             from exceptions import OPANotInitializedError  # type: ignore
             from models import CONSTITUTIONAL_HASH  # type: ignore
             from validators import ValidationResult  # type: ignore
 
 # Import centralized Redis config for caching
 try:
-    from src.core.shared.redis_config import get_redis_url
+    from core.shared.redis_config import get_redis_url
 
     REDIS_AVAILABLE = True
 except ImportError:

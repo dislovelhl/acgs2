@@ -8,7 +8,7 @@ Example demonstrating how to use the health aggregator service.
 import asyncio
 import logging
 
-from src.core.enhanced_agent_bus.health_aggregator import (
+from core.enhanced_agent_bus.health_aggregator import (
     HealthAggregator,
     HealthAggregatorConfig,
     SystemHealthStatus,
@@ -124,7 +124,7 @@ async def main():
 
 async def example_with_custom_breakers():
     """Example showing custom circuit breaker registration."""
-    from src.core.enhanced_agent_bus.health_aggregator import CIRCUIT_BREAKER_AVAILABLE
+    from core.enhanced_agent_bus.health_aggregator import CIRCUIT_BREAKER_AVAILABLE
 
     if not CIRCUIT_BREAKER_AVAILABLE:
         logger.warning("Circuit breaker support not available")

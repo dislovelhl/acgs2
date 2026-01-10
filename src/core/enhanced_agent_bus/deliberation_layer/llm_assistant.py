@@ -7,7 +7,7 @@ import time
 from typing import Any, Dict, List, Optional, Union
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -17,9 +17,9 @@ try:
     from ..utils import get_iso_timestamp
 except ImportError:
     try:
-        from models import (  # type: ignore
+        from models import (
             CONSTITUTIONAL_HASH,
-            AgentMessage,
+            AgentMessage,  # type: ignore
             MessageType,
             get_enum_value,
         )

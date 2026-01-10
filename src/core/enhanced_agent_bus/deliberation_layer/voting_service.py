@@ -12,26 +12,31 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
 try:
-    from src.core.shared.types import JSONDict, JSONValue
+    from core.shared.types import JSONDict, JSONValue
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
 
 try:
-    from ..models import CONSTITUTIONAL_HASH, AgentMessage
+    from core.enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
 except ImportError:
-    from models import AgentMessage  # type: ignore
+    # Fallback for when running in isolation or different structure
+    from ..models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
 
 try:
-    from .redis_election_store import RedisElectionStore, get_election_store
+    from core.enhanced_agent_bus.deliberation_layer.redis_election_store import (
+        RedisElectionStore,
+        get_election_store,
+    )
 except ImportError:
     RedisElectionStore = None
     get_election_store = None
 
 try:
-    from src.core.shared.config import settings
+    from core.shared.config import settings
 except ImportError:
-    from ...shared.config import settings  # type: ignore
+    # Fallback to local config or mock
+    settings = None
 
 logger = logging.getLogger(__name__)
 
@@ -251,9 +256,9 @@ class VotingService:
         else:
             # In-memory fallback
             if hasattr(self, "_in_memory_elections") and election_id in self._in_memory_elections:
-                self._in_memory_elections[election_id].setdefault("votes", {})[
-                    vote.agent_id
-                ] = vote_dict
+                self._in_memory_elections[election_id].setdefault("votes", {})[vote.agent_id] = (
+                    vote_dict
+                )
 
         logger.info(f"Agent {vote.agent_id} cast {vote.decision} for election {election_id}")
 

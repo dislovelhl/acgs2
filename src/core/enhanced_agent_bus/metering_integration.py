@@ -15,13 +15,13 @@ from typing import Any, Callable, Dict, Optional, TypeVar
 
 # Import metering service with fallback
 try:
-    from src.core.services.metering.app.models import (
+    from core.services.metering.app.models import (
         CONSTITUTIONAL_HASH,
         MeterableOperation,
         MeteringTier,
         UsageEvent,
     )
-    from src.core.services.metering.app.service import UsageMeteringService
+    from core.services.metering.app.service import UsageMeteringService
 
     METERING_AVAILABLE = True
 except ImportError:

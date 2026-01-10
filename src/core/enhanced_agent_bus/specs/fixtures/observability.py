@@ -13,14 +13,14 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 # Try to import from observability module, fallback to local definitions
 try:
-    from src.core.enhanced_agent_bus.observability.telemetry import MetricsRegistry, TracingContext
-    from src.core.enhanced_agent_bus.observability.timeout_budget import (
+    from core.enhanced_agent_bus.observability.telemetry import MetricsRegistry, TracingContext
+    from core.enhanced_agent_bus.observability.timeout_budget import (
         Layer,
         LayerTimeoutBudget,
         TimeoutBudgetManager,

@@ -10,8 +10,8 @@ import logging
 import uuid
 from typing import Any, Dict, Optional
 
-from src.core.shared.policy.models import PolicySpecification, VerificationStatus
-from src.core.shared.policy.unified_generator import UnifiedVerifiedPolicyGenerator
+from core.shared.policy.models import PolicySpecification, VerificationStatus
+from core.shared.policy.unified_generator import UnifiedVerifiedPolicyGenerator
 
 logger = logging.getLogger(__name__)
 

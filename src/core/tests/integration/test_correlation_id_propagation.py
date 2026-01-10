@@ -440,9 +440,9 @@ class TestMultiServiceFlow:
             )
 
             assert response.status_code == 200, f"{service_name} health check failed"
-            assert (
-                response.headers.get(CORRELATION_ID_HEADER) == test_correlation_id
-            ), f"{service_name} did not preserve correlation ID"
+            assert response.headers.get(CORRELATION_ID_HEADER) == test_correlation_id, (
+                f"{service_name} did not preserve correlation ID"
+            )
 
     def test_correlation_id_isolation_between_requests(self, create_test_app):
         """Verify correlation IDs don't leak between concurrent requests."""
@@ -702,9 +702,9 @@ class TestEndToEndVerification:
             received_ids[service_name] = response.headers.get(CORRELATION_ID_HEADER)
 
         # All services should have the same correlation ID
-        assert all(
-            cid == test_correlation_id for cid in received_ids.values()
-        ), f"Correlation ID mismatch: {received_ids}"
+        assert all(cid == test_correlation_id for cid in received_ids.values()), (
+            f"Correlation ID mismatch: {received_ids}"
+        )
 
 
 if __name__ == "__main__":

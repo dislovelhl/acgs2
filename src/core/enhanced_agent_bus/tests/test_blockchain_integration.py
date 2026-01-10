@@ -13,7 +13,7 @@ import time
 import pytest
 
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
@@ -32,7 +32,7 @@ except ImportError:
     AUDIT_CLIENT_AVAILABLE = False
 
 try:
-    from src.core.services.audit_service.core.blockchain_anchor_manager import (
+    from core.services.audit_service.core.blockchain_anchor_manager import (
         AnchorBackend,
         AnchorManagerConfig,
         AnchorResult,
@@ -47,7 +47,7 @@ except ImportError:
     ANCHOR_MANAGER_AVAILABLE = False
 
 try:
-    from src.core.services.audit_service.core.audit_ledger import (
+    from core.services.audit_service.core.audit_ledger import (
         AuditEntry,
         AuditLedger,
         AuditLedgerConfig,

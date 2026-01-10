@@ -22,8 +22,8 @@ try:
         get_tracer,
     )
 except ImportError:
-    from observability.telemetry import (  # type: ignore
-        CONSTITUTIONAL_HASH,
+    from observability.telemetry import (
+        CONSTITUTIONAL_HASH,  # type: ignore
         OTEL_AVAILABLE,
         MetricsRegistry,
         NoOpCounter,

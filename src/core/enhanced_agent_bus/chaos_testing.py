@@ -31,8 +31,8 @@ MAX_DURATION_S = 300.0  # 5 minutes absolute max
 
 # Import centralized constitutional hash from shared module
 try:
-    from src.core.shared.circuit_breaker import get_circuit_breaker
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.circuit_breaker import get_circuit_breaker
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -41,7 +41,10 @@ except ImportError:
 try:
     from .exceptions import AgentBusError, ConstitutionalHashMismatchError, MessageTimeoutError
 except ImportError:
-    from exceptions import AgentBusError, ConstitutionalHashMismatchError  # type: ignore
+    from exceptions import (
+        AgentBusError,  # type: ignore
+        ConstitutionalHashMismatchError,
+    )
 
 logger = logging.getLogger(__name__)
 

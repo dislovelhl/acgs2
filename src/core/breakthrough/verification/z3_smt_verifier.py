@@ -29,14 +29,14 @@ logger = logging.getLogger(__name__)
 
 # Z3 imports (will be available in production environment)
 try:
-    from z3 import (  # noqa: F401
+    from z3 import (
         And,
         Bool,
         BoolVal,
         Function,
         Int,
         Not,
-        Or,
+        Or,  # noqa: F401
         Solver,
         is_bool,
         is_int_value,

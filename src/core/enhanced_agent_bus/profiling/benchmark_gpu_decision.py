@@ -29,7 +29,7 @@ from typing import Any, Dict
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.core.enhanced_agent_bus.profiling import get_global_profiler  # noqa: E402
+from core.enhanced_agent_bus.profiling import get_global_profiler  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class GPUBenchmark:
     def _import_scorer(self):
         """Import scorer with error handling."""
         try:
-            from src.core.enhanced_agent_bus.deliberation_layer.impact_scorer import (
+            from core.enhanced_agent_bus.deliberation_layer.impact_scorer import (
                 ImpactScorer,
                 get_gpu_decision_matrix,
                 get_impact_scorer,

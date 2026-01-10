@@ -17,7 +17,11 @@ try:
     )
     from .validators import ValidationResult
 except (ImportError, ValueError):
-    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus  # type: ignore
+    from models import (
+        CONSTITUTIONAL_HASH,
+        AgentMessage,  # type: ignore
+        MessageStatus,
+    )
     from validation_strategies import (  # type: ignore
         DynamicPolicyValidationStrategy,
         OPAValidationStrategy,

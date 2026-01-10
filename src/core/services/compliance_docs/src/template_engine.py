@@ -15,7 +15,10 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoe
 
 # Internal imports
 try:
-    from src.core.shared.types import JSONValue, TemplateContext  # JSONDict removed
+    from src.core.shared.types import (
+        JSONValue,  # JSONDict removed
+        TemplateContext,
+    )
 except ImportError:
     # from typing import Union  # Removed redundant import
 

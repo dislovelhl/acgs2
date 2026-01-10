@@ -17,7 +17,7 @@ from typing import Any, Dict, List
 
 # Import centralized constitutional hash from shared module
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

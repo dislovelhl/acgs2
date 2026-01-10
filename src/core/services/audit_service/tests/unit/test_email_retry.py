@@ -20,8 +20,8 @@ import pytest
 # Add the service path to allow imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from app.services.email_service import (  # noqa: E402
-    EmailDeliveryError,
+from app.services.email_service import (
+    EmailDeliveryError,  # noqa: E402
     EmailRetryExhaustedError,
     EmailService,
     EmailSettings,

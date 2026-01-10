@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
 try:
-    from src.core.shared.types import AgentInfo, JSONDict, JSONValue, MetadataDict
+    from core.shared.types import AgentInfo, JSONDict, JSONValue, MetadataDict
 except ImportError:
     JSONDict = Dict[str, Any]
     JSONValue = Any
@@ -23,13 +23,17 @@ try:
     from .validators import ValidationResult
 except (ImportError, ValueError):
     try:
-        from interfaces import (  # type: ignore
+        from interfaces import (
             AgentRegistry,
-            MessageRouter,
+            MessageRouter,  # type: ignore
             ProcessingStrategy,
             ValidationStrategy,
         )
-        from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus  # type: ignore
+        from models import (
+            CONSTITUTIONAL_HASH,
+            AgentMessage,  # type: ignore
+            MessageStatus,
+        )
         from validators import ValidationResult  # type: ignore
     except (ImportError, ValueError):
         # Fallback for dynamic loaders

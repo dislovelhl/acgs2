@@ -34,37 +34,37 @@ if enhanced_agent_bus_dir not in sys.path:
     sys.path.insert(0, enhanced_agent_bus_dir)
 
 # Import modules for testing (alphabetically sorted for ruff I001)
-from ab_testing import (  # noqa: E402
+from ab_testing import (
     ABTestRouter,
-    CohortType,
+    CohortType,  # noqa: E402
     ComparisonResult,
     PromotionResult,
     PromotionStatus,
 )
-from drift_monitoring import (  # noqa: E402
+from drift_monitoring import (
     PANDAS_AVAILABLE,
-    DriftDetector,
+    DriftDetector,  # noqa: E402
     DriftReport,
     DriftSeverity,
     DriftStatus,
     FeatureDriftResult,
 )
-from feedback_handler import (  # noqa: E402
+from feedback_handler import (
     FeedbackEvent,
-    FeedbackHandler,
+    FeedbackHandler,  # noqa: E402
     FeedbackType,
     OutcomeStatus,
 )
-from ml_versioning import (  # noqa: E402
-    DEFAULT_CANDIDATE_ALIAS,
+from ml_versioning import (
+    DEFAULT_CANDIDATE_ALIAS,  # noqa: E402
     DEFAULT_CHAMPION_ALIAS,
     DEFAULT_MODEL_NAME,
     MLFLOW_AVAILABLE,
     MLflowVersionManager,
 )
-from online_learning import (  # noqa: E402
+from online_learning import (
     KAFKA_AVAILABLE,
-    RIVER_AVAILABLE,
+    RIVER_AVAILABLE,  # noqa: E402
     LearningStatus,
     OnlineLearningPipeline,
     RiverSklearnAdapter,
@@ -660,9 +660,9 @@ class TestDriftDetection:
 
         for drift_share, expected_severity in test_cases:
             severity = drift_detector._calculate_severity(drift_share)
-            assert (
-                severity == expected_severity
-            ), f"Expected {expected_severity} for drift_share={drift_share}, got {severity}"
+            assert severity == expected_severity, (
+                f"Expected {expected_severity} for drift_share={drift_share}, got {severity}"
+            )
 
 
 # ============================================================================

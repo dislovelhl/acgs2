@@ -20,7 +20,7 @@ from .z3_adapter import Z3Adapter, Z3AdapterConfig, Z3Request, Z3Response
 
 # Import centralized constitutional hash
 try:
-    from src.core.shared.constants import CONSTITUTIONAL_HASH
+    from core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

@@ -17,7 +17,10 @@ try:
     from .deliberation_queue import DeliberationQueue, DeliberationStatus
 except ImportError:
     # Fallback for direct execution
-    from deliberation_queue import DeliberationQueue, DeliberationStatus  # type: ignore
+    from deliberation_queue import (
+        DeliberationQueue,  # type: ignore
+        DeliberationStatus,
+    )
 
     from models import CONSTITUTIONAL_HASH  # type: ignore
 

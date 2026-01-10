@@ -15,7 +15,11 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.enhanced_agent_bus.core import EnhancedAgentBus  # noqa: E402
-from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority  # noqa: E402
+from src.core.enhanced_agent_bus.models import (
+    AgentMessage,  # noqa: E402
+    MessageType,
+    Priority,
+)
 from src.core.services.audit_service.core.anchor_mock import BlockchainAnchor  # noqa: E402
 from src.core.services.audit_service.core.audit_ledger import AuditLedger  # noqa: E402
 

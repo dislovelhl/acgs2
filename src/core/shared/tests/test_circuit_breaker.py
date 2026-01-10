@@ -14,8 +14,8 @@ import pytest
 pybreaker = pytest.importorskip("pybreaker")
 
 # Import module under test
-from src.core.shared.circuit_breaker import (  # noqa: E402
-    CONSTITUTIONAL_HASH,
+from src.core.shared.circuit_breaker import (
+    CONSTITUTIONAL_HASH,  # noqa: E402
     CORE_SERVICES,
     ACGSCircuitBreakerListener,
     CircuitBreakerConfig,
