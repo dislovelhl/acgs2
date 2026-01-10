@@ -10,12 +10,12 @@ ssn_pattern := `\\d{3}-\\d{2}-\\d{4}`
 
 violations contains msg if {
     message := input.message.content
-    re_match(email_pattern, message)
+    regex.match(email_pattern, message)
     msg := "PII Detected: Message contains an email address."
 }
 
 violations contains msg if {
     message := input.message.content
-    re_match(ssn_pattern, message)
+    regex.match(ssn_pattern, message)
     msg := "PII Detected: Message contains a potential SSN."
 }
